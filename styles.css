@@ -26,6 +26,9 @@ body {
 .static-project-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .static-project-actions .button { width: max-content; }
 .static-note { margin: 24px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.redirect-page { display: grid; min-height: 100svh; align-content: center; justify-items: start; }
+.redirect-page h1 { max-width: 800px; margin: 0; font-size: clamp(48px, 8vw, 96px); letter-spacing: -.06em; line-height: .95; }
+.redirect-page > p:not(.eyebrow) { max-width: 650px; margin: 28px 0 36px; color: var(--muted); font-size: 17px; line-height: 1.7; }
 a { color: inherit; text-decoration: none; }
 img { display: block; width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -201,6 +204,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .project-meta { display: flex; justify-content: space-between; gap: 20px; color: var(--acid); font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
 .project-content h3 { margin: 24px 0 17px; font-size: clamp(32px, 3vw, 48px); font-weight: 570; letter-spacing: -.04em; }
 .project-content p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
+.project-content .project-proof { margin-top: 24px; color: var(--orange); font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 700; letter-spacing: .1em; line-height: 1.5; text-transform: uppercase; }
 .tag-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 28px 0 34px; padding: 0; list-style: none; }
 .tag-list li { padding: 7px 9px; border: 1px solid var(--line); color: #c3cbc7; font-size: 10px; }
 .text-link { display: inline-flex; justify-content: space-between; gap: 28px; width: max-content; margin-top: auto; padding-bottom: 6px; border-bottom: 1px solid var(--acid); font-size: 13px; font-weight: 700; }

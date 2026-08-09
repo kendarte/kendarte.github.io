@@ -4,7 +4,7 @@ Static GitHub Pages edition of Kendall Angulo Jhonson's Unity gameplay and syste
 
 ## Featured work
 
-- Taek-Won-Cop — modular third-person combat and RPG systems.
+- Turbo 9X (formerly Taek-Won-Cop) — modular third-person combat and RPG systems.
 - Horse Racer — deterministic race orchestration, cinematic direction and automated capture.
 - Euclid Wars — first-person exploration, environmental interaction and narrative flow.
 
