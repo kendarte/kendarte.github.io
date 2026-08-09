@@ -1,108 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Taek-Won-Cop — Unity Combat &amp; Integration Case Study</title>
-  <meta name="description" content="Unity case study covering combat, state ownership, animation, cameras and middleware integration in a third-person action RPG prototype.">
-  <link rel="canonical" href="https://kendarte.github.io/projects/taek-won-cop/">
-  <meta name="theme-color" content="#0a0d0c">
-  <meta property="og:type" content="article">
-  <meta property="og:title" content="Taek-Won-Cop — Unity Combat &amp; Integration Case Study">
-  <meta property="og:description" content="How explicit state ownership turned competing Unity frameworks into one playable combat loop.">
-  <meta property="og:url" content="https://kendarte.github.io/projects/taek-won-cop/">
-  <meta property="og:image" content="https://kendarte.github.io/media/taek/intro-poster.jpg">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.svg">
-  <link rel="stylesheet" href="/styles.css">
-</head>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Taek-Won-Cop — Kendall Angulo</title><meta name="description" content="Technical case study for a modular Unity action RPG prototype."><link rel="canonical" href="https://kendarte.github.io/projects/taek-won-cop/"><meta property="og:type" content="article"><meta property="og:title" content="Taek-Won-Cop — Unity Combat Systems Case Study"><meta property="og:description" content="Solo Unity development case study covering combat, state control, cinematic direction and middleware integration."><meta property="og:url" content="https://kendarte.github.io/projects/taek-won-cop/"><meta property="og:image" content="https://kendarte.github.io/media/taek/intro-poster.jpg"><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"></head>
 <body>
-  <a class="skip-link" href="#project-content">Skip to project</a>
-  <header class="site-header">
-    <a class="brand" href="/" aria-label="Kendall Angulo, portfolio home"><span class="brand-mark" aria-hidden="true">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Unity gameplay &amp; systems</small></span></a>
-    <nav aria-label="Project navigation"><a href="/#work">All work</a><a href="/#services">Services</a><a href="/#process">Process</a><a href="/#about">About</a></nav>
-    <a class="header-cta" href="mailto:Kendarte@gmail.com?subject=Taek-Won-Cop%20or%20Unity%20role%20inquiry">Discuss this work <span aria-hidden="true">↗</span></a>
-  </header>
-
-  <main id="project-content" class="detail-main">
-    <section class="detail-hero section-shell">
-      <a class="back-link" href="/#work">← Selected work</a>
-      <div class="detail-title-grid">
-        <div>
-          <p class="eyebrow"><span></span> Combat · state control · middleware integration</p>
-          <h1>Taek-Won-Cop</h1>
-          <p class="detail-summary">A third-person action RPG prototype where combat input, RPG rules, enemy reactions, animation, cameras and narrative tools needed one reliable authority.</p>
-          <div class="detail-actions">
-            <a class="button button-primary" href="https://github.com/kendarte/taekwoncop-systems">Review systems on GitHub <span aria-hidden="true">↗</span></a>
-            <a class="button button-secondary" href="mailto:Kendarte@gmail.com?subject=Taek-Won-Cop%20case%20study%20inquiry">Ask about this system <span aria-hidden="true">↗</span></a>
-          </div>
+<a class="skip-link" href="#project-content">Skip to project</a><header class="site-header detail-header"><a class="brand" href="/"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span></a><nav><a href="/#work">All work</a><a href="/#about">About</a></nav><a class="header-cta" href="mailto:Kendarte@gmail.com">Start a conversation</a></header>
+<main id="project-content" class="project-detail">
+  <section class="detail-hero section-shell"><a class="back-link" href="/#work">← Selected work</a><div class="detail-title-grid"><div><p class="eyebrow"><span></span> Third-person action RPG</p><h1>Taek-Won-Cop</h1><p class="detail-summary">A flexible combat prototype coordinating player actions, animation, enemy AI, RPG damage rules and cinematic presentation across melee, ranged and special abilities.</p><div class="static-project-actions"><a class="button button-primary" href="https://github.com/kendarte/taekwoncop-systems">View systems on GitHub <span>↗</span></a></div></div><dl class="detail-facts"><div><dt>Role</dt><dd>Solo developer / gameplay programmer</dd></div><div><dt>Status</dt><dd>Ongoing playable prototype</dd></div><div><dt>Engine</dt><dd>Unity / C#</dd></div><div><dt>Platform</dt><dd>PC prototype</dd></div></dl></div><figure class="detail-cover"><video controls playsinline preload="metadata" poster="/media/taek/intro-poster.jpg"><source src="/media/taek/intro.mp4" type="video/mp4"></video><figcaption><span>PROJECT / 01</span><span>Playable combat introduction</span></figcaption></figure></section>
+  <section class="video-evidence-section section-shell"><div class="section-heading"><div><p class="eyebrow"><span></span> Working build</p><h2>Systems on screen.</h2></div><p>Focused captures from the Unity prototype.</p></div><div class="video-evidence-grid">
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/taek/combat-poster.jpg"><source src="/media/taek/combat.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Combat coordination</span><h3>One encounter, multiple states</h3><p>Target feedback, attack execution, active enemies and reaction states inside one encounter.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/taek/interaction-poster.jpg"><source src="/media/taek/interaction.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Character interaction</span><h3>Scripted response in gameplay</h3><p>A player-triggered interaction and character response without leaving the playable scene.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/taek/destruction-poster.jpg"><source src="/media/taek/destruction.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Environmental response</span><h3>Weapon-driven destruction</h3><p>Weapon input, hit detection and staged destruction with immediate feedback.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/taek/lipsync-poster.jpg"><source src="/media/taek/lipsync.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Lip-sync &amp; dialogue</span><h3>In-engine presentation</h3><p>Spoken dialogue, facial animation and subtitles working together.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/taek/main-menu-poster.jpg"><source src="/media/taek/main-menu.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Diegetic presentation</span><h3>In-world menu sequence</h3><p>A television-driven introduction and menu presented inside the game world.</p></div></article>
+  </div></section>
+  <section class="case-study-section section-shell" aria-labelledby="taek-case-title">
+    <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2 id="taek-case-title">From integration pressure to playable proof.</h2></div><p>An independently developed prototype connecting combat, character state, animation, cameras and narrative middleware.</p></div>
+    <div class="case-study-grid">
+      <article class="case-study-card"><span>Problem</span><h3>Multiple systems needed one authority.</h3><p>Combat input, RPG rules, enemy reactions, animation, cameras and narrative tools could not compete for control without producing broken transitions or unreadable encounters.</p></article>
+      <article class="case-study-card"><span>Constraints</span><h3>Build around established middleware.</h3><p>The custom layer had to coexist with Invector, Adventure Creator, Koreographer, SALSA, ARPG statistics and project-specific Clash contracts without redistributing their source.</p></article>
+      <article class="case-study-card"><span>Decision</span><h3>Use explicit bridges and state ownership.</h3><p>Dedicated adapters coordinate targeting, action timing, temporary control locks, cinematic tracks and safe restoration instead of burying game rules inside third-party components.</p></article>
+      <article class="case-study-card"><span>Contribution</span><h3>Solo gameplay and integration development.</h3><p>I designed and programmed the gameplay architecture, integration bridges, combat behavior, cinematic control and debugging workflow. Third-party frameworks remain identified as dependencies.</p></article>
+      <article class="case-study-card case-study-card--result"><span>Verified result</span><h3>The working build is the evidence.</h3><p>The videos above show integrated combat, character interaction, weapon-driven destruction, facial performance, subtitles and the in-world menu running inside Unity. The public repository exposes the Director and Clash Snap implementation for code review.</p></article>
+    </div>
+  </section>
+  <section class="systems-section section-shell"><div class="section-heading"><div><p class="eyebrow"><span></span> Responsibility</p><h2>What I built.</h2></div><p>Combat, state control and the integration layer connecting the prototype.</p></div><div class="system-cards"><article><span>01</span><h3>Combat framework</h3><p>Coordinates attacks, damage, animation execution and enemy responses.</p></article><article><span>02</span><h3>Abilities &amp; statistics</h3><p>Reusable actions combine targeting, damage, effects and presentation.</p></article><article><span>03</span><h3>Enemy state control</h3><p>Temporary reactions override AI safely and return control cleanly.</p></article><article><span>04</span><h3>Integration layer</h3><p>Custom bridges connect controllers, AI, cameras, animation and narrative tools.</p></article></div></section>
+  <section class="technical-evidence-section section-shell">
+    <div class="section-heading"><div><p class="eyebrow"><span></span> Architecture</p><h2>Under the hood.</h2></div><p>Responsive, English-language system maps showing the boundaries and combat flow.</p></div>
+    <div class="technical-diagram-grid">
+      <article class="technical-map" aria-labelledby="architecture-map-title">
+        <header class="technical-map-head"><span>Architecture map</span><h3 id="architecture-map-title">Foundation versus custom systems</h3><p>Stable middleware provides locomotion, statistics and presentation. Custom systems coordinate the game-specific behavior.</p></header>
+        <div class="map-columns">
+          <div class="map-layer"><span class="map-kicker">Layer 1 · Foundation</span><h4>Industry middleware</h4><ul class="map-node-list"><li><strong>ARPG Motor</strong>Statistics, HP/MP, damage, elements and weaknesses.</li><li><strong>Invector</strong>3D locomotion, physics, collisions, camera and core combat.</li><li><strong>Koreographer</strong>DSP-time music synchronization for timed actions.</li><li><strong>Adventure Creator</strong>Scene logic, global data and state management.</li><li><strong>DestroyIt + SALSA</strong>Destructible environments and procedural lip-sync.</li></ul></div>
+          <div class="map-layer map-layer-custom"><span class="map-kicker">Layer 2 · Custom</span><h4>Game-specific systems</h4><ul class="map-node-list"><li><strong>Turbo Driver</strong>DeckManager, CardSlot3D, CardTemplate, hand resources and hot-swappable combat sets.</li><li><strong>Director</strong>Episode structure, cinematics, limited decisions and cross-episode consequences.</li><li><strong>Love / Hate</strong>Long-term character affinity memory.</li><li><strong>Integration bridges</strong>Adapters connect combat, state, camera, animation and narrative tools without reloading the scene.</li></ul></div>
         </div>
-        <dl class="detail-facts">
-          <div><dt>Role</dt><dd>Solo developer / gameplay programmer</dd></div>
-          <div><dt>Status</dt><dd>Ongoing playable prototype</dd></div>
-          <div><dt>Engine</dt><dd>Unity / C#</dd></div>
-          <div><dt>Platform</dt><dd>PC prototype</dd></div>
-          <div data-placeholder="taek-development-time"><dt>Development</dt><dd>14 months, part-time</dd></div>
-          <div><dt>Published proof</dt><dd>5 captures + focused source sample</dd></div>
-        </dl>
-      </div>
-      <figure class="detail-cover">
-        <video controls playsinline preload="metadata" poster="/media/taek/intro-poster.jpg"><source src="/media/taek/intro.mp4" type="video/mp4"></video>
-        <figcaption><span>PROJECT / 01</span><span>Playable combat introduction</span></figcaption>
-      </figure>
-      <dl class="detail-metrics">
-        <div><dt>6</dt><dd>framework boundaries documented</dd></div>
-        <div data-placeholder="taek-defects-before"><dt>37</dt><dd>recurring state defects reproduced</dd></div>
-        <div data-placeholder="taek-defects-after"><dt>4</dt><dd>remaining low-priority defects</dd></div>
-        <div><dt>5</dt><dd>working-build evidence clips</dd></div>
-      </dl>
-    </section>
-
-    <section class="case-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2>Stop multiple systems from competing for the player.</h2></div><p>The difficult part was not adding another attack. It was deciding who owns input, movement, animation and camera state at every transition.</p></div>
-      <div class="case-grid">
-        <article class="case-card"><span>Problem</span><h3>Every framework assumed it was in charge.</h3><p>Combat input, RPG statistics, enemy reactions, cinematics and narrative sequences could interrupt each other, producing stuck locomotion, duplicate actions and broken camera restoration.</p></article>
-        <article class="case-card"><span>Constraints</span><h3>Keep commercial middleware intact.</h3><p>The custom layer had to coexist with Invector, Adventure Creator, Koreographer, SALSA, ARPG statistics and destructible-environment tools without modifying or redistributing their source.</p></article>
-        <article class="case-card"><span>Decision</span><h3>Introduce explicit adapters and state ownership.</h3><p>Dedicated bridges arbitrate attack spaces, temporary control locks, reaction state, cinematic tracks and restoration. Game rules remain outside third-party components.</p></article>
-        <article class="case-card"><span>My contribution</span><h3>Gameplay architecture through working presentation.</h3><p>I designed and programmed the coordination layer, combat behavior, target snap, defense outcomes, status effects, cinematic control and debugging workflow.</p></article>
-        <article class="case-card result-card"><span>Result</span><h3>A reviewer can inspect both behavior and boundaries.</h3><p>The captures show combat, interaction, destruction, facial performance and the in-world menu running in Unity. The public repository exposes Director and Clash Snap as coherent code-review samples while documenting every omitted dependency.</p></article>
-      </div>
-    </section>
-
-    <section class="evidence-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Working-build evidence</p><h2>Transitions, not isolated features.</h2></div><p>Each capture focuses on a hand-off between player control, combat, environment or presentation.</p></div>
-      <div class="evidence-grid">
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/taek/combat-poster.jpg"><source src="/media/taek/combat.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Combat coordination</span><h3>One encounter, multiple states</h3><p>Target feedback, attack execution, active enemies and reactions remain readable inside one loop.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/taek/interaction-poster.jpg"><source src="/media/taek/interaction.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Control hand-off</span><h3>Scripted response in gameplay</h3><p>Player-triggered interaction temporarily changes authority and returns control without leaving the scene.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/taek/destruction-poster.jpg"><source src="/media/taek/destruction.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Environmental response</span><h3>Weapon-driven destruction</h3><p>Input, hit detection, damage state and staged destruction produce immediate feedback.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/taek/lipsync-poster.jpg"><source src="/media/taek/lipsync.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Dialogue pipeline</span><h3>In-engine performance</h3><p>Dialogue, facial animation, subtitles and camera staging run as coordinated tracks.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/taek/main-menu-poster.jpg"><source src="/media/taek/main-menu.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Diegetic presentation</span><h3>Menu inside the game world</h3><p>A television sequence introduces the prototype and hands control into the playable scene.</p></div></article>
-      </div>
-    </section>
-
-    <section class="bug-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Debugging evidence</p><h2>The bugs that defined the architecture.</h2></div><p>These examples show the level of technical specificity expected in a production-facing portfolio.</p></div>
-      <div class="bug-grid">
-        <article class="bug-card" data-placeholder="taek-bug-target-snap"><span>BUG / TARGETING</span><h3>Snap selected an enemy behind cover.</h3><p>Range and view angle passed, but the final target did not require a clean line of sight.</p><strong>Fix: added occlusion validation before the controlled approach.</strong></article>
-        <article class="bug-card" data-placeholder="taek-bug-camera"><span>BUG / CAMERA</span><h3>Cinematic exit restored the wrong camera.</h3><p>Nested sequences overwrote the previous-camera reference and returned the player to an obsolete shot.</p><strong>Fix: replaced one reference with a scoped camera-state stack.</strong></article>
-        <article class="bug-card" data-placeholder="taek-bug-input"><span>BUG / INPUT</span><h3>Defense left the player permanently locked.</h3><p>An interrupted guard-break path skipped cleanup when the target was removed mid-reaction.</p><strong>Fix: centralized restoration in an idempotent recovery routine.</strong></article>
-        <article class="bug-card" data-placeholder="taek-bug-animation"><span>BUG / ANIMATION</span><h3>Rapid attacks produced duplicate hit windows.</h3><p>Animation events from the cancelled action remained valid after a new skill became active.</p><strong>Fix: bound damage windows to the current action token.</strong></article>
-      </div>
-    </section>
-
-    <section class="decision-section section-shell architecture">
-      <div class="architecture-copy"><p class="eyebrow"><span></span> Architecture</p><h2>Foundation below, game rules above.</h2><p>Middleware supplies stable capabilities. The custom layer owns game-specific decisions and coordinates transitions through narrow adapters.</p></div>
-      <ol class="architecture-list">
-        <li><strong>Input arbitration</strong><span>Choose normal attack, Clash skill, Power Clash or Defender before movement begins.</span></li>
-        <li><strong>Target validation</strong><span>Apply direction, lock-on, range, view angle and line-of-sight rules.</span></li>
-        <li><strong>Action ownership</strong><span>Grant one skill authority over movement, animation, timing and damage.</span></li>
-        <li><strong>Reaction state</strong><span>Override enemy behavior temporarily and restore AI through one recovery path.</span></li>
-        <li><strong>Presentation</strong><span>Trigger camera, VFX, audio and time effects from resolved gameplay state.</span></li>
-      </ol>
-    </section>
-
-    <section class="next-project section-shell"><span>Next case study</span><a href="/projects/horse-racer/"><strong>Horse Racer</strong><span aria-hidden="true">↗</span></a></section>
-  </main>
-  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
-</body>
-</html>
+      </article>
+      <article class="technical-map" aria-labelledby="flow-map-title">
+        <header class="technical-map-head"><span>Combat flow map</span><h3 id="flow-map-title">Timing, response and reward</h3><p>TaekwonFlow turns synchronized player input into animation, combat feedback and meta-game rewards.</p></header>
+        <ol class="technical-flow-list"><li><div><strong>Synchronized input</strong><span>Compare the player action against a DSP-timed Koreographer marker.</span></div></li><li><div><strong>Timing verdict</strong><span>On-time input triggers the special animation or perfect parry; off-time input falls back to the standard Invector action.</span></div></li><li><div><strong>Performance modifier</strong><span>Accuracy adjusts damage and the encounter rating.</span></div></li><li><div><strong>Meta reward</strong><span>Synchronized finishers and a high show rating generate bonus coins.</span></div></li><li><div><strong>Deck update</strong><span>DeckManager receives the reward and updates the card economy.</span></div></li></ol>
+        <p class="technical-map-note">Implemented through bridges between Koreographer, Invector, Adventure Creator and the custom gameplay layer.</p>
+      </article>
+    </div>
+  </section>
+  <section class="next-project section-shell"><span>Next case study</span><a href="/projects/horse-racer/"><strong>Horse Racer</strong><span>↗</span></a></section>
+</main><footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
+</body></html>
