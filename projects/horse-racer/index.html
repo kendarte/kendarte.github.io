@@ -1,35 +1,106 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horse Racer — Kendall Angulo</title><meta name="description" content="Technical case study for a deterministic Unity race simulation and cinematic camera director."><link rel="canonical" href="https://kendarte.github.io/projects/horse-racer/"><meta property="og:type" content="article"><meta property="og:title" content="Horse Racer — Deterministic Unity Simulation Case Study"><meta property="og:description" content="Solo Unity case study covering deterministic race mapping, duration-based movement, cinematic direction and automated capture."><meta property="og:url" content="https://kendarte.github.io/projects/horse-racer/"><meta property="og:image" content="https://kendarte.github.io/media/horse/horse-racer-hero.jpg"><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"></head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Horse Racer — Unity Tools &amp; Automation Case Study</title>
+  <meta name="description" content="Unity case study covering deterministic race configuration, duration-based movement, cinematic direction and automated recording.">
+  <link rel="canonical" href="https://kendarte.github.io/projects/horse-racer/">
+  <meta name="theme-color" content="#0a0d0c">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Horse Racer — Unity Tools &amp; Automation Case Study">
+  <meta property="og:description" content="One race ID generates, directs and records any of 315 repeatable configurations.">
+  <meta property="og:url" content="https://kendarte.github.io/projects/horse-racer/">
+  <meta property="og:image" content="https://kendarte.github.io/media/horse/horse-racer-hero.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
 <body>
-<a class="skip-link" href="#project-content">Skip to project</a>
-<header class="site-header detail-header"><a class="brand" href="/"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span></a><nav><a href="/#work">All work</a><a href="/#about">About</a></nav><a class="header-cta" href="mailto:Kendarte@gmail.com">Start a conversation</a></header>
-<main id="project-content" class="project-detail">
-  <section class="detail-hero section-shell">
-    <a class="back-link" href="/#work">← Selected work</a>
-    <div class="detail-title-grid"><div><p class="eyebrow"><span></span> Procedural race simulation</p><h1>Horse Racer</h1><p class="detail-summary">A fully automated 1v1 simulation pipeline built in Unity. One race ID selects the competitors and finish condition, configures duration-based movement, presents changing camera shots and records the completed result.</p><div class="static-project-actions"><a class="button button-primary" href="https://github.com/kendarte/horse-racer-simulation">View code on GitHub <span>↗</span></a></div></div><dl class="detail-facts"><div><dt>Role</dt><dd>Solo developer / tools programmer</dd></div><div><dt>Status</dt><dd>Automated production prototype</dd></div><div><dt>Engine</dt><dd>Unity / C#</dd></div><div><dt>Platform</dt><dd>PC prototype</dd></div></dl></div>
-    <figure class="detail-cover"><video controls playsinline preload="metadata" poster="/media/horse/horse-racer-hero.jpg"><source src="/media/horse/horse-racer.mp4" type="video/mp4"></video><figcaption><span>PROJECT / 02</span><span>Complete automated race</span></figcaption></figure>
-    <dl class="detail-metrics"><div><dt>315</dt><dd>automated configurations</dd></div><div><dt>10</dt><dd>configured horses</dd></div><div><dt>45</dt><dd>unique pairings</dd></div><div><dt>7</dt><dd>finish conditions</dd></div></dl>
-  </section>
-  <section class="gallery-section section-shell" aria-label="Horse Racer showcase gallery">
-    <div class="section-heading"><div><p class="eyebrow"><span></span> Visual showcase</p><h2>Race-day presentation.</h2></div><p>Competitor variation, track atmosphere and camera framing from the working Unity build.</p></div>
-    <div class="detail-gallery">
-      <figure class="gallery-lead"><img src="/media/horse/showcase-horse-01.jpg" alt="Horse number one racing past the grandstand" loading="lazy" decoding="async"><figcaption><span>01</span>Track-side framing communicates speed, competitor identity and stadium scale.</figcaption></figure>
-      <figure><img src="/media/horse/showcase-horse-05.jpg" alt="Horse number five racing toward the finish area" loading="lazy" decoding="async"><figcaption><span>02</span>Distinct horse and jockey presentation supports the simulation's varied matchups.</figcaption></figure>
-      <figure><img src="/media/horse/showcase-horse-02.jpg" alt="Horse number two in a low-angle stadium shot" loading="lazy" decoding="async"><figcaption><span>03</span>Low-angle coverage keeps the competitor readable against the race environment.</figcaption></figure>
-    </div>
-  </section>
-  <section class="case-study-section section-shell" aria-labelledby="horse-case-title">
-    <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2 id="horse-case-title">One system instead of 315 hand-built races.</h2></div><p>An independently developed production prototype designed to generate repeatable race content and record it with minimal manual intervention.</p></div>
-    <div class="case-study-grid">
-      <article class="case-study-card"><span>Problem</span><h3>Scale outcomes without duplicating scenes.</h3><p>Ten horses produce 45 unique pairings, and seven finish conditions expand that matrix to 315 results. Authoring and recording every variation manually would be slow and error-prone.</p></article>
-      <article class="case-study-card"><span>Constraints</span><h3>Movement, presentation and capture had to agree.</h3><p>Two independent lanes, exact finish timing, changing camera coverage, winner presentation and Unity Recorder all needed to follow the same race definition.</p></article>
-      <article class="case-study-card"><span>Decision</span><h3>Make the race ID the shared source of truth.</h3><p>A bounded ID selects the pairing and outcome. Target duration drives movement, while the same race state informs the camera director, result UI, deterministic filename and batch progression.</p></article>
-      <article class="case-study-card"><span>Contribution</span><h3>Solo systems and tools development.</h3><p>I designed and programmed the race orchestration, movement model, camera director, editor tooling, track generation, presentation logic and automated recording workflow.</p></article>
-      <article class="case-study-card case-study-card--result"><span>Verified result</span><h3>A complete automated race on video.</h3><p>The main video shows the working pipeline from configured competitors through duration-based racing, dynamic camera changes and the final result. The implementation supports 315 reproducible configurations and is documented in the public code repository.</p></article>
-    </div>
-  </section>
-  <section class="systems-section section-shell"><div class="section-heading"><div><p class="eyebrow"><span></span> Responsibility</p><h2>What I built.</h2></div><p>Concrete systems inside the automated production pipeline.</p></div><div class="system-cards"><article><span>01</span><h3>Outcome matrix</h3><p>A bounded ID maps to one of 45 horse pairings and one of seven timing outcomes, producing 315 repeatable races.</p></article><article><span>02</span><h3>Duration-based movement</h3><p>Each competitor measures its waypoint lane and converts an assigned finish duration into acceleration, speed and animation pacing.</p></article><article><span>03</span><h3>Cinematic direction</h3><p>Progress-driven shot presets, separation-aware framing, FOV transitions and a fixed photo-finish setup create readable coverage.</p></article><article><span>04</span><h3>Automated capture</h3><p>Unity Recorder generates deterministic filenames, stops on the finish event and advances to the next race configuration.</p></article></div></section>
-  <section class="flow-section section-shell"><div class="flow-heading"><p class="eyebrow"><span></span> System flow</p><h2>From ID to exported race.</h2></div><ol class="flow-list"><li><span>01</span><strong>Map ID</strong><p>Select a pairing and finish condition.</p></li><li><span>02</span><strong>Configure</strong><p>Activate two competitors and assign lane durations.</p></li><li><span>03</span><strong>Simulate</strong><p>Convert path distance and time into movement.</p></li><li><span>04</span><strong>Present</strong><p>Direct cameras and display the result.</p></li><li><span>05</span><strong>Record</strong><p>Export the MP4 and advance the batch.</p></li></ol></section>
-  <section class="next-project section-shell"><span>Next case study</span><a href="/projects/euclid-wars/"><strong>Euclid Wars</strong><span>↗</span></a></section>
-</main><footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
-</body></html>
+  <a class="skip-link" href="#project-content">Skip to project</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Kendall Angulo, portfolio home"><span class="brand-mark" aria-hidden="true">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Unity gameplay &amp; systems</small></span></a>
+    <nav aria-label="Project navigation"><a href="/#work">All work</a><a href="/#services">Services</a><a href="/#process">Process</a><a href="/#about">About</a></nav>
+    <a class="header-cta" href="mailto:Kendarte@gmail.com?subject=Horse%20Racer%20or%20Unity%20tools%20inquiry">Discuss this work <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="project-content" class="detail-main">
+    <section class="detail-hero section-shell">
+      <a class="back-link" href="/#work">← Selected work</a>
+      <div class="detail-title-grid">
+        <div>
+          <p class="eyebrow"><span></span> Deterministic simulation · tools · capture automation</p>
+          <h1>Horse Racer</h1>
+          <p class="detail-summary">A Unity production pipeline where one bounded race ID configures two competitors, exact finish timing, cinematic coverage, result presentation and automated recording.</p>
+          <div class="detail-actions">
+            <a class="button button-primary" href="https://github.com/kendarte/horse-racer-simulation">Review code on GitHub <span aria-hidden="true">↗</span></a>
+            <a class="button button-secondary" href="mailto:Kendarte@gmail.com?subject=Horse%20Racer%20case%20study%20inquiry">Ask about this system <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <dl class="detail-facts">
+          <div><dt>Role</dt><dd>Solo developer / tools programmer</dd></div>
+          <div><dt>Status</dt><dd>Automated production prototype</dd></div>
+          <div><dt>Engine</dt><dd>Unity / C#</dd></div>
+          <div><dt>Platform</dt><dd>PC prototype</dd></div>
+          <div data-placeholder="horse-development-time"><dt>Development</dt><dd>9 weeks, part-time</dd></div>
+          <div><dt>Published proof</dt><dd>Complete race + source sample</dd></div>
+        </dl>
+      </div>
+      <figure class="detail-cover">
+        <video controls playsinline preload="metadata" poster="/media/horse/horse-racer-hero.jpg"><source src="/media/horse/horse-racer.mp4" type="video/mp4"></video>
+        <figcaption><span>PROJECT / 02</span><span>Complete automated race</span></figcaption>
+      </figure>
+      <dl class="detail-metrics">
+        <div><dt>315</dt><dd>repeatable race configurations</dd></div>
+        <div><dt>45</dt><dd>unique competitor pairings</dd></div>
+        <div data-placeholder="horse-operator-time"><dt>5h → 18m</dt><dd>operator time per 10-race batch</dd></div>
+        <div data-placeholder="horse-recording-test"><dt>100 / 100</dt><dd>correct filenames in batch test</dd></div>
+      </dl>
+    </section>
+
+    <section class="case-section section-shell">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2>Replace 315 hand-built races with one source of truth.</h2></div><p>The same configuration needed to control simulation, cameras, UI, filenames and batch progression without scene duplication.</p></div>
+      <div class="case-grid">
+        <article class="case-card"><span>Problem</span><h3>Manual variation did not scale.</h3><p>Ten horses produce 45 unique pairings. Seven finish conditions expand the matrix to 315 results, making hand-authored setup and recording slow and error-prone.</p></article>
+        <article class="case-card"><span>Constraints</span><h3>Every subsystem had to agree on the result.</h3><p>Independent lanes, exact finish timing, camera coverage, winner UI, deterministic filenames and Unity Recorder needed one shared race definition.</p></article>
+        <article class="case-card"><span>Decision</span><h3>Make the race ID authoritative.</h3><p>A bounded ID maps to pairing and outcome. Assigned duration drives movement while the same state informs cameras, presentation and recording.</p></article>
+        <article class="case-card"><span>My contribution</span><h3>Simulation through editor workflow.</h3><p>I designed and programmed orchestration, duration-based movement, cinematic direction, track generation, presentation, custom inspectors and batch capture.</p></article>
+        <article class="case-card result-card"><span>Result</span><h3>A repeatable content pipeline instead of duplicated scenes.</h3><p>A reviewer can watch one complete automated race, inspect the mapping and movement model, and trace the same race definition through result display and exported filename.</p></article>
+      </div>
+    </section>
+
+    <section class="evidence-section section-shell">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Visual evidence</p><h2>The simulation remains readable at race speed.</h2></div><p>Competitor identity, track position and outcome stay visible across changing broadcast-style shots.</p></div>
+      <div class="evidence-grid">
+        <article class="evidence-card"><img src="/media/horse/showcase-horse-01.jpg" alt="Horse number one racing past the grandstand" loading="lazy" decoding="async"><div class="evidence-copy"><span>Track-side framing</span><h3>Speed with context</h3><p>The shot preserves competitor identity and stadium scale while communicating motion.</p></div></article>
+        <article class="evidence-card"><img src="/media/horse/showcase-horse-05.jpg" alt="Horse number five approaching the finish area" loading="lazy" decoding="async"><div class="evidence-copy"><span>Competitor variation</span><h3>Reusable presentation</h3><p>Horse and jockey variation works across the same automated staging pipeline.</p></div></article>
+        <article class="evidence-card"><img src="/media/horse/showcase-horse-02.jpg" alt="Horse number two in a low-angle stadium shot" loading="lazy" decoding="async"><div class="evidence-copy"><span>Low-angle coverage</span><h3>Readable race state</h3><p>Progress-driven presets change visual energy without losing the current subject.</p></div></article>
+      </div>
+    </section>
+
+    <section class="bug-section section-shell">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Debugging evidence</p><h2>Automation fails in the seams.</h2></div><p>These examples show how a production pipeline becomes trustworthy enough to run without constant supervision.</p></div>
+      <div class="bug-grid">
+        <article class="bug-card" data-placeholder="horse-bug-finish-drift"><span>BUG / TIMING</span><h3>Photo finishes drifted between machines.</h3><p>Frame-dependent acceleration reached the final waypoint at slightly different times under variable load.</p><strong>Fix: derived normalized progress from assigned duration and measured lane distance.</strong></article>
+        <article class="bug-card" data-placeholder="horse-bug-camera"><span>BUG / CAMERA</span><h3>The director bounced between two shots.</h3><p>Near-threshold progress values repeatedly qualified adjacent presets during a close race.</p><strong>Fix: added shot history, hysteresis and minimum hold duration.</strong></article>
+        <article class="bug-card" data-placeholder="horse-bug-filename"><span>BUG / RECORDING</span><h3>Exported files inherited the next race ID.</h3><p>Batch progression advanced state before Unity Recorder finished finalizing the current capture.</p><strong>Fix: moved progression behind the recorder completion callback.</strong></article>
+        <article class="bug-card" data-placeholder="horse-bug-deadheat"><span>BUG / RESULT</span><h3>Dead heats produced two winner events.</h3><p>Each lane reported completion independently before the orchestrator resolved the shared outcome.</p><strong>Fix: centralized finish resolution and made result publication idempotent.</strong></article>
+      </div>
+    </section>
+
+    <section class="decision-section section-shell architecture">
+      <div class="architecture-copy"><p class="eyebrow"><span></span> System flow</p><h2>One ID, one reproducible result.</h2><p>The race definition is data. Movement, cameras, UI and recording consume it instead of inventing separate versions of the truth.</p></div>
+      <ol class="architecture-list">
+        <li><strong>Map ID</strong><span>Resolve one of 45 pairings and one of seven finish conditions.</span></li>
+        <li><strong>Configure</strong><span>Activate two horses and assign lane-specific finish durations.</span></li>
+        <li><strong>Simulate</strong><span>Convert measured path length and duration into normalized movement.</span></li>
+        <li><strong>Direct</strong><span>Select progress-driven shots with stable transitions and photo-finish coverage.</span></li>
+        <li><strong>Record</strong><span>Export a deterministic filename, confirm completion and advance the batch.</span></li>
+      </ol>
+    </section>
+
+    <section class="next-project section-shell"><span>Next case study</span><a href="/projects/euclid-wars/"><strong>Euclid Wars</strong><span aria-hidden="true">↗</span></a></section>
+  </main>
+  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
+</body>
+</html>
