@@ -1,106 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Euclid Wars — Unity Narrative Systems Case Study</title>
-  <meta name="description" content="Unity case study covering first-person control, environmental interaction, dialogue choices, objectives and narrative state.">
-  <link rel="canonical" href="https://kendarte.github.io/projects/euclid-wars/">
-  <meta name="theme-color" content="#0a0d0c">
-  <meta property="og:type" content="article">
-  <meta property="og:title" content="Euclid Wars — Unity Narrative Systems Case Study">
-  <meta property="og:description" content="A first-person investigation built as one continuous flow between exploration, interaction and staged narrative.">
-  <meta property="og:url" content="https://kendarte.github.io/projects/euclid-wars/">
-  <meta property="og:image" content="https://kendarte.github.io/media/euclid/trailer-poster.jpg">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.svg">
-  <link rel="stylesheet" href="/styles.css">
-</head>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Euclid Wars — Kendall Angulo</title><meta name="description" content="Technical case study for a first-person narrative mystery built in Unity."><link rel="canonical" href="https://kendarte.github.io/projects/euclid-wars/"><meta property="og:type" content="article"><meta property="og:title" content="Euclid Wars — Unity Narrative Systems Case Study"><meta property="og:description" content="Solo Unity vertical-slice case study covering first-person exploration, interaction, dialogue and narrative state."><meta property="og:url" content="https://kendarte.github.io/projects/euclid-wars/"><meta property="og:image" content="https://kendarte.github.io/media/euclid/trailer-poster.jpg"><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"></head>
 <body>
-  <a class="skip-link" href="#project-content">Skip to project</a>
-  <header class="site-header">
-    <a class="brand" href="/" aria-label="Kendall Angulo, portfolio home"><span class="brand-mark" aria-hidden="true">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Unity gameplay &amp; systems</small></span></a>
-    <nav aria-label="Project navigation"><a href="/#work">All work</a><a href="/#services">Services</a><a href="/#process">Process</a><a href="/#about">About</a></nav>
-    <a class="header-cta" href="mailto:Kendarte@gmail.com?subject=Euclid%20Wars%20or%20Unity%20role%20inquiry">Discuss this work <span aria-hidden="true">↗</span></a>
-  </header>
-
-  <main id="project-content" class="detail-main">
-    <section class="detail-hero section-shell">
-      <a class="back-link" href="/#work">← Selected work</a>
-      <div class="detail-title-grid">
-        <div>
-          <p class="eyebrow"><span></span> First-person control · interaction · narrative state</p>
-          <h1>Euclid Wars</h1>
-          <p class="detail-summary">A playable mystery chapter connecting exploration, environmental feedback, dialogue choices, objective UI and staged sequences without losing player context.</p>
-          <div class="detail-actions">
-            <a class="button button-primary" href="https://github.com/kendarte/euclid-war-systems">Review companion package <span aria-hidden="true">↗</span></a>
-            <a class="button button-secondary" href="mailto:Kendarte@gmail.com?subject=Euclid%20Wars%20case%20study%20inquiry">Ask about this system <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
-        <dl class="detail-facts">
-          <div><dt>Role</dt><dd>Solo developer / technical generalist</dd></div>
-          <div><dt>Status</dt><dd>Playable vertical slice</dd></div>
-          <div><dt>Engine</dt><dd>Unity / C#</dd></div>
-          <div><dt>Platform</dt><dd>PC prototype</dd></div>
-          <div data-placeholder="euclid-development-time"><dt>Development</dt><dd>11 weeks, part-time</dd></div>
-          <div><dt>Code scope</dt><dd>Separate companion package</dd></div>
-        </dl>
-      </div>
-      <figure class="detail-cover">
-        <video controls playsinline preload="metadata" poster="/media/euclid/trailer-poster.jpg"><source src="/media/euclid/trailer.mp4" type="video/mp4"></video>
-        <figcaption><span>PROJECT / 03</span><span>Euclid Wars story trailer</span></figcaption>
-      </figure>
-      <dl class="detail-metrics">
-        <div data-placeholder="euclid-slice-duration"><dt>12 min</dt><dd>continuous playable chapter</dd></div>
-        <div><dt>3</dt><dd>focused working-build captures</dd></div>
-        <div data-placeholder="euclid-blockers-before"><dt>14</dt><dd>progression blockers reproduced</dd></div>
-        <div data-placeholder="euclid-blockers-after"><dt>2</dt><dd>remaining low-priority blockers</dd></div>
-      </dl>
-    </section>
-
-    <section class="case-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2>Keep story progression inside player control.</h2></div><p>The slice needed deliberate hand-offs between exploration and staged narrative so the player always knew what changed and what to do next.</p></div>
-      <div class="case-grid">
-        <article class="case-card"><span>Problem</span><h3>Separate features did not yet form one investigation.</h3><p>First-person movement, doors, discovered items, dialogue choices, objective messages and scene progression worked individually but lacked one shared flow.</p></article>
-        <article class="case-card"><span>Constraints</span><h3>Every state change had to remain readable.</h3><p>Staged sequences needed to take control safely, blocked routes needed useful feedback and each completed interaction needed to update the investigation without duplicate events.</p></article>
-        <article class="case-card"><span>Decision</span><h3>Model exploration and narrative as explicit phases.</h3><p>A shared investigation state coordinates player input, cursor ownership, dialogue, objectives and environmental gates. Each phase defines entry, exit and recovery behavior.</p></article>
-        <article class="case-card"><span>My contribution</span><h3>Vertical-slice implementation across disciplines.</h3><p>I assembled and programmed first-person control, interactions, dialogue presentation, objective feedback, scene progression and technical integration.</p></article>
-        <article class="case-card result-card"><span>Result &amp; code boundary</span><h3>A continuous playable case with honest published scope.</h3><p>The footage shows exploration, environmental response, selectable dialogue and objective progression. The linked repository is a separate classic-inventory and weapon companion package; it is not presented as the source powering the footage.</p></article>
-      </div>
-    </section>
-
-    <section class="evidence-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Working-build evidence</p><h2>Player-facing narrative state.</h2></div><p>The captures focus on movement, world feedback and dialogue rather than relying on the trailer alone.</p></div>
-      <div class="evidence-grid">
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/euclid/first-person-loop-poster.jpg"><source src="/media/euclid/first-person-loop.mp4" type="video/mp4"></video><div class="evidence-copy"><span>First-person loop</span><h3>Player-controlled exploration</h3><p>Camera-relative movement, navigation and environmental investigation remain responsive.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/euclid/environmental-interaction-poster.jpg"><source src="/media/euclid/environmental-interaction.mp4#t=17" type="video/mp4"></video><div class="evidence-copy"><span>World feedback</span><h3>Readable environment state</h3><p>Doors, discovered items and objective messages communicate available actions.</p></div></article>
-        <article class="evidence-card"><video controls playsinline preload="none" poster="/media/euclid/dialogue-choice-poster.jpg"><source src="/media/euclid/dialogue-choice.mp4" type="video/mp4"></video><div class="evidence-copy"><span>Narrative interaction</span><h3>Selectable dialogue</h3><p>Responses and staged character exchanges advance the investigation before returning control.</p></div></article>
-      </div>
-    </section>
-
-    <section class="bug-section section-shell">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Debugging evidence</p><h2>Continuity breaks on small mistakes.</h2></div><p>These examples turn a vague “narrative integration” claim into concrete engineering work.</p></div>
-      <div class="bug-grid">
-        <article class="bug-card" data-placeholder="euclid-bug-cursor"><span>BUG / INPUT</span><h3>The cursor stayed unlocked after dialogue.</h3><p>An interrupted conversation bypassed the normal exit path and returned camera control without restoring cursor ownership.</p><strong>Fix: moved input restoration into a shared phase-exit routine.</strong></article>
-        <article class="bug-card" data-placeholder="euclid-bug-objective"><span>BUG / OBJECTIVES</span><h3>One clue created duplicate objective updates.</h3><p>Both interaction completion and animation completion published the same investigation event.</p><strong>Fix: made progression events idempotent and keyed by clue ID.</strong></article>
-        <article class="bug-card" data-placeholder="euclid-bug-door"><span>BUG / WORLD STATE</span><h3>A solved door locked again after a staged scene.</h3><p>Scene presentation restored serialized defaults instead of the current investigation state.</p><strong>Fix: re-applied environmental state from the shared progression model.</strong></article>
-        <article class="bug-card" data-placeholder="euclid-bug-control"><span>BUG / HAND-OFF</span><h3>The player could move during the opening shot.</h3><p>Movement input was disabled one frame after the cinematic began, allowing a visible positional jump.</p><strong>Fix: acquired the control lock before starting camera and dialogue tracks.</strong></article>
-      </div>
-    </section>
-
-    <section class="decision-section section-shell architecture">
-      <div class="architecture-copy"><p class="eyebrow"><span></span> Investigation flow</p><h2>Every phase has an owner and an exit.</h2><p>Exploration, interaction and dialogue share progression state while controlling input, cursor, camera and feedback deliberately.</p></div>
-      <ol class="architecture-list">
-        <li><strong>Brief</strong><span>Set the current case, objective and initial environmental state.</span></li>
-        <li><strong>Explore</strong><span>Grant first-person movement, camera and interaction authority.</span></li>
-        <li><strong>Investigate</strong><span>Resolve objects through stable IDs and publish readable feedback.</span></li>
-        <li><strong>Choose</strong><span>Transfer input to dialogue and stage the character exchange.</span></li>
-        <li><strong>Advance</strong><span>Commit progression, update gates and restore first-person control.</span></li>
-      </ol>
-    </section>
-
-    <section class="next-project section-shell"><span>Next case study</span><a href="/projects/taek-won-cop/"><strong>Taek-Won-Cop</strong><span aria-hidden="true">↗</span></a></section>
-  </main>
-  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
-</body>
-</html>
+<a class="skip-link" href="#project-content">Skip to project</a><header class="site-header detail-header"><a class="brand" href="/"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span></a><nav><a href="/#work">All work</a><a href="/#about">About</a></nav><a class="header-cta" href="mailto:Kendarte@gmail.com">Start a conversation</a></header>
+<main id="project-content" class="project-detail">
+  <section class="detail-hero section-shell"><a class="back-link" href="/#work">← Selected work</a><div class="detail-title-grid"><div><p class="eyebrow"><span></span> First-person narrative mystery</p><h1>Euclid Wars</h1><p class="detail-summary">A playable first-person mystery chapter connecting exploration, environmental feedback, dialogue choices, objective UI and narrative progression.</p><div class="static-project-actions"><a class="button button-primary" href="https://github.com/kendarte/euclid-war-systems">View companion package <span>↗</span></a></div></div><dl class="detail-facts"><div><dt>Role</dt><dd>Solo developer / technical generalist</dd></div><div><dt>Status</dt><dd>Playable vertical slice</dd></div><div><dt>Engine</dt><dd>Unity / C#</dd></div><div><dt>Platform</dt><dd>PC prototype</dd></div></dl></div><figure class="detail-cover"><video controls playsinline preload="metadata" poster="/media/euclid/trailer-poster.jpg"><source src="/media/euclid/trailer.mp4" type="video/mp4"></video><figcaption><span>PROJECT / 03</span><span>Euclid Wars story trailer</span></figcaption></figure></section>
+  <section class="video-evidence-section section-shell"><div class="section-heading"><div><p class="eyebrow"><span></span> Working build</p><h2>Systems on screen.</h2></div><p>Exploration, interaction and player-facing narrative feedback.</p></div><div class="video-evidence-grid">
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/euclid/first-person-loop-poster.jpg"><source src="/media/euclid/first-person-loop.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>First-person loop</span><h3>Player-controlled exploration</h3><p>Camera-relative movement, navigation and environmental investigation.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/euclid/environmental-interaction-poster.jpg"><source src="/media/euclid/environmental-interaction.mp4#t=17" type="video/mp4"></video><div class="evidence-video-copy"><span>Environmental feedback</span><h3>Readable world state</h3><p>Doors, discovered items and objective messages communicate available actions.</p></div></article>
+    <article class="evidence-video"><video controls playsinline preload="metadata" poster="/media/euclid/dialogue-choice-poster.jpg"><source src="/media/euclid/dialogue-choice.mp4" type="video/mp4"></video><div class="evidence-video-copy"><span>Dialogue choices</span><h3>Narrative interaction</h3><p>Selectable responses and staged character exchanges advance the investigation.</p></div></article>
+  </div></section>
+  <section class="case-study-section section-shell" aria-labelledby="euclid-case-title">
+    <div class="section-heading"><div><p class="eyebrow"><span></span> Case study</p><h2 id="euclid-case-title">Keep story progression inside player control.</h2></div><p>An independently developed vertical slice connecting exploration, environmental response, dialogue and objective state.</p></div>
+    <div class="case-study-grid">
+      <article class="case-study-card"><span>Problem</span><h3>Separate features needed one playable flow.</h3><p>First-person movement, interactions, dialogue choices, objective messages and scene progression had to feel like one investigation rather than disconnected prototype scenes.</p></article>
+      <article class="case-study-card"><span>Constraints</span><h3>Every state change had to remain readable.</h3><p>The slice needed to return control cleanly after staged sequences and explain doors, discovered items, blocked paths and new objectives without breaking immersion.</p></article>
+      <article class="case-study-card"><span>Decision</span><h3>Connect phases through explicit feedback.</h3><p>Exploration, interaction and dialogue advance a shared investigation flow. Camera control, player control and objective presentation hand off deliberately between playable and staged moments.</p></article>
+      <article class="case-study-card"><span>Contribution</span><h3>Solo vertical-slice development.</h3><p>I assembled and programmed the playable flow, first-person control, interactions, dialogue presentation, objective feedback, scene progression and technical integration.</p></article>
+      <article class="case-study-card case-study-card--result"><span>Verified result</span><h3>The vertical slice works as one continuous case.</h3><p>The trailer and focused captures show player-controlled exploration, readable environmental changes, selectable dialogue and objective-driven progression running in Unity.</p></article>
+      <article class="case-study-card case-study-card--scope"><span>Published code scope</span><h3>A separate companion package.</h3><p>The linked GitHub repository documents a modular classic inventory and first-person weapon implementation created alongside the project's technical direction. It is a separate code sample and is not presented as the source powering the footage above.</p></article>
+    </div>
+  </section>
+  <section class="systems-section section-shell"><div class="section-heading"><div><p class="eyebrow"><span></span> Responsibility</p><h2>What I built.</h2></div><p>Systems supporting one continuous investigation flow.</p></div><div class="system-cards"><article><span>01</span><h3>First-person controller</h3><p>CharacterController movement, running, jumping, gravity, mouse look and cursor ownership.</p></article><article><span>02</span><h3>Dialogue presentation</h3><p>Character exchanges, subtitles and selectable responses inside the playable chapter.</p></article><article><span>03</span><h3>Environmental feedback</h3><p>Doors, items, blocked routes and objectives explain what changed.</p></article><article><span>04</span><h3>Narrative continuity</h3><p>Staged scenes and exploration remain connected phases of the same case.</p></article></div></section>
+  <section class="flow-section section-shell"><div class="flow-heading"><p class="eyebrow"><span></span> System flow</p><h2>How the investigation moves.</h2></div><ol class="flow-list"><li><span>01</span><strong>Brief</strong><p>Introduce the case and current objective.</p></li><li><span>02</span><strong>Explore</strong><p>Return first-person control.</p></li><li><span>03</span><strong>Investigate</strong><p>Use objects and feedback to reveal paths.</p></li><li><span>04</span><strong>Choose</strong><p>Question characters through dialogue.</p></li><li><span>05</span><strong>Advance</strong><p>Update objectives and locations.</p></li></ol></section>
+  <section class="next-project section-shell"><span>Next case study</span><a href="/projects/taek-won-cop/"><strong>Taek-Won-Cop</strong><span>↗</span></a></section>
+</main><footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="/">Portfolio home ↑</a></footer>
+</body></html>
