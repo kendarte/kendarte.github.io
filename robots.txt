@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kendarte.github.io/sitemap.xml
