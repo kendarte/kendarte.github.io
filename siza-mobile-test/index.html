@@ -1,1 +1,36 @@
-__CONTENT_FROM_FILE__
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Siza Web v0.5.4</title>
+<style>
+html,body{margin:0;min-height:100%;background:#07111b;color:#f3ead5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}#loading{padding:24px;text-align:center}#loading strong{display:block;margin-bottom:8px;color:#e6c878}
+</style>
+</head>
+<body>
+<div id="loading"><strong>Siza Web v0.5.4</strong>Cargando prototipo completo…</div>
+<script>
+(async()=>{
+  try{
+    const parts=await Promise.all([1,2,3,4,5,6].map(async n=>{
+      const r=await fetch(`chunk${n}.txt?v=054`);
+      if(!r.ok) throw new Error(`chunk${n}: ${r.status}`);
+      return r.text();
+    }));
+    const binary=atob(parts.join('').replace(/\s/g,''));
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    if(typeof DecompressionStream==='undefined') throw new Error('Este navegador no soporta la descompresión requerida. Actualice Chrome.');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const html=await new Response(stream).text();
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(e){
+    document.getElementById('loading').innerHTML='<strong>No se pudo cargar Siza Web</strong>'+String(e.message||e);
+  }
+})();
+</script>
+</body>
+</html>
