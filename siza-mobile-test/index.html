@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Siza Web v0.5.9</title>
+<title>Siza Web v0.5.10</title>
 <style>html,body{margin:0;min-height:100%;background:#07111b;color:#f3ead5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}#loading{padding:24px;text-align:center}#loading strong{display:block;margin-bottom:8px;color:#e6c878}</style>
 </head>
 <body>
-<div id="loading"><strong>Siza Web v0.5.9</strong>Cargando prototipo completo…</div>
+<div id="loading"><strong>Siza Web v0.5.10</strong>Cargando prototipo completo…</div>
 <script>
 (async()=>{
 try{
-const files=['chunk1.txt','chunk2.txt','v059p03.txt','v059p04.txt','v059p05.txt','v059p06.txt','v059p07.txt','v059p08.txt','v059p09.txt','v059p10.txt','v059p11.txt','v059p12.txt'];
-const parts=await Promise.all(files.map(async f=>{const r=await fetch(f+'?v=059b');if(!r.ok)throw new Error(f+': '+r.status);return r.text()}));
-const pr=await fetch('nereida_portrait.b64?v=059b');if(!pr.ok)throw new Error('portrait: '+pr.status);const portraitText=await pr.text();
+const files=['v0510p01.txt','v0510p02.txt','v0510p03.txt','v0510p04.txt','v0510p05.txt','v0510p06.txt'];
+const parts=await Promise.all(files.map(async f=>{const r=await fetch(f+'?v=0510');if(!r.ok)throw new Error(f+': '+r.status);return r.text()}));
+const pr=await fetch('nereida_portrait.b64?v=0510');if(!pr.ok)throw new Error('portrait: '+pr.status);const portraitText=await pr.text();
 const binary=atob(parts.join('').replace(/\s/g,''));const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
 if(typeof DecompressionStream==='undefined')throw new Error('Este navegador no soporta la descompresión requerida.');
 const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));let html=await new Response(stream).text();
