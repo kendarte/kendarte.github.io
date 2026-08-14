@@ -3,101 +3,118 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Siza Web v0.5.7</title>
+<title>Siza Web v0.5.8</title>
 <style>
 html,body{margin:0;min-height:100%;background:#07111b;color:#f3ead5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}#loading{padding:24px;text-align:center}#loading strong{display:block;margin-bottom:8px;color:#e6c878}
 </style>
 </head>
 <body>
-<div id="loading"><strong>Siza Web v0.5.7</strong>Cargando prototipo completo…</div>
+<div id="loading"><strong>Siza Web v0.5.8</strong>Cargando prototipo completo…</div>
 <script>
 (async()=>{
   try{
     const parts=await Promise.all([1,2,3,4,5,6].map(async n=>{
-      const r=await fetch(`chunk${n}.txt?v=057`);
+      const r=await fetch(`chunk${n}.txt?v=058`);
       if(!r.ok) throw new Error(`chunk${n}: ${r.status}`);
       return r.text();
     }));
-    const portraitText=await fetch('nereida_portrait.b64?v=057').then(r=>{if(!r.ok) throw new Error(`portrait: ${r.status}`);return r.text()});
+    const portraitText=await fetch('nereida_portrait.b64?v=058').then(r=>{if(!r.ok) throw new Error(`portrait: ${r.status}`);return r.text()});
     const binary=atob(parts.join('').replace(/\s/g,''));
     const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
     if(typeof DecompressionStream==='undefined') throw new Error('Este navegador no soporta la descompresión requerida. Actualice Chrome.');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     let html=await new Response(stream).text();
-
-    const runtimePatch=`(()=>{
-const PORTRAIT='data:image/jpeg;base64,__PORTRAIT__';
-const style=document.createElement('style');
-style.textContent=\`
-.matchShell.v05 .arenaMag img.matchPortraitV55{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important;object-position:50% 38%!important;transform:none!important;display:block!important;visibility:visible!important;opacity:1!important;filter:saturate(1.03) contrast(1.03)!important}
-.damageHitV55{animation:damageHitV55 .42s ease-out}
-@keyframes damageHitV55{0%{box-shadow:inset 0 0 0 0 rgba(255,76,86,0)}25%{box-shadow:inset 0 0 34px 8px rgba(255,76,86,.58)}100%{box-shadow:inset 0 0 0 0 rgba(255,76,86,0)}}
-.damageFloatV55{position:absolute;z-index:70;left:50%;top:28%;transform:translate(-50%,-50%);font:900 28px/1 Georgia,serif;color:#ff686f;text-shadow:0 3px 0 #381014,0 0 14px rgba(255,80,90,.8);pointer-events:none;animation:damageFloatV55 .78s ease-out forwards}
-@keyframes damageFloatV55{0%{opacity:0;transform:translate(-50%,-15%) scale(.65)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.22)}65%{opacity:1;transform:translate(-50%,-95%) scale(1)}100%{opacity:0;transform:translate(-50%,-140%) scale(.88)}}
-.physicalUsedV55{opacity:.42!important;filter:grayscale(.5)!important;pointer-events:none!important}
-@media(max-width:760px){.matchShell.v05 .arenaMag img.matchPortraitV55{object-position:50% 29%!important}.damageFloatV55{font-size:24px}}
-@media(max-width:960px){.matchShell.v05 .arenaField{overflow:visible!important}.matchShell.v05 .arenaHalf.playerHalf{z-index:6}.matchShell.v05 .arenaMiniCard.playerCard.selected{z-index:25!important;transform:translateY(-8px) scale(1.04)!important}.matchShell.v05 .creatureActionsV5{z-index:80!important;left:50%!important;top:-48px!important;bottom:auto!important;transform:translateX(-50%)!important;display:flex!important;gap:6px!important;padding:5px!important;border:1px solid #8e713f!important;border-radius:10px!important;background:rgba(5,15,24,.97)!important;box-shadow:0 10px 24px rgba(0,0,0,.52)!important;pointer-events:auto!important;touch-action:manipulation!important}.matchShell.v05 .creatureActionsV5 .btn{min-width:68px!important;padding:9px 10px!important;font-size:10px!important;pointer-events:auto!important;touch-action:manipulation!important}.matchShell.v05 .creatureActionsV5 .btn.secondary{border-color:#e1bf76!important;background:linear-gradient(180deg,#d8b566,#a98243)!important;color:#0d141a!important;font-weight:900!important}}
-@media(max-width:760px) and (orientation:portrait){.matchShell.v05 .creatureActionsV5{top:-51px!important}.matchShell.v05 .creatureActionsV5 .btn{min-width:72px!important;padding:10px 11px!important;font-size:10px!important}}
-\`;
-document.head.appendChild(style);
-let physicalUsed=false,lastTurn=null,lastEnemyLife=null,lastPlayerLife=null,wrapped=false,refreshQueued=false;
-function num(txt){const m=String(txt||'').match(/-?\\d+/);return m?Number(m[0]):null}
-function damage(target,amount){if(!(amount>0))return;const mag=document.querySelector(target==='enemy'?'.enemyHalf .arenaMag':'.playerHalf .arenaMag');if(!mag)return;mag.classList.remove('damageHitV55');void mag.offsetWidth;mag.classList.add('damageHitV55');const el=document.createElement('div');el.className='damageFloatV55';el.textContent='-'+amount;mag.appendChild(el);setTimeout(()=>el.remove(),820)}
-function refresh(){refreshQueued=false;const chip=document.querySelector('.topMatchChip');const mt=chip?.textContent?.match(/Turn\\s+(\\d+)/i);if(mt){const t=Number(mt[1]);if(lastTurn===null)lastTurn=t;else if(t!==lastTurn){lastTurn=t;physicalUsed=false}}
- const imgs=[document.querySelector('.playerHalf .arenaMag img'),document.querySelector('.matchHeader .fighter:last-child .fighterAvatar img')].filter(Boolean);imgs.forEach(pimg=>{if(pimg.src!==PORTRAIT)pimg.src=PORTRAIT;pimg.classList.add('matchPortraitV55')});
- const btn=document.querySelector('.physicalActionV5');if(btn){btn.classList.toggle('physicalUsedV55',physicalUsed);if(physicalUsed){btn.disabled=true;btn.textContent='Ataque físico usado'}}
- const eLife=num(document.querySelector('.enemyHalf .arenaLifeV5')?.textContent),pLife=num(document.querySelector('.playerHalf .arenaLifeV5')?.textContent);
- if(eLife!==null){if(lastEnemyLife!==null&&eLife<lastEnemyLife)damage('enemy',lastEnemyLife-eLife);lastEnemyLife=eLife}
- if(pLife!==null){if(lastPlayerLife!==null&&pLife<lastPlayerLife)damage('player',lastPlayerLife-pLife);lastPlayerLife=pLife}
- if(!wrapped&&window.SIZA?.physicalAttack){wrapped=true;const orig=window.SIZA.physicalAttack.bind(window.SIZA);window.SIZA.physicalAttack=function(...args){if(physicalUsed){const b=document.querySelector('.physicalActionV5');if(b){b.classList.add('physicalUsedV55');b.disabled=true;b.textContent='Ataque físico usado'}return}physicalUsed=true;const r=orig(...args);setTimeout(refresh,0);return r}}
-}
-const obs=new MutationObserver(()=>{if(!refreshQueued){refreshQueued=true;requestAnimationFrame(refresh)}});obs.observe(document.documentElement,{subtree:true,childList:true,characterData:true});refresh();
-})();`.replace('__PORTRAIT__',portraitText.trim());
-
-    const artPatch=`(()=>{
+    const patch=`(()=>{
+const PORTRAIT='data:image/jpeg;base64,${portraitText.trim()}';
 const ART={
-  mist:'cards/mist.webp?v=057',
-  spark:'cards/spark.webp?v=057',
-  servitor:'cards/servitor.webp?v=057',
-  ignimite:'cards/ignimite.webp?v=057',
-  counter:'cards/counter.webp?v=057',
-  smuggler:'cards/smuggler.webp?v=057'
+  mist:'cards/mist.webp?v=058',
+  spark:'cards/spark.webp?v=058',
+  servitor:'cards/servitor.webp?v=058',
+  ignimite:'cards/ignimite.webp?v=058',
+  counter:'cards/counter.webp?v=058',
+  smuggler:'cards/smuggler.webp?v=058'
 };
-for(const c of CARD_DB){if(ART[c.id])c.image=ART[c.id]}
+const NAME_TO_ID={
+  'niebla de sal':'mist',
+  'chispa del estuario':'spark',
+  'servidor ahogado':'servitor',
+  'ignimite':'ignimite',
+  'negacion pictomantica':'counter',
+  'contrabandista carmesi':'smuggler'
+};
 const style=document.createElement('style');
 style.textContent=\`
-.sizaCard.finalArtCardV57{min-height:0!important;height:auto!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:0 12px 28px rgba(0,0,0,.38)!important;overflow:visible!important;display:block!important}
-.finalCardImgV57{display:block;width:100%;height:auto;aspect-ratio:977/1610;object-fit:contain;border-radius:13px;background:#07111b}
-.sizaCard.finalArtCardV57 .cardRisk{top:6px;left:6px;border-radius:6px;background:rgba(4,12,20,.86)}
-.handCardV5 .finalArtCardV57{height:168px!important;display:flex!important;justify-content:center!important;box-shadow:0 9px 18px rgba(0,0,0,.4)!important}
-.handCardV5 .finalCardImgV57{width:auto!important;max-width:100%!important;height:100%!important;aspect-ratio:auto!important;object-fit:contain!important;border-radius:9px}
-.cardFocusV5{max-height:none!important}
-.cardFocusV5 .finalArtCardV57{min-height:0!important;height:auto!important;width:100%!important;box-shadow:0 20px 48px rgba(0,0,0,.65)!important}
-.cardFocusV5 .finalCardImgV57{width:100%!important;height:auto!important;border-radius:15px!important}
-.arenaMiniCard.finalArtMiniV57{padding:2px!important;background:#07111b!important;overflow:visible!important}
-.arenaMiniCard.finalArtMiniV57 .finalMiniImgV57{width:100%;height:100%;object-fit:contain;display:block;border-radius:7px}
-@media(max-width:960px){.handCardV5 .finalArtCardV57{height:138px!important}.cardFocusV5{width:250px!important;bottom:138px!important}.cardFocusV5 .finalArtCardV57{height:auto!important}.arenaMiniCard.finalArtMiniV57{width:78px!important;height:111px!important}}
-@media(max-width:760px) and (orientation:portrait){.handCardV5 .finalArtCardV57{height:135px!important}.cardFocusV5{width:min(270px,72vw)!important;bottom:145px!important}.arenaMiniCard.finalArtMiniV57{width:67px!important;height:100px!important}}
+.matchShell.v05 .arenaMag img.matchPortraitV58{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important;object-position:50% 38%!important;transform:none!important;display:block!important;visibility:visible!important;opacity:1!important;filter:saturate(1.03) contrast(1.03)!important}
+.damageHitV58{animation:damageHitV58 .42s ease-out}
+@keyframes damageHitV58{0%{box-shadow:inset 0 0 0 0 rgba(255,76,86,0)}25%{box-shadow:inset 0 0 34px 8px rgba(255,76,86,.58)}100%{box-shadow:inset 0 0 0 0 rgba(255,76,86,0)}}
+.damageFloatV58{position:absolute;z-index:90;left:50%;top:28%;transform:translate(-50%,-50%);font:900 28px/1 Georgia,serif;color:#ff686f;text-shadow:0 3px 0 #381014,0 0 14px rgba(255,80,90,.8);pointer-events:none;animation:damageFloatV58 .78s ease-out forwards}
+@keyframes damageFloatV58{0%{opacity:0;transform:translate(-50%,-15%) scale(.65)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.22)}65%{opacity:1;transform:translate(-50%,-95%) scale(1)}100%{opacity:0;transform:translate(-50%,-140%) scale(.88)}}
+.physicalUsedV58{opacity:.42!important;filter:grayscale(.5)!important;pointer-events:none!important}
+.finalCardShellV58{padding:0!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;overflow:visible!important}
+.finalCardImgV58{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;border-radius:inherit!important;pointer-events:none!important}
+.handCardV5 .sizaCard.finalCardShellV58{height:100%!important;min-height:0!important;border:0!important;background:transparent!important}
+.handCardV5 .finalCardImgV58{filter:drop-shadow(0 8px 10px rgba(0,0,0,.42))}
+.arenaMiniCard.finalCardShellV58{padding:0!important;border:0!important;background:transparent!important;overflow:visible!important}
+.arenaMiniCard.finalCardShellV58>.finalCardImgV58{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important}
+.arenaMiniCard.finalCardShellV58 .creatureActionsV5{z-index:95!important}
+.cardFocusV5.finalFocusV58{width:min(78vw,340px)!important;max-height:none!important}
+.cardFocusV5 .sizaCard.finalCardShellV58{height:auto!important;min-height:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+.cardFocusV5 .finalCardImgV58{width:100%!important;height:auto!important;max-height:72vh!important;object-fit:contain!important;filter:drop-shadow(0 18px 30px rgba(0,0,0,.68))}
+.cardFocusV5.finalFocusV58 .cardFocusActions{margin-top:8px!important}
+@media(max-width:960px){.matchShell.v05 .arenaField{overflow:visible!important}.matchShell.v05 .arenaHalf.playerHalf{z-index:6}.matchShell.v05 .arenaMiniCard.playerCard.selected{z-index:25!important;transform:translateY(-8px) scale(1.04)!important}.matchShell.v05 .creatureActionsV5{z-index:100!important;left:50%!important;top:-48px!important;bottom:auto!important;transform:translateX(-50%)!important;display:flex!important;gap:6px!important;padding:5px!important;border:1px solid #8e713f!important;border-radius:10px!important;background:rgba(5,15,24,.97)!important;box-shadow:0 10px 24px rgba(0,0,0,.52)!important;pointer-events:auto!important;touch-action:manipulation!important}.matchShell.v05 .creatureActionsV5 .btn{min-width:68px!important;padding:9px 10px!important;font-size:10px!important;pointer-events:auto!important;touch-action:manipulation!important}.matchShell.v05 .creatureActionsV5 .btn.secondary{border-color:#e1bf76!important;background:linear-gradient(180deg,#d8b566,#a98243)!important;color:#0d141a!important;font-weight:900!important}}
+@media(max-width:760px){.matchShell.v05 .arenaMag img.matchPortraitV58{object-position:50% 29%!important}.damageFloatV58{font-size:24px}.cardFocusV5.finalFocusV58{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:min(76vw,300px)!important}}
+@media(max-width:760px) and (orientation:portrait){.matchShell.v05 .creatureActionsV5{top:-51px!important}.matchShell.v05 .creatureActionsV5 .btn{min-width:72px!important;padding:10px 11px!important;font-size:10px!important}.cardFocusV5.finalFocusV58{bottom:155px!important;width:min(74vw,285px)!important}}
 \`;
 document.head.appendChild(style);
-const oldCardHtml=cardHtml;
-cardHtml=function(c,opts={}){
-  const art=ART[c?.id];
-  if(!art)return oldCardHtml(c,opts);
-  const ai=affinityInfo(c),risk=ai.unsupported.length?'SIN AFINIDAD':(ai.penalty?('+'+ai.penalty+' DC'):('MF '+naturalChance(c)+'%'));
-  return '<article class="sizaCard finalArtCardV57 '+(c.art||'')+'"><div class="cardRisk">'+risk+'</div><img class="finalCardImgV57" src="'+art+'" alt="'+esc(c.name)+'" loading="eager">'+(opts.actions?'<div class="cardFooterActions">'+opts.actions+'</div>':'')+(opts.locked?'<div class="lockedOverlay"><div><b>Memoria no manifestada</b>Completa el Final Event del Muelle Viejo.</div></div>':'')+'</article>';
-};
-matchCardMini=function(id,owner,idx){
-  const c=cardById(id),art=ART[id],isPlayer=owner==='player',sel=isPlayer&&state.match?.ui?.creature===idx;
-  if(!art){return '<div class="arenaMiniCard '+(c.type==='Creature'?'creature ':'')+(isPlayer?'playerCard ':'')+(sel?'selected':'')+'" '+(isPlayer&&c.type==='Creature'?'onclick="SIZA.selectCreature('+idx+')"':'')+'><div class="mArt">'+(c.glyph||'✦')+'</div><div class="mName">'+esc(c.name)+'</div><div class="mText">'+esc(c.type)+'</div>'+(c.power!=null?'<div class="mPt">'+c.power+'/'+c.toughness+'</div>':'')+(sel?'<div class="creatureActionsV5"><button class="btn secondary" onclick="event.stopPropagation();SIZA.attackCreature('+idx+')">Atacar</button><button class="btn ghost" onclick="event.stopPropagation();SIZA.selectCreature(-1)">Cerrar</button></div>':'')+'</div>'}
-  return '<div class="arenaMiniCard finalArtMiniV57 '+(c.type==='Creature'?'creature ':'')+(isPlayer?'playerCard ':'')+(sel?'selected':'')+'" '+(isPlayer&&c.type==='Creature'?'onclick="SIZA.selectCreature('+idx+')"':'')+'><img class="finalMiniImgV57" src="'+art+'" alt="'+esc(c.name)+'">'+(sel?'<div class="creatureActionsV5"><button class="btn secondary" onclick="event.stopPropagation();SIZA.attackCreature('+idx+')">Atacar</button><button class="btn ghost" onclick="event.stopPropagation();SIZA.selectCreature(-1)">Cerrar</button></div>':'')+'</div>';
-};
-try{render()}catch(e){console.error('Siza art patch',e)}
+function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim()}
+function idFrom(root){
+  const el=root.querySelector('.cardName,.mName');
+  if(!el)return null;
+  const n=norm(el.textContent);
+  if(NAME_TO_ID[n])return NAME_TO_ID[n];
+  for(const [name,id] of Object.entries(NAME_TO_ID)) if(n.includes(name)) return id;
+  return null;
+}
+function makeImg(id){const img=document.createElement('img');img.className='finalCardImgV58';img.src=ART[id];img.alt='';img.draggable=false;return img}
+function decorateCards(){
+  document.querySelectorAll('.handCardV5').forEach(slot=>{
+    if(slot.dataset.finalArtV58)return;
+    const id=idFrom(slot); if(!id||!ART[id])return;
+    const shell=slot.querySelector('.sizaCard'); if(!shell)return;
+    shell.querySelectorAll(':scope > *').forEach(x=>x.style.display='none');
+    shell.prepend(makeImg(id)); shell.classList.add('finalCardShellV58'); slot.dataset.finalArtV58=id;
+  });
+  document.querySelectorAll('.arenaMiniCard').forEach(shell=>{
+    if(shell.dataset.finalArtV58)return;
+    const id=idFrom(shell); if(!id||!ART[id])return;
+    [...shell.children].forEach(x=>{if(!x.classList.contains('creatureActionsV5'))x.style.display='none'});
+    shell.prepend(makeImg(id)); shell.classList.add('finalCardShellV58'); shell.dataset.finalArtV58=id;
+  });
+  document.querySelectorAll('.cardFocusV5').forEach(focus=>{
+    const shell=focus.querySelector('.sizaCard'); if(!shell||shell.dataset.finalArtV58)return;
+    const id=idFrom(shell); if(!id||!ART[id])return;
+    shell.querySelectorAll(':scope > *').forEach(x=>x.style.display='none');
+    shell.prepend(makeImg(id)); shell.classList.add('finalCardShellV58'); shell.dataset.finalArtV58=id; focus.classList.add('finalFocusV58');
+  });
+}
+let physicalUsed=false,lastTurn=null,lastEnemyLife=null,lastPlayerLife=null,wrapped=false,queued=false;
+function num(txt){const m=String(txt||'').match(/-?\d+/);return m?Number(m[0]):null}
+function damage(target,amount){if(!(amount>0))return;const mag=document.querySelector(target==='enemy'?'.enemyHalf .arenaMag':'.playerHalf .arenaMag');if(!mag)return;mag.classList.remove('damageHitV58');void mag.offsetWidth;mag.classList.add('damageHitV58');const el=document.createElement('div');el.className='damageFloatV58';el.textContent='-'+amount;mag.appendChild(el);setTimeout(()=>el.remove(),820)}
+function refresh(){queued=false;
+  const chip=document.querySelector('.topMatchChip');const mt=chip?.textContent?.match(/Turn\s+(\d+)/i);if(mt){const t=Number(mt[1]);if(lastTurn===null)lastTurn=t;else if(t!==lastTurn){lastTurn=t;physicalUsed=false}}
+  const imgs=[document.querySelector('.playerHalf .arenaMag img'),document.querySelector('.matchHeader .fighter:last-child .fighterAvatar img')].filter(Boolean);imgs.forEach(p=>{if(p.src!==PORTRAIT)p.src=PORTRAIT;p.classList.add('matchPortraitV58')});
+  const btn=document.querySelector('.physicalActionV5');if(btn){btn.classList.toggle('physicalUsedV58',physicalUsed);if(physicalUsed){btn.disabled=true;btn.textContent='Ataque físico usado'}}
+  const eLife=num(document.querySelector('.enemyHalf .arenaLifeV5')?.textContent),pLife=num(document.querySelector('.playerHalf .arenaLifeV5')?.textContent);
+  if(eLife!==null){if(lastEnemyLife!==null&&eLife<lastEnemyLife)damage('enemy',lastEnemyLife-eLife);lastEnemyLife=eLife}
+  if(pLife!==null){if(lastPlayerLife!==null&&pLife<lastPlayerLife)damage('player',lastPlayerLife-pLife);lastPlayerLife=pLife}
+  if(!wrapped&&window.SIZA?.physicalAttack){wrapped=true;const orig=window.SIZA.physicalAttack.bind(window.SIZA);window.SIZA.physicalAttack=function(...args){if(physicalUsed)return;physicalUsed=true;const r=orig(...args);setTimeout(refresh,0);return r}}
+  decorateCards();
+}
+const obs=new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(refresh)}});obs.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+refresh();
 })();`;
-
-    const injected='<script>'+runtimePatch.replace(/<\/script/gi,'<\\/script')+'<\/script><script>'+artPatch.replace(/<\/script/gi,'<\\/script')+'<\/script>';
-    html=html.replace('</body>',injected+'</body>');
+    html=html.replace('</body>','<script>'+patch.replace(/<\/script/gi,'<\\/script')+'<\/script></body>');
     document.open();
     document.write(html);
     document.close();
