@@ -50,7 +50,9 @@ jobs:
               m = data_re.search(text)
               if not m:
                   raise RuntimeError(f'No embedded WebP in {src}')
-              raw = base64.b64decode(m.group(1))
+              payload = ''.join(m.group(1).split())
+              payload += '=' * (-len(payload) % 4)
+              raw = base64.b64decode(payload)
               im = Image.open(io.BytesIO(raw)).convert('RGB')
               im.save(out/f'{name}.webp', 'WEBP', quality=92, method=6)
               print(name, im.size, (out/f'{name}.webp').stat().st_size)
