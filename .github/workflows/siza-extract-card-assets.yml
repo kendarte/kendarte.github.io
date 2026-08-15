@@ -15,59 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python -m pip install pillow
-      - name: Extract standalone card WebPs
+      - name: Install clean standalone card assets
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          import base64, io, re
-
-          root = Path('siza-mobile-test')
-          out = root / 'cards-v0514'
-          out.mkdir(parents=True, exist_ok=True)
-
-          # Niebla is not in the atlas. Its old SVG contains one valid embedded WebP.
-          text = (root/'cards-full/mist.svg').read_text(encoding='utf-8')
-          m = re.search(r'data:image/webp;base64,([^\"\']+)', text)
-          if not m:
-              raise RuntimeError('No embedded Niebla image')
-          payload = ''.join(m.group(1).split())
-          payload += '=' * (-len(payload) % 4)
-          im = Image.open(io.BytesIO(base64.b64decode(payload))).convert('RGB')
-          im.save(out/'niebla_de_sal.webp', 'WEBP', quality=92, method=6)
-          print('niebla_de_sal', im.size, (out/'niebla_de_sal.webp').stat().st_size)
-
-          # These wrappers define the exact vertical crop for the accepted card sheet.
-          names = [
-              'chispa_del_estuario','contrabandista_carmesi','erial_de_ceniza',
-              'espada_de_bajamar','ignimite','leviatan_de_la_campana',
-              'muelle_sumergido','negacion_pictomantica','prisma_de_enfoque',
-              'servidor_ahogado','vigia_de_la_marea'
-          ]
-          atlas = Image.open(root/'cards-v2/card_atlas.webp').convert('RGB')
-          print('atlas', atlas.size)
-          for name in names:
-              svg = (root/'cards-v2'/f'{name}.svg').read_text(encoding='utf-8')
-              h = int(re.search(r'height="(\d+)"', svg).group(1))
-              y = int(re.search(r'<image[^>]+ y="(-?\d+)"', svg).group(1))
-              top = -y
-              if top < 0 or top+h > atlas.height:
-                  raise RuntimeError(f'Invalid crop for {name}: {top}..{top+h} / {atlas.height}')
-              crop = atlas.crop((0, top, 600, top+h))
-              crop.save(out/f'{name}.webp', 'WEBP', quality=92, method=6)
-              print(name, crop.size, (out/f'{name}.webp').stat().st_size)
-
-          expected = ['niebla_de_sal'] + names
-          missing = [n for n in expected if not (out/f'{n}.webp').exists()]
-          if missing:
-              raise RuntimeError('Missing assets: '+', '.join(missing))
-          PY
-      - name: Commit generated WebP assets
+          rm -rf siza-mobile-test/cards-v0514
+          mkdir -p siza-mobile-test/cards-v0514
+          unzip -o siza-mobile-test/siza_cards_q78.zip -d siza-mobile-test/cards-v0514
+          test "$(find siza-mobile-test/cards-v0514 -maxdepth 1 -name '*.webp' | wc -l)" -eq 12
+          find siza-mobile-test/cards-v0514 -maxdepth 1 -name '*.webp' -printf '%f %s bytes\n' | sort
+      - name: Commit clean card assets
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
@@ -76,6 +32,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No asset changes'
           else
-            git commit -m 'Generate standalone Siza v0.5.14 card assets'
+            git commit -m 'Install clean standalone Siza v0.5.14 card assets'
             git push
           fi
