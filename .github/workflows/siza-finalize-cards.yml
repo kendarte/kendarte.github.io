@@ -1,4 +1,4 @@
-name: Finalize official Siza cards
+name: Apply exact Siza card images
 
 on:
   push:
@@ -11,32 +11,32 @@ permissions:
   contents: write
 
 jobs:
-  finalize:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build official card set
+      - name: Install exact cards and patch existing renderers
         shell: bash
         run: |
-          python -m pip install --quiet pillow
           python <<'PY'
           from pathlib import Path
-          from PIL import Image
-          import base64, io, re, shutil, unicodedata, zipfile
+          import base64, gzip, io, json, re, shutil, unicodedata, zipfile
 
           root = Path('siza-mobile-test')
+          version = '0517'
+          label = '0.5.17'
+
           qfiles = [root / f'q{i:02}.txt' for i in range(9)]
           missing = [str(p) for p in qfiles if not p.exists()]
           if missing:
-              raise SystemExit('Missing staged card chunks: ' + ', '.join(missing))
+              raise SystemExit('Missing staged image pack: ' + ', '.join(missing))
 
           encoded = ''.join(p.read_text(encoding='utf-8') for p in qfiles)
-          encoded = re.sub(r'\s+', '', encoded)
-          payload = base64.b64decode(encoded)
-          stage = Path('/tmp/siza_cards_stage')
+          payload = base64.b64decode(re.sub(r'\s+', '', encoded))
+          stage = Path('/tmp/siza_exact_cards')
           if stage.exists():
               shutil.rmtree(stage)
           stage.mkdir(parents=True)
@@ -45,7 +45,7 @@ jobs:
 
           images = [p for p in stage.rglob('*') if p.suffix.lower() in {'.png','.jpg','.jpeg','.webp'}]
           if len(images) != 13:
-              raise SystemExit(f'Expected 13 staged card images, found {len(images)}')
+              raise SystemExit(f'Expected 13 exact images, found {len(images)}')
 
           def norm(s):
               s = unicodedata.normalize('NFKD', s).encode('ascii','ignore').decode().lower()
@@ -70,60 +70,122 @@ jobs:
           mapped = {}
           for p in images:
               n = norm(p.name)
-              hits = [card_id for card_id, names in aliases.items() if any(a in n for a in names)]
-              if len(hits) == 1:
-                  if hits[0] in mapped:
-                      raise SystemExit(f'Duplicate mapping for {hits[0]}')
-                  mapped[hits[0]] = p
+              hits = [cid for cid, names in aliases.items() if any(a in n for a in names)]
+              if len(hits) != 1:
+                  raise SystemExit(f'Could not map {p.name}: {hits}')
+              cid = hits[0]
+              if cid in mapped:
+                  raise SystemExit(f'Duplicate card id: {cid}')
+              mapped[cid] = p
 
-          expected = set(aliases)
-          if set(mapped) != expected:
-              raise SystemExit('Card mapping mismatch. Missing: ' + ', '.join(sorted(expected-set(mapped))))
+          if set(mapped) != set(aliases):
+              raise SystemExit('Missing card ids: ' + ', '.join(sorted(set(aliases)-set(mapped))))
 
           cards = root / 'cards'
           if cards.exists():
               shutil.rmtree(cards)
           cards.mkdir(parents=True)
 
-          for card_id, src in mapped.items():
-              im = Image.open(src).convert('RGB')
-              if im.width > 900:
-                  h = round(im.height * 900 / im.width)
-                  im = im.resize((900,h), Image.Resampling.LANCZOS)
-              im.save(cards / f'{card_id}.webp', 'WEBP', quality=86, method=6)
+          paths = {}
+          for cid, src in mapped.items():
+              ext = src.suffix.lower()
+              if ext == '.jpeg':
+                  ext = '.jpg'
+              dst = cards / f'{cid}{ext}'
+              shutil.copyfile(src, dst)
+              paths[cid] = f'cards/{dst.name}?v={version}'
 
-          built = sorted(p.name for p in cards.glob('*.webp'))
+          built = list(cards.iterdir())
           if len(built) != 13:
-              raise SystemExit(f'Official cards verification failed: {len(built)}/13')
+              raise SystemExit(f'Official card folder has {len(built)} files, expected 13')
+
+          part_files = [root / f'v0512p{i:02}.txt' for i in range(1,7)]
+          runtime64 = ''.join(p.read_text(encoding='utf-8') for p in part_files)
+          html = gzip.decompress(base64.b64decode(re.sub(r'\s+', '', runtime64))).decode('utf-8')
+
+          if html.count('function cardHtml(') != 1:
+              raise SystemExit('cardHtml renderer anchor mismatch')
+          if html.count('function matchCardMini(') != 1:
+              raise SystemExit('matchCardMini renderer anchor mismatch')
+
+          helper = '''
+          var __SIZA_OFFICIAL_CARD_IMAGES=%s;
+          function __sizaOfficialCardMarkup(markup,card,opts){
+            if(!markup||!card)return markup;
+            var o=(opts&&typeof opts==='object')?opts:{};
+            if(card.faceDown||card.facedown||card.hidden||card.concealed||card.isFaceDown||o.faceDown||o.facedown||o.hidden||o.concealed||o.back)return markup;
+            var src=__SIZA_OFFICIAL_CARD_IMAGES[card.id];
+            if(!src)return markup;
+            var p=markup.indexOf('>');
+            if(p<0)return markup;
+            var open=markup.slice(0,p);
+            if(open.indexOf('data-siza-official-image')<0)open+=' data-siza-official-image="1"';
+            var img='<img class="sizaOfficialCardImage" src="'+src+'" alt="" draggable="false">';
+            return open+markup.slice(p,p+1)+img+markup.slice(p+1);
+          }
+          ''' % json.dumps(paths, separators=(',',':'), ensure_ascii=False)
+
+          card_wrapper = '''function cardHtml(){
+            var args=Array.prototype.slice.call(arguments);
+            var legacy=cardHtmlLegacy.apply(this,args);
+            return __sizaOfficialCardMarkup(legacy,args[0],args[1]);
+          }
+          function cardHtmlLegacy('''
+
+          mini_wrapper = '''function matchCardMini(){
+            var args=Array.prototype.slice.call(arguments);
+            var legacy=matchCardMiniLegacy.apply(this,args);
+            return __sizaOfficialCardMarkup(legacy,args[0],args[1]);
+          }
+          function matchCardMiniLegacy('''
+
+          html = html.replace('function cardHtml(', helper + card_wrapper, 1)
+          html = html.replace('function matchCardMini(', mini_wrapper, 1)
+
+          css = '''<style id="sizaOfficialCardImageStyles">
+          [data-siza-official-image="1"]{position:relative!important;overflow:hidden!important;}
+          [data-siza-official-image="1"]>.sizaOfficialCardImage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;display:block!important;z-index:2147483000!important;background:#05070a!important;border-radius:inherit!important;pointer-events:none!important;}
+          </style>'''
+          if '</head>' not in html:
+              raise SystemExit('Missing head close tag')
+          html = html.replace('</head>', css + '</head>', 1)
+          html = html.replace('v0.5.12', 'v' + label).replace('0.5.12-work', label + '-work')
+
+          if html.count('function cardHtmlLegacy(') != 1 or html.count('function matchCardMiniLegacy(') != 1:
+              raise SystemExit('Renderer replacement verification failed')
+          for cid, path in paths.items():
+              if path not in html:
+                  raise SystemExit(f'Missing runtime image path: {cid}')
+
+          compressed = gzip.compress(html.encode('utf-8'), compresslevel=9, mtime=0)
+          b64 = base64.b64encode(compressed).decode('ascii')
+          chunk = ((len(b64)+5)//6 + 3)//4*4
+          parts=[]
+          pos=0
+          for _ in range(5):
+              parts.append(b64[pos:pos+chunk]); pos += chunk
+          parts.append(b64[pos:])
+          if ''.join(parts) != b64:
+              raise SystemExit('Runtime split verification failed')
+          for p, text in zip(part_files, parts):
+              p.write_text(text, encoding='utf-8')
+
+          roundtrip = ''.join(p.read_text(encoding='utf-8') for p in part_files)
+          check = gzip.decompress(base64.b64decode(roundtrip)).decode('utf-8')
+          if check != html:
+              raise SystemExit('Runtime roundtrip verification failed')
 
           index = root / 'index.html'
-          html = index.read_text(encoding='utf-8')
-          html = html.replace('Siza Web v0.5.13','Siza Web v0.5.15')
-          html = html.replace("?v=0513", "?v=0515")
-          html = html.replace(".replaceAll('?v=0512','?v=0513')", ".replaceAll('?v=0512','?v=0515')")
-          html = html.replace(".replaceAll('?v=059','?v=0513')", ".replaceAll('?v=059','?v=0515')")
-          html = html.replace(".replaceAll('v0.5.12','v0.5.13')", ".replaceAll('v0.5.12','v0.5.15')")
-          html = html.replace(".replaceAll(\"0.5.12-work\",\"0.5.13-work\")", ".replaceAll(\"0.5.12-work\",\"0.5.15-work\")")
+          loader = index.read_text(encoding='utf-8')
+          loader = loader.replace('Siza Web v0.5.13', 'Siza Web v' + label)
+          loader = loader.replace('?v=0513', '?v=' + version)
+          loader = loader.replace(".replaceAll('?v=0512','?v=0513')", ".replaceAll('?v=0512','?v=" + version + "')")
+          loader = loader.replace(".replaceAll('?v=059','?v=0513')", ".replaceAll('?v=059','?v=" + version + "')")
+          loader = loader.replace(".replaceAll('v0.5.12','v0.5.13')", ".replaceAll('v0.5.12','v" + label + "')")
+          loader = loader.replace('.replaceAll("0.5.12-work","0.5.13-work")', '.replaceAll("0.5.12-work","' + label + '-work")')
+          index.write_text(loader, encoding='utf-8')
 
-          anchor = "html=html.replace('__NEREIDA_PORTRAIT__','data:image/jpeg;base64,'+portraitText.trim())"
-          if anchor not in html:
-              raise SystemExit('Loader patch anchor not found')
-
-          patch = """
-          const officialCardImages={mist:'cards/mist.webp?v=0515',spark:'cards/spark.webp?v=0515',servitor:'cards/servitor.webp?v=0515',ignimite:'cards/ignimite.webp?v=0515',counter:'cards/counter.webp?v=0515',prism:'cards/prism.webp?v=0515',watcher:'cards/watcher.webp?v=0515',smuggler:'cards/smuggler.webp?v=0515',tideblade:'cards/tideblade.webp?v=0515',leviathan:'cards/leviathan.webp?v=0515',dock:'cards/dock.webp?v=0515',cinder:'cards/cinder.webp?v=0515',queen:'cards/queen.webp?v=0515'};
-          html=html.replace(/const FINAL_CARD_IMAGES=\{[^;]*\};/,`const FINAL_CARD_IMAGES=${JSON.stringify(officialCardImages)};`);
-          for(const id of Object.keys(officialCardImages)){
-            html=html.replace(new RegExp("\\{id:'"+id+"',(?:finalCardImage:[^,]+,)?name:"),"{id:'"+id+"',finalCardImage:FINAL_CARD_IMAGES."+id+",name:");
-          }
-          html=html.replace('</head>','<style>.finalRulesFixV510{display:none!important}</style></head>');
-          """
-          marker = "document.open();document.write(html);document.close();"
-          if marker not in html:
-              raise SystemExit('Document write marker not found')
-          html = html.replace(marker, patch + marker)
-          index.write_text(html, encoding='utf-8')
-
-          for rel in ['cards-full','cards-v2','cards-v3','cards-v0514']:
+          for rel in ['cards-full','cards-v2','cards-v3','cards-v0514','upload-v0514-final']:
               p = root / rel
               if p.exists():
                   shutil.rmtree(p)
@@ -135,20 +197,22 @@ jobs:
               if p.exists():
                   p.unlink()
 
-          # Remove obsolete extractor and this one-shot workflow after successful migration.
-          for wf in [Path('.github/workflows/siza-extract-card-assets.yml'), Path('.github/workflows/siza-finalize-cards.yml')]:
-              if wf.exists():
-                  wf.unlink()
+          old_workflow = Path('.github/workflows/siza-extract-card-assets.yml')
+          if old_workflow.exists():
+              old_workflow.unlink()
+          this_workflow = Path('.github/workflows/siza-finalize-cards.yml')
+          if this_workflow.exists():
+              this_workflow.unlink()
 
-          print('Official Siza cards installed:', ', '.join(built))
+          print('Installed exact card images:', ', '.join(sorted(paths)))
           PY
 
-      - name: Commit clean card set
+      - name: Commit verified result
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git diff --cached --quiet && exit 0
-          git commit -m 'Install official Siza card set and remove legacy card assets'
+          git diff --cached --quiet && { echo 'No changes to commit'; exit 1; }
+          git commit -m 'Show exact official card images in Siza runtime'
           git push
