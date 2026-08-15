@@ -1,0 +1,89 @@
+name: Build Siza card assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/siza-extract-card-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pillow
+      - name: Extract real WebP card files
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import base64, io, re
+
+          root = Path('siza-mobile-test')
+          out = root / 'cards-v0514'
+          out.mkdir(parents=True, exist_ok=True)
+
+          sources = {
+              'niebla_de_sal': root/'cards-full/mist.svg',
+              'chispa_del_estuario': root/'cards-v3/chispa_del_estuario.svg',
+              'servidor_ahogado': root/'cards-full/servitor.svg',
+              'ignimite': root/'cards-full/ignimite.svg',
+              'negacion_pictomantica': root/'cards-full/counter.svg',
+              'vigia_de_la_marea': root/'cards-v3/vigia_de_la_marea.svg',
+              'contrabandista_carmesi': root/'cards-full/smuggler.svg',
+              'leviatan_de_la_campana': root/'cards-v3/leviatan_de_la_campana.svg',
+              'muelle_sumergido': root/'cards-v3/muelle_sumergido.svg',
+              'erial_de_ceniza': root/'cards-v3/erial_de_ceniza.svg',
+          }
+
+          data_re = re.compile(r'data:image/webp;base64,([^\"\']+)')
+          for name, src in sources.items():
+              text = src.read_text(encoding='utf-8')
+              m = data_re.search(text)
+              if not m:
+                  raise RuntimeError(f'No embedded WebP in {src}')
+              raw = base64.b64decode(m.group(1))
+              im = Image.open(io.BytesIO(raw)).convert('RGB')
+              im.save(out/f'{name}.webp', 'WEBP', quality=92, method=6)
+              print(name, im.size, (out/f'{name}.webp').stat().st_size)
+
+          atlas = Image.open(root/'cards-v2/card_atlas.webp').convert('RGB')
+          for name in ['prisma_de_enfoque','espada_de_bajamar']:
+              svg = (root/'cards-v2'/f'{name}.svg').read_text(encoding='utf-8')
+              h = int(re.search(r'height="(\d+)"', svg).group(1))
+              y = int(re.search(r'<image[^>]+ y="(-?\d+)"', svg).group(1))
+              top = -y
+              crop = atlas.crop((0, top, 600, top+h))
+              crop.save(out/f'{name}.webp', 'WEBP', quality=92, method=6)
+              print(name, crop.size, (out/f'{name}.webp').stat().st_size)
+
+          expected = [
+              'niebla_de_sal','chispa_del_estuario','servidor_ahogado','ignimite',
+              'negacion_pictomantica','prisma_de_enfoque','vigia_de_la_marea',
+              'contrabandista_carmesi','espada_de_bajamar','leviatan_de_la_campana',
+              'muelle_sumergido','erial_de_ceniza'
+          ]
+          missing = [n for n in expected if not (out/f'{n}.webp').exists()]
+          if missing:
+              raise RuntimeError('Missing assets: '+', '.join(missing))
+          PY
+      - name: Commit generated WebP assets
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add siza-mobile-test/cards-v0514/*.webp
+          if git diff --cached --quiet; then
+            echo 'No asset changes'
+          else
+            git commit -m 'Generate Siza v0.5.14 WebP card assets'
+            git push
+          fi
