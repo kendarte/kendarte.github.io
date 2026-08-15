@@ -1,0 +1,1 @@
+Siza v0.5.14 individual card assets. No atlas; no SVG wrappers.
