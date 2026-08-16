@@ -293,7 +293,7 @@ body{min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}
 const NEREIDA_IMG='portraits/nereida_voss.webp?v=0514';
 (function(){
 'use strict';
-const VERSION='0.5.14-work';
+const VERSION='0.5.15-work';
 const COLORS={U:'Azul',R:'Rojo',G:'Verde',W:'Blanco',B:'Negro'};
 const FINAL_CARD_IMAGES={
 mist:'cards-v0514/niebla_de_sal.webp?v=0514',
@@ -307,7 +307,8 @@ smuggler:'cards-v0514/contrabandista_carmesi.webp?v=0514',
 tideblade:'cards-v0514/espada_de_bajamar.webp?v=0514',
 leviathan:'cards-v0514/leviatan_de_la_campana.webp?v=0514',
 dock:'cards-v0514/muelle_sumergido.webp?v=0514',
-cinder:'cards-v0514/erial_de_ceniza.webp?v=0514'
+cinder:'cards-v0514/erial_de_ceniza.webp?v=0514',
+queen:'cards-v0514/memoria_de_la_reina_ahogada.webp?v=0515'
 };
 const CARD_DB=[
 {id:'mist',finalCardImage:FINAL_CARD_IMAGES.mist,name:'Niebla de Sal',type:'Instant',cost:1,pips:{U:1},text:'Roba una carta.',flavor:'La marea guarda secretos incluso de quienes viven de ella.',role:'draw',art:'blue',glyph:'≈'},
@@ -322,7 +323,7 @@ const CARD_DB=[
 {id:'leviathan',finalCardImage:FINAL_CARD_IMAGES.leviathan,name:'Leviatán de la Campana',type:'Creature',subtype:'Leviatán',cost:7,pips:{U:3},power:7,toughness:7,text:'Al entrar, devuelve otro permanente a la mano de su dueño.',flavor:'La campana no lo llama. Le recuerda que alguna vez estuvo despierto.',role:'finisher',art:'blue',glyph:'Ω'},
 {id:'dock',finalCardImage:FINAL_CARD_IMAGES.dock,name:'Muelle Sumergido',type:'Land',cost:0,pips:{},text:'Las Lands no se juegan al Battlefield. Permanecen en la mano y sólo se consumen como Mana Burn para aumentar una tirada de Manafestation fallida.',flavor:'Cada tabla guarda el peso de quienes nunca regresaron.',role:'land',art:'land',glyph:'⌁'},
 {id:'cinder',finalCardImage:FINAL_CARD_IMAGES.cinder,name:'Erial de Ceniza',type:'Land',cost:0,pips:{},text:'Las Lands no se juegan al Battlefield. Permanecen en la mano y sólo se consumen como Mana Burn para aumentar una tirada de Manafestation fallida.',flavor:'El fuego también deja territorio.',role:'land',art:'land',glyph:'△'},
-{id:'queen',name:'Memoria de la Reina Ahogada',type:'Creature',subtype:'Avatar',cost:5,pips:{U:3},power:5,toughness:5,text:'Al entrar, roba dos cartas y luego descarta una.',flavor:'La corona sobrevivió porque nadie recordó enterrarla.',role:'finisher',art:'multi',glyph:'♛',adventureUnlock:true}
+{id:'queen',finalCardImage:FINAL_CARD_IMAGES.queen,name:'Memoria de la Reina Ahogada',type:'Creature',subtype:'Avatar',cost:5,pips:{U:3},power:5,toughness:5,text:'Al entrar, roba dos cartas y luego descarta una.',flavor:'La corona sobrevivió porque nadie recordó enterrarla.',role:'finisher',art:'multi',glyph:'♛',adventureUnlock:true}
 ];
 const cardById=id=>CARD_DB.find(c=>c.id===id);
 const starterDeck=()=>({id:'deck_tide_crimson',name:'Marea Carmesí',format:'Siza Core 60',counts:{mist:4,spark:4,servitor:4,ignimite:4,counter:4,prism:4,watcher:4,smuggler:4,leviathan:4,dock:12,cinder:12}});

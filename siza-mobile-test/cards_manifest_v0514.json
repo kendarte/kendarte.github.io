@@ -1,5 +1,5 @@
 {
-  "version": "0.5.14",
+  "version": "0.5.15",
   "cards": [
     {
       "id": "mist",
@@ -154,8 +154,7 @@
       "power": 5,
       "toughness": 5,
       "text": "Al materializarse, toma dos cartas y luego descarta una.",
-      "image": null,
-      "status": "arte pendiente"
+      "image": "cards-v0514/memoria_de_la_reina_ahogada.webp"
     }
   ],
   "character": {
