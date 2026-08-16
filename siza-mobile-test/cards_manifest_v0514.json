@@ -1,5 +1,5 @@
 {
-  "version": "0.5.15",
+  "version": "0.6.0",
   "cards": [
     {
       "id": "mist",
@@ -144,7 +144,7 @@
       "image": "cards-v0514/erial_de_ceniza.webp"
     },
     {
-      "id": "queen_memory",
+      "id": "queen",
       "name": "Memoria de la Reina Ahogada",
       "type": "Invocación — Avatar",
       "difficulty": 8,
@@ -162,13 +162,13 @@
     "name": "Nereida Voss",
     "type": "Personaje — Magistócrata",
     "life": 20,
-    "mf": 3,
+    "mf": 2,
     "affinity": {
       "U": 2,
       "R": 1
     },
     "attack": 2,
-    "evasion": 3,
+    "evasion": 2,
     "text": "Una vez por turno, cuando lances una Reacción Azul, puedes robar una carta. Si lo haces, luego descarta una carta.",
     "image": "portraits/nereida_voss.webp"
   }
