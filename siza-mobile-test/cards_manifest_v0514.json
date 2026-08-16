@@ -1,0 +1,176 @@
+{
+  "version": "0.5.14",
+  "cards": [
+    {
+      "id": "mist",
+      "name": "Niebla de Sal",
+      "type": "Reacción",
+      "difficulty": 5,
+      "affinity": {
+        "U": 1
+      },
+      "text": "Toma una carta.",
+      "image": "cards-v0514/niebla_de_sal.webp"
+    },
+    {
+      "id": "spark",
+      "name": "Chispa del Estuario",
+      "type": "Reacción",
+      "difficulty": 5,
+      "affinity": {
+        "R": 1
+      },
+      "text": "Inflige 2 de daño al Personaje rival.",
+      "image": "cards-v0514/chispa_del_estuario.webp"
+    },
+    {
+      "id": "servitor",
+      "name": "Servidor Ahogado",
+      "type": "Invocación — Ahogado",
+      "difficulty": 6,
+      "affinity": {
+        "U": 1
+      },
+      "power": 2,
+      "toughness": 2,
+      "text": "Al materializarse, contempla la carta superior de tu mazo.",
+      "image": "cards-v0514/servidor_ahogado.webp"
+    },
+    {
+      "id": "ignimite",
+      "name": "Ignimite",
+      "type": "Invocación — Elemental",
+      "difficulty": 6,
+      "affinity": {
+        "R": 1
+      },
+      "power": 1,
+      "toughness": 1,
+      "text": "Siempre que esta Invocación haga daño durante un enfrentamiento, obtiene +1/+1.",
+      "image": "cards-v0514/ignimite.webp"
+    },
+    {
+      "id": "counter",
+      "name": "Negación Pictomántica",
+      "type": "Reacción",
+      "difficulty": 6,
+      "affinity": {
+        "U": 2
+      },
+      "text": "Anula una manifestación objetivo.",
+      "image": "cards-v0514/negacion_pictomantica.webp"
+    },
+    {
+      "id": "prism",
+      "name": "Prisma de Enfoque",
+      "type": "Reliquia",
+      "difficulty": 6,
+      "affinity": {
+        "C": 1
+      },
+      "text": "Agota: obtienes +1 en una prueba de Manafestation Azul.",
+      "image": "cards-v0514/prisma_de_enfoque.webp"
+    },
+    {
+      "id": "watcher",
+      "name": "Vigía de la Marea",
+      "type": "Invocación — Soldado",
+      "difficulty": 7,
+      "affinity": {
+        "U": 2
+      },
+      "power": 2,
+      "toughness": 4,
+      "text": "Defensor de las rutas sumergidas.",
+      "image": "cards-v0514/vigia_de_la_marea.webp"
+    },
+    {
+      "id": "smuggler",
+      "name": "Contrabandista Carmesí",
+      "type": "Invocación — Humano / Forajido",
+      "difficulty": 7,
+      "affinity": {
+        "R": 2
+      },
+      "power": 3,
+      "toughness": 2,
+      "text": "Siempre que ataque, inflige 1 de daño adicional al Personaje defensor.",
+      "image": "cards-v0514/contrabandista_carmesi.webp"
+    },
+    {
+      "id": "tideblade",
+      "name": "Espada de Bajamar",
+      "type": "Reliquia — Equipo",
+      "difficulty": 6,
+      "affinity": {
+        "U": 1
+      },
+      "text": "La invocación vinculada obtiene +2/+0. Vincular 1.",
+      "image": "cards-v0514/espada_de_bajamar.webp"
+    },
+    {
+      "id": "leviathan",
+      "name": "Leviatán de la Campana",
+      "type": "Invocación — Leviatán",
+      "difficulty": 8,
+      "affinity": {
+        "U": 3
+      },
+      "power": 7,
+      "toughness": 7,
+      "text": "Al materializarse, devuelve otra presencia del Campo a la mano de su dueño.",
+      "image": "cards-v0514/leviatan_de_la_campana.webp"
+    },
+    {
+      "id": "dock",
+      "name": "Muelle Sumergido",
+      "type": "Reserva",
+      "difficulty": null,
+      "affinity": {
+        "U": 1
+      },
+      "text": "Consume esta Reserva desde tu mano durante Mana Burn para añadir +1 a una tirada fallida.",
+      "image": "cards-v0514/muelle_sumergido.webp"
+    },
+    {
+      "id": "cinder",
+      "name": "Erial de Ceniza",
+      "type": "Reserva",
+      "difficulty": null,
+      "affinity": {
+        "R": 1
+      },
+      "text": "Consume esta Reserva desde tu mano durante Mana Burn para añadir +1 a una tirada fallida.",
+      "image": "cards-v0514/erial_de_ceniza.webp"
+    },
+    {
+      "id": "queen_memory",
+      "name": "Memoria de la Reina Ahogada",
+      "type": "Invocación — Avatar",
+      "difficulty": 8,
+      "affinity": {
+        "U": 3
+      },
+      "power": 5,
+      "toughness": 5,
+      "text": "Al materializarse, toma dos cartas y luego descarta una.",
+      "image": null,
+      "status": "arte pendiente"
+    }
+  ],
+  "character": {
+    "id": "nereida_voss",
+    "name": "Nereida Voss",
+    "type": "Personaje — Magistócrata",
+    "life": 20,
+    "mf": 3,
+    "affinity": {
+      "U": 2,
+      "R": 1
+    },
+    "attack": 2,
+    "evasion": 3,
+    "text": "Una vez por turno, cuando lances una Reacción Azul, puedes robar una carta. Si lo haces, luego descarta una carta.",
+    "image": "portraits/nereida_voss.webp"
+  }
+}
