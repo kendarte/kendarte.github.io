@@ -1,5 +1,5 @@
 {
-  "version": "0.6.1",
+  "version": "0.6.2",
   "cards": [
     {
       "id": "mist",
@@ -21,7 +21,7 @@
         "R": 1
       },
       "text": "Inflige 2 de daño al Personaje rival.",
-      "image": "cards-v0514/chispa_del_estuario.webp"
+      "image": "cards-v0514/contrabandista_carmesi.webp"
     },
     {
       "id": "servitor",
@@ -47,7 +47,7 @@
       "power": 1,
       "toughness": 1,
       "text": "Siempre que esta Invocación haga daño durante un enfrentamiento, obtiene +1/+1.",
-      "image": "cards-v0514/ignimite.webp"
+      "image": "cards-v0514/chispa_del_estuario.webp"
     },
     {
       "id": "counter",
@@ -95,7 +95,7 @@
       "power": 3,
       "toughness": 2,
       "text": "Siempre que ataque, inflige 1 de daño adicional al Personaje defensor.",
-      "image": "cards-v0514/contrabandista_carmesi.webp"
+      "image": "cards-v0514/espada_de_bajamar.webp"
     },
     {
       "id": "tideblade",
@@ -106,7 +106,7 @@
         "U": 1
       },
       "text": "La invocación vinculada obtiene +2/+0. Vincular 1.",
-      "image": "cards-v0514/espada_de_bajamar.webp"
+      "image": "cards-v0514/ignimite.webp"
     },
     {
       "id": "leviathan",
