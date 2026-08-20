@@ -1,17 +1,1 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atlas de Caribia</title><style>
-body{margin:0;background:#0d1112;color:#ece9e1;font:16px/1.65 system-ui,Segoe UI,Arial}header{position:sticky;top:0;background:#101516;border-bottom:1px solid #304043;padding:14px 20px;z-index:4}
-.bar{max-width:1200px;margin:auto;display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font:27px Georgia,serif}.bar a{color:#d4b16c;text-decoration:none;border:1px solid #304043;padding:7px 10px;border-radius:6px}
-main{max-width:1200px;margin:auto;padding:35px 24px 90px}h1,h2{font-family:Georgia,serif}h1{font-size:52px}h2{font-size:32px;margin-top:55px}.note{background:#151a1b;border-left:3px solid #7bc9ca;padding:14px 17px}.map{width:100%;display:block;background:#d8cfb5;border:1px solid #304043;margin:16px 0 35px}
-</style></head><body>
-<header><div class="bar"><div class="brand">Atlas de Caribia</div><a href="../">← World Book</a></div></header><main>
-<h1>Caribia</h1><div class="note"><b>Nieblamar:</b> masa de niebla espesa, no agua. El Gran Océano de Niebla tampoco es un océano de agua. Las rutas entre islas son principalmente rutas de aerobarco.</div>
-<h2>Mapa físico general</h2><img class="map" src="assets/caribia-mapa-fisico-general.svg">
-<h2>Zonas y asentamientos</h2><img class="map" src="assets/caribia-mapa-zonas-asentamientos.svg">
-<h2>Kalnaj</h2><img class="map" src="assets/caribia-zona-kalnaj.svg">
-<h2>Vardena</h2><img class="map" src="assets/caribia-zona-vardena.svg">
-<h2>Sereva</h2><img class="map" src="assets/caribia-zona-sereva.svg">
-<h2>Orvena</h2><img class="map" src="assets/caribia-zona-orvena.svg">
-<h2>Ragmar</h2><img class="map" src="assets/caribia-zona-ragmar.svg">
-<h2>Cadena de las Agujas</h2><img class="map" src="assets/caribia-zona-agujas.svg">
-<div class="note"><h2 style="margin-top:0">Islas Tortus</h2><p>Sector pequeño de la Cadena de las Agujas cuya disposición forma una tortuga vista desde arriba. En la isla central se encuentra la <b>Basílica de Sait Voltaire</b>. Se accede por aerobarco.</p></div>
-</main></body></html>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atlas de Caribia</title><style>body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}</style></head><body><div id="load">Cargando Atlas de Caribia…</div><script src="atlas-data.js"></script><script>(async()=>{try{const bin=Uint8Array.from(atob(window.ATLAS_DATA),c=>c.charCodeAt(0));const ds=new DecompressionStream('gzip');const text=await new Response(new Blob([bin]).stream().pipeThrough(ds)).text();document.open();document.write(text);document.close();}catch(e){document.getElementById('load').innerHTML='No se pudo cargar el Atlas.<br>'+e;}})();</script></body></html>
