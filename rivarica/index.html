@@ -1,13 +1,14 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Caribia — Rivarica World Book</title><style>
-:root{--bg:#0d1112;--panel:#151a1b;--line:#2e3b3d;--text:#ece9e1;--muted:#aeb2ac;--gold:#d4b16c;--cyan:#7bc9ca}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 system-ui,-apple-system,Segoe UI,Arial}
-header{position:sticky;top:0;z-index:10;background:rgba(13,17,18,.96);border-bottom:1px solid var(--line);padding:13px 18px}
-.bar{max-width:1080px;margin:auto;display:flex;gap:12px;align-items:center;justify-content:space-between}.brand{font:24px Georgia,serif}.links{display:flex;gap:8px;flex-wrap:wrap}.links a{color:var(--gold);text-decoration:none;border:1px solid var(--line);padding:6px 9px;border-radius:6px;font-size:13px}
-main{max-width:1080px;margin:auto;padding:42px 28px 100px}.eyebrow{font-size:11px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase}h1,h2,h3,h4{font-family:Georgia,serif;line-height:1.22;color:#f5f1e8}h1{font-size:45px}h2{font-size:29px;margin-top:42px}h3{font-size:22px;margin-top:30px}
-p{margin:13px 0}blockquote{border-left:3px solid var(--cyan);background:var(--panel);padding:14px 18px}table{width:100%;border-collapse:collapse;margin:22px 0;font-size:14px}th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--gold);background:#182021}code{background:#1e2627;padding:2px 5px;border-radius:4px}.map{width:100%;display:block;border:1px solid var(--line);border-radius:8px;margin:18px 0;background:#d8cfb5}.callout{background:var(--panel);border-left:3px solid var(--cyan);padding:14px 18px;margin:18px 0}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.card{background:var(--panel);border:1px solid var(--line);padding:15px;border-radius:8px}.card a{color:var(--gold);text-decoration:none;font-weight:700}
-@media(max-width:700px){h1{font-size:38px}.bar{align-items:flex-start}.links{justify-content:flex-end}main{padding:30px 18px 70px}table{font-size:12px}}
-</style></head><body>
-<header><div class="bar"><div class="brand">RIVARICA</div><div class="links"><a href="index.html">World Book</a><a href="atlas/index.html">Atlas de Caribia</a></div></div></header>
-<main><div class="eyebrow">Rivarica World Book · Caribia</div><h1>Caribia</h1><p>Fuente maestra en línea del World Book de Caribia. El contenido se mantiene dividido por capítulos para poder crecer sin convertir una sola página en un archivo inmanejable.</p>
-<div class="callout"><h2 style="margin-top:0">Atlas oficial</h2><p>Mapas generales, zonas, pueblos, Islas Tortus y Basílica de Sait Voltaire.</p><p><a style="color:var(--gold);font-weight:700" href="atlas/index.html">ABRIR ATLAS DE CARIBIA →</a></p></div>
-<h2>Capítulos desarrollados</h2><div class="cards"><div class="card"><a href="manarales.html">Manarales</a><p>Energía, moneda, Luxon y tecnología cristalina.</p></div><div class="card"><a href="geografia-fisica.html">Geografía física</a><p>Estructura física de Caribia.</p></div><div class="card"><a href="geografia-humana.html">Geografía humana</a><p>Población, ciudades y asentamientos.</p></div><div class="card"><a href="demografia.html">Demografía y sociedad</a><p>Familia, clase y estructura social.</p></div><div class="card"><a href="economia.html">Economía</a><p>Azurita, trabajo, energía y producción.</p></div><div class="card"><a href="profesiones.html">Profesiones e infraestructura</a><p>Trabajos, Darkhaven, salud y servicios.</p></div><div class="card"><a href="regimen.html">Régimen político</a><p>Gobierno y administración.</p></div><div class="card"><a href="leyes.html">Derecho y cívica</a><p>Leyes, autoridad y ciudadanía.</p></div></div></main></body></html>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rivarica World Book</title>
+<style>body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}#load{padding:24px;text-align:center}</style></head>
+<body><div id="load">Cargando Rivarica World Book…</div><script src="chunks/wb-00.js"></script><script src="chunks/wb-01.js"></script><script src="chunks/wb-02.js"></script><script src="chunks/wb-03.js"></script><script src="chunks/wb-04.js"></script><script src="chunks/wb-05.js"></script>
+<script>
+(async()=>{
+try{
+ const b64=window.WB_CHUNKS.join('');
+ const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+ const ds=new DecompressionStream('gzip');
+ const text=await new Response(new Blob([bin]).stream().pipeThrough(ds)).text();
+ document.open();document.write(text);document.close();
+}catch(e){document.getElementById('load').innerHTML='No se pudo cargar el World Book.<br>'+e;}
+})();
+</script></body></html>
