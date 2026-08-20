@@ -1,14 +1,1 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rivarica World Book</title>
-<style>body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}#load{padding:24px;text-align:center}</style></head>
-<body><div id="load">Cargando Rivarica World Book…</div><script src="chunks/wb-00.js"></script><script src="chunks/wb-01.js"></script><script src="chunks/wb-02.js"></script><script src="chunks/wb-03.js"></script><script src="chunks/wb-04.js"></script><script src="chunks/wb-05.js"></script>
-<script>
-(async()=>{
-try{
- const b64=window.WB_CHUNKS.join('');
- const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
- const ds=new DecompressionStream('gzip');
- const text=await new Response(new Blob([bin]).stream().pipeThrough(ds)).text();
- document.open();document.write(text);document.close();
-}catch(e){document.getElementById('load').innerHTML='No se pudo cargar el World Book.<br>'+e;}
-})();
-</script></body></html>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rivarica World Book</title><style>body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}#load{padding:24px;text-align:center}a{color:#d4b16c}</style></head><body><div id="load">Cargando Rivarica World Book…</div><script src="chunks/wb-00.js"></script><script src="chunks/wb-01.js"></script><script src="chunks/wb-02.js"></script><script src="chunks/wb-03.js"></script><script src="chunks/wb-04.js"></script><script src="chunks/wb-05.js"></script><script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script><script>try{const b64=(window.WB_CHUNKS||[]).join('');if(!b64)throw new Error('No se cargaron los datos del World Book');const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const text=pako.ungzip(bin,{to:'string'});document.open();document.write(text);document.close();}catch(e){document.getElementById('load').innerHTML='No se pudo cargar el World Book.<br>'+e+'<br><br><a href="atlas/">Abrir Atlas de Caribia</a>';}</script></body></html>
