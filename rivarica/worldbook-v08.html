@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rivarica World Book v0.8</title>
+<style>
+body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}
+#load{padding:24px;text-align:center}
+a{color:#d4b16c}
+</style>
+</head>
+<body>
+<div id="load">Cargando Rivarica World Book v0.8…</div>
+<script src="chunks/wb-00.js?v=v08fix"></script>
+<script src="chunks/wb-01.js?v=v08fix"></script>
+<script src="chunks/wb-02.js?v=v08fix"></script>
+<script src="chunks/wb-03.js?v=v08fix"></script>
+<script src="chunks/wb-04.js?v=v08fix"></script>
+<script src="chunks/wb-05.js?v=v08fix"></script>
+<script src="chunks/pako-00.js?v=v08fix"></script>
+<script src="chunks/pako-01.js?v=v08fix"></script>
+<script src="chunks/pako-02.js?v=v08fix"></script>
+<script>
+try {
+  const pakoSource=(window.PAKO_SRC||[]).join('');
+  if(!pakoSource) throw new Error('No se cargó el descompresor local');
+  (0,eval)(pakoSource);
+  if(!window.pako) throw new Error('No se pudo iniciar el descompresor local');
+  const b64=(window.WB_CHUNKS||[]).join('');
+  if(!b64) throw new Error('No se cargó el contenido del World Book');
+  const bin=Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+  let text=window.pako.ungzip(bin,{to:'string'});
+  const atlas='<a href="atlas/" style="display:block;margin:14px 18px;padding:12px 14px;border:1px solid #c9aa68;border-radius:7px;background:#191810;color:#f3dfb2;text-decoration:none;font-weight:700;text-align:center">ABRIR ATLAS DE CARIBIA</a>';
+  if(text.includes('<body>')) text=text.replace('<body>','<body>'+atlas);
+  document.open(); document.write(text); document.close();
+} catch(e) {
+  document.getElementById('load').innerHTML='No se pudo abrir el World Book v0.8.<br>'+String(e)+'<br><br><a href="atlas/">Abrir Atlas de Caribia</a>';
+}
+</script>
+</body>
+</html>
