@@ -11,9 +11,9 @@ Esta carpeta separa la **documentación de sistema** del canon textual del World
 
 Los documentos de esta carpeta pueden proponer mecánicas sin convertir automáticamente esas propuestas en canon diegético.
 
-## Documentos actuales
+## Secciones actuales
 
-- `05_Catalogo_General_Conocimientos_v0.2.md` — taxonomía maestra de **240 Conocimientos** para Player/NPC, con descripción, parámetros frecuentes, bonus y efecto de gameplay.
+- [`conocimientos/`](conocimientos/) — catálogo maestro de **240 Conocimientos** para Player/NPC, dividido en cuatro volúmenes de 60 entradas. Cada Knowledge incluye descripción, parámetros frecuentes, bonus y efecto sobre gameplay.
 
 ## Convención
 
