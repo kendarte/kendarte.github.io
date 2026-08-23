@@ -3,6 +3,7 @@ import unicodedata
 
 from evennia import Command
 
+from services.interaction_engine import parse_interaction_intent, resolve_interaction
 from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
 
@@ -11,7 +12,7 @@ STOPWORDS = {
     "a", "al", "el", "la", "los", "las", "de", "del", "hacia", "para", "por",
     "voy", "ve", "vamos", "quiero", "quisiera", "ir", "irme", "camino", "caminar",
     "moverme", "muevo", "dirigirme", "dirijo", "entrar", "entro", "salir", "salgo",
-    "me", "quiero", "puedo",
+    "me", "puedo",
 }
 
 MOVEMENT_WORDS = {
@@ -95,7 +96,8 @@ class CmdSizaStatus(Command):
         caller.msg(f"SIZA narrator build: {NARRATOR_BUILD}")
         if location:
             caller.msg(f"Room: {location.key} | room_id={location.db.room_id}")
-        caller.msg("Perception failures: deterministic | Move prose: Qwen + post-validation guard")
+        caller.msg("Intent order: interaction -> perception -> movement")
+        caller.msg("Room/perception prose: deterministic | persistent state: Evennia")
 
 
 class CmdSizaNoMatch(Command):
@@ -110,11 +112,20 @@ class CmdSizaNoMatch(Command):
         location = getattr(caller, "location", None)
 
         if not raw or not location:
-            caller.msg("No entiendo esa accion.")
+            caller.msg("No entiendo esa acción.")
             return
 
-        # PERCEPTION FIRST. A phrase such as 'busco a Mara en la plaza' must never
-        # accidentally become movement merely because it contains the word 'plaza'.
+        # 1) INTERACTIONS FIRST: doors, dialogue and memory must not be mistaken
+        # for movement or for a perception roll.
+        interaction_intent = parse_interaction_intent(raw)
+        if interaction_intent:
+            text = resolve_interaction(caller, interaction_intent)
+            if text:
+                caller.msg("\n" + text)
+            return
+
+        # 2) PERCEPTION: a phrase such as 'busco a Mara en la plaza' must never
+        # become movement merely because it contains the word 'plaza'.
         perception_intent = parse_perception_intent(raw)
         if perception_intent:
             result = resolve_perception(caller, perception_intent)
@@ -124,14 +135,13 @@ class CmdSizaNoMatch(Command):
             narrate_perception_async(caller, result)
             return
 
+        # 3) MOVEMENT: only actual Exits in the current Room can be selected.
         exits = list(getattr(location, "exits", []) or [])
         scored = [(score_exit(raw, exit_obj), exit_obj) for exit_obj in exits]
         scored = [(score, exit_obj) for score, exit_obj in scored if score > 0]
 
-        # Free movement prose requires either an explicit movement verb or a very
-        # strong destination match. Unknown prose is not forced into movement.
         if not scored or (not _looks_like_movement(raw) and scored[0][0] < 700):
-            caller.msg("No entiendo esa accion todavia.")
+            caller.msg("No entiendo esa acción todavía.")
             return
 
         scored.sort(key=lambda item: item[0], reverse=True)
@@ -139,7 +149,7 @@ class CmdSizaNoMatch(Command):
         winners = [exit_obj for score, exit_obj in scored if score == top_score]
 
         if len(winners) > 1:
-            caller.msg("La direccion es ambigua. Opciones: " + ", ".join(exit_obj.key for exit_obj in winners))
+            caller.msg("La dirección es ambigua. Opciones: " + ", ".join(exit_obj.key for exit_obj in winners))
             return
 
         chosen = winners[0]
