@@ -3,11 +3,14 @@ from datetime import datetime, timezone
 from evennia import search_tag
 
 from services.job_engine import job_sites
+from services.npc_simulation import find_path
 
 
-CLAIM_BUILD = "0.13.0-job-claims"
+CLAIM_BUILD = "0.14.0-job-arbitration"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
+POLICY_FIRST_SELECTED = "FIRST_SELECTED"
+POLICY_NEAREST_REACHABLE = "NEAREST_REACHABLE"
 
 
 def _plain_list(value):
@@ -69,6 +72,26 @@ def _site_claims(site):
     return output
 
 
+def _task_policy(task):
+    return str((task or {}).get("claim_policy") or POLICY_FIRST_SELECTED).upper()
+
+
+def _eligible_for_task(npc, task):
+    if not npc or not bool(npc.db.simulation_enabled) or not bool(npc.db.decision_enabled):
+        return False
+    npc_id = str(getattr(npc.db, "npc_id", "") or "")
+    if not npc_id or not npc.location:
+        return False
+
+    required_job = str((task or {}).get("job_id") or "").strip()
+    assigned_npc = str((task or {}).get("assigned_npc_id") or "").strip()
+    if required_job and required_job != _npc_job_id(npc):
+        return False
+    if assigned_npc and assigned_npc != npc_id:
+        return False
+    return True
+
+
 def refresh_job_claims():
     """Remove claims whose task vanished/became inactive or whose owner no longer exists."""
     released = []
@@ -116,11 +139,17 @@ def get_job_claim(task_id):
     return None
 
 
-def claim_job_task(npc, task_id):
+def claim_job_task(
+    npc,
+    task_id,
+    claim_source="DECISION",
+    claim_policy=None,
+    claim_distance=None,
+):
     """Atomically claim one active task for an eligible NPC.
 
     Existing ownership by the same NPC is idempotent. Ownership by another NPC
-    rejects the claim. The task itself remains authoritative for work progress.
+    rejects the claim. The task remains authoritative for work progress.
     """
     refresh_job_claims()
     wanted = str(task_id or "")
@@ -156,6 +185,9 @@ def claim_job_task(npc, task_id):
                     "task_id": wanted,
                     "npc_id": npc_id,
                     "npc_name": npc.key,
+                    "claim_source": existing.get("claim_source"),
+                    "claim_policy": existing.get("claim_policy"),
+                    "claim_distance": existing.get("claim_distance"),
                 }
             return {
                 "success": False,
@@ -167,10 +199,14 @@ def claim_job_task(npc, task_id):
                 "npc_name": existing.get("npc_name"),
             }
 
+        policy = str(claim_policy or _task_policy(task)).upper()
         claims[wanted] = {
             "npc_id": npc_id,
             "npc_name": npc.key,
             "claimed_at": datetime.now(timezone.utc).isoformat(),
+            "claim_source": str(claim_source or "DECISION").upper(),
+            "claim_policy": policy,
+            "claim_distance": claim_distance,
             "canon_status": "prototype",
         }
         site.db.job_claims = claims
@@ -182,9 +218,101 @@ def claim_job_task(npc, task_id):
             "task_id": wanted,
             "npc_id": npc_id,
             "npc_name": npc.key,
+            "claim_source": str(claim_source or "DECISION").upper(),
+            "claim_policy": policy,
+            "claim_distance": claim_distance,
         }
 
     return {"success": False, "acquired": False, "reason": "TASK_NOT_FOUND"}
+
+
+def arbitrate_job_claims(npcs):
+    """Pre-assign unclaimed tasks whose authored policy is NEAREST_REACHABLE.
+
+    Distance uses the same passable Exit graph as NPC movement. Ties resolve by
+    stable npc_id, so list/loop order cannot decide ownership.
+    """
+    refresh_job_claims()
+    npcs = list(npcs or [])
+    results = []
+
+    for site in job_sites():
+        tasks = _site_tasks(site)
+        claims = _site_claims(site)
+        for task_id, task in tasks.items():
+            if not bool(task.get("active", False)):
+                continue
+            policy = _task_policy(task)
+            if policy != POLICY_NEAREST_REACHABLE:
+                continue
+            if task_id in claims:
+                continue
+
+            candidates = []
+            for npc in npcs:
+                if not _eligible_for_task(npc, task):
+                    continue
+                path = find_path(npc.location, site)
+                if path is None:
+                    continue
+                npc_id = str(npc.db.npc_id or "")
+                candidates.append(
+                    {
+                        "npc": npc,
+                        "npc_id": npc_id,
+                        "npc_name": npc.key,
+                        "distance": len(path),
+                    }
+                )
+
+            candidates.sort(key=lambda row: (int(row.get("distance", 0)), str(row.get("npc_id") or "")))
+            public_candidates = [
+                {
+                    "npc_id": row.get("npc_id"),
+                    "npc_name": row.get("npc_name"),
+                    "distance": row.get("distance"),
+                }
+                for row in candidates
+            ]
+
+            if not candidates:
+                results.append(
+                    {
+                        "status": "NO_ELIGIBLE",
+                        "site": site.key,
+                        "task_id": task_id,
+                        "policy": policy,
+                        "winner_id": None,
+                        "winner_name": None,
+                        "distance": None,
+                        "candidates": [],
+                    }
+                )
+                continue
+
+            winner = candidates[0]
+            claim = claim_job_task(
+                winner.get("npc"),
+                task_id,
+                claim_source="ARBITRATOR",
+                claim_policy=policy,
+                claim_distance=winner.get("distance"),
+            )
+            results.append(
+                {
+                    "status": "ASSIGNED" if claim.get("success") else "CLAIM_FAILED",
+                    "site": site.key,
+                    "task_id": task_id,
+                    "policy": policy,
+                    "winner_id": winner.get("npc_id") if claim.get("success") else None,
+                    "winner_name": winner.get("npc_name") if claim.get("success") else None,
+                    "distance": winner.get("distance") if claim.get("success") else None,
+                    "candidates": public_candidates,
+                    "reason": claim.get("reason"),
+                }
+            )
+
+    return results
 
 
 def release_job_claim(task_id, npc=None, force=False):
@@ -223,6 +351,9 @@ def filter_job_candidates_for_claim(npc, candidates):
         if claim:
             candidate["claim_npc_id"] = claim.get("npc_id")
             candidate["claim_npc_name"] = claim.get("npc_name")
+            candidate["claim_source"] = claim.get("claim_source")
+            candidate["claim_policy"] = claim.get("claim_policy")
+            candidate["claim_distance"] = claim.get("claim_distance")
         output.append(candidate)
     return output
 
@@ -240,6 +371,9 @@ def inspect_job_claims():
                     "npc_id": claim.get("npc_id"),
                     "npc_name": claim.get("npc_name"),
                     "claimed_at": claim.get("claimed_at"),
+                    "claim_source": claim.get("claim_source"),
+                    "claim_policy": claim.get("claim_policy"),
+                    "claim_distance": claim.get("claim_distance"),
                 }
             )
     return rows
