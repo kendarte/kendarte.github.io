@@ -5,9 +5,10 @@ from evennia import search_tag
 from services.job_engine import job_sites
 from services.need_engine import collect_need_candidates
 from services.npc_simulation import find_path, find_room
+from services.world_clock import schedule_is_active, schedule_label, world_clock_state
 
 
-CLAIM_BUILD = "0.15.0-priority-aware-arbitration"
+CLAIM_BUILD = "0.16.0-world-clock-schedules"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
@@ -44,12 +45,44 @@ def _task_dict(raw):
         return None
 
 
-def _npc_job_id(npc):
+def _npc_job(npc):
     try:
-        job = dict(npc.db.job or {})
+        return dict(npc.db.job or {})
     except Exception:
-        job = {}
-    return str(job.get("id") or "").strip()
+        return {}
+
+
+def _npc_job_id(npc):
+    return str(_npc_job(npc).get("id") or "").strip()
+
+
+def _job_schedule(npc):
+    schedule = _plain_dict(getattr(npc.db, "job_schedule", {}))
+    if schedule:
+        return schedule
+    job = _npc_job(npc)
+    return _plain_dict(job.get("schedule"))
+
+
+def _shift_status(npc):
+    schedule = _job_schedule(npc)
+    if not schedule:
+        return {
+            "scheduled": False,
+            "active": True,
+            "label": "ALWAYS",
+            "schedule": {},
+        }
+    state = world_clock_state()
+    return {
+        "scheduled": True,
+        "active": bool(schedule_is_active(schedule, state=state)),
+        "label": schedule_label(schedule),
+        "schedule": schedule,
+        "day": state.get("day"),
+        "minute": state.get("minute"),
+        "time": state.get("time"),
+    }
 
 
 def _priority_map(npc):
@@ -205,6 +238,20 @@ def _availability_for_task(npc, task_id, task):
             "blocker": None,
         }
 
+    shift = _shift_status(npc)
+    if shift.get("scheduled") and not shift.get("active"):
+        return {
+            "available": False,
+            "reason": "SHIFT_INACTIVE",
+            "blocker": {
+                "id": shift.get("label"),
+                "type": "SHIFT",
+                "priority": None,
+                "source": "WORLD_CLOCK",
+            },
+            "shift": shift,
+        }
+
     try:
         job_priority = int((task or {}).get("priority", DEFAULT_PRIORITIES["JOB"]))
     except (TypeError, ValueError):
@@ -217,6 +264,7 @@ def _availability_for_task(npc, task_id, task):
             "available": False,
             "reason": "HIGHER_PRIORITY_GOAL",
             "blocker": blocker,
+            "shift": shift,
         }
 
     npc_id = str(getattr(npc.db, "npc_id", "") or "")
@@ -231,9 +279,10 @@ def _availability_for_task(npc, task_id, task):
                 "priority": None,
                 "source": "JOB_CLAIM",
             },
+            "shift": shift,
         }
 
-    return {"available": True, "reason": "AVAILABLE", "blocker": None}
+    return {"available": True, "reason": "AVAILABLE", "blocker": None, "shift": shift}
 
 
 def refresh_job_claims():
@@ -290,7 +339,7 @@ def claim_job_task(
     claim_policy=None,
     claim_distance=None,
 ):
-    """Atomically claim one active task for an eligible NPC."""
+    """Atomically claim one active task for an eligible, on-shift, available NPC."""
     refresh_job_claims()
     wanted = str(task_id or "")
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
@@ -339,17 +388,17 @@ def claim_job_task(
                 "npc_name": existing.get("npc_name"),
             }
 
-        other_claim = _owned_other_claim(npc_id, wanted)
-        if other_claim:
+        availability = _availability_for_task(npc, wanted, task)
+        if not availability.get("available"):
             return {
                 "success": False,
                 "acquired": False,
-                "reason": "BUSY_OTHER_JOB",
+                "reason": availability.get("reason"),
                 "site": site,
                 "task_id": wanted,
                 "npc_id": npc_id,
                 "npc_name": npc.key,
-                "other_task_id": other_claim.get("task_id"),
+                "blocker": availability.get("blocker"),
             }
 
         policy = str(claim_policy or _task_policy(task)).upper()
@@ -516,18 +565,34 @@ def release_job_claim(task_id, npc=None, force=False):
 
 
 def filter_job_candidates_for_claim(npc, candidates):
-    """Hide tasks claimed by another NPC and other JOBs while this NPC owns one."""
+    """Hide tasks unavailable because of ownership, another JOB or off-shift state."""
     refresh_job_claims()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     output = []
     for item in list(candidates or []):
         task_id = str(item.get("task_id") or "")
-        if _owned_other_claim(npc_id, task_id):
-            continue
         claim = get_job_claim(task_id) if task_id else None
         if claim and str(claim.get("npc_id") or "") != npc_id:
             continue
+        if _owned_other_claim(npc_id, task_id):
+            continue
+
+        # Existing owners retain their task even if the shift later closes.
+        if not claim:
+            task = None
+            for site in job_sites():
+                task = _site_tasks(site).get(task_id)
+                if task:
+                    break
+            if task:
+                shift = _shift_status(npc)
+                if shift.get("scheduled") and not shift.get("active"):
+                    continue
+
         candidate = dict(item)
+        shift = _shift_status(npc)
+        candidate["shift_active"] = bool(shift.get("active"))
+        candidate["shift_schedule"] = shift.get("label")
         if claim:
             candidate["claim_npc_id"] = claim.get("npc_id")
             candidate["claim_npc_name"] = claim.get("npc_name")
