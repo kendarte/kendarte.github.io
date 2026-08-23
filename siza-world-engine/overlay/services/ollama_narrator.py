@@ -19,6 +19,35 @@ Escribe en espanol natural, concreto e inmersivo. No expliques mecanicas ni menc
 """
 
 
+def _json_safe(value):
+    """Convert Evennia SaverDict/SaverList and nested values into plain JSON data."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+
+    # Evennia's persistent _SaverDict is dict-like but is not directly JSON serializable.
+    if isinstance(value, dict) or hasattr(value, "items"):
+        try:
+            return {str(key): _json_safe(item) for key, item in value.items()}
+        except Exception:
+            pass
+
+    # Covers normal sequences and Evennia's persistent SaverList-like containers.
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+
+    if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
+        try:
+            return [_json_safe(item) for item in value]
+        except Exception:
+            pass
+
+    # Last-resort safeguard: never let a persistence wrapper kill narration.
+    return str(value)
+
+
 def _visible_contents(room, exclude=None):
     result = []
     if not room:
@@ -31,7 +60,7 @@ def _visible_contents(room, exclude=None):
 
 
 def build_move_packet(character, source, destination, exit_obj):
-    return {
+    packet = {
         "event": "movement_success",
         "actor": character.key,
         "from": {
@@ -54,12 +83,13 @@ def build_move_packet(character, source, destination, exit_obj):
         "resolution": "SUCCESS",
         "instruction": "Narra la llegada en 60-120 palabras. Usa solo hechos autorizados arriba.",
     }
+    return _json_safe(packet)
 
 
 def _post_chat(payload):
     request = urllib.request.Request(
         OLLAMA_URL,
-        data=json.dumps(payload).encode("utf-8"),
+        data=json.dumps(_json_safe(payload), ensure_ascii=False).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
@@ -82,7 +112,7 @@ def _request_chat(packet):
         "model": OLLAMA_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(packet, ensure_ascii=False, indent=2)},
+            {"role": "user", "content": json.dumps(_json_safe(packet), ensure_ascii=False, indent=2)},
         ],
         "stream": False,
         "think": False,
