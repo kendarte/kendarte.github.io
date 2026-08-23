@@ -1,5 +1,6 @@
 from evennia import Command
 
+from services.job_claims import get_job_claim, release_job_claim
 from services.job_engine import (
     inspect_job_tasks,
     inspect_worksites,
@@ -34,7 +35,7 @@ def _find_worksite(query):
 
 
 class CmdSizaJobs(Command):
-    """Inspect persistent world job tasks, progress and NPC eligibility."""
+    """Inspect persistent world job tasks, claims, progress and NPC eligibility."""
 
     key = "siza-jobs"
     aliases = ["jobs-state"]
@@ -58,16 +59,23 @@ class CmdSizaJobs(Command):
             self.caller.msg("No hay tareas de trabajo persistentes registradas.")
         else:
             for row in rows:
+                claim = get_job_claim(row.get("id"))
+                claim_text = claim.get("npc_name") if claim else "NONE"
                 self.caller.msg(
                     f"{row.get('id')} | site={row.get('site')} | job_id={row.get('job_id')} | "
                     f"active={row.get('active')} | status={row.get('status')} | "
                     f"priority={row.get('priority')} | eligible={row.get('eligible')} | "
-                    f"rule={row.get('rule_id') or 'NONE'} | "
+                    f"rule={row.get('rule_id') or 'NONE'} | claim={claim_text} | "
                     f"work={row.get('work_done')}/{row.get('work_required')} "
                     f"(+{row.get('work_per_action')}/WORK)"
                 )
                 if row.get("activity"):
                     self.caller.msg(f"  activity={row.get('activity')}")
+                if claim:
+                    self.caller.msg(
+                        f"  claim_owner={claim.get('npc_name')} | npc_id={claim.get('npc_id')} | "
+                        f"claimed_at={claim.get('claimed_at')}"
+                    )
                 if row.get("work_last_npc_name"):
                     self.caller.msg(f"  last_worker={row.get('work_last_npc_name')}")
                 if row.get("completion_effects_applied"):
@@ -99,10 +107,35 @@ class CmdSizaJobToggle(Command):
             self.caller.msg(f"Task de trabajo no encontrado: {task_id}")
             return
 
+        if state_word == "off":
+            release_job_claim(task_id, force=True)
+
         self.caller.msg(
             f"World JOB {task_id}: {'ACTIVE' if state_word == 'on' else 'INACTIVE'} | site={site.key}."
         )
         self.caller.msg("Si la task tiene rule_id, el productor puede sobrescribir este estado en el próximo refresh.")
+
+
+class CmdSizaJobRelease(Command):
+    """Admin/debug: force-release the owner of one active JOB without changing progress."""
+
+    key = "siza-job-release"
+    aliases = ["job-release"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        task_id = (self.args or "").strip()
+        if not task_id:
+            self.caller.msg("Uso: siza-job-release <TASK_ID>")
+            return
+        released = release_job_claim(task_id, force=True)
+        if not released:
+            self.caller.msg(f"No hay claim activo para {task_id}.")
+            return
+        self.caller.msg(
+            f"Claim liberado: {task_id} | owner={released.get('npc_name')} | "
+            f"progress conservado."
+        )
 
 
 class CmdSizaWorksite(Command):
