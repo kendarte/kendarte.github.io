@@ -15,15 +15,18 @@ def _candidate_line(item, selected_id=None):
     progress = ""
     if item.get("type") == "JOB" and item.get("work_required") is not None:
         progress = f" | work={item.get('work_done')}/{item.get('work_required')}"
+    claim = ""
+    if item.get("claim_npc_name"):
+        claim = f" | claim={item.get('claim_npc_name')}"
     return (
         f"[{marker}] {item.get('type')} | priority={item.get('priority')} | "
         f"id={item.get('id')} | target={item.get('target_name') or item.get('target_room_key')} | "
-        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}{progress}"
+        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}{progress}{claim}"
     )
 
 
 class CmdSizaDecide(Command):
-    """Inspect which persistent goal an NPC would choose, without moving it."""
+    """Inspect which persistent goal an NPC would choose, without moving or claiming it."""
 
     key = "siza-decide"
     aliases = ["decide-npc"]
@@ -56,13 +59,17 @@ class CmdSizaDecide(Command):
             winner_progress = ""
             if selected.get("type") == "JOB" and selected.get("work_required") is not None:
                 winner_progress = f" | work={selected.get('work_done')}/{selected.get('work_required')}"
+            winner_claim = ""
+            if selected.get("claim_npc_name"):
+                winner_claim = f" | claim={selected.get('claim_npc_name')}"
             self.caller.msg(
                 f"Winner: {selected.get('type')} {selected.get('id')} -> "
-                f"{selected.get('target_name')} | priority={selected.get('priority')}{winner_progress}"
+                f"{selected.get('target_name')} | priority={selected.get('priority')}"
+                f"{winner_progress}{winner_claim}"
             )
         else:
             self.caller.msg("Winner: NONE")
-        self.caller.msg("No movement executed.")
+        self.caller.msg("No movement or claim executed.")
         self.caller.msg("========================================")
 
 
@@ -153,6 +160,11 @@ class CmdSizaDecisionStep(Command):
         priority = result.get("priority")
         engine = result.get("engine")
 
+        if result.get("job_claim_acquired"):
+            self.caller.msg(
+                f"[CLAIM] {goal_id} -> {result.get('job_claim_owner_name') or npc.key}"
+            )
+
         if status in {"MOVED_GOAL", "ARRIVED_GOAL"}:
             self.caller.msg(
                 f"[DECISION] {npc.key}: {goal_type} {goal_id} (priority={priority}) | engine={engine}"
@@ -198,6 +210,8 @@ class CmdSizaDecisionStep(Command):
                 self.caller.msg(
                     f"[DECISION] completion_effects={result.get('job_completion_effects')}"
                 )
+            if result.get("job_claim_released"):
+                self.caller.msg(f"[CLAIM RELEASED] {goal_id}")
             return
 
         if status in {"AT_GOAL", "GOAL_COMPLETED"}:
