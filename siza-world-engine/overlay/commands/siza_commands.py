@@ -3,7 +3,7 @@ import unicodedata
 
 from evennia import Command
 
-from services.ollama_narrator import narrate_perception_async
+from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
 
 
@@ -80,6 +80,22 @@ def _format_roll(result):
         f"[PER TEST] {roll['stat_value']} + d{roll['die_sides']}({roll['die']}) "
         f"= {roll['total']}"
     )
+
+
+class CmdSizaStatus(Command):
+    """Show the Siza runtime build currently loaded by Evennia."""
+
+    key = "siza-status"
+    aliases = ["sizastatus"]
+    locks = "cmd:all()"
+
+    def func(self):
+        caller = self.caller
+        location = getattr(caller, "location", None)
+        caller.msg(f"SIZA narrator build: {NARRATOR_BUILD}")
+        if location:
+            caller.msg(f"Room: {location.key} | room_id={location.db.room_id}")
+        caller.msg("Perception failures: deterministic | Move prose: Qwen + post-validation guard")
 
 
 class CmdSizaNoMatch(Command):
