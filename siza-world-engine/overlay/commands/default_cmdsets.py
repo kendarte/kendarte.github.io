@@ -20,6 +20,10 @@ from commands.job_commands import (
     CmdSizaWorksite,
 )
 from commands.need_commands import CmdSizaNeeds, CmdSizaNeedSet
+from commands.personality_commands import (
+    CmdSizaPersonality,
+    CmdSizaPersonalityToggle,
+)
 from commands.relationship_commands import (
     CmdSizaRelationships,
     CmdSizaRelationshipToggle,
@@ -60,6 +64,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDecisionMode())
         self.add(CmdSizaGoalToggle())
         self.add(CmdSizaDecisionStep())
+        self.add(CmdSizaPersonality())
+        self.add(CmdSizaPersonalityToggle())
         self.add(CmdSizaJobs())
         self.add(CmdSizaJobToggle())
         self.add(CmdSizaJobRelease())
