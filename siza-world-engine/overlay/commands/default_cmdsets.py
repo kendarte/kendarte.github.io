@@ -3,7 +3,10 @@ from evennia import default_cmds
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
+    CmdSizaSimStart,
+    CmdSizaSimStatus,
     CmdSizaSimStep,
+    CmdSizaSimStop,
     CmdSizaStatus,
     CmdSizaWorldCheck,
 )
@@ -18,6 +21,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaWorldCheck())
         self.add(CmdSizaNPCState())
         self.add(CmdSizaSimStep())
+        self.add(CmdSizaSimStart())
+        self.add(CmdSizaSimStop())
+        self.add(CmdSizaSimStatus())
         self.add(CmdSizaNoMatch())
 
 
