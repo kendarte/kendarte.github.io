@@ -2,6 +2,8 @@ from collections import deque
 
 from evennia import search_object, search_tag
 
+from services.world_clock import schedule_is_active, schedule_label, world_clock_state
+
 
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
@@ -23,6 +25,13 @@ def _plain_dict(value):
         return dict(value)
     except Exception:
         return {}
+
+
+def _record(raw):
+    try:
+        return {str(key): value for key, value in raw.items()}
+    except Exception:
+        return None
 
 
 def _npc_candidates():
@@ -115,21 +124,66 @@ def find_path(start_room, target_room):
     return None
 
 
-def _routine_entry(npc, index=None):
-    routine = _plain_list(npc.db.routine)
-    if not routine:
+def _routine_records(npc):
+    output = []
+    for index, raw in enumerate(_plain_list(npc.db.routine)):
+        entry = _record(raw)
+        if entry is not None:
+            output.append((index, entry))
+    return output
+
+
+def _active_routine_records(npc):
+    """Scheduled entries override unscheduled circular fallback while active."""
+    records = _routine_records(npc)
+    if not records:
+        return []
+
+    state = world_clock_state()
+    scheduled_active = []
+    unscheduled = []
+    for index, entry in records:
+        schedule = entry.get("schedule")
+        if schedule:
+            if schedule_is_active(schedule, state=state):
+                scheduled_active.append((index, entry))
+        else:
+            unscheduled.append((index, entry))
+
+    return scheduled_active if scheduled_active else unscheduled
+
+
+def routine_entry(npc, index=None):
+    """Return the routine entry currently permitted by the world clock."""
+    active = _active_routine_records(npc)
+    if not active:
         return None, None
+
+    if index is None:
+        try:
+            preferred = int(npc.db.routine_index or 0)
+        except (TypeError, ValueError):
+            preferred = 0
+    else:
+        try:
+            preferred = int(index)
+        except (TypeError, ValueError):
+            preferred = 0
+
+    for entry_index, entry in active:
+        if entry_index == preferred:
+            return entry_index, entry
+    return active[0]
+
+
+def _sync_routine_index(npc, index):
     try:
-        current = int(npc.db.routine_index or 0) if index is None else int(index)
+        current = int(npc.db.routine_index or 0)
     except (TypeError, ValueError):
         current = 0
-    current %= len(routine)
-    raw = routine[current]
-    try:
-        entry = {str(k): v for k, v in raw.items()}
-    except Exception:
-        return None, None
-    return current, entry
+    if index is not None and current != int(index):
+        npc.db.routine_index = int(index)
+        npc.db.routine_hold_remaining = 0
 
 
 def _target_room(entry):
@@ -139,17 +193,25 @@ def _target_room(entry):
 
 
 def _advance_routine(npc):
-    routine = _plain_list(npc.db.routine)
-    if not routine:
+    active = _active_routine_records(npc)
+    if not active:
         return None, None
+
     try:
         current = int(npc.db.routine_index or 0)
     except (TypeError, ValueError):
-        current = 0
-    next_index = (current + 1) % len(routine)
+        current = active[0][0]
+
+    indices = [index for index, _entry in active]
+    if current in indices:
+        position = indices.index(current)
+        next_index = indices[(position + 1) % len(indices)]
+    else:
+        next_index = indices[0]
+
     npc.db.routine_index = next_index
     npc.db.routine_hold_remaining = 0
-    return _routine_entry(npc, next_index)
+    return routine_entry(npc, next_index)
 
 
 def _entry_duration(entry):
@@ -164,19 +226,22 @@ def _routine_activity_kind(entry):
 
 
 def _routine_meta(index, entry):
+    schedule = (entry or {}).get("schedule")
     return {
         "routine_index": index,
         "routine_id": (entry or {}).get("id"),
         "routine_room_id": (entry or {}).get("room_id"),
         "routine_room_key": (entry or {}).get("room_key"),
         "routine_activity_kind": _routine_activity_kind(entry),
+        "routine_schedule": schedule,
+        "routine_schedule_label": schedule_label(schedule),
     }
 
 
 def npc_state(npc):
     if not npc:
         return None
-    index, entry = _routine_entry(npc)
+    index, entry = routine_entry(npc)
     try:
         hold = int(npc.db.routine_hold_remaining or 0)
     except (TypeError, ValueError):
@@ -187,6 +252,7 @@ def npc_state(npc):
         "location": npc.location.key if npc.location else None,
         "room_id": npc.location.db.room_id if npc.location else None,
         "job": _plain_dict(npc.db.job),
+        "job_schedule": _plain_dict(npc.db.job_schedule),
         "current_activity": npc.db.current_activity,
         "destination_id": npc.db.destination_id,
         "routine_index": index,
@@ -205,10 +271,17 @@ def simstep(npc):
     if not npc.location:
         return {"status": "NO_LOCATION", "npc": npc.key}
 
-    index, entry = _routine_entry(npc)
+    index, entry = routine_entry(npc)
     if entry is None:
-        return {"status": "NO_ROUTINE", "npc": npc.key}
+        npc.db.current_activity = "sin rutina activa para la hora actual"
+        return {
+            "status": "NO_ROUTINE",
+            "npc": npc.key,
+            "action_kind": "IDLE",
+            "activity": npc.db.current_activity,
+        }
 
+    _sync_routine_index(npc, index)
     target = _target_room(entry)
     if not target:
         return {
@@ -239,6 +312,14 @@ def simstep(npc):
             }
 
         index, entry = _advance_routine(npc)
+        if entry is None:
+            npc.db.current_activity = "sin rutina activa para la hora actual"
+            return {
+                "status": "NO_ROUTINE",
+                "npc": npc.key,
+                "action_kind": "IDLE",
+                "activity": npc.db.current_activity,
+            }
         target = _target_room(entry)
         if not target:
             return {
