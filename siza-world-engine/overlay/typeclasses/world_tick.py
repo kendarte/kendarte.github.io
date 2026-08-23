@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.18.0-world-events"
+WORLD_TICK_BUILD = "0.19.0-world-danger"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -69,7 +69,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for time, events, work shifts, needs and NPC simulation."""
+    """Persistent global world tick for time, incidents, work shifts, needs and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -97,7 +97,6 @@ class SizaWorldTick(DefaultScript):
         if not bool(self.db.manual_enabled):
             return
 
-        # World time advances first. Everything in this tick sees the new time.
         try:
             world_clock_result = advance_world_clock(self)
         except Exception as exc:
@@ -117,8 +116,8 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        # World EVENT state is produced before arbitration and NPC decisions, so
-        # EVENT priority can block a lower-priority JOB claim in this same tick.
+        # Persistent EVENT/DANGER state is produced before arbitration and NPC
+        # decisions so priority 80/100 incidents can block lower-priority work.
         try:
             event_results = refresh_world_event_rules()
         except Exception as exc:
@@ -132,8 +131,6 @@ class SizaWorldTick(DefaultScript):
 
         npcs = list(simulated_npcs())
 
-        # CLOCK needs resolve before handoff/arbitration. ACTIVITY consequences
-        # resolve only after the action actually executed later in this tick.
         need_results = []
         for npc in npcs:
             try:
@@ -147,7 +144,6 @@ class SizaWorldTick(DefaultScript):
                 }
             need_results.append(need_result)
 
-        # Existing claims may be released when the owner's authored shift closes.
         try:
             handoff_results = release_offshift_claims()
         except Exception as exc:
@@ -159,7 +155,6 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        # Arbitration sees current time, active world events and current needs.
         try:
             refresh_job_claims()
             arbitration_results = arbitrate_job_claims(npcs)
