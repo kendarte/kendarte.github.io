@@ -18,6 +18,7 @@ class NPC(Character):
         # until the world clock and final need math are frozen.
         self.db.home_room_id = None
         self.db.work_room_id = None
+        self.db.rest_room_id = None
         self.db.routine = []
         self.db.routine_index = 0
         self.db.current_activity = None
