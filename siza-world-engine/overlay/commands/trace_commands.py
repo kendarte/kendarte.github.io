@@ -99,6 +99,13 @@ def _handoff_lines(packet):
     ]
 
 
+def _signed(value):
+    try:
+        return f"{int(value or 0):+}"
+    except (TypeError, ValueError):
+        return "+0"
+
+
 def _arbitration_lines(packet):
     if packet.get("status") == "ERROR":
         return [f"[ARBITRATION] ERROR={packet.get('error')}"]
@@ -111,6 +118,7 @@ def _arbitration_lines(packet):
     candidates = packet.get("candidates") or []
     candidate_text = ", ".join(
         f"{row.get('npc_name')}:{row.get('distance')}"
+        + (f"(p={row.get('job_priority')})" if row.get("job_priority") is not None else "")
         for row in candidates
     ) or "NONE"
 
@@ -126,9 +134,21 @@ def _arbitration_lines(packet):
                 f" | blocker={row.get('blocker_type')} {row.get('blocker_id')}"
                 f" priority={row.get('blocker_priority')}"
             )
+            if row.get("blocker_personality_modifier"):
+                blocker += (
+                    f" base={row.get('blocker_base_priority')}"
+                    f" personality={_signed(row.get('blocker_personality_modifier'))}"
+                )
+        job_meta = ""
+        if row.get("job_personality_modifier"):
+            job_meta = (
+                f" | job_priority={row.get('job_priority')}"
+                f" base={row.get('job_base_priority')}"
+                f" personality={_signed(row.get('job_personality_modifier'))}"
+            )
         lines.append(
             f"      [ARBITRATION EXCLUDED] {row.get('npc_name')} | "
-            f"reason={row.get('reason')}{blocker}"
+            f"reason={row.get('reason')}{blocker}{job_meta}"
         )
     return lines
 
@@ -156,6 +176,12 @@ def _npc_lines(result):
         movement = f"      location={result.get('location')}"
 
     lines = [head]
+    if result.get("personality_modifier"):
+        lines.append(
+            f"      [PRIORITY] base={result.get('base_priority')} | "
+            f"personality={_signed(result.get('personality_modifier'))} | "
+            f"effective={result.get('effective_priority')}"
+        )
     if result.get("job_claim_acquired"):
         lines.append(
             f"      [CLAIM] {goal_id} -> {result.get('job_claim_owner_name') or npc}"
@@ -206,7 +232,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including incidents, time, shifts, needs and work."""
+    """Show recent persistent World Tick history, including effective decision priorities."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
