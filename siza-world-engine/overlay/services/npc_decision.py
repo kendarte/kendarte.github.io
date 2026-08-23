@@ -1,11 +1,11 @@
 from evennia import search_object
 
-from services.job_engine import collect_job_candidates, complete_job_task
+from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.11.0-activity-needs"
+DECISION_BUILD = "0.12.0-job-progress"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -239,11 +239,30 @@ def _complete_selected_goal(npc, goal):
         return complete_need_goal(npc, goal)
 
     if source == "WORLD_JOB":
-        site = complete_job_task(npc, goal.get("task_id"))
+        packet = advance_job_task(
+            npc,
+            goal.get("task_id"),
+            work_units=goal.get("work_per_action") or 1,
+        )
+        if not packet:
+            return {
+                "completed": False,
+                "worked": False,
+                "completion_source": "WORLD_JOB",
+                "completion_site": None,
+            }
+        site = packet.get("site")
         return {
-            "completed": bool(site),
+            "completed": bool(packet.get("completed")),
+            "worked": bool(packet.get("worked")),
             "completion_source": "WORLD_JOB",
             "completion_site": site.key if site else None,
+            "task_status": packet.get("status"),
+            "work_done_before": packet.get("work_done_before"),
+            "work_done": packet.get("work_done"),
+            "work_required": packet.get("work_required"),
+            "work_added": packet.get("work_added"),
+            "job_completion_effects": packet.get("completion_effects") or [],
         }
 
     if source == "AUTHORED_GOAL" and goal.get("one_shot"):
@@ -278,8 +297,16 @@ def _goal_action_kind(goal):
     return "IDLE"
 
 
+def _status_after_completion(goal, completion):
+    if completion.get("completed"):
+        return "GOAL_COMPLETED"
+    if str(goal.get("source") or "") == "WORLD_JOB" and completion.get("worked"):
+        return "WORKING_GOAL"
+    return "AT_GOAL"
+
+
 def decision_step(npc):
-    """Choose one authorized goal and execute at most one real Exit hop."""
+    """Choose one authorized goal and execute at most one real Exit hop or one work action."""
     decision = choose_goal(npc)
     goal = decision.get("selected")
     if not goal:
@@ -301,6 +328,8 @@ def decision_step(npc):
         "activity": goal.get("activity"),
         "source": goal.get("source"),
         "task_id": goal.get("task_id"),
+        "work_done": goal.get("work_done"),
+        "work_required": goal.get("work_required"),
         "need_key": goal.get("need_key"),
         "need_rule_id": goal.get("need_rule_id"),
         "affordance": goal.get("affordance"),
@@ -325,9 +354,8 @@ def decision_step(npc):
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
         completion = _complete_selected_goal(npc, goal)
-        status = "GOAL_COMPLETED" if completion.get("completed") else "AT_GOAL"
         return {
-            "status": status,
+            "status": _status_after_completion(goal, completion),
             "npc": npc.key,
             "engine": "DECISION",
             "goal_id": goal.get("id"),
@@ -391,9 +419,15 @@ def decision_step(npc):
     }
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
-        completion = _complete_selected_goal(npc, goal)
-        status = "GOAL_COMPLETED" if completion.get("completed") else "ARRIVED_GOAL"
-        action_kind = _goal_action_kind(goal)
+        if str(goal.get("source") or "") == "WORLD_JOB":
+            # Arrival itself is MOVE. Work begins on a later tick, preventing a
+            # single tick from both traversing a Room and producing work units.
+            status = "ARRIVED_GOAL"
+            action_kind = "MOVE"
+        else:
+            completion = _complete_selected_goal(npc, goal)
+            status = _status_after_completion(goal, completion)
+            action_kind = _goal_action_kind(goal)
     else:
         npc.db.current_activity = f"en camino a {target.key}"
         status = "MOVED_GOAL"
