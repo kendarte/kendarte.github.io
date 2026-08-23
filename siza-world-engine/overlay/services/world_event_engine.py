@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from evennia import search_object, search_tag
 
 
-WORLD_EVENT_BUILD = "0.18.0-world-events"
+WORLD_EVENT_BUILD = "0.19.0-world-danger"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 
@@ -102,6 +102,19 @@ def _npc_job_id(npc):
     return str(job.get("id") or "").strip()
 
 
+def _event_goal_type(event):
+    return str((event or {}).get("goal_type") or (event or {}).get("type") or "EVENT").upper()
+
+
+def _affected_room_ids(site, event):
+    values = {str(value) for value in _plain_list((event or {}).get("affected_room_ids")) if value}
+    if not values and _event_goal_type(event) == "DANGER":
+        room_id = str(getattr(site.db, "room_id", "") or "")
+        if room_id:
+            values.add(room_id)
+    return values
+
+
 def _audience_matches(npc, event):
     if not npc:
         return False
@@ -121,7 +134,7 @@ def _audience_matches(npc, event):
 
 
 def refresh_world_event_rules():
-    """Evaluate persistent world state and activate/deactivate EVENT instances."""
+    """Evaluate persistent world state and activate/deactivate EVENT/DANGER instances."""
     results = []
     now = datetime.now(timezone.utc).isoformat()
 
@@ -129,7 +142,11 @@ def refresh_world_event_rules():
         state = _plain_dict(site.db.world_event_state)
         rules = _rules(site)
         instances = _instances(site)
-        by_id = {str(item.get("id")): (index, item) for index, item in enumerate(instances) if item.get("id")}
+        by_id = {
+            str(item.get("id")): (index, item)
+            for index, item in enumerate(instances)
+            if item.get("id")
+        }
         changed = False
 
         for rule in rules:
@@ -140,6 +157,13 @@ def refresh_world_event_rules():
             field = str(rule.get("field") or "").strip()
             if not rule_id or not event_id or not field:
                 continue
+
+            goal_type = str(rule.get("goal_type") or "EVENT").upper()
+            default_priority = 100 if goal_type == "DANGER" else 80
+            response_mode = str(
+                rule.get("response_mode")
+                or ("PERSISTENT" if goal_type == "DANGER" else "ACK")
+            ).upper()
 
             actual = state.get(field)
             condition_met = _compare(actual, rule.get("op"), rule.get("value"))
@@ -164,11 +188,20 @@ def refresh_world_event_rules():
                 {
                     "id": event_id,
                     "rule_id": rule_id,
-                    "type": "EVENT",
-                    "priority": int(rule.get("priority", 80) or 80),
+                    "type": goal_type,
+                    "goal_type": goal_type,
+                    "response_mode": response_mode,
+                    "priority": int(rule.get("priority", default_priority) or default_priority),
                     "target_room_id": rule.get("target_room_id") or getattr(site.db, "room_id", None),
                     "target_room_key": rule.get("target_room_key") or site.key,
-                    "activity": rule.get("activity") or "atendiendo un evento del mundo",
+                    "activity": rule.get("activity")
+                    or (
+                        "evacuando un peligro del mundo"
+                        if goal_type == "DANGER"
+                        else "atendiendo un evento del mundo"
+                    ),
+                    "affected_room_ids": _plain_list(rule.get("affected_room_ids")),
+                    "blocks_jobs": bool(rule.get("blocks_jobs", goal_type == "DANGER")),
                     "npc_ids": _plain_list(rule.get("npc_ids")),
                     "job_ids": _plain_list(rule.get("job_ids")),
                     "canon_status": rule.get("canon_status") or "prototype",
@@ -201,6 +234,7 @@ def refresh_world_event_rules():
                     "room_id": getattr(site.db, "room_id", None),
                     "rule_id": rule_id,
                     "event_id": event_id,
+                    "goal_type": goal_type,
                     "field": field,
                     "actual": actual,
                     "condition_met": condition_met,
@@ -218,10 +252,17 @@ def refresh_world_event_rules():
 
 
 def collect_event_candidates(npc, default_priority=80):
-    """Return active persistent world EVENT goals relevant and unacknowledged by this NPC."""
+    """Return active persistent EVENT/DANGER goals relevant to this NPC.
+
+    EVENT uses one ACK per occurrence. DANGER never ACKs; it persists while the
+    NPC is inside an affected room, or while an already-started evacuation has
+    not yet reached its safe target.
+    """
     if not npc or not bool(npc.db.decision_enabled):
         return []
     npc_id = str(getattr(npc.db, "npc_id", "") or "")
+    current_room_id = str(getattr(getattr(npc, "location", None).db, "room_id", "") or "") if npc.location else ""
+    current_goal = _plain_dict(getattr(npc.db, "current_goal", {}))
     output = []
 
     for site in event_sites():
@@ -230,34 +271,61 @@ def collect_event_candidates(npc, default_priority=80):
                 continue
             if not _audience_matches(npc, event):
                 continue
-            acknowledged = {str(value) for value in _plain_list(event.get("acknowledged_by"))}
-            if npc_id in acknowledged:
-                continue
+
+            goal_type = _event_goal_type(event)
+            if goal_type == "DANGER":
+                target_room_id = str(event.get("target_room_id") or "")
+                affected = _affected_room_ids(site, event)
+                in_affected_room = bool(current_room_id and current_room_id in affected)
+                continuing_escape = (
+                    str(current_goal.get("source") or "") == "WORLD_EVENT"
+                    and str(current_goal.get("event_id") or "") == str(event.get("id") or "")
+                    and current_room_id != target_room_id
+                )
+                if not in_affected_room and not continuing_escape:
+                    continue
+            else:
+                acknowledged = {
+                    str(value) for value in _plain_list(event.get("acknowledged_by"))
+                }
+                if npc_id in acknowledged:
+                    continue
+
+            fallback_priority = 100 if goal_type == "DANGER" else default_priority
             try:
-                priority = int(event.get("priority", default_priority))
+                priority = int(event.get("priority", fallback_priority))
             except (TypeError, ValueError):
-                priority = int(default_priority)
+                priority = int(fallback_priority)
+
             output.append(
                 {
-                    "id": f"EVENT:{event.get('id')}",
+                    "id": f"{goal_type}:{event.get('id')}",
                     "event_id": event.get("id"),
-                    "type": "EVENT",
+                    "type": goal_type,
                     "priority": priority,
                     "active": True,
                     "target_room_id": event.get("target_room_id"),
                     "target_room_key": event.get("target_room_key"),
-                    "activity": event.get("activity") or "atendiendo un evento del mundo",
+                    "activity": event.get("activity")
+                    or (
+                        "evacuando un peligro del mundo"
+                        if goal_type == "DANGER"
+                        else "atendiendo un evento del mundo"
+                    ),
                     "one_shot": False,
                     "source": "WORLD_EVENT",
                     "occurrence": event.get("occurrence"),
                     "event_site": site.key,
+                    "response_mode": event.get("response_mode"),
+                    "affected_room_ids": list(_affected_room_ids(site, event)),
+                    "blocks_jobs": bool(event.get("blocks_jobs", False)),
                 }
             )
     return output
 
 
 def acknowledge_world_event(npc, event_id):
-    """Acknowledge one active EVENT for one NPC without changing the event's world condition."""
+    """Resolve one world incident response without mutating its world condition."""
     wanted = str(event_id or "").strip()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     if not wanted or not npc or not npc_id:
@@ -286,7 +354,33 @@ def acknowledge_world_event(npc, event_id):
                     "site": site,
                 }
 
-            acknowledged = [str(value) for value in _plain_list(event.get("acknowledged_by"))]
+            goal_type = _event_goal_type(event)
+            if goal_type == "DANGER":
+                target_room_id = str(event.get("target_room_id") or "")
+                current_room_id = str(getattr(getattr(npc, "location", None).db, "room_id", "") or "") if npc.location else ""
+                if target_room_id and current_room_id != target_room_id:
+                    return {
+                        "completed": False,
+                        "acknowledged": False,
+                        "reason": "DANGER_NOT_CLEAR",
+                        "event_id": wanted,
+                        "event_occurrence": event.get("occurrence"),
+                        "event_site": site.key,
+                        "site": site,
+                    }
+                return {
+                    "completed": True,
+                    "acknowledged": False,
+                    "reason": "DANGER_ESCAPED",
+                    "event_id": wanted,
+                    "event_occurrence": event.get("occurrence"),
+                    "event_site": site.key,
+                    "site": site,
+                }
+
+            acknowledged = [
+                str(value) for value in _plain_list(event.get("acknowledged_by"))
+            ]
             already = npc_id in acknowledged
             if not already:
                 acknowledged.append(npc_id)
@@ -308,7 +402,52 @@ def acknowledge_world_event(npc, event_id):
                 "site": site,
             }
 
-    return {"completed": False, "acknowledged": False, "reason": "EVENT_NOT_FOUND", "event_id": wanted}
+    return {
+        "completed": False,
+        "acknowledged": False,
+        "reason": "EVENT_NOT_FOUND",
+        "event_id": wanted,
+    }
+
+
+def danger_blocks_room(room, npc=None):
+    """Return highest-priority active DANGER that blocks work in this room."""
+    if not room:
+        return None
+    room_id = str(getattr(room.db, "room_id", "") or "")
+    if not room_id:
+        return None
+
+    blockers = []
+    for site in event_sites():
+        for event in _instances(site):
+            if not bool(event.get("active", False)):
+                continue
+            if _event_goal_type(event) != "DANGER":
+                continue
+            if not bool(event.get("blocks_jobs", True)):
+                continue
+            if npc is not None and not _audience_matches(npc, event):
+                continue
+            if room_id not in _affected_room_ids(site, event):
+                continue
+            try:
+                priority = int(event.get("priority", 100))
+            except (TypeError, ValueError):
+                priority = 100
+            blockers.append(
+                {
+                    "event_id": event.get("id"),
+                    "type": "DANGER",
+                    "priority": priority,
+                    "site": site.key,
+                    "room_id": room_id,
+                    "occurrence": event.get("occurrence"),
+                }
+            )
+
+    blockers.sort(key=lambda item: int(item.get("priority", 0)), reverse=True)
+    return blockers[0] if blockers else None
 
 
 def set_event_state(site, field, value):
