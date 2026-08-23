@@ -20,25 +20,31 @@ REGLAS DURAS
   emociones, pistas, materiales, clima, resultados ni cambios de estado.
 - Una lista vacia significa 'no hay datos autorizados', NO significa que esas cosas no existan.
 - No completes huecos con atmosfera generica.
-- No conviertas ausencia de datos en afirmaciones como 'no hay nadie', 'no hay muebles' o 'esta vacio'.
+- No conviertas ausencia de datos en afirmaciones como 'no hay nadie', 'no hay muebles',
+  'no esta aqui', 'no existe', 'esta vacio' o equivalentes.
+- No inventes posiciones relativas ni cardinales. Palabras como izquierda, derecha, delante,
+  detras, norte, sur, este u oeste SOLO pueden aparecer si los datos autorizados las dicen literalmente.
+- No conviertas una conexion entre Rooms en una posicion espacial que no haya sido escrita.
 - No expliques mecanicas ni menciones JSON, paquetes, World Engine o instrucciones internas.
 - Si una tirada no descubre nada, no inventes una pista compensatoria.
 
 ESTILO SIZA
 - Espanol contemporaneo, fluido y concreto. No arcaico, no grandilocuente, no pseudo-poetico.
-- Prioriza orientacion espacial y acciones fisicas que ayuden a imaginar el lugar.
+- Haz que el lector pueda imaginar el espacio usando unicamente geometria y elementos autorizados.
 - Evita redundancias y frases mecanicas.
 - Evita abusar de 'el ambiente es', 'se percibe', 'se siente', 'parece' y adjetivos emocionales genericos.
 - No describas una salida con tautologias.
+- Prefiere 2-4 oraciones limpias a rellenar el parrafo con detalles nuevos.
 
 MAL: 'La unica salida es salir a la plaza.'
-BIEN: 'A tu espalda, el acceso devuelve a la Plaza de Recepcion.'
+BIEN: 'El acceso comunica con la Plaza de Recepcion.'
+MAL: 'A la izquierda esta la cantina' si izquierda no fue autorizada.
+BIEN: 'Desde la plaza se puede acceder a la cantina.' si esa conexion fue autorizada.
 MAL: 'El ambiente es calido y acogedor.' si temperatura y atmosfera no fueron autorizadas.
-BIEN: usa solo la forma, elementos y sensaciones que aparezcan expresamente en los datos.
 MAL: 'No hay muebles ni personas.' cuando las listas vienen vacias.
 BIEN: simplemente no menciones muebles ni personas.
 
-La prosa puede enlazar hechos con naturalidad, pero nunca agregar hechos nuevos.
+La prosa puede enlazar y reformular hechos con naturalidad, pero nunca agregar hechos nuevos.
 """
 
 
@@ -76,22 +82,6 @@ def _visible_contents(room, exclude=None):
     return result
 
 
-def _room_exits(room):
-    result = []
-    if not room:
-        return result
-    for exit_obj in getattr(room, "exits", []) or []:
-        result.append(
-            {
-                "name": exit_obj.key,
-                "destination": exit_obj.destination.key if exit_obj.destination else None,
-                "door_state": exit_obj.db.door_state,
-                "is_locked": bool(exit_obj.db.is_locked),
-            }
-        )
-    return result
-
-
 def _room_packet(room, exclude=None):
     if not room:
         return {}
@@ -103,8 +93,11 @@ def _room_packet(room, exclude=None):
             "space_profile": room.db.space_profile or {},
             "sensory_facts": room.db.sensory_facts or {},
             "visible_contents": _visible_contents(room, exclude=exclude),
-            "exits": _room_exits(room),
             "conditions": room.db.conditions or {},
+            "important_note": (
+                "No infieras izquierda/derecha/delante/detras/cardinales. "
+                "Solo space_profile puede autorizar relaciones espaciales."
+            ),
         }
     )
 
@@ -120,16 +113,16 @@ def build_move_packet(character, source, destination, exit_obj):
                 "name": source.key if source else None,
             },
             "to": _room_packet(destination, exclude=character),
-            "used_exit": {
+            "used_connection": {
                 "name": exit_obj.key,
                 "exit_id": exit_obj.db.exit_id,
                 "door_state": exit_obj.db.door_state,
             },
             "resolution": "SUCCESS",
             "instruction": (
-                "Narra solamente la llegada inmediata en 45-90 palabras. "
-                "Ayuda a orientar al lector en el espacio. No enumeres todas las salidas salvo que sea natural. "
-                "No inventes detalle ambiental para llenar espacio."
+                "Narra solamente la llegada inmediata en 35-70 palabras. "
+                "Presenta la forma del lugar y uno o dos elementos autorizados. "
+                "No enumeres conexiones ni inventes orientacion. No rellenes espacio con atmosfera."
             ),
         }
     )
@@ -141,21 +134,17 @@ def build_perception_packet(character, result):
 
     instructions = {
         "OBSERVED": (
-            "Describe lo que el personaje puede captar sin tirada. Prioriza forma y orientacion. "
-            "Incluye solo hechos obvios, hechos ya descubiertos y datos espaciales autorizados."
+            "Describe en 30-65 palabras lo que el personaje capta sin tirada. "
+            "Usa solo geometria, hechos obvios y descubrimientos previos autorizados. "
+            "No inventes posiciones ni conductas de personas."
         ),
         "AUTO_SUCCESS": (
-            "El objetivo solicitado esta claramente visible. Indicalo de manera natural; no inventes detalles del objetivo."
+            "El objetivo solicitado esta claramente visible. Indicalo de manera natural; "
+            "no inventes detalles del objetivo."
         ),
         "DISCOVERY": (
-            "Narra el descubrimiento de los hechos nuevos autorizados. No anadas pistas, causas ni interpretaciones nuevas."
-        ),
-        "NO_DISCOVERY": (
-            "La busqueda no produjo ningun detalle nuevo. Narralo brevemente sin afirmar que el objetivo no existe."
-        ),
-        "NO_AUTHORIZED_DISCOVERY": (
-            "No existe ningun hecho autorizado que esta accion pueda revelar aqui. Narralo brevemente como una busqueda "
-            "sin resultado concreto; no inventes una pista y no declares que el objetivo es imposible o inexistente."
+            "Narra en 25-55 palabras el descubrimiento de los hechos nuevos autorizados. "
+            "No anadas pistas, causas ni interpretaciones nuevas."
         ),
     }
 
@@ -165,7 +154,7 @@ def build_perception_packet(character, result):
             "actor": character.key,
             "room": _room_packet(room, exclude=character),
             "resolution": result,
-            "instruction": instructions.get(status, "Narra solamente los hechos autorizados en 35-85 palabras."),
+            "instruction": instructions.get(status, "Narra solamente los hechos autorizados en 25-55 palabras."),
         }
     )
 
@@ -201,8 +190,8 @@ def _request_chat(packet):
         "stream": False,
         "think": False,
         "options": {
-            "temperature": 0.45,
-            "num_predict": 190,
+            "temperature": 0.2,
+            "num_predict": 140,
             "num_ctx": OLLAMA_NUM_CTX,
         },
     }
@@ -245,14 +234,32 @@ def narrate_move_async(character, source, destination, exit_obj):
 
 
 def narrate_perception_async(character, result):
-    packet = build_perception_packet(character, result)
     status = result.get("status")
+    target = (result.get("target") or "").strip()
+
+    # These states are intentionally deterministic. Qwen is not allowed to turn
+    # 'no authorized information' into 'the target is absent'.
+    if status == "NO_AUTHORIZED_DISCOVERY":
+        if target:
+            character.msg(f"\nLa busqueda no revela informacion nueva sobre {target}.")
+        else:
+            character.msg("\nLa busqueda no revela informacion nueva.")
+        return None
+
+    if status == "NO_DISCOVERY":
+        if target:
+            character.msg(f"\nBuscas indicios sobre {target}, pero no descubres ningun detalle nuevo.")
+        else:
+            character.msg("\nLa busqueda no descubre ningun detalle nuevo.")
+        return None
+
+    packet = build_perception_packet(character, result)
     if status == "DISCOVERY" and result.get("discovered"):
         fallback = "Descubres: " + "; ".join(result["discovered"])
     elif status == "AUTO_SUCCESS" and result.get("visible_targets"):
         fallback = "Ves: " + ", ".join(result["visible_targets"])
     elif status == "OBSERVED":
-        fallback = "Observas el lugar sin encontrar nada que requiera una tirada."
+        fallback = "Observas el lugar sin que haga falta una busqueda minuciosa."
     else:
-        fallback = "La busqueda no revela ningun detalle nuevo."
+        fallback = "No obtienes informacion nueva."
     return _narrate_async(character, packet, fallback)
