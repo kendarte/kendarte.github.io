@@ -8,6 +8,13 @@ from services.decision_personality import (
 from services.npc_simulation import find_npc
 
 
+def _signed(value):
+    try:
+        return f"{int(value or 0):+}"
+    except (TypeError, ValueError):
+        return "+0"
+
+
 class CmdSizaPersonality(Command):
     """Inspect data-driven decision modifiers for one NPC."""
 
@@ -38,7 +45,7 @@ class CmdSizaPersonality(Command):
             for item in modifiers:
                 self.caller.msg(
                     f"  {item.get('id')} | enabled={bool(item.get('enabled'))} | "
-                    f"value={item.get('value', 0):+} | when={item.get('when') or {}} | "
+                    f"value={_signed(item.get('value'))} | when={item.get('when') or {}} | "
                     f"status={item.get('canon_status') or 'prototype'}"
                 )
         self.caller.msg("===============================================")
@@ -76,5 +83,5 @@ class CmdSizaPersonalityToggle(Command):
 
         self.caller.msg(
             f"{npc.key}: {modifier_id} | enabled={bool(modifier.get('enabled'))} | "
-            f"value={int(modifier.get('value', 0) or 0):+} | when={modifier.get('when') or {}}"
+            f"value={_signed(modifier.get('value'))} | when={modifier.get('when') or {}}"
         )
