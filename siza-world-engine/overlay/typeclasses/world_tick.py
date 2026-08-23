@@ -2,13 +2,27 @@ from datetime import datetime, timezone
 
 from evennia import DefaultScript, create_script, search_script
 
+from services.npc_decision import decision_step
 from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
+WORLD_TICK_BUILD = "0.6.0-decision-dispatch"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
+
+
+def simulate_npc_tick(npc):
+    """Dispatch one NPC tick without changing unapproved NPC behavior."""
+    if bool(npc.db.decision_enabled):
+        result = dict(decision_step(npc) or {})
+        result.setdefault("engine", "DECISION")
+        return result
+
+    result = dict(simstep(npc) or {})
+    result.setdefault("engine", "ROUTINE_V04")
+    return result
 
 
 class SizaWorldTick(DefaultScript):
@@ -25,6 +39,7 @@ class SizaWorldTick(DefaultScript):
         self.db.tick_count = 0
         self.db.last_tick_at = None
         self.db.last_results = []
+        self.db.build = WORLD_TICK_BUILD
 
     def at_repeat(self):
         if not bool(self.db.manual_enabled):
@@ -33,11 +48,12 @@ class SizaWorldTick(DefaultScript):
         results = []
         for npc in simulated_npcs():
             try:
-                result = simstep(npc)
+                result = simulate_npc_tick(npc)
             except Exception as exc:
                 result = {
                     "status": "ERROR",
                     "npc": getattr(npc, "key", "UNKNOWN"),
+                    "engine": "ERROR",
                     "error": str(exc),
                 }
             results.append(result)
@@ -45,6 +61,7 @@ class SizaWorldTick(DefaultScript):
         self.db.tick_count = int(self.db.tick_count or 0) + 1
         self.db.last_tick_at = datetime.now(timezone.utc).isoformat()
         self.db.last_results = results
+        self.db.build = WORLD_TICK_BUILD
 
 
 def get_world_tick():
@@ -75,9 +92,11 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
             autostart=True,
         )
         script.db.manual_enabled = True
+        script.db.build = WORLD_TICK_BUILD
         return script, True
 
     script.db.manual_enabled = True
+    script.db.build = WORLD_TICK_BUILD
     script.start(interval=seconds, start_delay=seconds, repeats=0)
     return script, False
 
@@ -103,6 +122,7 @@ def world_tick_state():
             "last_tick_at": None,
             "last_results": [],
             "next_repeat": None,
+            "build": WORLD_TICK_BUILD,
         }
 
     try:
@@ -119,4 +139,5 @@ def world_tick_state():
         "last_tick_at": script.db.last_tick_at,
         "last_results": list(script.db.last_results or []),
         "next_repeat": next_repeat,
+        "build": str(script.db.build or WORLD_TICK_BUILD),
     }
