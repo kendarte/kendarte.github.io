@@ -70,11 +70,13 @@ def _producer_lines(packet):
 
 def _event_lines(packet):
     if packet.get("status") == "ERROR":
-        return [f"[WORLD EVENT] {packet.get('producer')} ERROR={packet.get('error')}"]
+        return [f"[WORLD INCIDENT] {packet.get('producer')} ERROR={packet.get('error')}"]
     if not packet.get("condition_met") and not packet.get("event_active"):
         return []
+    goal_type = str(packet.get("goal_type") or "EVENT").upper()
+    label = "WORLD DANGER" if goal_type == "DANGER" else "WORLD EVENT"
     return [
-        f"[WORLD EVENT] {packet.get('event_id')} | site={packet.get('site')} | "
+        f"[{label}] {packet.get('event_id')} | site={packet.get('site')} | "
         f"{packet.get('field')}={packet.get('actual')} | condition={packet.get('condition_met')} | "
         f"active={packet.get('event_active')} | status={packet.get('event_status')} | "
         f"occurrence={packet.get('occurrence')}"
@@ -169,6 +171,10 @@ def _npc_lines(result):
         lines.append(
             f"      [EVENT ACK] {result.get('event_id')} | occurrence={result.get('event_occurrence')}"
         )
+    elif result.get("event_ack_reason") == "DANGER_ESCAPED":
+        lines.append(
+            f"      [DANGER ESCAPED] {result.get('event_id')} | occurrence={result.get('event_occurrence')}"
+        )
 
     if result.get("work_required") is not None and result.get("work_done") is not None:
         before = result.get("work_done_before")
@@ -200,7 +206,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including events, time, shifts, needs and work."""
+    """Show recent persistent World Tick history, including incidents, time, shifts, needs and work."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
