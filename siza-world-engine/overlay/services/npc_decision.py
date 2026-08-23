@@ -5,7 +5,7 @@ from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.10.1-autonomous-needs-trace"
+DECISION_BUILD = "0.10.2-routine-trace-fix"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -208,10 +208,16 @@ def set_goal_active(npc, goal_id, active):
 
 
 def _run_routine_fallback(npc, goal):
-    """Preserve the proven v0.4 routine wait/advance semantics when routine wins."""
+    """Preserve v0.4 routine semantics and report the routine entry actually executed."""
     result = dict(simstep(npc) or {})
     result["engine"] = "ROUTINE_FALLBACK"
-    result["goal_id"] = goal.get("id")
+
+    executed_routine_id = result.get("routine_id")
+    if executed_routine_id:
+        result["goal_id"] = f"ROUTINE:{executed_routine_id}"
+    else:
+        result["goal_id"] = goal.get("id")
+
     result["goal_type"] = "ROUTINE"
     result["priority"] = goal.get("priority")
     result["goal_source"] = goal.get("source")
