@@ -53,6 +53,27 @@ def _producer_lines(packet):
     return []
 
 
+def _arbitration_lines(packet):
+    if packet.get("status") == "ERROR":
+        return [f"[ARBITRATION] ERROR={packet.get('error')}"]
+
+    task_id = packet.get("task_id")
+    policy = packet.get("policy")
+    status = packet.get("status")
+    winner = packet.get("winner_name") or "NONE"
+    distance = packet.get("distance")
+    candidates = packet.get("candidates") or []
+    candidate_text = ", ".join(
+        f"{row.get('npc_name')}:{row.get('distance')}"
+        for row in candidates
+    ) or "NONE"
+
+    return [
+        f"[ARBITRATION] {task_id} | policy={policy} | status={status} | "
+        f"winner={winner} | distance={distance} | candidates={candidate_text}"
+    ]
+
+
 def _npc_lines(result):
     npc = result.get("npc", "UNKNOWN")
     status = result.get("status", "UNKNOWN")
@@ -115,7 +136,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including needs, claims and work changes."""
+    """Show recent persistent World Tick history, including arbitration, needs, claims and work."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
@@ -153,6 +174,11 @@ class CmdSizaSimTrace(Command):
 
             for packet in entry.get("producer_results") or []:
                 for line in _producer_lines(packet):
+                    self.caller.msg("  " + line)
+                    emitted = True
+
+            for packet in entry.get("arbitration_results") or []:
+                for line in _arbitration_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
