@@ -37,7 +37,10 @@ class CmdSizaDecide(Command):
         selected_id = selected.get("id") if selected else None
 
         self.caller.msg(f"=== SIZA DECISION | {DECISION_BUILD} ===")
-        self.caller.msg(f"NPC: {npc.key} | location={decision.get('location')}")
+        self.caller.msg(
+            f"NPC: {npc.key} | location={decision.get('location')} | "
+            f"decision_enabled={decision.get('decision_enabled')}"
+        )
         candidates = decision.get("candidates") or []
         if not candidates:
             self.caller.msg("Candidates: NONE")
@@ -55,6 +58,37 @@ class CmdSizaDecide(Command):
             self.caller.msg("Winner: NONE")
         self.caller.msg("No movement executed.")
         self.caller.msg("========================================")
+
+
+class CmdSizaDecisionMode(Command):
+    """Enable/disable Decision Layer dispatch for one NPC in the World Tick."""
+
+    key = "siza-decision-mode"
+    aliases = ["decision-mode"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        parts = (self.args or "").strip().split()
+        if len(parts) < 2:
+            self.caller.msg("Uso: siza-decision-mode <NPC> <on|off>")
+            return
+
+        state_word = parts[-1].lower()
+        npc_query = " ".join(parts[:-1])
+        if state_word not in {"on", "off"}:
+            self.caller.msg("El estado debe ser on u off.")
+            return
+
+        npc = find_npc(npc_query)
+        if not npc:
+            self.caller.msg("No identifico un NPC de Siza con ese nombre.")
+            return
+
+        npc.db.decision_enabled = state_word == "on"
+        mode = "DECISION" if npc.db.decision_enabled else "ROUTINE_V04"
+        self.caller.msg(
+            f"{npc.key}: decision_enabled={bool(npc.db.decision_enabled)} | world_tick_mode={mode}."
+        )
 
 
 class CmdSizaGoalToggle(Command):
@@ -111,14 +145,22 @@ class CmdSizaDecisionStep(Command):
         goal_id = result.get("goal_id")
         goal_type = result.get("goal_type")
         priority = result.get("priority")
+        engine = result.get("engine")
 
         if status in {"MOVED_GOAL", "ARRIVED_GOAL"}:
             self.caller.msg(
-                f"[DECISION] {npc.key}: {goal_type} {goal_id} (priority={priority})"
+                f"[DECISION] {npc.key}: {goal_type} {goal_id} (priority={priority}) | engine={engine}"
             )
             self.caller.msg(
                 f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
                 f"| target={result.get('target')}"
+            )
+            return
+
+        if status == "WAITING_GOAL":
+            self.caller.msg(
+                f"[DECISION] {npc.key}: ROUTINE WAITING | {result.get('location')} | "
+                f"activity={result.get('activity')} | hold={result.get('hold_remaining')}"
             )
             return
 
@@ -135,7 +177,7 @@ class CmdSizaDecisionStep(Command):
         if status in {"AT_GOAL", "GOAL_COMPLETED"}:
             self.caller.msg(
                 f"[DECISION] {npc.key}: {status} | {goal_type} {goal_id} | "
-                f"activity={result.get('activity')}"
+                f"activity={result.get('activity')} | engine={engine}"
             )
             return
 
