@@ -136,7 +136,6 @@ def _sentence(text):
 
 
 def _render_room_core(room, include_name=True):
-    """Deterministic spatial prose made only from authored Room data."""
     if not room:
         return ""
 
@@ -181,9 +180,23 @@ def _render_move_fallback(destination):
     return f"Llegas a {destination.key}."
 
 
+def _format_visible_names(names):
+    names = [str(name) for name in names if name]
+    if not names:
+        return ""
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " y " + names[-1]
+
+
 def _render_observation(character, result):
     room = getattr(character, "location", None)
     core = _render_room_core(room, include_name=True)
+
+    visible = _visible_contents(room, exclude=character)
+    if visible:
+        core = (core + f" A simple vista distingues {_format_visible_names(visible)}.").strip()
+
     known = [str(item) for item in result.get("already_known", []) if item]
     if known:
         core = (core + " " + " ".join(_sentence(item) for item in known)).strip()
@@ -259,7 +272,6 @@ def _threaded_request(packet):
 
 
 def _narrate_async(character, packet, fallback_text):
-    """Reserved for later dialogue/scene prose. Spatial prose is deterministic."""
     deferred = run_serialized(character, _threaded_request, packet)
 
     def _ok(text):
@@ -274,7 +286,6 @@ def _narrate_async(character, packet, fallback_text):
 
 
 def narrate_move_async(character, source, destination, exit_obj):
-    """Movement description is deterministic until authored spatial data is richer."""
     character.msg("\n" + _render_move_fallback(destination))
     return None
 
