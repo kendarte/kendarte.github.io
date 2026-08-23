@@ -141,10 +141,28 @@ def _append_memory(holder, memory):
     holder.db.memories = memories[-100:]
 
 
+def _relationship_identity(other):
+    """Use stable npc_id for NPCs and explicit DBREF identity for other Characters."""
+    npc_id = str(getattr(other.db, "npc_id", "") or "").strip()
+    if npc_id:
+        return npc_id, {
+            "target_type": "NPC",
+            "target_npc_id": npc_id,
+            "target_dbref": int(other.id),
+            "target_name": other.key,
+        }
+    return f"DBREF:{int(other.id)}", {
+        "target_type": "CHARACTER",
+        "target_dbref": int(other.id),
+        "target_name": other.key,
+    }
+
+
 def _update_relationship(holder, other, timestamp):
     relationships = _plain_dict(holder.db.relationships)
-    key = str(other.id)
+    key, identity = _relationship_identity(other)
     current = _plain_dict(relationships.get(key, {}))
+    current.update(identity)
     current["name"] = other.key
     current["familiarity"] = int(current.get("familiarity", 0) or 0) + 1
     current["last_interaction"] = timestamp
@@ -262,7 +280,7 @@ def _find_door(location, raw):
     if scored and scored[0][0] > 0:
         return scored[0][1]
     if len(candidates) == 1:
-        return candidates[0]
+        return candidates[0][1]
     return None
 
 
@@ -322,7 +340,6 @@ def _render_memory(mem):
             return f"Preguntaste a {who} por {topic}, pero no obtuviste información concreta."
         return f"Tuviste una interacción con {who}{place}."
 
-    # Backward compatibility with the first prototype memories already stored.
     summary = str(mem.get("summary") or "una conversación")
     return f"Registro anterior con {who}: {summary}"
 
