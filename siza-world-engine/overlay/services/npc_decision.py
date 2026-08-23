@@ -9,6 +9,10 @@ from services.job_claims import (
 from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, routine_entry, simulated_npcs, simstep
+from services.relationship_engine import (
+    collect_relationship_candidates,
+    resolve_relationship_goal,
+)
 from services.world_clock import schedule_label
 from services.world_event_engine import (
     acknowledge_world_event,
@@ -17,7 +21,7 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.19.0-world-danger"
+DECISION_BUILD = "0.20.0-relationship-obligations"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -107,7 +111,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored, world DANGER/EVENT, NEED, JOB and scheduled routine goals."""
+    """Collect authored, DANGER/EVENT, NEED, JOB, RELATIONSHIP and routine goals."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -129,6 +133,12 @@ def collect_candidates(npc):
         npc, default_priority=priorities.get("JOB", 60)
     )
     candidates.extend(filter_job_candidates_for_claim(npc, job_candidates))
+
+    candidates.extend(
+        collect_relationship_candidates(
+            npc, default_priority=priorities.get("RELATIONSHIP", 50)
+        )
+    )
 
     routine = _routine_candidate(npc, priorities)
     if routine:
@@ -293,6 +303,26 @@ def _complete_selected_goal(npc, goal):
             "job_claim_released": bool(released),
         }
 
+    if source == "RELATIONSHIP":
+        packet = resolve_relationship_goal(
+            npc,
+            goal.get("relationship_obligation_id"),
+            goal.get("relationship_target_npc_id"),
+        )
+        return {
+            "completed": bool(packet.get("completed")),
+            "completion_source": "RELATIONSHIP",
+            "completion_site": packet.get("location"),
+            "relationship_resolved": bool(packet.get("resolved")),
+            "relationship_reason": packet.get("reason"),
+            "relationship_obligation_id": packet.get("obligation_id")
+            or goal.get("relationship_obligation_id"),
+            "relationship_target_npc_id": packet.get("target_npc_id")
+            or goal.get("relationship_target_npc_id"),
+            "relationship_target_name": packet.get("target_name")
+            or goal.get("relationship_target_name"),
+        }
+
     if source == "AUTHORED_GOAL" and goal.get("one_shot"):
         changed = _disable_goal(npc, goal.get("id"))
         return {
@@ -318,6 +348,8 @@ def _goal_action_kind(goal):
         return "WORK"
     if source == "WORLD_EVENT":
         return "DANGER" if goal_type == "DANGER" else "EVENT"
+    if source == "RELATIONSHIP":
+        return "SOCIAL"
     if goal_type == "DANGER":
         return "DANGER"
     if goal_type == "RELATIONSHIP":
@@ -416,6 +448,9 @@ def decision_step(npc):
         "work_required": goal.get("work_required"),
         "claim_npc_id": claim_meta.get("job_claim_owner_id") or goal.get("claim_npc_id"),
         "claim_npc_name": claim_meta.get("job_claim_owner_name") or goal.get("claim_npc_name"),
+        "relationship_obligation_id": goal.get("relationship_obligation_id"),
+        "relationship_target_npc_id": goal.get("relationship_target_npc_id"),
+        "relationship_target_name": goal.get("relationship_target_name"),
         "need_key": goal.get("need_key"),
         "need_rule_id": goal.get("need_rule_id"),
         "affordance": goal.get("affordance"),
