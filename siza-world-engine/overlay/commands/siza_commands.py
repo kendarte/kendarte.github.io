@@ -4,6 +4,7 @@ import unicodedata
 from evennia import Command, search_tag
 
 from services.interaction_engine import parse_interaction_intent, resolve_interaction
+from services.npc_simulation import find_npc, npc_state, simstep
 from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
 
@@ -106,6 +107,25 @@ def _plain_dict(value):
         return {}
 
 
+def _format_npc_state(state):
+    if not state:
+        return "NPC no encontrado."
+    job = state.get("job") or {}
+    routine = state.get("routine_entry") or {}
+    return "\n".join(
+        [
+            f"NPC: {state.get('npc')} | npc_id={state.get('npc_id')}",
+            f"Location: {state.get('location')} | room_id={state.get('room_id')}",
+            f"Job: {job.get('name') or job.get('id') or 'NONE'}",
+            f"Activity: {state.get('current_activity') or 'NONE'}",
+            f"Destination: {state.get('destination_id') or 'NONE'}",
+            f"Routine index: {state.get('routine_index')}",
+            f"Routine target: {routine.get('room_key') or 'NONE'}",
+            f"Simulation enabled: {state.get('simulation_enabled')}",
+        ]
+    )
+
+
 class CmdSizaStatus(Command):
     """Show the Siza runtime build currently loaded by Evennia."""
 
@@ -121,6 +141,68 @@ class CmdSizaStatus(Command):
             caller.msg(f"Room: {location.key} | room_id={location.db.room_id}")
         caller.msg("Intent order: interaction -> perception -> movement")
         caller.msg("Room/perception prose: deterministic | persistent state: Evennia")
+        caller.msg("NPC simulation: manual simstep prototype")
+
+
+class CmdSizaNPCState(Command):
+    """Inspect persistent simulation state for one NPC."""
+
+    key = "siza-npcstate"
+    aliases = ["npcstate", "estado-npc"]
+    locks = "cmd:all()"
+
+    def func(self):
+        npc = find_npc((self.args or "").strip())
+        if not npc:
+            self.caller.msg("No identifico un NPC de Siza con ese nombre.")
+            return
+        self.caller.msg(_format_npc_state(npc_state(npc)))
+
+
+class CmdSizaSimStep(Command):
+    """Advance one NPC simulation by a single real Room hop."""
+
+    key = "siza-simstep"
+    aliases = ["simstep"]
+    locks = "cmd:all()"
+
+    def func(self):
+        npc = find_npc((self.args or "").strip())
+        if not npc:
+            self.caller.msg("No identifico un NPC de Siza para avanzar.")
+            return
+
+        result = simstep(npc)
+        status = result.get("status")
+
+        if status in {"MOVED", "ARRIVED"}:
+            self.caller.msg(
+                f"[SIM] {npc.key}: {result.get('from')} -> {result.get('to')} "
+                f"por '{result.get('used_exit')}'."
+            )
+            self.caller.msg(
+                f"[SIM] target={result.get('target')} | activity={result.get('activity')}"
+            )
+            return
+
+        if status == "NO_PATH":
+            self.caller.msg(
+                f"[SIM] {npc.key} no tiene ruta abierta desde {result.get('from')} "
+                f"hasta {result.get('target')}."
+            )
+            return
+
+        if status == "BLOCKED":
+            self.caller.msg(
+                f"[SIM] {npc.key} fue bloqueada al intentar '{result.get('attempted_exit')}'."
+            )
+            return
+
+        if status == "DISABLED":
+            self.caller.msg(f"[SIM] La simulación de {npc.key} está desactivada.")
+            return
+
+        self.caller.msg(f"[SIM] Resultado: {status} | {result}")
 
 
 class CmdSizaWorldCheck(Command):
@@ -147,6 +229,13 @@ class CmdSizaWorldCheck(Command):
             f"Mara: {'OK' if mara else 'MISSING'}"
             + (f" | location={mara.location.key if mara.location else 'NONE'} | npc_id={mara.db.npc_id}" if mara else "")
         )
+        if mara:
+            caller.msg(
+                f"Mara sim: enabled={bool(mara.db.simulation_enabled)} | "
+                f"activity={mara.db.current_activity or 'NONE'} | "
+                f"destination={mara.db.destination_id or 'NONE'} | "
+                f"routine_index={mara.db.routine_index if mara.db.routine_index is not None else 'NONE'}"
+            )
         caller.msg(
             f"Tablilla: {'OK' if board else 'MISSING'}"
             + (f" | location={board.location.key if board.location else 'NONE'} | object_id={board.db.object_id}" if board else "")
