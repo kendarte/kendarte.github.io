@@ -8,6 +8,7 @@ from commands.decision_commands import (
 )
 from commands.job_commands import (
     CmdSizaJobRefresh,
+    CmdSizaJobRelease,
     CmdSizaJobs,
     CmdSizaJobToggle,
     CmdSizaWorkSet,
@@ -46,6 +47,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDecisionStep())
         self.add(CmdSizaJobs())
         self.add(CmdSizaJobToggle())
+        self.add(CmdSizaJobRelease())
         self.add(CmdSizaWorksite())
         self.add(CmdSizaWorkSet())
         self.add(CmdSizaJobRefresh())
