@@ -1,5 +1,3 @@
-
-
 def _plain_list(value):
     if not value:
         return []
@@ -61,11 +59,7 @@ def _apply_delta(before, rule):
 
 
 def advance_need_dynamics(npc):
-    """Advance persistent NPC need values by one NPC simulation clock tick.
-
-    The NPC owns its own persistent dynamics clock. Authored dynamics specify
-    cadence and bounds; this function does not invent missing rules.
-    """
+    """Advance only CLOCK-based need rules by one persistent NPC simulation tick."""
     if not npc:
         return {"npc": None, "clock": None, "changes": []}
 
@@ -81,6 +75,10 @@ def advance_need_dynamics(npc):
     for raw in _plain_list(npc.db.need_dynamics):
         rule = _record(raw)
         if not rule or not bool(rule.get("enabled", True)):
+            continue
+
+        source = str(rule.get("source") or "clock").upper()
+        if source != "CLOCK":
             continue
 
         field = str(rule.get("field") or "").strip()
@@ -104,6 +102,7 @@ def advance_need_dynamics(npc):
         changes.append(
             {
                 "id": rule.get("id"),
+                "source": "CLOCK",
                 "field": field,
                 "op": str(rule.get("op") or "add"),
                 "value": rule.get("value"),
@@ -125,6 +124,87 @@ def advance_need_dynamics(npc):
     }
 
 
+def apply_activity_need_dynamics(npc, activity_kind):
+    """Apply need rules authored for the action the NPC actually executed.
+
+    Counters are persistent per rule, so cadence survives server restarts and does
+    not depend on the global World Tick number.
+    """
+    kind = str(activity_kind or "IDLE").upper()
+    if not npc:
+        return {"npc": None, "activity_kind": kind, "changes": [], "counters": {}}
+
+    needs = _plain_dict(npc.db.needs)
+    counters = _plain_dict(npc.db.need_activity_counters)
+    changes = []
+
+    for raw in _plain_list(npc.db.need_dynamics):
+        rule = _record(raw)
+        if not rule or not bool(rule.get("enabled", True)):
+            continue
+
+        source = str(rule.get("source") or "clock").upper()
+        if source != "ACTIVITY":
+            continue
+
+        rule_kind = str(rule.get("activity_kind") or "").upper()
+        if rule_kind != kind:
+            continue
+
+        rule_id = str(rule.get("id") or "").strip()
+        field = str(rule.get("field") or "").strip()
+        if not rule_id or not field:
+            continue
+
+        try:
+            every_actions = max(1, int(rule.get("every_actions", 1) or 1))
+        except (TypeError, ValueError):
+            every_actions = 1
+
+        try:
+            count = int(counters.get(rule_id, 0) or 0) + 1
+        except (TypeError, ValueError):
+            count = 1
+        counters[rule_id] = count
+
+        if count % every_actions != 0:
+            continue
+
+        before = needs.get(field, 0)
+        after = _apply_delta(before, rule)
+        if after == before:
+            continue
+
+        needs[field] = after
+        changes.append(
+            {
+                "id": rule_id,
+                "source": "ACTIVITY",
+                "activity_kind": kind,
+                "field": field,
+                "op": str(rule.get("op") or "add"),
+                "value": rule.get("value"),
+                "before": before,
+                "after": after,
+                "every_actions": every_actions,
+                "action_count": count,
+                "canon_status": str(rule.get("canon_status") or "prototype"),
+            }
+        )
+
+    npc.db.need_activity_counters = counters
+    if changes:
+        npc.db.needs = needs
+
+    return {
+        "npc": npc.key,
+        "npc_id": npc.db.npc_id,
+        "activity_kind": kind,
+        "changes": changes,
+        "counters": counters,
+    }
+
+
 def inspect_need_dynamics(npc):
     if not npc:
         return {}
@@ -134,6 +214,7 @@ def inspect_need_dynamics(npc):
         clock = 0
     return {
         "clock": clock,
+        "activity_counters": _plain_dict(npc.db.need_activity_counters),
         "rules": [
             item
             for item in (_record(raw) for raw in _plain_list(npc.db.need_dynamics))
