@@ -11,7 +11,7 @@ from evennia.utils import logger
 from services.narration_queue import run_serialized
 
 
-NARRATOR_BUILD = "0.4.0-world-interactions"
+NARRATOR_BUILD = "0.4.1-memory-state"
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_NUM_CTX = int(os.getenv("SIZA_OLLAMA_NUM_CTX", "8192"))
