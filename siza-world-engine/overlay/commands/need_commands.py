@@ -1,5 +1,6 @@
 from evennia import Command
 
+from services.need_dynamics import inspect_need_dynamics
 from services.need_engine import inspect_needs, set_need_value
 from services.npc_simulation import find_npc
 
@@ -16,7 +17,7 @@ def _parse_value(raw):
 
 
 class CmdSizaNeeds(Command):
-    """Inspect persistent NPC need state, rules and resolving world affordances."""
+    """Inspect persistent NPC need state, dynamics, rules and resolving world affordances."""
 
     key = "siza-needs"
     aliases = ["needs-state"]
@@ -29,9 +30,23 @@ class CmdSizaNeeds(Command):
             return
 
         packet = inspect_needs(npc)
+        dynamics = inspect_need_dynamics(npc)
         self.caller.msg("=== SIZA NPC NEEDS ===")
         self.caller.msg(f"NPC: {npc.key} | npc_id={npc.db.npc_id}")
         self.caller.msg(f"State: {packet.get('needs') or {}}")
+        self.caller.msg(f"Dynamics clock: {dynamics.get('clock', 0)}")
+
+        dynamic_rules = dynamics.get("rules") or []
+        if dynamic_rules:
+            self.caller.msg("Dynamics:")
+            for rule in dynamic_rules:
+                self.caller.msg(
+                    f"  {rule.get('id')} | enabled={rule.get('enabled', True)} | "
+                    f"{rule.get('field')} {rule.get('op', 'add')} {rule.get('value')} "
+                    f"cada {rule.get('every_ticks', 1)} ticks | min={rule.get('min')} | max={rule.get('max')}"
+                )
+        else:
+            self.caller.msg("Dynamics: NONE")
 
         rules = packet.get("rules") or []
         if rules:
