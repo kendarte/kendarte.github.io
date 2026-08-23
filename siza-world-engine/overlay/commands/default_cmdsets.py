@@ -1,6 +1,6 @@
 from evennia import default_cmds
 
-from commands.siza_commands import CmdSizaNoMatch, CmdSizaStatus
+from commands.siza_commands import CmdSizaNoMatch, CmdSizaStatus, CmdSizaWorldCheck
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -9,6 +9,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
         self.add(CmdSizaStatus())
+        self.add(CmdSizaWorldCheck())
         self.add(CmdSizaNoMatch())
 
 
