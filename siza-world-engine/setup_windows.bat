@@ -10,46 +10,57 @@ echo.
 set "PYTHON_EXE="
 set "PYTHON_ARGS="
 
-echo [1/7] Buscando Python 3.12...
+echo [1/7] Buscando Python compatible con Evennia 6.1 ^(3.12, 3.13 o 3.14^)...
 
-rem 1) Python Launcher
-py -3.12 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
-if not errorlevel 1 (
-  set "PYTHON_EXE=py"
-  set "PYTHON_ARGS=-3.12"
-)
+rem 1) python en PATH. En esta maquina esto detecta Python 3.14.x.
+python -c "import sys; raise SystemExit(0 if (3,12) <= sys.version_info[:2] <= (3,14) else 1)" >nul 2>&1
+if not errorlevel 1 set "PYTHON_EXE=python"
 
-rem 2) python en PATH
+rem 2) Python Launcher, si existe y tiene alguna version compatible registrada.
 if not defined PYTHON_EXE (
-  python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
-  if not errorlevel 1 set "PYTHON_EXE=python"
+  py -3.14 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,14) else 1)" >nul 2>&1
+  if not errorlevel 1 (
+    set "PYTHON_EXE=py"
+    set "PYTHON_ARGS=-3.14"
+  )
+)
+if not defined PYTHON_EXE (
+  py -3.13 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,13) else 1)" >nul 2>&1
+  if not errorlevel 1 (
+    set "PYTHON_EXE=py"
+    set "PYTHON_ARGS=-3.13"
+  )
+)
+if not defined PYTHON_EXE (
+  py -3.12 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
+  if not errorlevel 1 (
+    set "PYTHON_EXE=py"
+    set "PYTHON_ARGS=-3.12"
+  )
 )
 
-rem 3) python3.12 en PATH
+rem 3) Alias alternativos en PATH.
+if not defined PYTHON_EXE (
+  python3.14 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,14) else 1)" >nul 2>&1
+  if not errorlevel 1 set "PYTHON_EXE=python3.14"
+)
+if not defined PYTHON_EXE (
+  python3.13 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,13) else 1)" >nul 2>&1
+  if not errorlevel 1 set "PYTHON_EXE=python3.13"
+)
 if not defined PYTHON_EXE (
   python3.12 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
   if not errorlevel 1 set "PYTHON_EXE=python3.12"
 )
 
-rem 4) Rutas comunes del instalador oficial de Python
-if not defined PYTHON_EXE if exist "%LocalAppData%\Programs\Python\Python312\python.exe" (
-  set "PYTHON_EXE=%LocalAppData%\Programs\Python\Python312\python.exe"
-)
-if not defined PYTHON_EXE if exist "%ProgramFiles%\Python312\python.exe" (
-  set "PYTHON_EXE=%ProgramFiles%\Python312\python.exe"
-)
-if not defined PYTHON_EXE if defined ProgramFiles^(x86^) if exist "%ProgramFiles(x86)%\Python312\python.exe" (
-  set "PYTHON_EXE=%ProgramFiles(x86)%\Python312\python.exe"
-)
-
 if not defined PYTHON_EXE (
   echo.
-  echo ERROR: Python 3.12 puede estar instalado, pero Windows no lo expone por una ruta que este instalador pueda detectar.
+  echo ERROR: No encuentro una version de Python compatible con Evennia 6.1.
+  echo Evennia 6.1 soporta Python 3.12, 3.13 y 3.14.
   echo.
-  echo Ejecute estos tres comandos y copie el resultado:
+  echo Ejecute y copie el resultado:
   echo   python --version
   echo   where python
-  echo   py -0p
   echo.
   pause
   exit /b 1
@@ -86,8 +97,8 @@ echo.
 echo [4/7] Verificando Evennia...
 python -m evennia --version
 if errorlevel 1 (
-  echo El wrapper de Windows puede necesitar inicializarse una vez.
-  python -m evennia
+  echo ERROR: Evennia no responde dentro del entorno virtual.
+  goto :fail
 )
 
 echo.
