@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from evennia import DefaultScript, create_script, search_script
 
+from services.job_claims import refresh_job_claims
 from services.job_engine import refresh_world_job_rules
 from services.need_dynamics import advance_need_dynamics, apply_activity_need_dynamics
 from services.npc_decision import decision_step
@@ -9,7 +10,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.12.0-job-progress"
+WORLD_TICK_BUILD = "0.13.0-job-claims"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -57,7 +58,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for world producers, needs and NPC simulation."""
+    """Persistent global world tick for producers, claims, needs and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -90,6 +91,13 @@ class SizaWorldTick(DefaultScript):
                     "error": str(exc),
                 }
             ]
+
+        # Claims are a coordination layer over tasks, not task state itself.
+        # Clear owners whose tasks disappeared/became inactive before decisions.
+        try:
+            refresh_job_claims()
+        except Exception:
+            pass
 
         need_results = []
         activity_need_results = []
