@@ -35,15 +35,24 @@ class CmdSizaNeeds(Command):
         self.caller.msg(f"NPC: {npc.key} | npc_id={npc.db.npc_id}")
         self.caller.msg(f"State: {packet.get('needs') or {}}")
         self.caller.msg(f"Dynamics clock: {dynamics.get('clock', 0)}")
+        self.caller.msg(f"Activity counters: {dynamics.get('activity_counters') or {}}")
 
         dynamic_rules = dynamics.get("rules") or []
         if dynamic_rules:
             self.caller.msg("Dynamics:")
             for rule in dynamic_rules:
+                source = str(rule.get("source") or "clock").upper()
+                if source == "ACTIVITY":
+                    cadence = (
+                        f"cada {rule.get('every_actions', 1)} acciones "
+                        f"{str(rule.get('activity_kind') or 'UNKNOWN').upper()}"
+                    )
+                else:
+                    cadence = f"cada {rule.get('every_ticks', 1)} ticks"
                 self.caller.msg(
-                    f"  {rule.get('id')} | enabled={rule.get('enabled', True)} | "
-                    f"{rule.get('field')} {rule.get('op', 'add')} {rule.get('value')} "
-                    f"cada {rule.get('every_ticks', 1)} ticks | min={rule.get('min')} | max={rule.get('max')}"
+                    f"  {rule.get('id')} | enabled={rule.get('enabled', True)} | source={source} | "
+                    f"{rule.get('field')} {rule.get('op', 'add')} {rule.get('value')} | "
+                    f"{cadence} | min={rule.get('min')} | max={rule.get('max')}"
                 )
         else:
             self.caller.msg("Dynamics: NONE")
