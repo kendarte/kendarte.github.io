@@ -1,8 +1,10 @@
 import json
 import os
+import urllib.error
 import urllib.request
 
 from twisted.internet import threads
+from evennia.utils import logger
 
 
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
@@ -54,6 +56,27 @@ def build_move_packet(character, source, destination, exit_obj):
     }
 
 
+def _post_chat(payload):
+    request = urllib.request.Request(
+        OLLAMA_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code}: {body[:300]}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"No se pudo conectar con Ollama en {OLLAMA_URL}: {exc.reason}") from exc
+
+    if data.get("error"):
+        raise RuntimeError(str(data["error"]))
+    return data
+
+
 def _request_chat(packet):
     payload = {
         "model": OLLAMA_MODEL,
@@ -69,14 +92,18 @@ def _request_chat(packet):
             "num_ctx": OLLAMA_NUM_CTX,
         },
     }
-    request = urllib.request.Request(
-        OLLAMA_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=90) as response:
-        data = json.loads(response.read().decode("utf-8"))
+
+    try:
+        data = _post_chat(payload)
+    except RuntimeError as exc:
+        # Older Ollama builds may reject the top-level 'think' option.
+        if "HTTP 400" in str(exc):
+            retry_payload = dict(payload)
+            retry_payload.pop("think", None)
+            data = _post_chat(retry_payload)
+        else:
+            raise
+
     return data.get("message", {}).get("content", "").strip()
 
 
@@ -90,8 +117,11 @@ def narrate_move_async(character, source, destination, exit_obj):
         else:
             character.msg(f"\nLlegas a {destination.key}.")
 
-    def _failed(_failure):
-        character.msg(f"\nLlegas a {destination.key}. [Narrador local no disponible]")
+    def _failed(failure):
+        reason = failure.getErrorMessage() if hasattr(failure, "getErrorMessage") else str(failure)
+        logger.log_err(f"SIZA Ollama narrator error: {reason}")
+        short_reason = reason.replace("\n", " ")[:220]
+        character.msg(f"\nLlegas a {destination.key}. [Ollama error: {short_reason}]")
 
     deferred.addCallbacks(_ok, _failed)
     return deferred
