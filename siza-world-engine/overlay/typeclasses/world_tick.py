@@ -7,11 +7,12 @@ from services.job_engine import refresh_world_job_rules
 from services.need_dynamics import advance_need_dynamics, apply_activity_need_dynamics
 from services.npc_decision import decision_step
 from services.npc_simulation import simulated_npcs, simstep
+from services.shift_handoff import release_offshift_claims
 from services.world_clock import advance_world_clock, ensure_world_clock, world_clock_state
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.16.0-world-clock-schedules"
+WORLD_TICK_BUILD = "0.17.0-shift-handoff"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -36,6 +37,7 @@ def _append_trace(
     timestamp,
     world_clock_result,
     producer_results,
+    handoff_results,
     arbitration_results,
     need_results,
     activity_need_results,
@@ -53,6 +55,7 @@ def _append_trace(
             "timestamp": timestamp,
             "world_clock_result": dict(world_clock_result or {}),
             "producer_results": list(producer_results or []),
+            "handoff_results": list(handoff_results or []),
             "arbitration_results": list(arbitration_results or []),
             "need_results": list(need_results or []),
             "activity_need_results": list(activity_need_results or []),
@@ -63,7 +66,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for time, producers, needs, arbitration and NPC simulation."""
+    """Persistent global world tick for time, work shifts, needs, arbitration and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -78,6 +81,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_results = []
         self.db.last_world_clock_result = {}
         self.db.last_producer_results = []
+        self.db.last_handoff_results = []
         self.db.last_arbitration_results = []
         self.db.last_need_results = []
         self.db.last_activity_need_results = []
@@ -111,8 +115,8 @@ class SizaWorldTick(DefaultScript):
 
         npcs = list(simulated_npcs())
 
-        # CLOCK needs resolve before arbitration. ACTIVITY consequences resolve
-        # only after the action actually executed later in this same tick.
+        # CLOCK needs resolve before handoff/arbitration. ACTIVITY consequences
+        # resolve only after the action actually executed later in this tick.
         need_results = []
         for npc in npcs:
             try:
@@ -126,8 +130,21 @@ class SizaWorldTick(DefaultScript):
                 }
             need_results.append(need_result)
 
-        # Arbitration now sees current world time, current shift windows and
-        # current higher-priority needs before any individual NPC executes.
+        # Existing claims may be released when the owner's authored shift closes.
+        # This happens before arbitration so the same persistent task can be
+        # reassigned (or left unowned) in the same world tick without losing work.
+        try:
+            handoff_results = release_offshift_claims()
+        except Exception as exc:
+            handoff_results = [
+                {
+                    "status": "ERROR",
+                    "reason": "SHIFT_HANDOFF_ERROR",
+                    "error": str(exc),
+                }
+            ]
+
+        # Arbitration sees current time, current shift windows and current needs.
         try:
             refresh_job_claims()
             arbitration_results = arbitrate_job_claims(npcs)
@@ -178,6 +195,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_results = results
         self.db.last_world_clock_result = world_clock_result
         self.db.last_producer_results = producer_results
+        self.db.last_handoff_results = handoff_results
         self.db.last_arbitration_results = arbitration_results
         self.db.last_need_results = need_results
         self.db.last_activity_need_results = activity_need_results
@@ -188,6 +206,7 @@ class SizaWorldTick(DefaultScript):
             timestamp=timestamp,
             world_clock_result=world_clock_result,
             producer_results=producer_results,
+            handoff_results=handoff_results,
             arbitration_results=arbitration_results,
             need_results=need_results,
             activity_need_results=activity_need_results,
@@ -226,6 +245,7 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.build = WORLD_TICK_BUILD
         script.db.last_world_clock_result = {}
         script.db.last_producer_results = []
+        script.db.last_handoff_results = []
         script.db.last_arbitration_results = []
         script.db.last_need_results = []
         script.db.last_activity_need_results = []
@@ -239,6 +259,8 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.last_world_clock_result = {}
     if script.db.last_producer_results is None:
         script.db.last_producer_results = []
+    if script.db.last_handoff_results is None:
+        script.db.last_handoff_results = []
     if script.db.last_arbitration_results is None:
         script.db.last_arbitration_results = []
     if script.db.last_need_results is None:
@@ -274,6 +296,7 @@ def world_tick_state():
             "last_results": [],
             "last_world_clock_result": {},
             "last_producer_results": [],
+            "last_handoff_results": [],
             "last_arbitration_results": [],
             "last_need_results": [],
             "last_activity_need_results": [],
@@ -299,6 +322,7 @@ def world_tick_state():
         "last_results": list(script.db.last_results or []),
         "last_world_clock_result": dict(script.db.last_world_clock_result or {}),
         "last_producer_results": list(script.db.last_producer_results or []),
+        "last_handoff_results": list(script.db.last_handoff_results or []),
         "last_arbitration_results": list(script.db.last_arbitration_results or []),
         "last_need_results": list(script.db.last_need_results or []),
         "last_activity_need_results": list(script.db.last_activity_need_results or []),
