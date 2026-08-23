@@ -20,6 +20,10 @@ from commands.job_commands import (
     CmdSizaWorksite,
 )
 from commands.need_commands import CmdSizaNeeds, CmdSizaNeedSet
+from commands.relationship_commands import (
+    CmdSizaRelationships,
+    CmdSizaRelationshipToggle,
+)
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
@@ -67,6 +71,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaEvents())
         self.add(CmdSizaEventSet())
         self.add(CmdSizaEventRefresh())
+        self.add(CmdSizaRelationships())
+        self.add(CmdSizaRelationshipToggle())
         self.add(CmdSizaTime())
         self.add(CmdSizaTimeSet())
         self.add(CmdSizaTimeRate())
