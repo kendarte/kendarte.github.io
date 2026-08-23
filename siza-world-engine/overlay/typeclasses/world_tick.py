@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.20.0-relationship-obligations"
+WORLD_TICK_BUILD = "0.22.0-decision-personality"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -69,7 +69,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for time, incidents, work, needs, relationships and NPC simulation."""
+    """Persistent world tick; NPC decisions include per-character personality modifiers."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
