@@ -25,6 +25,12 @@ from commands.siza_commands import (
     CmdSizaStatus,
     CmdSizaWorldCheck,
 )
+from commands.time_commands import (
+    CmdSizaTime,
+    CmdSizaTimeAdvance,
+    CmdSizaTimeRate,
+    CmdSizaTimeSet,
+)
 from commands.trace_commands import CmdSizaSimTrace
 
 
@@ -53,6 +59,10 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaJobRefresh())
         self.add(CmdSizaNeeds())
         self.add(CmdSizaNeedSet())
+        self.add(CmdSizaTime())
+        self.add(CmdSizaTimeSet())
+        self.add(CmdSizaTimeRate())
+        self.add(CmdSizaTimeAdvance())
         self.add(CmdSizaNoMatch())
 
 
