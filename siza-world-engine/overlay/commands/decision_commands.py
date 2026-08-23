@@ -12,10 +12,13 @@ from services.npc_simulation import find_npc
 def _candidate_line(item, selected_id=None):
     marker = "SELECTED" if item.get("id") == selected_id else "candidate"
     reachable = "YES" if item.get("reachable") else "NO"
+    progress = ""
+    if item.get("type") == "JOB" and item.get("work_required") is not None:
+        progress = f" | work={item.get('work_done')}/{item.get('work_required')}"
     return (
         f"[{marker}] {item.get('type')} | priority={item.get('priority')} | "
         f"id={item.get('id')} | target={item.get('target_name') or item.get('target_room_key')} | "
-        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}"
+        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}{progress}"
     )
 
 
@@ -50,9 +53,12 @@ class CmdSizaDecide(Command):
                 self.caller.msg("  " + _candidate_line(item, selected_id=selected_id))
 
         if selected:
+            winner_progress = ""
+            if selected.get("type") == "JOB" and selected.get("work_required") is not None:
+                winner_progress = f" | work={selected.get('work_done')}/{selected.get('work_required')}"
             self.caller.msg(
                 f"Winner: {selected.get('type')} {selected.get('id')} -> "
-                f"{selected.get('target_name')} | priority={selected.get('priority')}"
+                f"{selected.get('target_name')} | priority={selected.get('priority')}{winner_progress}"
             )
         else:
             self.caller.msg("Winner: NONE")
@@ -128,7 +134,7 @@ class CmdSizaGoalToggle(Command):
 
 
 class CmdSizaDecisionStep(Command):
-    """Choose the winning authorized goal and execute at most one real Exit hop."""
+    """Choose the winning authorized goal and execute one hop or one work action."""
 
     key = "siza-decision-step"
     aliases = ["decision-step"]
@@ -153,7 +159,15 @@ class CmdSizaDecisionStep(Command):
             )
             self.caller.msg(
                 f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
-                f"| target={result.get('target')}"
+                f"| target={result.get('target')} | action={result.get('action_kind')}"
+            )
+            return
+
+        if status == "WORKING_GOAL":
+            self.caller.msg(
+                f"[DECISION] {npc.key}: WORKING | {goal_id} | "
+                f"work={result.get('work_done')}/{result.get('work_required')} "
+                f"(+{result.get('work_added')}) | activity={result.get('activity')}"
             )
             return
 
@@ -172,6 +186,18 @@ class CmdSizaDecisionStep(Command):
                 f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
                 f"| activity={result.get('activity')}"
             )
+            return
+
+        if status == "GOAL_COMPLETED" and result.get("work_required") is not None:
+            self.caller.msg(
+                f"[DECISION] {npc.key}: GOAL_COMPLETED | {goal_type} {goal_id} | "
+                f"work={result.get('work_done')}/{result.get('work_required')} | "
+                f"activity={result.get('activity')}"
+            )
+            if result.get("job_completion_effects"):
+                self.caller.msg(
+                    f"[DECISION] completion_effects={result.get('job_completion_effects')}"
+                )
             return
 
         if status in {"AT_GOAL", "GOAL_COMPLETED"}:
