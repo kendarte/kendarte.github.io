@@ -10,7 +10,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.14.0-job-arbitration"
+WORLD_TICK_BUILD = "0.15.0-priority-aware-arbitration"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -60,7 +60,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for producers, arbitration, needs and NPC simulation."""
+    """Persistent global world tick for producers, needs, arbitration and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -97,9 +97,24 @@ class SizaWorldTick(DefaultScript):
 
         npcs = list(simulated_npcs())
 
-        # Claims are a coordination layer over task state. First clear stale
-        # owners, then arbitrate all policy-owned unclaimed JOBs globally before
-        # any NPC is processed. This prevents NPC loop order from deciding them.
+        # CLOCK dynamics must resolve before arbitration. Otherwise an NPC could
+        # receive a JOB claim in the same tick that a higher-priority NEED becomes
+        # active. ACTIVITY dynamics still run after the executed action.
+        need_results = []
+        for npc in npcs:
+            try:
+                need_result = advance_need_dynamics(npc)
+            except Exception as exc:
+                need_result = {
+                    "npc": getattr(npc, "key", "UNKNOWN"),
+                    "clock": None,
+                    "changes": [],
+                    "error": str(exc),
+                }
+            need_results.append(need_result)
+
+        # Claims coordinate tasks across NPCs. Clear stale owners, then arbitrate
+        # globally after current NEED state is known and before any NPC executes.
         try:
             refresh_job_claims()
             arbitration_results = arbitrate_job_claims(npcs)
@@ -114,21 +129,9 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        need_results = []
         activity_need_results = []
         results = []
         for npc in npcs:
-            try:
-                need_result = advance_need_dynamics(npc)
-            except Exception as exc:
-                need_result = {
-                    "npc": getattr(npc, "key", "UNKNOWN"),
-                    "clock": None,
-                    "changes": [],
-                    "error": str(exc),
-                }
-            need_results.append(need_result)
-
             try:
                 result = simulate_npc_tick(npc)
             except Exception as exc:
