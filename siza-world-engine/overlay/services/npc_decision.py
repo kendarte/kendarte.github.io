@@ -5,7 +5,7 @@ from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.10.2-routine-trace-fix"
+DECISION_BUILD = "0.11.0-activity-needs"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -208,7 +208,7 @@ def set_goal_active(npc, goal_id, active):
 
 
 def _run_routine_fallback(npc, goal):
-    """Preserve v0.4 routine semantics and report the routine entry actually executed."""
+    """Preserve routine semantics and report the routine entry actually executed."""
     result = dict(simstep(npc) or {})
     result["engine"] = "ROUTINE_FALLBACK"
 
@@ -233,7 +233,6 @@ def _run_routine_fallback(npc, goal):
 
 
 def _complete_selected_goal(npc, goal):
-    """Commit completion back to the authoritative source that produced the goal."""
     source = str(goal.get("source") or "")
 
     if source == "NPC_NEED":
@@ -262,6 +261,23 @@ def _complete_selected_goal(npc, goal):
     }
 
 
+def _goal_action_kind(goal):
+    source = str(goal.get("source") or "")
+    goal_type = str(goal.get("type") or "").upper()
+
+    if source == "NPC_NEED":
+        return str(goal.get("affordance") or "NEED").upper()
+    if source == "WORLD_JOB":
+        return "WORK"
+    if goal_type == "DANGER":
+        return "DANGER"
+    if goal_type == "RELATIONSHIP":
+        return "SOCIAL"
+    if goal_type == "EVENT":
+        return "EVENT"
+    return "IDLE"
+
+
 def decision_step(npc):
     """Choose one authorized goal and execute at most one real Exit hop."""
     decision = choose_goal(npc)
@@ -272,6 +288,7 @@ def decision_step(npc):
             "status": "NO_GOAL",
             "npc": npc.key,
             "engine": "DECISION",
+            "action_kind": "IDLE",
             "decision": decision,
         }
 
@@ -299,6 +316,7 @@ def decision_step(npc):
             "status": "BAD_TARGET",
             "npc": npc.key,
             "engine": "DECISION",
+            "action_kind": "IDLE",
             "goal": goal,
         }
 
@@ -317,6 +335,7 @@ def decision_step(npc):
             "priority": goal.get("priority"),
             "location": npc.location.key,
             "activity": npc.db.current_activity,
+            "action_kind": _goal_action_kind(goal),
             **completion,
         }
 
@@ -332,6 +351,7 @@ def decision_step(npc):
             "priority": goal.get("priority"),
             "from": npc.location.key,
             "target": target.key,
+            "action_kind": "IDLE",
         }
 
     if not path:
@@ -340,6 +360,8 @@ def decision_step(npc):
             "npc": npc.key,
             "engine": "DECISION",
             "goal_id": goal.get("id"),
+            "goal_type": goal.get("type"),
+            "action_kind": _goal_action_kind(goal),
         }
 
     exit_obj = path[0]
@@ -359,6 +381,7 @@ def decision_step(npc):
             "from": source.key,
             "target": target.key,
             "attempted_exit": exit_obj.key,
+            "action_kind": "IDLE",
         }
 
     completion = {
@@ -370,9 +393,11 @@ def decision_step(npc):
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
         completion = _complete_selected_goal(npc, goal)
         status = "GOAL_COMPLETED" if completion.get("completed") else "ARRIVED_GOAL"
+        action_kind = _goal_action_kind(goal)
     else:
         npc.db.current_activity = f"en camino a {target.key}"
         status = "MOVED_GOAL"
+        action_kind = "MOVE"
 
     return {
         "status": status,
@@ -386,5 +411,6 @@ def decision_step(npc):
         "target": target.key,
         "used_exit": exit_obj.key,
         "activity": npc.db.current_activity,
+        "action_kind": action_kind,
         **completion,
     }
