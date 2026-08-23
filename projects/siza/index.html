@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Siza — Kendall Angulo</title>
-  <meta name="description" content="Siza project hub: AI-driven narrative RPG, mobile TCG prototype, MUD mode, Rivarica World Book and Atlas.">
+  <meta name="description" content="Siza project hub: AI-driven narrative RPG, mobile TCG prototype, MUD mode, Rivarica World Book, Atlas and public design documents.">
   <link rel="canonical" href="https://kendarte.github.io/projects/siza/">
   <meta property="og:type" content="article">
   <meta property="og:title" content="Siza — AI Narrative RPG & TCG Project Hub">
@@ -17,7 +17,7 @@
 <a class="skip-link" href="#project-content">Skip to project</a>
 <header class="site-header detail-header">
   <a class="brand" href="/"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span></a>
-  <nav><a href="/#work">Selected work</a><a href="/#siza">Siza</a><a href="/#about">About</a></nav>
+  <nav><a href="/#work">Selected work</a><a href="/#siza">Siza</a><a href="/projects/siza/documentos/">Documents</a><a href="/#about">About</a></nav>
   <a class="header-cta" href="mailto:Kendarte@gmail.com">Start a conversation</a>
 </header>
 
@@ -32,6 +32,7 @@
         <div class="static-project-actions">
           <a class="button button-primary" href="https://kendarte.github.io/siza-mobile-test/?v=0517">Open TCG prototype <span>↗</span></a>
           <a class="button button-secondary" href="https://siza-faro-ahogado.tekusamirai.chatgpt.site/">Open AI MUD mode <span>↗</span></a>
+          <a class="button button-secondary" href="/projects/siza/documentos/">Open design documents <span>↗</span></a>
         </div>
       </div>
       <dl class="detail-facts">
@@ -46,13 +47,28 @@
   <section class="systems-section section-shell" aria-labelledby="siza-access-title">
     <div class="section-heading">
       <div><p class="eyebrow"><span></span> Project access</p><h2 id="siza-access-title">One project, several connected surfaces.</h2></div>
-      <p>The public material already spans playable systems and worldbuilding resources. This page collects them in one place.</p>
+      <p>The public material already spans playable systems, worldbuilding resources and living design documentation. This page collects them in one place.</p>
     </div>
     <div class="system-cards">
       <article><span>01</span><h3>TCG mode</h3><p>Mobile-first card combat prototype used to test Siza's combat flow, resources, summoning and reaction rules.</p><a class="text-link" href="https://kendarte.github.io/siza-mobile-test/?v=0517">Launch TCG prototype <span>↗</span></a></article>
       <article><span>02</span><h3>AI MUD mode</h3><p>Adventure-facing prototype where the AI game master narrates and reacts to player actions using the project world as context.</p><a class="text-link" href="https://siza-faro-ahogado.tekusamirai.chatgpt.site/">Launch MUD prototype <span>↗</span></a></article>
       <article><span>03</span><h3>Rivarica World Book</h3><p>The structured setting source used to define geography, factions, cultures, resources, places and world rules.</p><a class="text-link" href="https://kendarte.github.io/rivarica/">Open World Book <span>↗</span></a></article>
       <article><span>04</span><h3>Atlas de Caribia</h3><p>A visual/worldbuilding companion focused on the geography and locations of Caribia inside the Rivarica setting.</p><a class="text-link" href="https://kendarte.github.io/rivarica/atlas/">Open Atlas <span>↗</span></a></article>
+      <article><span>05</span><h3>Design documents</h3><p>Public system specifications for the persistent MUD world, spatial maps, Player/NPC simulation, faction tech trees and Knowledge database.</p><a class="text-link" href="/projects/siza/documentos/">Open Documents <span>↗</span></a></article>
+    </div>
+  </section>
+
+  <section class="case-study-section section-shell" aria-labelledby="siza-documents-title">
+    <div class="section-heading">
+      <div><p class="eyebrow"><span></span> Documents</p><h2 id="siza-documents-title">System design, readable online.</h2></div>
+      <p>These are working specifications for the game systems behind Siza. They are kept separate from the Rivarica canon so mechanics can evolve without rewriting the setting.</p>
+    </div>
+    <div class="case-study-grid">
+      <article class="case-study-card"><span>01</span><h3>Persistent MUD World</h3><p>Settlements, geography, faction control, structures, Rooms, Jobs, NPCs, events, economy and persistent state.</p><a class="text-link" href="/projects/siza/documentos/?doc=mundo">Read document <span>↗</span></a></article>
+      <article class="case-study-card"><span>02</span><h3>Physical Space & Maps</h3><p>World graph, Zones, Rooms, Exits, interiors, floors, doors, pathfinding, discovery and Room-by-Room movement.</p><a class="text-link" href="/projects/siza/documentos/?doc=mapas">Read document <span>↗</span></a></article>
+      <article class="case-study-card"><span>03</span><h3>Player & NPC Simulation</h3><p>Adventure stats, rolls, Knowledge, Jobs, virtues, flaws, needs, relationships, memory and autonomous NPC behavior.</p><a class="text-link" href="/projects/siza/documentos/?doc=personas">Read document <span>↗</span></a></article>
+      <article class="case-study-card"><span>04</span><h3>Windrago Tech Tree</h3><p>Faction persistence modeled as a Warcraft-style race: Town Hall progression, structures, Jobs, requirements and territorial control.</p><a class="text-link" href="/projects/siza/documentos/?doc=windrago">Read document <span>↗</span></a></article>
+      <article class="case-study-card case-study-card--result"><span>05</span><h3>Knowledge Catalog — 240 entries</h3><p>The interaction vocabulary for Player and NPC: what a person understands, what information becomes available and how knowledge changes gameplay.</p><a class="text-link" href="/projects/siza/documentos/?doc=conocimientos">Read catalog <span>↗</span></a></article>
     </div>
   </section>
 
@@ -66,7 +82,7 @@
       <article class="case-study-card"><span>Combat layer</span><h3>Card-driven encounters.</h3><p>The TCG mode translates characters, summons, reactions, equipment and resources into a separate tactical ruleset connected to the same setting.</p></article>
       <article class="case-study-card"><span>World layer</span><h3>Worldbook-grounded AI.</h3><p>Rivarica provides the structured knowledge base used to keep places, factions and setting logic coherent while the AI game master responds dynamically.</p></article>
       <article class="case-study-card"><span>Design goal</span><h3>Action and consequence.</h3><p>Player actions are intended to create persistent reactions in the world: hostility, faction responses, changing access, encounters and new narrative states.</p></article>
-      <article class="case-study-card case-study-card--result"><span>Current result</span><h3>A connected prototype ecosystem.</h3><p>The public project already includes a browser-based TCG prototype, an AI-driven MUD prototype, the Rivarica World Book and a dedicated atlas. The long-term work is to bring those layers into one persistent RPG experience.</p></article>
+      <article class="case-study-card case-study-card--result"><span>Current result</span><h3>A connected prototype ecosystem.</h3><p>The public project already includes a browser-based TCG prototype, an AI-driven MUD prototype, the Rivarica World Book, a dedicated atlas and public system documentation. The long-term work is to bring those layers into one persistent RPG experience.</p></article>
     </div>
   </section>
 
