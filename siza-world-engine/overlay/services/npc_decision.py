@@ -1,5 +1,6 @@
 from evennia import search_object
 
+from services.decision_personality import apply_decision_personality
 from services.job_claims import (
     arbitrate_job_claims,
     claim_job_task,
@@ -21,7 +22,7 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.20.0-relationship-obligations"
+DECISION_BUILD = "0.22.0-decision-personality"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -71,6 +72,18 @@ def _priority_map(npc):
     return priorities
 
 
+def _priority_meta(goal):
+    if not goal:
+        return {}
+    return {
+        "priority": goal.get("priority"),
+        "base_priority": goal.get("base_priority", goal.get("priority")),
+        "personality_modifier": goal.get("personality_modifier", 0),
+        "effective_priority": goal.get("effective_priority", goal.get("priority")),
+        "priority_modifiers": list(goal.get("priority_modifiers") or []),
+    }
+
+
 def _goal_from_raw(raw, priorities):
     try:
         goal = {str(key): value for key, value in raw.items()}
@@ -111,7 +124,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored, DANGER/EVENT, NEED, JOB, RELATIONSHIP and routine goals."""
+    """Collect goals, then apply NPC-specific personality modifiers before sorting."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -162,12 +175,14 @@ def collect_candidates(npc):
             path = find_path(npc.location, target)
             item["reachable"] = path is not None
             item["path_length"] = len(path) if path is not None else None
+
+        item = apply_decision_personality(npc, item, base_priority=item.get("priority", 0))
         evaluated.append(item)
 
     evaluated.sort(
         key=lambda item: (
             bool(item.get("reachable")),
-            int(item.get("priority", 0)),
+            int(item.get("effective_priority", item.get("priority", 0))),
             -int(item.get("path_length") or 0),
         ),
         reverse=True,
@@ -240,8 +255,8 @@ def _run_routine_fallback(npc, goal):
         result["goal_id"] = goal.get("id")
 
     result["goal_type"] = "ROUTINE"
-    result["priority"] = goal.get("priority")
     result["goal_source"] = goal.get("source")
+    result.update(_priority_meta(goal))
 
     status_map = {
         "MOVED": "MOVED_GOAL",
@@ -437,6 +452,10 @@ def decision_step(npc):
         "id": goal.get("id"),
         "type": goal.get("type"),
         "priority": goal.get("priority"),
+        "base_priority": goal.get("base_priority"),
+        "personality_modifier": goal.get("personality_modifier"),
+        "effective_priority": goal.get("effective_priority"),
+        "priority_modifiers": list(goal.get("priority_modifiers") or []),
         "target_room_id": goal.get("target_room_id"),
         "target_room_key": goal.get("target_room_key"),
         "activity": goal.get("activity"),
@@ -469,6 +488,7 @@ def decision_step(npc):
             "engine": "DECISION",
             "action_kind": "IDLE",
             "goal": goal,
+            **_priority_meta(goal),
             **claim_meta,
         }
 
@@ -483,10 +503,10 @@ def decision_step(npc):
             "engine": "DECISION",
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
-            "priority": goal.get("priority"),
             "location": npc.location.key,
             "activity": npc.db.current_activity,
             "action_kind": _goal_action_kind(goal),
+            **_priority_meta(goal),
             **claim_meta,
             **completion,
         }
@@ -500,10 +520,10 @@ def decision_step(npc):
             "engine": "DECISION",
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
-            "priority": goal.get("priority"),
             "from": npc.location.key,
             "target": target.key,
             "action_kind": "IDLE",
+            **_priority_meta(goal),
             **claim_meta,
         }
 
@@ -515,6 +535,7 @@ def decision_step(npc):
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
             "action_kind": _goal_action_kind(goal),
+            **_priority_meta(goal),
             **claim_meta,
         }
 
@@ -531,11 +552,11 @@ def decision_step(npc):
             "engine": "DECISION",
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
-            "priority": goal.get("priority"),
             "from": source.key,
             "target": target.key,
             "attempted_exit": exit_obj.key,
             "action_kind": "IDLE",
+            **_priority_meta(goal),
             **claim_meta,
         }
 
@@ -564,13 +585,13 @@ def decision_step(npc):
         "engine": "DECISION",
         "goal_id": goal.get("id"),
         "goal_type": goal.get("type"),
-        "priority": goal.get("priority"),
         "from": source.key,
         "to": npc.location.key,
         "target": target.key,
         "used_exit": exit_obj.key,
         "activity": npc.db.current_activity,
         "action_kind": action_kind,
+        **_priority_meta(goal),
         **claim_meta,
         **completion,
     }
