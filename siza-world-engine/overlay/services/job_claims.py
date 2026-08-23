@@ -3,14 +3,24 @@ from datetime import datetime, timezone
 from evennia import search_tag
 
 from services.job_engine import job_sites
-from services.npc_simulation import find_path
+from services.need_engine import collect_need_candidates
+from services.npc_simulation import find_path, find_room
 
 
-CLAIM_BUILD = "0.14.0-job-arbitration"
+CLAIM_BUILD = "0.15.0-priority-aware-arbitration"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
 POLICY_NEAREST_REACHABLE = "NEAREST_REACHABLE"
+
+DEFAULT_PRIORITIES = {
+    "DANGER": 100,
+    "EVENT": 80,
+    "NEED": 70,
+    "JOB": 60,
+    "RELATIONSHIP": 50,
+    "ROUTINE": 10,
+}
 
 
 def _plain_list(value):
@@ -40,6 +50,17 @@ def _npc_job_id(npc):
     except Exception:
         job = {}
     return str(job.get("id") or "").strip()
+
+
+def _priority_map(npc):
+    priorities = dict(DEFAULT_PRIORITIES)
+    configured = _plain_dict(getattr(npc.db, "decision_priorities", {}))
+    for key, value in configured.items():
+        try:
+            priorities[str(key).upper()] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return priorities
 
 
 def _npc_exists(npc_id):
@@ -90,6 +111,129 @@ def _eligible_for_task(npc, task):
     if assigned_npc and assigned_npc != npc_id:
         return False
     return True
+
+
+def _goal_reachable(npc, goal):
+    target_key = str((goal or {}).get("target_room_key") or "").strip()
+    target_id = (goal or {}).get("target_room_id")
+    if not target_key or not npc or not npc.location:
+        return False
+    target = find_room(target_key, target_id)
+    if not target:
+        return False
+    if npc.location == target:
+        return True
+    return find_path(npc.location, target) is not None
+
+
+def _higher_priority_blockers(npc, job_priority):
+    """Return reachable active goals that would outrank this JOB right now."""
+    priorities = _priority_map(npc)
+    blockers = []
+
+    for raw in _plain_list(getattr(npc.db, "decision_goals", [])):
+        try:
+            goal = {str(key): value for key, value in raw.items()}
+        except Exception:
+            continue
+        if not bool(goal.get("active", False)):
+            continue
+        goal_type = str(goal.get("type") or "EVENT").upper()
+        try:
+            priority = int(goal.get("priority", priorities.get(goal_type, 0)))
+        except (TypeError, ValueError):
+            priority = int(priorities.get(goal_type, 0))
+        if priority <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, goal):
+            continue
+        blockers.append(
+            {
+                "id": goal.get("id"),
+                "type": goal_type,
+                "priority": priority,
+                "source": "AUTHORED_GOAL",
+            }
+        )
+
+    for goal in collect_need_candidates(npc, default_priority=priorities.get("NEED", 70)):
+        try:
+            priority = int(goal.get("priority", priorities.get("NEED", 70)))
+        except (TypeError, ValueError):
+            priority = int(priorities.get("NEED", 70))
+        if priority <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, goal):
+            continue
+        blockers.append(
+            {
+                "id": goal.get("id"),
+                "type": "NEED",
+                "priority": priority,
+                "source": "NPC_NEED",
+            }
+        )
+
+    blockers.sort(key=lambda row: int(row.get("priority", 0)), reverse=True)
+    return blockers
+
+
+def _owned_other_claim(npc_id, task_id):
+    wanted_npc = str(npc_id or "")
+    wanted_task = str(task_id or "")
+    if not wanted_npc:
+        return None
+    for site in job_sites():
+        for other_task_id, claim in _site_claims(site).items():
+            if str(other_task_id) == wanted_task:
+                continue
+            if str(claim.get("npc_id") or "") == wanted_npc:
+                return {
+                    "task_id": other_task_id,
+                    "site": site.key,
+                    "npc_id": wanted_npc,
+                    "npc_name": claim.get("npc_name"),
+                }
+    return None
+
+
+def _availability_for_task(npc, task_id, task):
+    if not _eligible_for_task(npc, task):
+        return {
+            "available": False,
+            "reason": "NOT_ELIGIBLE",
+            "blocker": None,
+        }
+
+    try:
+        job_priority = int((task or {}).get("priority", DEFAULT_PRIORITIES["JOB"]))
+    except (TypeError, ValueError):
+        job_priority = DEFAULT_PRIORITIES["JOB"]
+
+    blockers = _higher_priority_blockers(npc, job_priority)
+    if blockers:
+        blocker = blockers[0]
+        return {
+            "available": False,
+            "reason": "HIGHER_PRIORITY_GOAL",
+            "blocker": blocker,
+        }
+
+    npc_id = str(getattr(npc.db, "npc_id", "") or "")
+    other_claim = _owned_other_claim(npc_id, task_id)
+    if other_claim:
+        return {
+            "available": False,
+            "reason": "BUSY_OTHER_JOB",
+            "blocker": {
+                "id": other_claim.get("task_id"),
+                "type": "JOB",
+                "priority": None,
+                "source": "JOB_CLAIM",
+            },
+        }
+
+    return {"available": True, "reason": "AVAILABLE", "blocker": None}
 
 
 def refresh_job_claims():
@@ -146,11 +290,7 @@ def claim_job_task(
     claim_policy=None,
     claim_distance=None,
 ):
-    """Atomically claim one active task for an eligible NPC.
-
-    Existing ownership by the same NPC is idempotent. Ownership by another NPC
-    rejects the claim. The task remains authoritative for work progress.
-    """
+    """Atomically claim one active task for an eligible NPC."""
     refresh_job_claims()
     wanted = str(task_id or "")
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
@@ -227,11 +367,7 @@ def claim_job_task(
 
 
 def arbitrate_job_claims(npcs):
-    """Pre-assign unclaimed tasks whose authored policy is NEAREST_REACHABLE.
-
-    Distance uses the same passable Exit graph as NPC movement. Ties resolve by
-    stable npc_id, so list/loop order cannot decide ownership.
-    """
+    """Pre-assign unclaimed NEAREST_REACHABLE tasks to actually available NPCs."""
     refresh_job_claims()
     npcs = list(npcs or [])
     results = []
@@ -249,11 +385,38 @@ def arbitrate_job_claims(npcs):
                 continue
 
             candidates = []
+            excluded = []
             for npc in npcs:
                 if not _eligible_for_task(npc, task):
                     continue
+
+                availability = _availability_for_task(npc, task_id, task)
+                if not availability.get("available"):
+                    blocker = availability.get("blocker") or {}
+                    excluded.append(
+                        {
+                            "npc_id": str(npc.db.npc_id or ""),
+                            "npc_name": npc.key,
+                            "reason": availability.get("reason"),
+                            "blocker_id": blocker.get("id"),
+                            "blocker_type": blocker.get("type"),
+                            "blocker_priority": blocker.get("priority"),
+                        }
+                    )
+                    continue
+
                 path = find_path(npc.location, site)
                 if path is None:
+                    excluded.append(
+                        {
+                            "npc_id": str(npc.db.npc_id or ""),
+                            "npc_name": npc.key,
+                            "reason": "UNREACHABLE",
+                            "blocker_id": None,
+                            "blocker_type": None,
+                            "blocker_priority": None,
+                        }
+                    )
                     continue
                 npc_id = str(npc.db.npc_id or "")
                 candidates.append(
@@ -278,7 +441,7 @@ def arbitrate_job_claims(npcs):
             if not candidates:
                 results.append(
                     {
-                        "status": "NO_ELIGIBLE",
+                        "status": "NO_AVAILABLE",
                         "site": site.key,
                         "task_id": task_id,
                         "policy": policy,
@@ -286,6 +449,7 @@ def arbitrate_job_claims(npcs):
                         "winner_name": None,
                         "distance": None,
                         "candidates": [],
+                        "excluded": excluded,
                     }
                 )
                 continue
@@ -308,6 +472,7 @@ def arbitrate_job_claims(npcs):
                     "winner_name": winner.get("npc_name") if claim.get("success") else None,
                     "distance": winner.get("distance") if claim.get("success") else None,
                     "candidates": public_candidates,
+                    "excluded": excluded,
                     "reason": claim.get("reason"),
                 }
             )
@@ -351,9 +516,6 @@ def filter_job_candidates_for_claim(npc, candidates):
         if claim:
             candidate["claim_npc_id"] = claim.get("npc_id")
             candidate["claim_npc_name"] = claim.get("npc_name")
-            candidate["claim_source"] = claim.get("claim_source")
-            candidate["claim_policy"] = claim.get("claim_policy")
-            candidate["claim_distance"] = claim.get("claim_distance")
         output.append(candidate)
     return output
 
