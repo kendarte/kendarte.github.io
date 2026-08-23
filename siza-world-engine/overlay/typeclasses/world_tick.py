@@ -7,7 +7,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.6.0-decision-dispatch"
+WORLD_TICK_BUILD = "0.7.0-world-job"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
