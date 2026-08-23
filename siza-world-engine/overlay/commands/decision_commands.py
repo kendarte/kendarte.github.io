@@ -122,6 +122,16 @@ class CmdSizaDecisionStep(Command):
             )
             return
 
+        if status == "GOAL_COMPLETED" and result.get("from") and result.get("to"):
+            self.caller.msg(
+                f"[DECISION] {npc.key}: GOAL_COMPLETED | {goal_type} {goal_id} (priority={priority})"
+            )
+            self.caller.msg(
+                f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
+                f"| activity={result.get('activity')}"
+            )
+            return
+
         if status in {"AT_GOAL", "GOAL_COMPLETED"}:
             self.caller.msg(
                 f"[DECISION] {npc.key}: {status} | {goal_type} {goal_id} | "
