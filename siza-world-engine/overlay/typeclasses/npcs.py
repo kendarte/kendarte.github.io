@@ -26,6 +26,11 @@ class NPC(Character):
         self.db.destination_id = None
         self.db.simulation_enabled = False
 
+        # Persistent need state. Values/rules are data-driven and remain
+        # prototype until their final progression math is defined.
+        self.db.needs = {}
+        self.db.need_rules = []
+
         # Decision Layer. Goals are explicit persistent records supplied by
         # authored systems; NPCs do not invent world facts, targets or priorities.
         self.db.decision_enabled = False
