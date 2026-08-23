@@ -9,10 +9,11 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.10.0-autonomous-needs"
+WORLD_TICK_BUILD = "0.10.1-autonomous-needs-trace"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
+TRACE_LIMIT = 20
 
 
 def simulate_npc_tick(npc):
@@ -25,6 +26,25 @@ def simulate_npc_tick(npc):
     result = dict(simstep(npc) or {})
     result.setdefault("engine", "ROUTINE_V04")
     return result
+
+
+def _append_trace(script, tick_number, timestamp, producer_results, need_results, results):
+    """Persist a short rolling trace so transient autonomous decisions stay inspectable."""
+    try:
+        history = list(script.db.trace_history or [])
+    except Exception:
+        history = []
+
+    history.append(
+        {
+            "tick": int(tick_number),
+            "timestamp": timestamp,
+            "producer_results": list(producer_results or []),
+            "need_results": list(need_results or []),
+            "npc_results": list(results or []),
+        }
+    )
+    script.db.trace_history = history[-TRACE_LIMIT:]
 
 
 class SizaWorldTick(DefaultScript):
@@ -43,6 +63,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_results = []
         self.db.last_producer_results = []
         self.db.last_need_results = []
+        self.db.trace_history = []
         self.db.build = WORLD_TICK_BUILD
 
     def at_repeat(self):
@@ -89,12 +110,22 @@ class SizaWorldTick(DefaultScript):
                 }
             results.append(result)
 
-        self.db.tick_count = int(self.db.tick_count or 0) + 1
-        self.db.last_tick_at = datetime.now(timezone.utc).isoformat()
+        tick_number = int(self.db.tick_count or 0) + 1
+        timestamp = datetime.now(timezone.utc).isoformat()
+        self.db.tick_count = tick_number
+        self.db.last_tick_at = timestamp
         self.db.last_results = results
         self.db.last_producer_results = producer_results
         self.db.last_need_results = need_results
         self.db.build = WORLD_TICK_BUILD
+        _append_trace(
+            self,
+            tick_number=tick_number,
+            timestamp=timestamp,
+            producer_results=producer_results,
+            need_results=need_results,
+            results=results,
+        )
 
 
 def get_world_tick():
@@ -128,6 +159,7 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.build = WORLD_TICK_BUILD
         script.db.last_producer_results = []
         script.db.last_need_results = []
+        script.db.trace_history = []
         return script, True
 
     script.db.manual_enabled = True
@@ -136,6 +168,8 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.last_producer_results = []
     if script.db.last_need_results is None:
         script.db.last_need_results = []
+    if script.db.trace_history is None:
+        script.db.trace_history = []
     script.start(interval=seconds, start_delay=seconds, repeats=0)
     return script, False
 
@@ -162,6 +196,7 @@ def world_tick_state():
             "last_results": [],
             "last_producer_results": [],
             "last_need_results": [],
+            "trace_history": [],
             "next_repeat": None,
             "build": WORLD_TICK_BUILD,
         }
@@ -181,6 +216,7 @@ def world_tick_state():
         "last_results": list(script.db.last_results or []),
         "last_producer_results": list(script.db.last_producer_results or []),
         "last_need_results": list(script.db.last_need_results or []),
+        "trace_history": list(script.db.trace_history or []),
         "next_repeat": next_repeat,
         "build": str(script.db.build or WORLD_TICK_BUILD),
     }
