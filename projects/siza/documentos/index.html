@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Siza — Documentos de diseño</title>
+  <meta name="description" content="Documentación pública de diseño y sistemas de Siza: mundo persistente, mapas MUD, Player/NPC, facciones y conocimientos.">
+  <link rel="canonical" href="https://kendarte.github.io/projects/siza/documentos/">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .docs-shell{max-width:1180px;margin:0 auto;padding:42px 24px 90px}.docs-hero{padding:30px 0 34px;border-bottom:1px solid rgba(255,255,255,.12)}.docs-hero h1{font-size:clamp(2.8rem,7vw,6.3rem);line-height:.92;margin:.25rem 0 1rem}.docs-hero p{max-width:760px;color:var(--muted,#a7a7a7);font-size:1.05rem}.docs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:34px 0}.doc-card{display:block;padding:24px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.025);text-decoration:none;color:inherit;transition:.18s ease}.doc-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.3)}.doc-card small{display:block;opacity:.6;text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}.doc-card h2{margin:0 0 10px;font-size:1.35rem}.doc-card p{margin:0;color:var(--muted,#aaa);line-height:1.55}.doc-card strong{display:block;margin-top:18px;font-size:.9rem}.doc-reader{display:none;margin-top:30px}.doc-reader.is-open{display:block}.doc-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}.doc-toolbar a{color:inherit}.doc-content{max-width:900px;margin:38px auto 0;line-height:1.72}.doc-content h1,.doc-content h2,.doc-content h3{line-height:1.12;margin-top:2em}.doc-content h1{font-size:2.35rem}.doc-content h2{font-size:1.75rem;border-top:1px solid rgba(255,255,255,.1);padding-top:1.2em}.doc-content h3{font-size:1.25rem}.doc-content pre{overflow:auto;padding:18px;background:#0c0c0c;border:1px solid rgba(255,255,255,.12)}.doc-content code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.doc-content table{width:100%;border-collapse:collapse;display:block;overflow:auto}.doc-content th,.doc-content td{border:1px solid rgba(255,255,255,.13);padding:8px 10px;text-align:left}.doc-content blockquote{border-left:3px solid currentColor;padding-left:16px;opacity:.85}.loading{padding:48px 0;text-align:center;opacity:.7}.back-siza{display:inline-block;margin-bottom:18px;text-decoration:none}.docs-note{font-size:.9rem;opacity:.65;margin-top:12px}@media(max-width:760px){.docs-grid{grid-template-columns:1fr}.docs-shell{padding-left:18px;padding-right:18px}.doc-content h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+<header class="site-header detail-header">
+  <a class="brand" href="/"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span></a>
+  <nav><a href="/projects/siza/">Siza</a><a href="/rivarica/">World Book</a><a href="/projects/siza/documentos/" aria-current="page">Documentos</a></nav>
+  <a class="header-cta" href="/projects/siza/">Volver a Siza</a>
+</header>
+<main class="docs-shell">
+  <section class="docs-hero" id="docs-home">
+    <a class="back-siza" href="/projects/siza/">← Siza</a>
+    <p class="eyebrow"><span></span> SIZA · DOCUMENTACIÓN DE SISTEMAS</p>
+    <h1>Documentos</h1>
+    <p>Especificaciones de diseño que definen cómo funciona Siza por debajo del Master IA: espacio físico MUD, simulación persistente, Player/NPC, facciones y conocimiento.</p>
+    <p class="docs-note">Estos documentos describen sistemas de juego. El World Book continúa siendo la fuente de canon de Rivarica.</p>
+  </section>
+
+  <section class="docs-grid" aria-label="Documentos de Siza">
+    <a class="doc-card" href="?doc=mundo"><small>Documento 01</small><h2>Mundo persistente MUD</h2><p>Generación de asentamientos, geografía, facciones, edificios, Rooms, Jobs, NPC, economía, eventos y estado persistente.</p><strong>Abrir documento →</strong></a>
+    <a class="doc-card" href="?doc=mapas"><small>Documento 02</small><h2>Espacio físico y mapas persistentes</h2><p>La geometría del MUD: Zones, Rooms, Exits, interiores, pisos, puertas, rutas, descubrimiento y movimiento Room por Room.</p><strong>Abrir documento →</strong></a>
+    <a class="doc-card" href="?doc=personas"><small>Documento 03</small><h2>Player, NPC y simulación de personas</h2><p>Stats, tiradas, Knowledge, Jobs, virtudes, defectos, necesidades, relaciones, memoria y autonomía tipo Sims.</p><strong>Abrir documento →</strong></a>
+    <a class="doc-card" href="?doc=windrago"><small>Documento 04</small><h2>Facciones — Windrago</h2><p>Primer árbol tecnológico persistente: Town Hall por grados, estructuras, Jobs, requisitos, control territorial y comportamiento local.</p><strong>Abrir documento →</strong></a>
+    <a class="doc-card" href="?doc=conocimientos"><small>Documento 05</small><h2>Catálogo general de Conocimientos</h2><p>240 Knowledge para Player/NPC con descripción, parámetros relacionados, bonus y efecto directo sobre gameplay.</p><strong>Abrir documento →</strong></a>
+  </section>
+
+  <section class="doc-reader" id="reader" aria-live="polite">
+    <div class="doc-toolbar"><a href="/projects/siza/documentos/">← Todos los documentos</a><strong id="reader-title">Documento</strong></div>
+    <article class="doc-content" id="doc-content"><div class="loading">Cargando documento…</div></article>
+  </section>
+</main>
+<footer><span>© 2026 Kendall Angulo Jhonson</span><span>Siza · sistemas · worldbuilding</span><a href="/projects/siza/">Siza ↑</a></footer>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const docs={
+  mundo:{title:'Mundo persistente MUD',files:['mundo-persistente.md']},
+  mapas:{title:'Espacio físico y mapas persistentes',files:['mapas-espacio-fisico.md']},
+  personas:{title:'Player, NPC y simulación de personas',files:['player-npc.md']},
+  windrago:{title:'Facciones — Windrago',files:['windrago.md']},
+  conocimientos:{title:'Catálogo general de Conocimientos',files:['/documentos/conocimientos/01_espacio_a_energia.md','/documentos/conocimientos/02_ingenieria_a_medicina.md','/documentos/conocimientos/03_sociedad_a_crimen.md','/documentos/conocimientos/04_social_a_dinamico.md']}
+};
+const key=new URLSearchParams(location.search).get('doc');
+if(key&&docs[key]){
+  document.getElementById('reader').classList.add('is-open');
+  document.getElementById('reader-title').textContent=docs[key].title;
+  document.title=docs[key].title+' — Siza';
+  Promise.all(docs[key].files.map(f=>fetch(f).then(r=>{if(!r.ok)throw new Error('No se pudo cargar '+f);return r.text()})))
+    .then(parts=>{document.getElementById('doc-content').innerHTML=marked.parse(parts.join('\n\n---\n\n'));document.getElementById('reader').scrollIntoView({behavior:'smooth',block:'start'});})
+    .catch(err=>{document.getElementById('doc-content').innerHTML='<p>No se pudo cargar el documento: '+err.message+'</p>';});
+}
+</script>
+</body>
+</html>
