@@ -3,12 +3,13 @@ from datetime import datetime, timezone
 from evennia import DefaultScript, create_script, search_script
 
 from services.job_engine import refresh_world_job_rules
+from services.need_dynamics import advance_need_dynamics
 from services.npc_decision import decision_step
 from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.9.0-needs"
+WORLD_TICK_BUILD = "0.10.0-autonomous-needs"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -27,7 +28,7 @@ def simulate_npc_tick(npc):
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for world producers and NPC simulation."""
+    """Persistent global world tick for world producers, needs and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -41,13 +42,14 @@ class SizaWorldTick(DefaultScript):
         self.db.last_tick_at = None
         self.db.last_results = []
         self.db.last_producer_results = []
+        self.db.last_need_results = []
         self.db.build = WORLD_TICK_BUILD
 
     def at_repeat(self):
         if not bool(self.db.manual_enabled):
             return
 
-        # World producers resolve before NPC decisions so new work/events can be
+        # World producers resolve before NPC decisions so new work can be
         # considered during this same tick.
         try:
             producer_results = refresh_world_job_rules()
@@ -60,8 +62,22 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
+        # Each NPC advances its own persistent need clock before choosing a goal.
+        # A need crossing threshold may interrupt JOB/ROUTINE in this same tick.
+        need_results = []
         results = []
         for npc in simulated_npcs():
+            try:
+                need_result = advance_need_dynamics(npc)
+            except Exception as exc:
+                need_result = {
+                    "npc": getattr(npc, "key", "UNKNOWN"),
+                    "clock": None,
+                    "changes": [],
+                    "error": str(exc),
+                }
+            need_results.append(need_result)
+
             try:
                 result = simulate_npc_tick(npc)
             except Exception as exc:
@@ -77,6 +93,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_tick_at = datetime.now(timezone.utc).isoformat()
         self.db.last_results = results
         self.db.last_producer_results = producer_results
+        self.db.last_need_results = need_results
         self.db.build = WORLD_TICK_BUILD
 
 
@@ -110,12 +127,15 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.manual_enabled = True
         script.db.build = WORLD_TICK_BUILD
         script.db.last_producer_results = []
+        script.db.last_need_results = []
         return script, True
 
     script.db.manual_enabled = True
     script.db.build = WORLD_TICK_BUILD
     if script.db.last_producer_results is None:
         script.db.last_producer_results = []
+    if script.db.last_need_results is None:
+        script.db.last_need_results = []
     script.start(interval=seconds, start_delay=seconds, repeats=0)
     return script, False
 
@@ -141,6 +161,7 @@ def world_tick_state():
             "last_tick_at": None,
             "last_results": [],
             "last_producer_results": [],
+            "last_need_results": [],
             "next_repeat": None,
             "build": WORLD_TICK_BUILD,
         }
@@ -159,6 +180,7 @@ def world_tick_state():
         "last_tick_at": script.db.last_tick_at,
         "last_results": list(script.db.last_results or []),
         "last_producer_results": list(script.db.last_producer_results or []),
+        "last_need_results": list(script.db.last_need_results or []),
         "next_repeat": next_repeat,
         "build": str(script.db.build or WORLD_TICK_BUILD),
     }
