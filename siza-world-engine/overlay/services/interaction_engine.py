@@ -280,7 +280,7 @@ def _find_door(location, raw):
     if scored and scored[0][0] > 0:
         return scored[0][1]
     if len(candidates) == 1:
-        return candidates[0][1]
+        return candidates[0]
     return None
 
 
