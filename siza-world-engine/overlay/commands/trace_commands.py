@@ -68,10 +68,23 @@ def _arbitration_lines(packet):
         for row in candidates
     ) or "NONE"
 
-    return [
+    lines = [
         f"[ARBITRATION] {task_id} | policy={policy} | status={status} | "
         f"winner={winner} | distance={distance} | candidates={candidate_text}"
     ]
+
+    for row in packet.get("excluded") or []:
+        blocker = ""
+        if row.get("blocker_id"):
+            blocker = (
+                f" | blocker={row.get('blocker_type')} {row.get('blocker_id')}"
+                f" priority={row.get('blocker_priority')}"
+            )
+        lines.append(
+            f"      [ARBITRATION EXCLUDED] {row.get('npc_name')} | "
+            f"reason={row.get('reason')}{blocker}"
+        )
+    return lines
 
 
 def _npc_lines(result):
@@ -167,13 +180,13 @@ class CmdSizaSimTrace(Command):
             )
             emitted = False
 
-            for packet in entry.get("need_results") or []:
-                for line in _need_lines(packet):
+            for packet in entry.get("producer_results") or []:
+                for line in _producer_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
-            for packet in entry.get("producer_results") or []:
-                for line in _producer_lines(packet):
+            for packet in entry.get("need_results") or []:
+                for line in _need_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
