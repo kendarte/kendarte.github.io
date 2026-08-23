@@ -2,7 +2,7 @@ from .characters import Character
 
 
 class NPC(Character):
-    """Persistent non-player character with authored knowledge, memory and routine state."""
+    """Persistent non-player character with authored knowledge, memory, routine and decision state."""
 
     def at_object_creation(self):
         super().at_object_creation()
@@ -21,8 +21,23 @@ class NPC(Character):
         self.db.rest_room_id = None
         self.db.routine = []
         self.db.routine_index = 0
+        self.db.routine_hold_remaining = 0
         self.db.current_activity = None
         self.db.destination_id = None
         self.db.simulation_enabled = False
+
+        # Decision Layer. Goals are explicit persistent records supplied by
+        # authored systems; NPCs do not invent world facts, targets or priorities.
+        self.db.decision_enabled = False
+        self.db.decision_priorities = {
+            "DANGER": 100,
+            "EVENT": 80,
+            "NEED": 70,
+            "JOB": 60,
+            "RELATIONSHIP": 50,
+            "ROUTINE": 10,
+        }
+        self.db.decision_goals = []
+        self.db.current_goal = None
 
         self.db.canon_status = "prototype"
