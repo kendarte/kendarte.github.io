@@ -1,9 +1,9 @@
 from evennia import search_object
 
-from services.npc_simulation import find_path
+from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.5.0-decision-inspect"
+DECISION_BUILD = "0.6.0-decision-dispatch"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -152,6 +152,7 @@ def choose_goal(npc):
         "npc": npc.key if npc else None,
         "npc_id": npc.db.npc_id if npc else None,
         "location": npc.location.key if npc and npc.location else None,
+        "decision_enabled": bool(npc.db.decision_enabled) if npc else False,
         "candidates": candidates,
         "selected": selected,
         "build": DECISION_BUILD,
@@ -196,13 +197,37 @@ def set_goal_active(npc, goal_id, active):
     return changed
 
 
+def _run_routine_fallback(npc, goal):
+    """Preserve the proven v0.4 routine wait/advance semantics when routine wins."""
+    result = dict(simstep(npc) or {})
+    result["engine"] = "ROUTINE_FALLBACK"
+    result["goal_id"] = goal.get("id")
+    result["goal_type"] = "ROUTINE"
+    result["priority"] = goal.get("priority")
+    result["goal_source"] = goal.get("source")
+
+    status_map = {
+        "MOVED": "MOVED_GOAL",
+        "ARRIVED": "ARRIVED_GOAL",
+        "WAITING": "WAITING_GOAL",
+        "AT_TARGET": "AT_GOAL",
+    }
+    result["status"] = status_map.get(result.get("status"), result.get("status"))
+    return result
+
+
 def decision_step(npc):
     """Choose one authorized goal and execute at most one real Exit hop."""
     decision = choose_goal(npc)
     goal = decision.get("selected")
     if not goal:
         npc.db.current_goal = None
-        return {"status": "NO_GOAL", "npc": npc.key, "decision": decision}
+        return {
+            "status": "NO_GOAL",
+            "npc": npc.key,
+            "engine": "DECISION",
+            "decision": decision,
+        }
 
     npc.db.current_goal = {
         "id": goal.get("id"),
@@ -214,9 +239,19 @@ def decision_step(npc):
         "source": goal.get("source"),
     }
 
+    # Routine remains a real fallback system rather than being reimplemented as
+    # a static goal. This preserves hold ticks and routine-index advancement.
+    if goal.get("source") == "ROUTINE_FALLBACK":
+        return _run_routine_fallback(npc, goal)
+
     target = _find_room(goal.get("target_room_key"), goal.get("target_room_id"))
     if not target:
-        return {"status": "BAD_TARGET", "npc": npc.key, "goal": goal}
+        return {
+            "status": "BAD_TARGET",
+            "npc": npc.key,
+            "engine": "DECISION",
+            "goal": goal,
+        }
 
     npc.db.destination_id = target.db.room_id
 
@@ -230,6 +265,7 @@ def decision_step(npc):
         return {
             "status": status,
             "npc": npc.key,
+            "engine": "DECISION",
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
             "priority": goal.get("priority"),
@@ -243,6 +279,7 @@ def decision_step(npc):
         return {
             "status": "NO_PATH",
             "npc": npc.key,
+            "engine": "DECISION",
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
             "priority": goal.get("priority"),
@@ -251,7 +288,12 @@ def decision_step(npc):
         }
 
     if not path:
-        return {"status": "AT_GOAL", "npc": npc.key, "goal_id": goal.get("id")}
+        return {
+            "status": "AT_GOAL",
+            "npc": npc.key,
+            "engine": "DECISION",
+            "goal_id": goal.get("id"),
+        }
 
     exit_obj = path[0]
     source = npc.location
@@ -263,7 +305,10 @@ def decision_step(npc):
         return {
             "status": "BLOCKED",
             "npc": npc.key,
+            "engine": "DECISION",
             "goal_id": goal.get("id"),
+            "goal_type": goal.get("type"),
+            "priority": goal.get("priority"),
             "from": source.key,
             "target": target.key,
             "attempted_exit": exit_obj.key,
@@ -283,6 +328,7 @@ def decision_step(npc):
     return {
         "status": status,
         "npc": npc.key,
+        "engine": "DECISION",
         "goal_id": goal.get("id"),
         "goal_type": goal.get("type"),
         "priority": goal.get("priority"),
