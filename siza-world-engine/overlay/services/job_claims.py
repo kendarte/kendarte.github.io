@@ -2,14 +2,16 @@ from datetime import datetime, timezone
 
 from evennia import search_tag
 
+from services.decision_personality import apply_decision_personality
 from services.job_engine import job_sites
 from services.need_engine import collect_need_candidates
-from services.npc_simulation import find_path, find_room
+from services.npc_simulation import find_path, find_room, routine_entry
+from services.relationship_engine import collect_relationship_candidates
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
 from services.world_event_engine import collect_event_candidates, danger_blocks_room
 
 
-CLAIM_BUILD = "0.19.0-world-danger"
+CLAIM_BUILD = "0.22.0-decision-personality"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
@@ -170,8 +172,55 @@ def _goal_reachable(npc, goal):
     return find_path(npc.location, target) is not None
 
 
+def _decorate_goal(npc, goal, fallback_priority, source=None, goal_type=None):
+    item = dict(goal or {})
+    if goal_type:
+        item["type"] = str(goal_type).upper()
+    else:
+        item["type"] = str(item.get("type") or "EVENT").upper()
+    if source:
+        item["source"] = source
+    try:
+        base = int(item.get("priority", fallback_priority))
+    except (TypeError, ValueError):
+        base = int(fallback_priority)
+    item["priority"] = base
+    return apply_decision_personality(npc, item, base_priority=base)
+
+
+def _blocker_row(goal):
+    return {
+        "id": goal.get("id"),
+        "type": goal.get("type"),
+        "priority": goal.get("priority"),
+        "base_priority": goal.get("base_priority"),
+        "personality_modifier": goal.get("personality_modifier", 0),
+        "source": goal.get("source"),
+    }
+
+
+def _routine_goal(npc, priorities):
+    index, entry = routine_entry(npc)
+    if entry is None:
+        return None
+    schedule = entry.get("schedule")
+    return {
+        "id": f"ROUTINE:{entry.get('id') or index}",
+        "type": "ROUTINE",
+        "priority": priorities.get("ROUTINE", 10),
+        "active": True,
+        "target_room_id": entry.get("room_id"),
+        "target_room_key": entry.get("room_key"),
+        "activity": entry.get("activity") or "siguiendo su rutina",
+        "source": "ROUTINE_FALLBACK",
+        "routine_index": index,
+        "routine_schedule": schedule,
+        "routine_schedule_label": schedule_label(schedule),
+    }
+
+
 def _higher_priority_blockers(npc, job_priority):
-    """Return reachable active goals that would outrank this JOB right now."""
+    """Return every reachable effective goal that outranks this NPC's effective JOB."""
     priorities = _priority_map(npc)
     blockers = []
 
@@ -183,60 +232,76 @@ def _higher_priority_blockers(npc, job_priority):
         if not bool(goal.get("active", False)):
             continue
         goal_type = str(goal.get("type") or "EVENT").upper()
-        try:
-            priority = int(goal.get("priority", priorities.get(goal_type, 0)))
-        except (TypeError, ValueError):
-            priority = int(priorities.get(goal_type, 0))
-        if priority <= int(job_priority):
-            continue
-        if not _goal_reachable(npc, goal):
-            continue
-        blockers.append(
-            {
-                "id": goal.get("id"),
-                "type": goal_type,
-                "priority": priority,
-                "source": "AUTHORED_GOAL",
-            }
+        decorated = _decorate_goal(
+            npc,
+            goal,
+            priorities.get(goal_type, 0),
+            source="AUTHORED_GOAL",
+            goal_type=goal_type,
         )
+        if int(decorated.get("priority", 0)) <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, decorated):
+            continue
+        blockers.append(_blocker_row(decorated))
 
     for goal in collect_event_candidates(npc, default_priority=priorities.get("EVENT", 80)):
         goal_type = str(goal.get("type") or "EVENT").upper()
         fallback = priorities.get(goal_type, priorities.get("EVENT", 80))
-        try:
-            priority = int(goal.get("priority", fallback))
-        except (TypeError, ValueError):
-            priority = int(fallback)
-        if priority <= int(job_priority):
-            continue
-        if not _goal_reachable(npc, goal):
-            continue
-        blockers.append(
-            {
-                "id": goal.get("id"),
-                "type": goal_type,
-                "priority": priority,
-                "source": "WORLD_EVENT",
-            }
+        decorated = _decorate_goal(
+            npc,
+            goal,
+            fallback,
+            source="WORLD_EVENT",
+            goal_type=goal_type,
         )
+        if int(decorated.get("priority", 0)) <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, decorated):
+            continue
+        blockers.append(_blocker_row(decorated))
 
     for goal in collect_need_candidates(npc, default_priority=priorities.get("NEED", 70)):
-        try:
-            priority = int(goal.get("priority", priorities.get("NEED", 70)))
-        except (TypeError, ValueError):
-            priority = int(priorities.get("NEED", 70))
-        if priority <= int(job_priority):
-            continue
-        if not _goal_reachable(npc, goal):
-            continue
-        blockers.append(
-            {
-                "id": goal.get("id"),
-                "type": "NEED",
-                "priority": priority,
-                "source": "NPC_NEED",
-            }
+        decorated = _decorate_goal(
+            npc,
+            goal,
+            priorities.get("NEED", 70),
+            source="NPC_NEED",
+            goal_type="NEED",
         )
+        if int(decorated.get("priority", 0)) <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, decorated):
+            continue
+        blockers.append(_blocker_row(decorated))
+
+    for goal in collect_relationship_candidates(
+        npc, default_priority=priorities.get("RELATIONSHIP", 50)
+    ):
+        decorated = _decorate_goal(
+            npc,
+            goal,
+            priorities.get("RELATIONSHIP", 50),
+            source="RELATIONSHIP",
+            goal_type="RELATIONSHIP",
+        )
+        if int(decorated.get("priority", 0)) <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, decorated):
+            continue
+        blockers.append(_blocker_row(decorated))
+
+    routine = _routine_goal(npc, priorities)
+    if routine:
+        decorated = _decorate_goal(
+            npc,
+            routine,
+            priorities.get("ROUTINE", 10),
+            source="ROUTINE_FALLBACK",
+            goal_type="ROUTINE",
+        )
+        if int(decorated.get("priority", 0)) > int(job_priority) and _goal_reachable(npc, decorated):
+            blockers.append(_blocker_row(decorated))
 
     blockers.sort(key=lambda row: int(row.get("priority", 0)), reverse=True)
     return blockers
@@ -298,10 +363,28 @@ def _availability_for_task(npc, task_id, task):
             "shift": shift,
         }
 
+    priorities = _priority_map(npc)
     try:
-        job_priority = int((task or {}).get("priority", DEFAULT_PRIORITIES["JOB"]))
+        base_job_priority = int((task or {}).get("priority", priorities.get("JOB", 60)))
     except (TypeError, ValueError):
-        job_priority = DEFAULT_PRIORITIES["JOB"]
+        base_job_priority = int(priorities.get("JOB", 60))
+
+    job_goal = dict(task or {})
+    job_goal.update(
+        {
+            "id": f"JOB:{task_id}",
+            "task_id": task_id,
+            "type": "JOB",
+            "source": "WORLD_JOB",
+            "priority": base_job_priority,
+            "target_room_id": getattr(site.db, "room_id", None) if site else None,
+            "target_room_key": site.key if site else None,
+        }
+    )
+    decorated_job = apply_decision_personality(
+        npc, job_goal, base_priority=base_job_priority
+    )
+    job_priority = int(decorated_job.get("priority", base_job_priority))
 
     blockers = _higher_priority_blockers(npc, job_priority)
     if blockers:
@@ -311,6 +394,9 @@ def _availability_for_task(npc, task_id, task):
             "reason": "HIGHER_PRIORITY_GOAL",
             "blocker": blocker,
             "shift": shift,
+            "job_priority": job_priority,
+            "job_base_priority": base_job_priority,
+            "job_personality_modifier": decorated_job.get("personality_modifier", 0),
         }
 
     npc_id = str(getattr(npc.db, "npc_id", "") or "")
@@ -328,7 +414,15 @@ def _availability_for_task(npc, task_id, task):
             "shift": shift,
         }
 
-    return {"available": True, "reason": "AVAILABLE", "blocker": None, "shift": shift}
+    return {
+        "available": True,
+        "reason": "AVAILABLE",
+        "blocker": None,
+        "shift": shift,
+        "job_priority": job_priority,
+        "job_base_priority": base_job_priority,
+        "job_personality_modifier": decorated_job.get("personality_modifier", 0),
+    }
 
 
 def refresh_job_claims():
@@ -524,6 +618,11 @@ def arbitrate_job_claims(npcs):
                             "blocker_id": blocker.get("id"),
                             "blocker_type": blocker.get("type"),
                             "blocker_priority": blocker.get("priority"),
+                            "blocker_base_priority": blocker.get("base_priority"),
+                            "blocker_personality_modifier": blocker.get("personality_modifier", 0),
+                            "job_priority": availability.get("job_priority"),
+                            "job_base_priority": availability.get("job_base_priority"),
+                            "job_personality_modifier": availability.get("job_personality_modifier", 0),
                         }
                     )
                     continue
@@ -548,6 +647,7 @@ def arbitrate_job_claims(npcs):
                         "npc_id": npc_id,
                         "npc_name": npc.key,
                         "distance": len(path),
+                        "job_priority": availability.get("job_priority"),
                     }
                 )
 
@@ -562,6 +662,7 @@ def arbitrate_job_claims(npcs):
                     "npc_id": row.get("npc_id"),
                     "npc_name": row.get("npc_name"),
                     "distance": row.get("distance"),
+                    "job_priority": row.get("job_priority"),
                 }
                 for row in candidates
             ]
