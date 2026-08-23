@@ -6,10 +6,10 @@ from services.job_engine import job_sites
 from services.need_engine import collect_need_candidates
 from services.npc_simulation import find_path, find_room
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
-from services.world_event_engine import collect_event_candidates
+from services.world_event_engine import collect_event_candidates, danger_blocks_room
 
 
-CLAIM_BUILD = "0.18.0-world-events"
+CLAIM_BUILD = "0.19.0-world-danger"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
@@ -127,6 +127,16 @@ def _site_claims(site):
     return output
 
 
+def _task_site(task_id):
+    wanted = str(task_id or "")
+    if not wanted:
+        return None
+    for site in job_sites():
+        if wanted in _site_tasks(site):
+            return site
+    return None
+
+
 def _task_policy(task):
     return str((task or {}).get("claim_policy") or POLICY_FIRST_SELECTED).upper()
 
@@ -191,10 +201,12 @@ def _higher_priority_blockers(npc, job_priority):
         )
 
     for goal in collect_event_candidates(npc, default_priority=priorities.get("EVENT", 80)):
+        goal_type = str(goal.get("type") or "EVENT").upper()
+        fallback = priorities.get(goal_type, priorities.get("EVENT", 80))
         try:
-            priority = int(goal.get("priority", priorities.get("EVENT", 80)))
+            priority = int(goal.get("priority", fallback))
         except (TypeError, ValueError):
-            priority = int(priorities.get("EVENT", 80))
+            priority = int(fallback)
         if priority <= int(job_priority):
             continue
         if not _goal_reachable(npc, goal):
@@ -202,7 +214,7 @@ def _higher_priority_blockers(npc, job_priority):
         blockers.append(
             {
                 "id": goal.get("id"),
-                "type": "EVENT",
+                "type": goal_type,
                 "priority": priority,
                 "source": "WORLD_EVENT",
             }
@@ -267,6 +279,21 @@ def _availability_for_task(npc, task_id, task):
                 "type": "SHIFT",
                 "priority": None,
                 "source": "WORLD_CLOCK",
+            },
+            "shift": shift,
+        }
+
+    site = _task_site(task_id)
+    danger = danger_blocks_room(site, npc=npc) if site else None
+    if danger:
+        return {
+            "available": False,
+            "reason": "DANGER_TARGET",
+            "blocker": {
+                "id": danger.get("event_id"),
+                "type": "DANGER",
+                "priority": danger.get("priority"),
+                "source": "WORLD_EVENT",
             },
             "shift": shift,
         }
@@ -371,14 +398,29 @@ def claim_job_task(
         if not task:
             continue
         if not bool(task.get("active", False)):
-            return {"success": False, "acquired": False, "reason": "TASK_INACTIVE", "site": site}
+            return {
+                "success": False,
+                "acquired": False,
+                "reason": "TASK_INACTIVE",
+                "site": site,
+            }
 
         required_job = str(task.get("job_id") or "").strip()
         assigned_npc = str(task.get("assigned_npc_id") or "").strip()
         if required_job and required_job != npc_job_id:
-            return {"success": False, "acquired": False, "reason": "WRONG_JOB", "site": site}
+            return {
+                "success": False,
+                "acquired": False,
+                "reason": "WRONG_JOB",
+                "site": site,
+            }
         if assigned_npc and assigned_npc != npc_id:
-            return {"success": False, "acquired": False, "reason": "ASSIGNED_OTHER", "site": site}
+            return {
+                "success": False,
+                "acquired": False,
+                "reason": "ASSIGNED_OTHER",
+                "site": site,
+            }
 
         claims = _site_claims(site)
         existing = claims.get(wanted)
@@ -509,7 +551,12 @@ def arbitrate_job_claims(npcs):
                     }
                 )
 
-            candidates.sort(key=lambda row: (int(row.get("distance", 0)), str(row.get("npc_id") or "")))
+            candidates.sort(
+                key=lambda row: (
+                    int(row.get("distance", 0)),
+                    str(row.get("npc_id") or ""),
+                )
+            )
             public_candidates = [
                 {
                     "npc_id": row.get("npc_id"),
@@ -584,7 +631,7 @@ def release_job_claim(task_id, npc=None, force=False):
 
 
 def filter_job_candidates_for_claim(npc, candidates):
-    """Hide tasks unavailable because of ownership, another JOB or off-shift state."""
+    """Hide tasks blocked by ownership, shifts, other JOBs or active target danger."""
     refresh_job_claims()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     output = []
@@ -596,13 +643,14 @@ def filter_job_candidates_for_claim(npc, candidates):
         if _owned_other_claim(npc_id, task_id):
             continue
 
-        # Existing owners retain their task even if the shift later closes.
+        site = _task_site(task_id)
+        if site and danger_blocks_room(site, npc=npc):
+            continue
+
+        # Existing owners retain their task across a closed shift, but the target
+        # is still hidden while a DANGER actively blocks work there.
         if not claim:
-            task = None
-            for site in job_sites():
-                task = _site_tasks(site).get(task_id)
-                if task:
-                    break
+            task = _site_tasks(site).get(task_id) if site else None
             if task:
                 shift = _shift_status(npc)
                 if shift.get("scheduled") and not shift.get("active"):
