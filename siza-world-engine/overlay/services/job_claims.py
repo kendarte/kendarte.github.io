@@ -6,9 +6,10 @@ from services.job_engine import job_sites
 from services.need_engine import collect_need_candidates
 from services.npc_simulation import find_path, find_room
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
+from services.world_event_engine import collect_event_candidates
 
 
-CLAIM_BUILD = "0.16.0-world-clock-schedules"
+CLAIM_BUILD = "0.18.0-world-events"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
@@ -186,6 +187,24 @@ def _higher_priority_blockers(npc, job_priority):
                 "type": goal_type,
                 "priority": priority,
                 "source": "AUTHORED_GOAL",
+            }
+        )
+
+    for goal in collect_event_candidates(npc, default_priority=priorities.get("EVENT", 80)):
+        try:
+            priority = int(goal.get("priority", priorities.get("EVENT", 80)))
+        except (TypeError, ValueError):
+            priority = int(priorities.get("EVENT", 80))
+        if priority <= int(job_priority):
+            continue
+        if not _goal_reachable(npc, goal):
+            continue
+        blockers.append(
+            {
+                "id": goal.get("id"),
+                "type": "EVENT",
+                "priority": priority,
+                "source": "WORLD_EVENT",
             }
         )
 
