@@ -20,7 +20,10 @@ def build():
         caller.msg("No puedo aplicar v0.4: Mara Vensal no existe. Ejecute primero upgrade_pilot_v03.")
         return
 
-    mara.db.home_room_id = "CAR-KAL-DAR-006"
+    # No canonical home has been authored for Mara. Keep it unset instead of
+    # silently turning the Cantina into her residence.
+    mara.db.home_room_id = None
+    mara.db.rest_room_id = "CAR-KAL-DAR-006"
     mara.db.work_room_id = "CAR-KAL-DAR-007"
     mara.db.routine = [
         {
@@ -57,6 +60,7 @@ def build():
 
     caller.msg("Kalnaj Pilot v0.4 aplicado: rutina persistente de Mara activada.")
     caller.msg("La rutina es PROTOTYPE y avanza solo con siza-simstep; no hay reloj automático todavía.")
+    caller.msg("No se definió vivienda para Mara; home_room_id permanece vacío.")
     caller.msg("Pruebas: siza-npcstate Mara | siza-simstep Mara")
 
 
