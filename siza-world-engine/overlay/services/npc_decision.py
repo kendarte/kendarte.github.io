@@ -1,10 +1,11 @@
 from evennia import search_object
 
 from services.job_engine import collect_job_candidates, complete_job_task
+from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.7.0-world-job"
+DECISION_BUILD = "0.9.0-needs"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -100,19 +101,23 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored goals, world-produced JOB goals and the routine fallback."""
+    """Collect authored, NEED, JOB and routine goals from their authoritative sources."""
     priorities = _priority_map(npc)
     candidates = []
 
-    # Explicit persistent goals authored directly for the NPC (events, debug goals, etc.).
+    # Explicit authored goals such as world events/debug events attached to the NPC.
     for raw in _plain_list(npc.db.decision_goals):
         goal = _goal_from_raw(raw, priorities)
         if not goal or not goal.get("active"):
             continue
         candidates.append(goal)
 
-    # JOB candidates are derived from persistent task records stored in the world.
-    # They do not live in npc.db.decision_goals.
+    # NEED goals are derived from persistent NPC state and world affordances.
+    candidates.extend(
+        collect_need_candidates(npc, default_priority=priorities.get("NEED", 70))
+    )
+
+    # JOB goals are derived from persistent task records stored in the world.
     candidates.extend(
         collect_job_candidates(npc, default_priority=priorities.get("JOB", 60))
     )
@@ -228,6 +233,9 @@ def _complete_selected_goal(npc, goal):
     """Commit completion back to the authoritative source that produced the goal."""
     source = str(goal.get("source") or "")
 
+    if source == "NPC_NEED":
+        return complete_need_goal(npc, goal)
+
     if source == "WORLD_JOB":
         site = complete_job_task(npc, goal.get("task_id"))
         return {
@@ -273,6 +281,10 @@ def decision_step(npc):
         "activity": goal.get("activity"),
         "source": goal.get("source"),
         "task_id": goal.get("task_id"),
+        "need_key": goal.get("need_key"),
+        "need_rule_id": goal.get("need_rule_id"),
+        "affordance": goal.get("affordance"),
+        "affordance_id": goal.get("affordance_id"),
     }
 
     if goal.get("source") == "ROUTINE_FALLBACK":
