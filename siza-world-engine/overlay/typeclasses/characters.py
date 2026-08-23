@@ -23,5 +23,6 @@ class Character(DefaultCharacter, ObjectParent):
         self.db.needs = {}
         self.db.relationships = {}
         self.db.memories = []
+        self.db.discovered_facts = []
         self.db.current_action = None
         self.db.destination_id = None
