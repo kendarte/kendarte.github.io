@@ -27,8 +27,17 @@ class CmdSizaRelationships(Command):
         if not rows:
             self.caller.msg("  relationships=NONE")
         for row in rows:
+            identity = row.get("identity")
+            target_type = row.get("target_type")
+            target_npc_id = row.get("target_npc_id")
+            target_dbref = row.get("target_dbref")
+            identity_meta = f"type={target_type} | identity={identity}"
+            if target_npc_id:
+                identity_meta += f" | npc_id={target_npc_id}"
+            if target_dbref is not None:
+                identity_meta += f" | dbref=#{target_dbref}"
             self.caller.msg(
-                f"  target={row.get('target_name')} | npc_id={row.get('target_npc_id')} | "
+                f"  target={row.get('target_name')} | {identity_meta} | "
                 f"location={row.get('target_location')}"
             )
             obligations = row.get("obligations") or []
