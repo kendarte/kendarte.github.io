@@ -6,7 +6,13 @@ from commands.decision_commands import (
     CmdSizaDecisionStep,
     CmdSizaGoalToggle,
 )
-from commands.job_commands import CmdSizaJobs, CmdSizaJobToggle
+from commands.job_commands import (
+    CmdSizaJobRefresh,
+    CmdSizaJobs,
+    CmdSizaJobToggle,
+    CmdSizaWorkSet,
+    CmdSizaWorksite,
+)
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
@@ -37,6 +43,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDecisionStep())
         self.add(CmdSizaJobs())
         self.add(CmdSizaJobToggle())
+        self.add(CmdSizaWorksite())
+        self.add(CmdSizaWorkSet())
+        self.add(CmdSizaJobRefresh())
         self.add(CmdSizaNoMatch())
 
 
