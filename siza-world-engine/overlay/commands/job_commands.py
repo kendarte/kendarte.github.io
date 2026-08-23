@@ -34,7 +34,7 @@ def _find_worksite(query):
 
 
 class CmdSizaJobs(Command):
-    """Inspect persistent world job tasks and NPC eligibility."""
+    """Inspect persistent world job tasks, progress and NPC eligibility."""
 
     key = "siza-jobs"
     aliases = ["jobs-state"]
@@ -62,10 +62,14 @@ class CmdSizaJobs(Command):
                     f"{row.get('id')} | site={row.get('site')} | job_id={row.get('job_id')} | "
                     f"active={row.get('active')} | status={row.get('status')} | "
                     f"priority={row.get('priority')} | eligible={row.get('eligible')} | "
-                    f"rule={row.get('rule_id') or 'NONE'}"
+                    f"rule={row.get('rule_id') or 'NONE'} | "
+                    f"work={row.get('work_done')}/{row.get('work_required')} "
+                    f"(+{row.get('work_per_action')}/WORK)"
                 )
                 if row.get("activity"):
                     self.caller.msg(f"  activity={row.get('activity')}")
+                if row.get("work_last_npc_name"):
+                    self.caller.msg(f"  last_worker={row.get('work_last_npc_name')}")
                 if row.get("completion_effects_applied"):
                     self.caller.msg(f"  completion_effects={row.get('completion_effects_applied')}")
         self.caller.msg("=======================")
@@ -165,7 +169,8 @@ class CmdSizaWorkSet(Command):
         for row in relevant:
             self.caller.msg(
                 f"[PRODUCER] {row.get('rule_id')}: condition={row.get('condition_met')} | "
-                f"task={row.get('task_id')} active={row.get('task_active')} status={row.get('task_status')}"
+                f"task={row.get('task_id')} active={row.get('task_active')} "
+                f"status={row.get('task_status')} | work={row.get('work_done')}/{row.get('work_required')}"
             )
 
 
@@ -186,6 +191,7 @@ class CmdSizaJobRefresh(Command):
                 f"{row.get('site')} | {row.get('rule_id')} | "
                 f"{row.get('field')}={row.get('actual')} {row.get('op')} {row.get('expected')} | "
                 f"condition={row.get('condition_met')} | task={row.get('task_id')} "
-                f"active={row.get('task_active')} status={row.get('task_status')}"
+                f"active={row.get('task_active')} status={row.get('task_status')} | "
+                f"work={row.get('work_done')}/{row.get('work_required')}"
             )
         self.caller.msg("==========================")
