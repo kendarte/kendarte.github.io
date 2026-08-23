@@ -159,12 +159,17 @@ def _entry_duration(entry):
         return 1
 
 
+def _routine_activity_kind(entry):
+    return str((entry or {}).get("activity_kind") or "IDLE").upper()
+
+
 def _routine_meta(index, entry):
     return {
         "routine_index": index,
         "routine_id": (entry or {}).get("id"),
         "routine_room_id": (entry or {}).get("room_id"),
         "routine_room_key": (entry or {}).get("room_key"),
+        "routine_activity_kind": _routine_activity_kind(entry),
     }
 
 
@@ -209,12 +214,10 @@ def simstep(npc):
         return {
             "status": "BAD_TARGET",
             "npc": npc.key,
+            "action_kind": "IDLE",
             **_routine_meta(index, entry),
         }
 
-    # When an NPC reaches an authored routine node, it may remain there for one
-    # or more world ticks. This prevents automatic simulation from turning a
-    # routine into a constant sprint around the map.
     if npc.location == target:
         npc.db.current_activity = entry.get("activity") or "en su rutina"
         try:
@@ -231,18 +234,17 @@ def simstep(npc):
                 "target": target.key,
                 "activity": npc.db.current_activity,
                 "hold_remaining": hold,
+                "action_kind": _routine_activity_kind(entry),
                 **_routine_meta(index, entry),
             }
 
-        # The executed action may target the NEXT routine entry in the same tick.
-        # Return metadata for that new entry so traces never label movement with
-        # the routine node that was just completed.
         index, entry = _advance_routine(npc)
         target = _target_room(entry)
         if not target:
             return {
                 "status": "BAD_TARGET",
                 "npc": npc.key,
+                "action_kind": "IDLE",
                 **_routine_meta(index, entry),
             }
 
@@ -256,6 +258,7 @@ def simstep(npc):
             "from": npc.location.key,
             "target": target.key,
             "destination_id": npc.db.destination_id,
+            "action_kind": "IDLE",
             **_routine_meta(index, entry),
         }
 
@@ -268,6 +271,7 @@ def simstep(npc):
             "location": npc.location.key,
             "activity": npc.db.current_activity,
             "hold_remaining": npc.db.routine_hold_remaining,
+            "action_kind": _routine_activity_kind(entry),
             **_routine_meta(index, entry),
         }
 
@@ -275,7 +279,6 @@ def simstep(npc):
     source = npc.location
     destination = exit_obj.destination
 
-    # Traverse through the actual Exit typeclass so door/lock rules remain authoritative.
     exit_obj.at_traverse(npc, destination)
     moved = npc.location == destination
 
@@ -287,6 +290,7 @@ def simstep(npc):
             "from": source.key,
             "attempted_exit": exit_obj.key,
             "target": target.key,
+            "action_kind": "IDLE",
             **_routine_meta(index, entry),
         }
 
@@ -309,5 +313,6 @@ def simstep(npc):
         "destination_id": npc.db.destination_id,
         "activity": npc.db.current_activity,
         "hold_remaining": int(npc.db.routine_hold_remaining or 0),
+        "action_kind": "MOVE",
         **_routine_meta(index, entry),
     }
