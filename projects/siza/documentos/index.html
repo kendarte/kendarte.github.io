@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Siza — Documentos de diseño</title>
-  <meta name="description" content="Documentación pública de diseño y sistemas de Siza: mundo persistente, mapas MUD, Player/NPC, facciones y conocimientos.">
+  <meta name="description" content="Documentación pública de diseño y sistemas de Siza: MUD persistente, mapas, Caribia, Player/NPC, facciones y conocimientos.">
   <link rel="canonical" href="https://kendarte.github.io/projects/siza/documentos/">
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    .docs-shell{max-width:1180px;margin:0 auto;padding:42px 24px 90px}.docs-hero{padding:30px 0 34px;border-bottom:1px solid rgba(255,255,255,.12)}.docs-hero h1{font-size:clamp(2.8rem,7vw,6.3rem);line-height:.92;margin:.25rem 0 1rem}.docs-hero p{max-width:760px;color:var(--muted,#a7a7a7);font-size:1.05rem}.docs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:34px 0}.doc-card{display:block;padding:24px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.025);text-decoration:none;color:inherit;transition:.18s ease}.doc-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.3)}.doc-card small{display:block;opacity:.6;text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}.doc-card h2{margin:0 0 10px;font-size:1.35rem}.doc-card p{margin:0;color:var(--muted,#aaa);line-height:1.55}.doc-card strong{display:block;margin-top:18px;font-size:.9rem}.doc-reader{display:none;margin-top:30px}.doc-reader.is-open{display:block}.doc-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}.doc-toolbar a{color:inherit}.doc-content{max-width:900px;margin:38px auto 0;line-height:1.72}.doc-content h1,.doc-content h2,.doc-content h3{line-height:1.12;margin-top:2em}.doc-content h1{font-size:2.35rem}.doc-content h2{font-size:1.75rem;border-top:1px solid rgba(255,255,255,.1);padding-top:1.2em}.doc-content h3{font-size:1.25rem}.doc-content pre{overflow:auto;padding:18px;background:#0c0c0c;border:1px solid rgba(255,255,255,.12)}.doc-content code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.doc-content table{width:100%;border-collapse:collapse;display:block;overflow:auto}.doc-content th,.doc-content td{border:1px solid rgba(255,255,255,.13);padding:8px 10px;text-align:left}.doc-content blockquote{border-left:3px solid currentColor;padding-left:16px;opacity:.85}.loading{padding:48px 0;text-align:center;opacity:.7}.back-siza{display:inline-block;margin-bottom:18px;text-decoration:none}.docs-note{font-size:.9rem;opacity:.65;margin-top:12px}@media(max-width:760px){.docs-grid{grid-template-columns:1fr}.docs-shell{padding-left:18px;padding-right:18px}.doc-content h1{font-size:1.9rem}}
+    .docs-shell{max-width:1180px;margin:0 auto;padding:42px 24px 90px}.docs-hero{padding:30px 0 34px;border-bottom:1px solid rgba(255,255,255,.12)}.docs-hero h1{font-size:clamp(2.8rem,7vw,6.3rem);line-height:.92;margin:.25rem 0 1rem}.docs-hero p{max-width:800px;color:var(--muted,#a7a7a7);font-size:1.05rem}.docs-section{margin:44px 0}.docs-section>h2{margin:0 0 8px}.docs-section>p{margin:0 0 22px;color:var(--muted,#aaa)}.docs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.doc-card{display:block;padding:24px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.025);text-decoration:none;color:inherit;transition:.18s ease}.doc-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.3)}.doc-card small{display:block;opacity:.6;text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}.doc-card h3{margin:0 0 10px;font-size:1.25rem}.doc-card p{margin:0;color:var(--muted,#aaa);line-height:1.55}.doc-card strong{display:block;margin-top:18px;font-size:.9rem}.doc-reader{display:none;margin-top:30px}.doc-reader.is-open{display:block}.doc-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}.doc-toolbar a{color:inherit}.doc-content{max-width:920px;margin:38px auto 0;line-height:1.72}.doc-content h1,.doc-content h2,.doc-content h3{line-height:1.12;margin-top:2em}.doc-content h1{font-size:2.35rem}.doc-content h2{font-size:1.75rem;border-top:1px solid rgba(255,255,255,.1);padding-top:1.2em}.doc-content pre{overflow:auto;padding:18px;background:#0c0c0c;border:1px solid rgba(255,255,255,.12)}.doc-content code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.doc-content table{width:100%;border-collapse:collapse;display:block;overflow:auto}.doc-content th,.doc-content td{border:1px solid rgba(255,255,255,.13);padding:8px 10px;text-align:left}.doc-content blockquote{border-left:3px solid currentColor;padding-left:16px;opacity:.85}.loading{padding:48px 0;text-align:center;opacity:.7}.back-siza{display:inline-block;margin-bottom:18px;text-decoration:none}.docs-note{font-size:.9rem;opacity:.65;margin-top:12px}@media(max-width:760px){.docs-grid{grid-template-columns:1fr}.docs-shell{padding-left:18px;padding-right:18px}.doc-content h1{font-size:1.9rem}}
   </style>
 </head>
 <body>
@@ -23,16 +23,34 @@
     <a class="back-siza" href="/projects/siza/">← Siza</a>
     <p class="eyebrow"><span></span> SIZA · DOCUMENTACIÓN DE SISTEMAS</p>
     <h1>Documentos</h1>
-    <p>Especificaciones de diseño que definen cómo funciona Siza por debajo del Master IA: espacio físico MUD, simulación persistente, Player/NPC, facciones y conocimiento.</p>
-    <p class="docs-note">Estos documentos describen sistemas de juego. El World Book continúa siendo la fuente de canon de Rivarica.</p>
+    <p>Especificaciones que definen cómo funciona Siza por debajo del Master IA. El World Book conserva el canon; esta sección documenta la implementación sistémica y el proceso de convertir Caribia en un espacio MUD persistente.</p>
   </section>
 
-  <section class="docs-grid" aria-label="Documentos de Siza">
-    <a class="doc-card" href="?doc=mundo"><small>Documento 01</small><h2>Mundo persistente MUD</h2><p>Generación de asentamientos, geografía, facciones, edificios, Rooms, Jobs, NPC, economía, eventos y estado persistente.</p><strong>Abrir documento →</strong></a>
-    <a class="doc-card" href="?doc=mapas"><small>Documento 02</small><h2>Espacio físico y mapas persistentes</h2><p>La geometría del MUD: Zones, Rooms, Exits, interiores, pisos, puertas, rutas, descubrimiento y movimiento Room por Room.</p><strong>Abrir documento →</strong></a>
-    <a class="doc-card" href="?doc=personas"><small>Documento 03</small><h2>Player, NPC y simulación de personas</h2><p>Stats, tiradas, Knowledge, Jobs, virtudes, defectos, necesidades, relaciones, memoria y autonomía tipo Sims.</p><strong>Abrir documento →</strong></a>
-    <a class="doc-card" href="?doc=windrago"><small>Documento 04</small><h2>Facciones — Windrago</h2><p>Primer árbol tecnológico persistente: Town Hall por grados, estructuras, Jobs, requisitos, control territorial y comportamiento local.</p><strong>Abrir documento →</strong></a>
-    <a class="doc-card" href="?doc=conocimientos"><small>Documento 05</small><h2>Catálogo general de Conocimientos</h2><p>240 Knowledge para Player/NPC con descripción, parámetros relacionados, bonus y efecto directo sobre gameplay.</p><strong>Abrir documento →</strong></a>
+  <section class="docs-section">
+    <h2>Sistemas base</h2>
+    <p>Documentos generales del juego.</p>
+    <div class="docs-grid">
+      <a class="doc-card" href="?doc=mundo"><small>01</small><h3>Mundo persistente MUD</h3><p>Asentamientos, estructuras, Rooms, Jobs, NPC, economía, eventos y persistencia.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=mapas"><small>02</small><h3>Espacio físico y mapas</h3><p>Zones, Rooms, Exits, interiores, pisos, puertas, rutas y discovery.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=personas"><small>03</small><h3>Player y NPC</h3><p>Stats, Knowledge, Jobs, virtudes, defectos, necesidades, memoria y autonomía.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=windrago"><small>04</small><h3>Windrago</h3><p>Primer árbol tecnológico de facción persistente.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=conocimientos"><small>05</small><h3>240 Conocimientos</h3><p>Catálogo de Knowledge para Player/NPC.</p><strong>Abrir →</strong></a>
+    </div>
+  </section>
+
+  <section class="docs-section">
+    <h2>Mapeo completo de Caribia</h2>
+    <p>Proceso, mapa provincial y primera pasada regional. Las propuestas topológicas están diferenciadas del canon.</p>
+    <div class="docs-grid">
+      <a class="doc-card" href="?doc=caribia-proceso"><small>06</small><h3>Proceso de mapeado MUD</h3><p>Procedimiento completo desde World Book hasta Room/Exit persistente.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=caribia-master"><small>07</small><h3>Mapa Maestro Provincial</h3><p>6 regiones, 49 asentamientos, población, rutas, distritos y red local provisional.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=kalnaj"><small>08</small><h3>Región Kalnaj</h3><p>Gobierno, minería acuática, escarpas, dársenas y grafo regional.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=vardena"><small>09</small><h3>Región Vardena</h3><p>Cuencas, agua, agricultura, caminos y asentamientos.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=sereva"><small>10</small><h3>Región Sereva</h3><p>Puerto bajo, plataformas aéreas, ascensores y red comercial.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=orvena"><small>11</small><h3>Región Orvena</h3><p>Pesca, lonjas, cadena de frío, esteros y cabotaje.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=ragmar"><small>12</small><h3>Región Ragmar</h3><p>Frontera, corso, reparación, refugios y rutas de tormenta.</p><strong>Abrir →</strong></a>
+      <a class="doc-card" href="?doc=agujas"><small>13</small><h3>Cadena de las Agujas</h3><p>Faros, relevo, refugios y borde de Nieblamar.</p><strong>Abrir →</strong></a>
+    </div>
   </section>
 
   <section class="doc-reader" id="reader" aria-live="polite">
@@ -46,9 +64,17 @@
 const docs={
   mundo:{title:'Mundo persistente MUD',files:['mundo-00.md','mundo-01.md','mundo-02.md','mundo-03.md']},
   mapas:{title:'Espacio físico y mapas persistentes',files:['mapas-00.md','mapas-01.md','mapas-02.md','mapas-03.md']},
-  personas:{title:'Player, NPC y simulación de personas',files:['personas-00.md','personas-01.md','personas-02.md']},
+  personas:{title:'Player, NPC y simulación',files:['personas-00.md','personas-01.md','personas-02.md']},
   windrago:{title:'Facciones — Windrago',files:['windrago-00.md','windrago-01.md','windrago-02.md']},
-  conocimientos:{title:'Catálogo general de Conocimientos',files:['/documentos/conocimientos/01_espacio_a_energia.md','/documentos/conocimientos/02_ingenieria_a_medicina.md','/documentos/conocimientos/03_sociedad_a_crimen.md','/documentos/conocimientos/04_social_a_dinamico.md']}
+  conocimientos:{title:'Catálogo general de Conocimientos',files:['/documentos/conocimientos/01_espacio_a_energia.md','/documentos/conocimientos/02_ingenieria_a_medicina.md','/documentos/conocimientos/03_sociedad_a_crimen.md','/documentos/conocimientos/04_social_a_dinamico.md']},
+  'caribia-proceso':{title:'Proceso de Mapeado Persistente de Caribia',files:['06_Proceso_Mapeado_Caribia_MUD_v0.1.md']},
+  'caribia-master':{title:'Caribia — Mapa Maestro Provincial MUD',files:['07_Caribia_Mapa_Maestro_Provincial_MUD_v0.1.md']},
+  kalnaj:{title:'Caribia — Región Kalnaj',files:['08_Caribia_Kalnaj_Region_MUD_v0.1.md']},
+  vardena:{title:'Caribia — Región Vardena',files:['09_Caribia_Vardena_Region_MUD_v0.1.md']},
+  sereva:{title:'Caribia — Región Sereva',files:['10_Caribia_Sereva_Region_MUD_v0.1.md']},
+  orvena:{title:'Caribia — Región Orvena',files:['11_Caribia_Orvena_Region_MUD_v0.1.md']},
+  ragmar:{title:'Caribia — Región Ragmar',files:['12_Caribia_Ragmar_Region_MUD_v0.1.md']},
+  agujas:{title:'Caribia — Cadena de las Agujas',files:['13_Caribia_Agujas_Region_MUD_v0.1.md']}
 };
 const key=new URLSearchParams(location.search).get('doc');
 if(key&&docs[key]){
