@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from evennia import search_tag
+from evennia import search_object, search_tag
 
 
-RELATIONSHIP_BUILD = "0.20.0-relationship-obligations"
+RELATIONSHIP_BUILD = "0.21.0-relationship-identity"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -31,12 +31,23 @@ def _record(value):
 
 def _npc_by_id(npc_id):
     wanted = str(npc_id or "").strip()
-    if not wanted:
+    if not wanted or wanted.startswith("DBREF:"):
         return None
     for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
         if str(getattr(obj.db, "npc_id", "") or "") == wanted:
             return obj
     return None
+
+
+def _dbref_target(identity):
+    text = str(identity or "").strip()
+    if not text.startswith("DBREF:"):
+        return None
+    raw = text.split(":", 1)[1].strip()
+    if not raw.isdigit():
+        return None
+    matches = list(search_object(f"#{raw}"))
+    return matches[0] if len(matches) == 1 else None
 
 
 def _relationships(npc):
@@ -164,7 +175,9 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
         }
 
     relation["obligations"] = obligations
+    relation["target_type"] = "NPC"
     relation["target_npc_id"] = target_id
+    relation["target_dbref"] = int(target.id)
     relation["target_name"] = target.key
     relation["last_interaction_at"] = now
     relationships[target_id] = relation
@@ -223,13 +236,26 @@ def inspect_relationships(npc):
     rows = []
     if not npc:
         return rows
-    for target_id, raw_relation in _relationships(npc).items():
+    for identity, raw_relation in _relationships(npc).items():
         relation = _relation_record(raw_relation)
-        target = _npc_by_id(target_id)
+        npc_target = _npc_by_id(identity)
+        dbref_target = _dbref_target(identity)
+        target = npc_target or dbref_target
+        target_type = str(
+            relation.get("target_type")
+            or ("NPC" if npc_target else "CHARACTER" if str(identity).startswith("DBREF:") else "UNKNOWN")
+        ).upper()
+        target_npc_id = relation.get("target_npc_id") or (str(identity) if npc_target else None)
+        target_dbref = relation.get("target_dbref")
+        if target_dbref is None and dbref_target:
+            target_dbref = int(dbref_target.id)
         rows.append(
             {
-                "target_npc_id": str(target_id),
-                "target_name": target.key if target else relation.get("target_name"),
+                "identity": str(identity),
+                "target_type": target_type,
+                "target_npc_id": target_npc_id,
+                "target_dbref": target_dbref,
+                "target_name": target.key if target else relation.get("target_name") or relation.get("name"),
                 "target_location": target.location.key if target and target.location else None,
                 "relation": relation,
                 "obligations": _obligations(relation),
