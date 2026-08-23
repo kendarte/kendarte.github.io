@@ -24,6 +24,7 @@ from commands.siza_commands import (
     CmdSizaStatus,
     CmdSizaWorldCheck,
 )
+from commands.trace_commands import CmdSizaSimTrace
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -38,6 +39,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaSimStart())
         self.add(CmdSizaSimStop())
         self.add(CmdSizaSimStatus())
+        self.add(CmdSizaSimTrace())
         self.add(CmdSizaDecide())
         self.add(CmdSizaDecisionMode())
         self.add(CmdSizaGoalToggle())
