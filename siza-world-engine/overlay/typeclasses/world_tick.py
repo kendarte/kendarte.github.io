@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from evennia import DefaultScript, create_script, search_script
 
-from services.job_claims import refresh_job_claims
+from services.job_claims import arbitrate_job_claims, refresh_job_claims
 from services.job_engine import refresh_world_job_rules
 from services.need_dynamics import advance_need_dynamics, apply_activity_need_dynamics
 from services.npc_decision import decision_step
@@ -10,7 +10,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.13.0-job-claims"
+WORLD_TICK_BUILD = "0.14.0-job-arbitration"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -34,6 +34,7 @@ def _append_trace(
     tick_number,
     timestamp,
     producer_results,
+    arbitration_results,
     need_results,
     activity_need_results,
     results,
@@ -49,6 +50,7 @@ def _append_trace(
             "tick": int(tick_number),
             "timestamp": timestamp,
             "producer_results": list(producer_results or []),
+            "arbitration_results": list(arbitration_results or []),
             "need_results": list(need_results or []),
             "activity_need_results": list(activity_need_results or []),
             "npc_results": list(results or []),
@@ -58,7 +60,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for producers, claims, needs and NPC simulation."""
+    """Persistent global world tick for producers, arbitration, needs and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -72,6 +74,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_tick_at = None
         self.db.last_results = []
         self.db.last_producer_results = []
+        self.db.last_arbitration_results = []
         self.db.last_need_results = []
         self.db.last_activity_need_results = []
         self.db.trace_history = []
@@ -92,17 +95,29 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        # Claims are a coordination layer over tasks, not task state itself.
-        # Clear owners whose tasks disappeared/became inactive before decisions.
+        npcs = list(simulated_npcs())
+
+        # Claims are a coordination layer over task state. First clear stale
+        # owners, then arbitrate all policy-owned unclaimed JOBs globally before
+        # any NPC is processed. This prevents NPC loop order from deciding them.
         try:
             refresh_job_claims()
-        except Exception:
-            pass
+            arbitration_results = arbitrate_job_claims(npcs)
+        except Exception as exc:
+            arbitration_results = [
+                {
+                    "status": "ERROR",
+                    "task_id": None,
+                    "policy": None,
+                    "winner_name": None,
+                    "error": str(exc),
+                }
+            ]
 
         need_results = []
         activity_need_results = []
         results = []
-        for npc in simulated_npcs():
+        for npc in npcs:
             try:
                 need_result = advance_need_dynamics(npc)
             except Exception as exc:
@@ -146,6 +161,7 @@ class SizaWorldTick(DefaultScript):
         self.db.last_tick_at = timestamp
         self.db.last_results = results
         self.db.last_producer_results = producer_results
+        self.db.last_arbitration_results = arbitration_results
         self.db.last_need_results = need_results
         self.db.last_activity_need_results = activity_need_results
         self.db.build = WORLD_TICK_BUILD
@@ -154,6 +170,7 @@ class SizaWorldTick(DefaultScript):
             tick_number=tick_number,
             timestamp=timestamp,
             producer_results=producer_results,
+            arbitration_results=arbitration_results,
             need_results=need_results,
             activity_need_results=activity_need_results,
             results=results,
@@ -190,6 +207,7 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.manual_enabled = True
         script.db.build = WORLD_TICK_BUILD
         script.db.last_producer_results = []
+        script.db.last_arbitration_results = []
         script.db.last_need_results = []
         script.db.last_activity_need_results = []
         script.db.trace_history = []
@@ -199,6 +217,8 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
     script.db.build = WORLD_TICK_BUILD
     if script.db.last_producer_results is None:
         script.db.last_producer_results = []
+    if script.db.last_arbitration_results is None:
+        script.db.last_arbitration_results = []
     if script.db.last_need_results is None:
         script.db.last_need_results = []
     if script.db.last_activity_need_results is None:
@@ -230,6 +250,7 @@ def world_tick_state():
             "last_tick_at": None,
             "last_results": [],
             "last_producer_results": [],
+            "last_arbitration_results": [],
             "last_need_results": [],
             "last_activity_need_results": [],
             "trace_history": [],
@@ -251,6 +272,7 @@ def world_tick_state():
         "last_tick_at": script.db.last_tick_at,
         "last_results": list(script.db.last_results or []),
         "last_producer_results": list(script.db.last_producer_results or []),
+        "last_arbitration_results": list(script.db.last_arbitration_results or []),
         "last_need_results": list(script.db.last_need_results or []),
         "last_activity_need_results": list(script.db.last_activity_need_results or []),
         "trace_history": list(script.db.trace_history or []),
