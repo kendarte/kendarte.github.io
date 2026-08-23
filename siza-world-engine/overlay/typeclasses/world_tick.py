@@ -9,7 +9,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.10.1-autonomous-needs-trace"
+WORLD_TICK_BUILD = "0.10.2-routine-trace-fix"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -70,8 +70,6 @@ class SizaWorldTick(DefaultScript):
         if not bool(self.db.manual_enabled):
             return
 
-        # World producers resolve before NPC decisions so new work can be
-        # considered during this same tick.
         try:
             producer_results = refresh_world_job_rules()
         except Exception as exc:
@@ -83,8 +81,6 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        # Each NPC advances its own persistent need clock before choosing a goal.
-        # A need crossing threshold may interrupt JOB/ROUTINE in this same tick.
         need_results = []
         results = []
         for npc in simulated_npcs():
