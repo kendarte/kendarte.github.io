@@ -7,6 +7,7 @@ from services.npc_decision import (
     set_goal_active,
 )
 from services.npc_simulation import find_npc
+from services.world_clock import format_world_time, world_clock_state
 
 
 def _candidate_line(item, selected_id=None):
@@ -18,10 +19,16 @@ def _candidate_line(item, selected_id=None):
     claim = ""
     if item.get("claim_npc_name"):
         claim = f" | claim={item.get('claim_npc_name')}"
+    schedule = ""
+    if item.get("type") == "JOB" and item.get("shift_schedule"):
+        schedule = f" | shift={item.get('shift_schedule')}"
+    elif item.get("type") == "ROUTINE" and item.get("routine_schedule_label"):
+        schedule = f" | schedule={item.get('routine_schedule_label')}"
     return (
         f"[{marker}] {item.get('type')} | priority={item.get('priority')} | "
         f"id={item.get('id')} | target={item.get('target_name') or item.get('target_room_key')} | "
-        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}{progress}{claim}"
+        f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}"
+        f"{progress}{claim}{schedule}"
     )
 
 
@@ -41,11 +48,13 @@ class CmdSizaDecide(Command):
         decision = choose_goal(npc)
         selected = decision.get("selected")
         selected_id = selected.get("id") if selected else None
+        clock = world_clock_state()
 
         self.caller.msg(f"=== SIZA DECISION | {DECISION_BUILD} ===")
         self.caller.msg(
             f"NPC: {npc.key} | location={decision.get('location')} | "
-            f"decision_enabled={decision.get('decision_enabled')}"
+            f"decision_enabled={decision.get('decision_enabled')} | "
+            f"world_time={format_world_time(clock.get('day'), clock.get('minute'))}"
         )
         candidates = decision.get("candidates") or []
         if not candidates:
@@ -62,10 +71,15 @@ class CmdSizaDecide(Command):
             winner_claim = ""
             if selected.get("claim_npc_name"):
                 winner_claim = f" | claim={selected.get('claim_npc_name')}"
+            winner_schedule = ""
+            if selected.get("type") == "JOB" and selected.get("shift_schedule"):
+                winner_schedule = f" | shift={selected.get('shift_schedule')}"
+            elif selected.get("type") == "ROUTINE" and selected.get("routine_schedule_label"):
+                winner_schedule = f" | schedule={selected.get('routine_schedule_label')}"
             self.caller.msg(
                 f"Winner: {selected.get('type')} {selected.get('id')} -> "
                 f"{selected.get('target_name')} | priority={selected.get('priority')}"
-                f"{winner_progress}{winner_claim}"
+                f"{winner_progress}{winner_claim}{winner_schedule}"
             )
         else:
             self.caller.msg("Winner: NONE")
@@ -184,9 +198,12 @@ class CmdSizaDecisionStep(Command):
             return
 
         if status == "WAITING_GOAL":
+            schedule = ""
+            if result.get("routine_schedule_label") and result.get("routine_schedule_label") != "ALWAYS":
+                schedule = f" | schedule={result.get('routine_schedule_label')}"
             self.caller.msg(
                 f"[DECISION] {npc.key}: ROUTINE WAITING | {result.get('location')} | "
-                f"activity={result.get('activity')} | hold={result.get('hold_remaining')}"
+                f"activity={result.get('activity')} | hold={result.get('hold_remaining')}{schedule}"
             )
             return
 
