@@ -76,6 +76,11 @@ class CmdSizaJobs(Command):
                         f"  claim_owner={claim.get('npc_name')} | npc_id={claim.get('npc_id')} | "
                         f"claimed_at={claim.get('claimed_at')}"
                     )
+                    self.caller.msg(
+                        f"  claim_source={claim.get('claim_source') or 'LEGACY'} | "
+                        f"policy={claim.get('claim_policy') or 'FIRST_SELECTED'} | "
+                        f"distance={claim.get('claim_distance')}"
+                    )
                 if row.get("work_last_npc_name"):
                     self.caller.msg(f"  last_worker={row.get('work_last_npc_name')}")
                 if row.get("completion_effects_applied"):
