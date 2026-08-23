@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.19.0-world-danger"
+WORLD_TICK_BUILD = "0.20.0-relationship-obligations"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -69,7 +69,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for time, incidents, work shifts, needs and NPC simulation."""
+    """Persistent global world tick for time, incidents, work, needs, relationships and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -116,8 +116,6 @@ class SizaWorldTick(DefaultScript):
                 }
             ]
 
-        # Persistent EVENT/DANGER state is produced before arbitration and NPC
-        # decisions so priority 80/100 incidents can block lower-priority work.
         try:
             event_results = refresh_world_event_rules()
         except Exception as exc:
