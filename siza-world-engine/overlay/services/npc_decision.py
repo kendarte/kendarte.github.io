@@ -10,9 +10,14 @@ from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, routine_entry, simulated_npcs, simstep
 from services.world_clock import schedule_label
+from services.world_event_engine import (
+    acknowledge_world_event,
+    collect_event_candidates,
+    refresh_world_event_rules,
+)
 
 
-DECISION_BUILD = "0.16.0-world-clock-schedules"
+DECISION_BUILD = "0.18.0-world-events"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -102,7 +107,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored, NEED, shift/claim-aware JOB and scheduled routine goals."""
+    """Collect authored, world EVENT, NEED, JOB and scheduled routine goals."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -111,6 +116,10 @@ def collect_candidates(npc):
         if not goal or not goal.get("active"):
             continue
         candidates.append(goal)
+
+    candidates.extend(
+        collect_event_candidates(npc, default_priority=priorities.get("EVENT", 80))
+    )
 
     candidates.extend(
         collect_need_candidates(npc, default_priority=priorities.get("NEED", 70))
@@ -237,6 +246,18 @@ def _run_routine_fallback(npc, goal):
 def _complete_selected_goal(npc, goal):
     source = str(goal.get("source") or "")
 
+    if source == "WORLD_EVENT":
+        packet = acknowledge_world_event(npc, goal.get("event_id"))
+        return {
+            "completed": bool(packet.get("completed")),
+            "completion_source": "WORLD_EVENT",
+            "completion_site": packet.get("event_site"),
+            "event_id": packet.get("event_id"),
+            "event_occurrence": packet.get("event_occurrence"),
+            "event_acknowledged": bool(packet.get("acknowledged")),
+            "event_ack_reason": packet.get("reason"),
+        }
+
     if source == "NPC_NEED":
         return complete_need_goal(npc, goal)
 
@@ -295,6 +316,8 @@ def _goal_action_kind(goal):
         return str(goal.get("affordance") or "NEED").upper()
     if source == "WORLD_JOB":
         return "WORK"
+    if source == "WORLD_EVENT":
+        return "EVENT"
     if goal_type == "DANGER":
         return "DANGER"
     if goal_type == "RELATIONSHIP":
@@ -349,6 +372,7 @@ def _claim_selected_job(npc, decision, goal):
 def decision_step(npc):
     """Choose one authorized goal and execute at most one Exit hop or one work action."""
     try:
+        refresh_world_event_rules()
         arbitrate_job_claims(simulated_npcs())
     except Exception as exc:
         return {
@@ -385,6 +409,8 @@ def decision_step(npc):
         "target_room_key": goal.get("target_room_key"),
         "activity": goal.get("activity"),
         "source": goal.get("source"),
+        "event_id": goal.get("event_id"),
+        "event_occurrence": goal.get("occurrence"),
         "task_id": goal.get("task_id"),
         "work_done": goal.get("work_done"),
         "work_required": goal.get("work_required"),
