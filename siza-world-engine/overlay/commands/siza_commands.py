@@ -7,6 +7,12 @@ from services.interaction_engine import parse_interaction_intent, resolve_intera
 from services.npc_simulation import find_npc, npc_state, simstep
 from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
+from typeclasses.world_tick import (
+    DEFAULT_INTERVAL,
+    pause_world_tick,
+    start_world_tick,
+    world_tick_state,
+)
 
 
 STOPWORDS = {
@@ -121,9 +127,22 @@ def _format_npc_state(state):
             f"Destination: {state.get('destination_id') or 'NONE'}",
             f"Routine index: {state.get('routine_index')}",
             f"Routine target: {routine.get('room_key') or 'NONE'}",
+            f"Hold ticks: {state.get('routine_hold_remaining', 0)}",
             f"Simulation enabled: {state.get('simulation_enabled')}",
         ]
     )
+
+
+def _format_tick_result(result):
+    status = result.get("status", "UNKNOWN")
+    npc = result.get("npc", "UNKNOWN")
+    if status in {"MOVED", "ARRIVED"}:
+        return f"{npc}: {status} {result.get('from')} -> {result.get('to')}"
+    if status == "WAITING":
+        return f"{npc}: WAITING en {result.get('location')} ({result.get('activity')})"
+    if status == "NO_PATH":
+        return f"{npc}: NO_PATH hacia {result.get('target')}"
+    return f"{npc}: {status}"
 
 
 class CmdSizaStatus(Command):
@@ -136,12 +155,16 @@ class CmdSizaStatus(Command):
     def func(self):
         caller = self.caller
         location = getattr(caller, "location", None)
+        tick = world_tick_state()
         caller.msg(f"SIZA narrator build: {NARRATOR_BUILD}")
         if location:
             caller.msg(f"Room: {location.key} | room_id={location.db.room_id}")
         caller.msg("Intent order: interaction -> perception -> movement")
         caller.msg("Room/perception prose: deterministic | persistent state: Evennia")
-        caller.msg("NPC simulation: manual simstep prototype")
+        caller.msg(
+            "World tick: "
+            + (f"ON cada {tick['interval']}s" if tick.get("enabled") and tick.get("active") else "OFF")
+        )
 
 
 class CmdSizaNPCState(Command):
@@ -185,6 +208,13 @@ class CmdSizaSimStep(Command):
             )
             return
 
+        if status == "WAITING":
+            self.caller.msg(
+                f"[SIM] {npc.key} permanece en {result.get('location')}: "
+                f"{result.get('activity')} | hold={result.get('hold_remaining')}"
+            )
+            return
+
         if status == "NO_PATH":
             self.caller.msg(
                 f"[SIM] {npc.key} no tiene ruta abierta desde {result.get('from')} "
@@ -205,6 +235,74 @@ class CmdSizaSimStep(Command):
         self.caller.msg(f"[SIM] Resultado: {status} | {result}")
 
 
+class CmdSizaSimStart(Command):
+    """Start/resume the persistent global world tick. Optional arg: seconds."""
+
+    key = "siza-sim-start"
+    aliases = ["sim-start"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        raw = (self.args or "").strip()
+        try:
+            interval = int(raw) if raw else DEFAULT_INTERVAL
+        except ValueError:
+            self.caller.msg("Uso: siza-sim-start [segundos]")
+            return
+
+        script, created = start_world_tick(interval)
+        state = world_tick_state()
+        self.caller.msg(
+            f"World Tick {'creado' if created else 'reanudado'}: "
+            f"cada {state['interval']} segundos | persistent=True."
+        )
+        self.caller.msg("Use siza-sim-stop para pausarlo y siza-sim-status para inspeccionarlo.")
+
+
+class CmdSizaSimStop(Command):
+    """Pause the persistent global world tick without deleting its state."""
+
+    key = "siza-sim-stop"
+    aliases = ["sim-stop"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        script = pause_world_tick()
+        if not script:
+            self.caller.msg("World Tick todavía no existe.")
+            return
+        self.caller.msg("World Tick pausado. Su contador y estado permanecen guardados.")
+
+
+class CmdSizaSimStatus(Command):
+    """Inspect global world tick state and its most recent NPC results."""
+
+    key = "siza-sim-status"
+    aliases = ["sim-status"]
+    locks = "cmd:all()"
+
+    def func(self):
+        state = world_tick_state()
+        if not state.get("exists"):
+            self.caller.msg("World Tick: NOT CREATED")
+            return
+
+        self.caller.msg("=== SIZA WORLD TICK ===")
+        self.caller.msg(f"Enabled: {state.get('enabled')} | Active: {state.get('active')}")
+        self.caller.msg(f"Interval: {state.get('interval')} seconds")
+        self.caller.msg(f"Tick count: {state.get('tick_count')}")
+        self.caller.msg(f"Last tick: {state.get('last_tick_at') or 'NONE'}")
+        next_repeat = state.get("next_repeat")
+        if next_repeat is not None:
+            self.caller.msg(f"Next tick in: {round(float(next_repeat), 1)} seconds")
+        results = state.get("last_results") or []
+        if results:
+            self.caller.msg("Last results:")
+            for result in results[-5:]:
+                self.caller.msg("  " + _format_tick_result(result))
+        self.caller.msg("=======================")
+
+
 class CmdSizaWorldCheck(Command):
     """Inspect the pilot persistent world state after a restart."""
 
@@ -219,6 +317,7 @@ class CmdSizaWorldCheck(Command):
         mara = next((obj for obj in entities if obj.db.npc_id == "NPC-KAL-DAR-MARA-001"), None)
         board = next((obj for obj in entities if obj.db.object_id == "OBJ-KAL-DAR-CANTINA-001"), None)
         doors = list(search_tag(DOOR_GROUP, category=DOOR_CATEGORY))
+        tick = world_tick_state()
 
         caller.msg("=== SIZA WORLD CHECK ===")
         caller.msg(
@@ -234,7 +333,8 @@ class CmdSizaWorldCheck(Command):
                 f"Mara sim: enabled={bool(mara.db.simulation_enabled)} | "
                 f"activity={mara.db.current_activity or 'NONE'} | "
                 f"destination={mara.db.destination_id or 'NONE'} | "
-                f"routine_index={mara.db.routine_index if mara.db.routine_index is not None else 'NONE'}"
+                f"routine_index={mara.db.routine_index if mara.db.routine_index is not None else 'NONE'} | "
+                f"hold={mara.db.routine_hold_remaining or 0}"
             )
         caller.msg(
             f"Tablilla: {'OK' if board else 'MISSING'}"
@@ -255,6 +355,10 @@ class CmdSizaWorldCheck(Command):
         relationships = _plain_dict(caller.db.relationships)
         caller.msg(f"Player memories: {len(memories)}")
         caller.msg(f"Player relationships: {len(relationships)}")
+        caller.msg(
+            f"World tick: exists={tick.get('exists')} | enabled={tick.get('enabled')} | "
+            f"active={tick.get('active')} | count={tick.get('tick_count')}"
+        )
         caller.msg(f"Narrator build: {NARRATOR_BUILD}")
         caller.msg("========================")
 
