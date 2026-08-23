@@ -6,6 +6,11 @@ from commands.decision_commands import (
     CmdSizaDecisionStep,
     CmdSizaGoalToggle,
 )
+from commands.event_commands import (
+    CmdSizaEventRefresh,
+    CmdSizaEvents,
+    CmdSizaEventSet,
+)
 from commands.job_commands import (
     CmdSizaJobRefresh,
     CmdSizaJobRelease,
@@ -59,6 +64,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaJobRefresh())
         self.add(CmdSizaNeeds())
         self.add(CmdSizaNeedSet())
+        self.add(CmdSizaEvents())
+        self.add(CmdSizaEventSet())
+        self.add(CmdSizaEventRefresh())
         self.add(CmdSizaTime())
         self.add(CmdSizaTimeSet())
         self.add(CmdSizaTimeRate())
