@@ -6,6 +6,8 @@ import urllib.request
 from twisted.internet import threads
 from evennia.utils import logger
 
+from services.narration_queue import run_serialized
+
 
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
@@ -209,8 +211,14 @@ def _request_chat(packet):
     return data.get("message", {}).get("content", "").strip()
 
 
+def _threaded_request(packet):
+    return threads.deferToThread(_request_chat, packet)
+
+
 def _narrate_async(character, packet, fallback_text):
-    deferred = threads.deferToThread(_request_chat, packet)
+    # Narrations for the same character are serialized so delayed local-model
+    # responses cannot overtake later actions and appear out of order.
+    deferred = run_serialized(character, _threaded_request, packet)
 
     def _ok(text):
         if text:
