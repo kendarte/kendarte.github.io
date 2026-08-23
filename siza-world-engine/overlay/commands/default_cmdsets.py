@@ -13,6 +13,7 @@ from commands.job_commands import (
     CmdSizaWorkSet,
     CmdSizaWorksite,
 )
+from commands.need_commands import CmdSizaNeeds, CmdSizaNeedSet
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
@@ -46,6 +47,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaWorksite())
         self.add(CmdSizaWorkSet())
         self.add(CmdSizaJobRefresh())
+        self.add(CmdSizaNeeds())
+        self.add(CmdSizaNeedSet())
         self.add(CmdSizaNoMatch())
 
 
