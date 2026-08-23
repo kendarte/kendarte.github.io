@@ -1,6 +1,21 @@
 from evennia import Command
 
+from services.world_clock import format_world_time
 from typeclasses.world_tick import TRACE_LIMIT, world_tick_state
+
+
+def _world_clock_lines(packet):
+    if not packet:
+        return []
+    if packet.get("status") == "ERROR":
+        return [f"[WORLD CLOCK] ERROR={packet.get('error')}"]
+    if packet.get("status") != "ADVANCED":
+        return []
+    return [
+        f"[WORLD CLOCK] {format_world_time(packet.get('before_day'), packet.get('before_minute'))} "
+        f"-> {format_world_time(packet.get('after_day'), packet.get('after_minute'))} "
+        f"(+{packet.get('minutes_added')}m)"
+    ]
 
 
 def _need_lines(packet):
@@ -118,6 +133,8 @@ def _npc_lines(result):
         lines.append(movement)
     if result.get("activity"):
         lines.append(f"      activity={result.get('activity')}")
+    if result.get("routine_schedule_label") and result.get("routine_schedule_label") != "ALWAYS":
+        lines.append(f"      schedule={result.get('routine_schedule_label')}")
 
     if result.get("work_required") is not None and result.get("work_done") is not None:
         before = result.get("work_done_before")
@@ -149,7 +166,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including arbitration, needs, claims and work."""
+    """Show recent persistent World Tick history, including time, arbitration, needs, claims and work."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
@@ -179,6 +196,10 @@ class CmdSizaSimTrace(Command):
                 f"Tick {entry.get('tick')} | {entry.get('timestamp') or 'UNKNOWN TIME'}"
             )
             emitted = False
+
+            for line in _world_clock_lines(entry.get("world_clock_result")):
+                self.caller.msg("  " + line)
+                emitted = True
 
             for packet in entry.get("producer_results") or []:
                 for line in _producer_lines(packet):
