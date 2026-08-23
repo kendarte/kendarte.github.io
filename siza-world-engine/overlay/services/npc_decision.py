@@ -1,11 +1,16 @@
 from evennia import search_object
 
+from services.job_claims import (
+    claim_job_task,
+    filter_job_candidates_for_claim,
+    release_job_claim,
+)
 from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.12.0-job-progress"
+DECISION_BUILD = "0.13.0-job-claims"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -101,7 +106,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored, NEED, JOB and routine goals from their authoritative sources."""
+    """Collect authored, NEED, claim-aware JOB and routine goals."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -115,9 +120,10 @@ def collect_candidates(npc):
         collect_need_candidates(npc, default_priority=priorities.get("NEED", 70))
     )
 
-    candidates.extend(
-        collect_job_candidates(npc, default_priority=priorities.get("JOB", 60))
+    job_candidates = collect_job_candidates(
+        npc, default_priority=priorities.get("JOB", 60)
     )
+    candidates.extend(filter_job_candidates_for_claim(npc, job_candidates))
 
     routine = _routine_candidate(npc, priorities)
     if routine:
@@ -252,8 +258,12 @@ def _complete_selected_goal(npc, goal):
                 "completion_site": None,
             }
         site = packet.get("site")
+        completed = bool(packet.get("completed"))
+        released = None
+        if completed:
+            released = release_job_claim(goal.get("task_id"), npc=npc, force=True)
         return {
-            "completed": bool(packet.get("completed")),
+            "completed": completed,
             "worked": bool(packet.get("worked")),
             "completion_source": "WORLD_JOB",
             "completion_site": site.key if site else None,
@@ -263,6 +273,7 @@ def _complete_selected_goal(npc, goal):
             "work_required": packet.get("work_required"),
             "work_added": packet.get("work_added"),
             "job_completion_effects": packet.get("completion_effects") or [],
+            "job_claim_released": bool(released),
         }
 
     if source == "AUTHORED_GOAL" and goal.get("one_shot"):
@@ -305,19 +316,56 @@ def _status_after_completion(goal, completion):
     return "AT_GOAL"
 
 
-def decision_step(npc):
-    """Choose one authorized goal and execute at most one real Exit hop or one work action."""
+def _claim_meta(packet):
+    if not packet:
+        return {}
+    return {
+        "job_claim_acquired": bool(packet.get("acquired")),
+        "job_claim_owner_id": packet.get("npc_id"),
+        "job_claim_owner_name": packet.get("npc_name"),
+        "job_claim_reason": packet.get("reason"),
+    }
+
+
+def _claim_selected_job(npc, decision, goal):
+    """Claim a selected WORLD_JOB; retry selection once if another NPC won the race."""
+    if not goal or str(goal.get("source") or "") != "WORLD_JOB":
+        return decision, goal, None
+
+    claim = claim_job_task(npc, goal.get("task_id"))
+    if claim.get("success"):
+        return decision, goal, claim
+
     decision = choose_goal(npc)
     goal = decision.get("selected")
+    if not goal or str(goal.get("source") or "") != "WORLD_JOB":
+        return decision, goal, None
+
+    claim = claim_job_task(npc, goal.get("task_id"))
+    if claim.get("success"):
+        return decision, goal, claim
+    return decision, None, claim
+
+
+def decision_step(npc):
+    """Choose one authorized goal and execute at most one Exit hop or one work action."""
+    decision = choose_goal(npc)
+    goal = decision.get("selected")
+    decision, goal, claim_packet = _claim_selected_job(npc, decision, goal)
+
     if not goal:
         npc.db.current_goal = None
+        status = "CLAIM_CONFLICT" if claim_packet else "NO_GOAL"
         return {
-            "status": "NO_GOAL",
+            "status": status,
             "npc": npc.key,
             "engine": "DECISION",
             "action_kind": "IDLE",
             "decision": decision,
+            **_claim_meta(claim_packet),
         }
+
+    claim_meta = _claim_meta(claim_packet)
 
     npc.db.current_goal = {
         "id": goal.get("id"),
@@ -330,6 +378,8 @@ def decision_step(npc):
         "task_id": goal.get("task_id"),
         "work_done": goal.get("work_done"),
         "work_required": goal.get("work_required"),
+        "claim_npc_id": claim_meta.get("job_claim_owner_id") or goal.get("claim_npc_id"),
+        "claim_npc_name": claim_meta.get("job_claim_owner_name") or goal.get("claim_npc_name"),
         "need_key": goal.get("need_key"),
         "need_rule_id": goal.get("need_rule_id"),
         "affordance": goal.get("affordance"),
@@ -347,6 +397,7 @@ def decision_step(npc):
             "engine": "DECISION",
             "action_kind": "IDLE",
             "goal": goal,
+            **claim_meta,
         }
 
     npc.db.destination_id = target.db.room_id
@@ -364,6 +415,7 @@ def decision_step(npc):
             "location": npc.location.key,
             "activity": npc.db.current_activity,
             "action_kind": _goal_action_kind(goal),
+            **claim_meta,
             **completion,
         }
 
@@ -380,6 +432,7 @@ def decision_step(npc):
             "from": npc.location.key,
             "target": target.key,
             "action_kind": "IDLE",
+            **claim_meta,
         }
 
     if not path:
@@ -390,6 +443,7 @@ def decision_step(npc):
             "goal_id": goal.get("id"),
             "goal_type": goal.get("type"),
             "action_kind": _goal_action_kind(goal),
+            **claim_meta,
         }
 
     exit_obj = path[0]
@@ -410,6 +464,7 @@ def decision_step(npc):
             "target": target.key,
             "attempted_exit": exit_obj.key,
             "action_kind": "IDLE",
+            **claim_meta,
         }
 
     completion = {
@@ -420,8 +475,6 @@ def decision_step(npc):
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
         if str(goal.get("source") or "") == "WORLD_JOB":
-            # Arrival itself is MOVE. Work begins on a later tick, preventing a
-            # single tick from both traversing a Room and producing work units.
             status = "ARRIVED_GOAL"
             action_kind = "MOVE"
         else:
@@ -446,5 +499,6 @@ def decision_step(npc):
         "used_exit": exit_obj.key,
         "activity": npc.db.current_activity,
         "action_kind": action_kind,
+        **claim_meta,
         **completion,
     }
