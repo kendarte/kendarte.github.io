@@ -79,7 +79,6 @@ def build():
                 "value": 7,
                 "priority": 70,
                 "affordance": "REST",
-                "activity": "buscando un lugar donde descansar",
                 "canon_status": "prototype",
             }
         rules.append(rule)
@@ -94,7 +93,6 @@ def build():
                 "value": 7,
                 "priority": 70,
                 "affordance": "REST",
-                "activity": "buscando un lugar donde descansar",
                 "canon_status": "prototype",
             }
         )
