@@ -17,7 +17,7 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.18.0-world-events"
+DECISION_BUILD = "0.19.0-world-danger"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -107,7 +107,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect authored, world EVENT, NEED, JOB and scheduled routine goals."""
+    """Collect authored, world DANGER/EVENT, NEED, JOB and scheduled routine goals."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -317,7 +317,7 @@ def _goal_action_kind(goal):
     if source == "WORLD_JOB":
         return "WORK"
     if source == "WORLD_EVENT":
-        return "EVENT"
+        return "DANGER" if goal_type == "DANGER" else "EVENT"
     if goal_type == "DANGER":
         return "DANGER"
     if goal_type == "RELATIONSHIP":
