@@ -68,6 +68,19 @@ def _producer_lines(packet):
     return []
 
 
+def _event_lines(packet):
+    if packet.get("status") == "ERROR":
+        return [f"[WORLD EVENT] {packet.get('producer')} ERROR={packet.get('error')}"]
+    if not packet.get("condition_met") and not packet.get("event_active"):
+        return []
+    return [
+        f"[WORLD EVENT] {packet.get('event_id')} | site={packet.get('site')} | "
+        f"{packet.get('field')}={packet.get('actual')} | condition={packet.get('condition_met')} | "
+        f"active={packet.get('event_active')} | status={packet.get('event_status')} | "
+        f"occurrence={packet.get('occurrence')}"
+    ]
+
+
 def _handoff_lines(packet):
     if packet.get("status") == "ERROR":
         return [f"[SHIFT HANDOFF] ERROR={packet.get('error')}"]
@@ -152,6 +165,11 @@ def _npc_lines(result):
     if result.get("routine_schedule_label") and result.get("routine_schedule_label") != "ALWAYS":
         lines.append(f"      schedule={result.get('routine_schedule_label')}")
 
+    if result.get("event_acknowledged"):
+        lines.append(
+            f"      [EVENT ACK] {result.get('event_id')} | occurrence={result.get('event_occurrence')}"
+        )
+
     if result.get("work_required") is not None and result.get("work_done") is not None:
         before = result.get("work_done_before")
         added = result.get("work_added")
@@ -182,7 +200,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including time, shifts, arbitration, needs and work."""
+    """Show recent persistent World Tick history, including events, time, shifts, needs and work."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
@@ -219,6 +237,11 @@ class CmdSizaSimTrace(Command):
 
             for packet in entry.get("producer_results") or []:
                 for line in _producer_lines(packet):
+                    self.caller.msg("  " + line)
+                    emitted = True
+
+            for packet in entry.get("event_results") or []:
+                for line in _event_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
