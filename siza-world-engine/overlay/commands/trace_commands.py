@@ -42,10 +42,13 @@ def _producer_lines(packet):
     condition = packet.get("condition_met")
     task_status = packet.get("task_status")
     if condition or task_status == "completed":
+        progress = ""
+        if packet.get("work_required") is not None:
+            progress = f" | work={packet.get('work_done')}/{packet.get('work_required')}"
         return [
             f"[WORLD] {packet.get('site')} | {packet.get('field')}={packet.get('actual')} | "
             f"rule={packet.get('rule_id')} condition={condition} | "
-            f"task={packet.get('task_id')} status={task_status}"
+            f"task={packet.get('task_id')} status={task_status}{progress}"
         ]
     return []
 
@@ -78,6 +81,23 @@ def _npc_lines(result):
     if result.get("activity"):
         lines.append(f"      activity={result.get('activity')}")
 
+    if result.get("work_required") is not None and result.get("work_done") is not None:
+        before = result.get("work_done_before")
+        added = result.get("work_added")
+        prefix = ""
+        if before is not None:
+            prefix = f"{before} -> "
+        suffix = f" (+{added})" if added is not None else ""
+        lines.append(
+            f"      [WORK] {prefix}{result.get('work_done')}/{result.get('work_required')}{suffix}"
+        )
+
+    for effect in result.get("job_completion_effects") or []:
+        lines.append(
+            f"      [WORK EFFECT] {effect.get('field')} "
+            f"{effect.get('before')} -> {effect.get('after')}"
+        )
+
     for effect in result.get("need_effects") or []:
         lines.append(
             f"      [RESOLVE NEED] {effect.get('field')} "
@@ -88,7 +108,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including transient need changes."""
+    """Show recent persistent World Tick history, including transient need and work changes."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
