@@ -29,8 +29,12 @@ def _find_event_site(query):
     return None
 
 
+def _goal_type(item):
+    return str((item or {}).get("goal_type") or (item or {}).get("type") or "EVENT").upper()
+
+
 class CmdSizaEvents(Command):
-    """Inspect persistent world event sites, state and active instances."""
+    """Inspect persistent world incident sites, state and active EVENT/DANGER instances."""
 
     key = "siza-events"
     aliases = ["events-state"]
@@ -49,7 +53,7 @@ class CmdSizaEvents(Command):
                 self.caller.msg("  event_candidates=NONE")
             for item in candidates:
                 self.caller.msg(
-                    f"  {item.get('event_id')} | priority={item.get('priority')} | "
+                    f"  {_goal_type(item)} {item.get('event_id')} | priority={item.get('priority')} | "
                     f"target={item.get('target_room_key')} | occurrence={item.get('occurrence')}"
                 )
             self.caller.msg("=========================")
@@ -63,16 +67,18 @@ class CmdSizaEvents(Command):
                 f"{row.get('name')} | room_id={row.get('room_id')} | state={row.get('state')}"
             )
             for event in row.get("instances") or []:
+                goal_type = _goal_type(event)
+                ack_text = "NA" if goal_type == "DANGER" else str(event.get("acknowledged_by") or [])
                 self.caller.msg(
-                    f"  {event.get('id')} | active={event.get('active')} | "
+                    f"  {goal_type} {event.get('id')} | active={event.get('active')} | "
                     f"status={event.get('status')} | priority={event.get('priority')} | "
-                    f"occurrence={event.get('occurrence')} | ack={event.get('acknowledged_by') or []}"
+                    f"occurrence={event.get('occurrence')} | ack={ack_text}"
                 )
         self.caller.msg("=========================")
 
 
 class CmdSizaEventSet(Command):
-    """Admin/debug: set one persistent event-state field on an event site."""
+    """Admin/debug: set one persistent incident-state field on an event site."""
 
     key = "siza-eventset"
     aliases = ["event-set"]
@@ -96,15 +102,16 @@ class CmdSizaEventSet(Command):
         for packet in results:
             if packet.get("site") != site.key:
                 continue
+            goal_type = str(packet.get("goal_type") or "EVENT").upper()
             self.caller.msg(
-                f"[EVENT PRODUCER] {packet.get('event_id')}: condition={packet.get('condition_met')} | "
+                f"[{goal_type} PRODUCER] {packet.get('event_id')}: condition={packet.get('condition_met')} | "
                 f"active={packet.get('event_active')} | status={packet.get('event_status')} | "
                 f"occurrence={packet.get('occurrence')}"
             )
 
 
 class CmdSizaEventRefresh(Command):
-    """Admin/debug: reevaluate all persistent world event producer rules."""
+    """Admin/debug: reevaluate all persistent world incident producer rules."""
 
     key = "siza-event-refresh"
     aliases = ["event-refresh"]
@@ -112,10 +119,11 @@ class CmdSizaEventRefresh(Command):
 
     def func(self):
         results = refresh_world_event_rules()
-        self.caller.msg(f"World EVENT producer refreshed: {len(results)} rule(s).")
+        self.caller.msg(f"World incident producer refreshed: {len(results)} rule(s).")
         for packet in results:
+            goal_type = str(packet.get("goal_type") or "EVENT").upper()
             self.caller.msg(
-                f"{packet.get('event_id')} | site={packet.get('site')} | "
+                f"{goal_type} {packet.get('event_id')} | site={packet.get('site')} | "
                 f"condition={packet.get('condition_met')} | active={packet.get('event_active')} | "
                 f"occurrence={packet.get('occurrence')}"
             )
