@@ -271,7 +271,11 @@ def decision_step(npc):
 
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
-        status = "ARRIVED_GOAL"
+        if goal.get("one_shot") and goal.get("source") == "AUTHORED_GOAL":
+            _disable_goal(npc, goal.get("id"))
+            status = "GOAL_COMPLETED"
+        else:
+            status = "ARRIVED_GOAL"
     else:
         npc.db.current_activity = f"en camino a {target.key}"
         status = "MOVED_GOAL"
