@@ -3,6 +3,7 @@ from collections import deque
 from evennia import search_object, search_tag
 
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
+from services.world_event_engine import danger_blocks_room
 
 
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
@@ -133,8 +134,15 @@ def _routine_records(npc):
     return output
 
 
+def _routine_target(npc, entry):
+    room = find_room((entry or {}).get("room_key", ""), (entry or {}).get("room_id"))
+    if not room:
+        return None, None
+    return room, danger_blocks_room(room, npc=npc)
+
+
 def _active_routine_records(npc):
-    """Scheduled entries override unscheduled circular fallback while active."""
+    """Scheduled entries override fallback, while active DANGER removes unsafe targets."""
     records = _routine_records(npc)
     if not records:
         return []
@@ -143,6 +151,9 @@ def _active_routine_records(npc):
     scheduled_active = []
     unscheduled = []
     for index, entry in records:
+        _room, danger = _routine_target(npc, entry)
+        if danger:
+            continue
         schedule = entry.get("schedule")
         if schedule:
             if schedule_is_active(schedule, state=state):
@@ -154,7 +165,7 @@ def _active_routine_records(npc):
 
 
 def routine_entry(npc, index=None):
-    """Return the routine entry currently permitted by the world clock."""
+    """Return the routine entry currently permitted by world time and safety state."""
     active = _active_routine_records(npc)
     if not active:
         return None, None
@@ -273,7 +284,7 @@ def simstep(npc):
 
     index, entry = routine_entry(npc)
     if entry is None:
-        npc.db.current_activity = "sin rutina activa para la hora actual"
+        npc.db.current_activity = "sin rutina activa segura para la hora actual"
         return {
             "status": "NO_ROUTINE",
             "npc": npc.key,
@@ -288,6 +299,19 @@ def simstep(npc):
             "status": "BAD_TARGET",
             "npc": npc.key,
             "action_kind": "IDLE",
+            **_routine_meta(index, entry),
+        }
+
+    danger = danger_blocks_room(target, npc=npc)
+    if danger:
+        npc.db.current_activity = "evitando un destino peligroso"
+        return {
+            "status": "DANGER_BLOCKED",
+            "npc": npc.key,
+            "target": target.key,
+            "danger_id": danger.get("event_id"),
+            "action_kind": "IDLE",
+            "activity": npc.db.current_activity,
             **_routine_meta(index, entry),
         }
 
@@ -313,7 +337,7 @@ def simstep(npc):
 
         index, entry = _advance_routine(npc)
         if entry is None:
-            npc.db.current_activity = "sin rutina activa para la hora actual"
+            npc.db.current_activity = "sin rutina activa segura para la hora actual"
             return {
                 "status": "NO_ROUTINE",
                 "npc": npc.key,
@@ -326,6 +350,18 @@ def simstep(npc):
                 "status": "BAD_TARGET",
                 "npc": npc.key,
                 "action_kind": "IDLE",
+                **_routine_meta(index, entry),
+            }
+        danger = danger_blocks_room(target, npc=npc)
+        if danger:
+            npc.db.current_activity = "evitando un destino peligroso"
+            return {
+                "status": "DANGER_BLOCKED",
+                "npc": npc.key,
+                "target": target.key,
+                "danger_id": danger.get("event_id"),
+                "action_kind": "IDLE",
+                "activity": npc.db.current_activity,
                 **_routine_meta(index, entry),
             }
 
