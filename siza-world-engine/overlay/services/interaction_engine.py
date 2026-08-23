@@ -152,16 +152,27 @@ def _update_relationship(holder, other, timestamp):
     holder.db.relationships = relationships
 
 
-def _record_conversation(character, npc, topic, fact_id=None, summary=None):
+def _record_conversation(
+    character,
+    npc,
+    topic,
+    outcome,
+    fact_id=None,
+    fact_text=None,
+):
+    """Store semantic conversation events, not a verbatim transcript."""
     timestamp = datetime.now(timezone.utc).isoformat()
     room = getattr(character, "location", None)
     base = {
         "type": "conversation",
+        "schema": 2,
         "timestamp": timestamp,
         "room_id": room.db.room_id if room else None,
+        "room_name": room.key if room else None,
         "topic": topic or None,
+        "outcome": outcome,
         "fact_id": fact_id,
-        "summary": summary,
+        "fact_text": fact_text,
     }
     player_memory = dict(base)
     player_memory.update({"with_id": npc.id, "with_name": npc.key})
@@ -193,7 +204,7 @@ def resolve_talk(character, intent):
     if not topic:
         greeting = str(npc.db.dialogue_greeting or "").strip()
         text = greeting or f"{npc.key} te presta atención."
-        _record_conversation(character, npc, None, summary=text)
+        _record_conversation(character, npc, None, outcome="greeting")
         return text
 
     knowledge = _plain_dict(npc.db.knowledge)
@@ -214,13 +225,14 @@ def resolve_talk(character, intent):
                 character,
                 npc,
                 topic,
+                outcome="knowledge_shared",
                 fact_id=str(fact.get("id", "")) or None,
-                summary=response,
+                fact_text=response,
             )
             return response
 
     text = f"{npc.key} no aporta información concreta sobre {topic}."
-    _record_conversation(character, npc, topic, summary=text)
+    _record_conversation(character, npc, topic, outcome="no_information")
     return text
 
 
@@ -288,6 +300,33 @@ def resolve_door(character, intent):
     return "La acción sobre la puerta no se pudo resolver."
 
 
+def _render_memory(mem):
+    """Render both schema-v2 semantic memories and old schema-v1 transcript memories."""
+    who = str(mem.get("with_name") or "alguien")
+    schema = int(mem.get("schema", 1) or 1)
+
+    if schema >= 2:
+        outcome = str(mem.get("outcome") or "")
+        topic = str(mem.get("topic") or "").strip()
+        room_name = str(mem.get("room_name") or "").strip()
+        fact_text = str(mem.get("fact_text") or "").strip()
+        place = f" en {room_name}" if room_name else ""
+
+        if outcome == "greeting":
+            return f"Hablaste con {who}{place}."
+        if outcome == "knowledge_shared":
+            if fact_text:
+                return f"{who} te dio información sobre {topic}: {fact_text}"
+            return f"{who} te dio información sobre {topic}{place}."
+        if outcome == "no_information":
+            return f"Preguntaste a {who} por {topic}, pero no obtuviste información concreta."
+        return f"Tuviste una interacción con {who}{place}."
+
+    # Backward compatibility with the first prototype memories already stored.
+    summary = str(mem.get("summary") or "una conversación")
+    return f"Registro anterior con {who}: {summary}"
+
+
 def resolve_remember(character, intent):
     raw = normalize(intent.get("raw", ""))
     target_words = [
@@ -303,7 +342,8 @@ def resolve_remember(character, intent):
         except Exception:
             continue
         haystack = " ".join(
-            str(mem.get(key, "")) for key in ("with_name", "topic", "summary", "fact_id")
+            str(mem.get(key, ""))
+            for key in ("with_name", "topic", "fact_text", "summary", "fact_id", "outcome")
         )
         if target_tokens and not (target_tokens & set(_tokens(haystack))):
             continue
@@ -314,12 +354,7 @@ def resolve_remember(character, intent):
     if not matches:
         return "No tienes ningún recuerdo registrado que coincida con esa consulta."
 
-    lines = []
-    for mem in matches:
-        who = str(mem.get("with_name") or "alguien")
-        summary = str(mem.get("summary") or "una conversación")
-        lines.append(f"Con {who}: {summary}")
-    return "\n".join(lines)
+    return "\n".join(_render_memory(mem) for mem in matches)
 
 
 def resolve_interaction(character, intent):
