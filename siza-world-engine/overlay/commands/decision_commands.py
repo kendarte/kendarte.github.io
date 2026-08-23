@@ -10,6 +10,17 @@ from services.npc_simulation import find_npc
 from services.world_clock import format_world_time, world_clock_state
 
 
+def _priority_text(item):
+    effective = item.get("effective_priority", item.get("priority"))
+    base = item.get("base_priority", effective)
+    modifier = item.get("personality_modifier", 0) or 0
+    if effective is None:
+        return "priority=None"
+    if modifier:
+        return f"priority={effective} | base={base} | personality={int(modifier):+}"
+    return f"priority={effective}"
+
+
 def _candidate_line(item, selected_id=None):
     marker = "SELECTED" if item.get("id") == selected_id else "candidate"
     reachable = "YES" if item.get("reachable") else "NO"
@@ -25,7 +36,7 @@ def _candidate_line(item, selected_id=None):
     elif item.get("type") == "ROUTINE" and item.get("routine_schedule_label"):
         schedule = f" | schedule={item.get('routine_schedule_label')}"
     return (
-        f"[{marker}] {item.get('type')} | priority={item.get('priority')} | "
+        f"[{marker}] {item.get('type')} | {_priority_text(item)} | "
         f"id={item.get('id')} | target={item.get('target_name') or item.get('target_room_key')} | "
         f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}"
         f"{progress}{claim}{schedule}"
@@ -78,7 +89,7 @@ class CmdSizaDecide(Command):
                 winner_schedule = f" | schedule={selected.get('routine_schedule_label')}"
             self.caller.msg(
                 f"Winner: {selected.get('type')} {selected.get('id')} -> "
-                f"{selected.get('target_name')} | priority={selected.get('priority')}"
+                f"{selected.get('target_name')} | {_priority_text(selected)}"
                 f"{winner_progress}{winner_claim}{winner_schedule}"
             )
         else:
@@ -173,6 +184,13 @@ class CmdSizaDecisionStep(Command):
         goal_type = result.get("goal_type")
         priority = result.get("priority")
         engine = result.get("engine")
+        priority_suffix = ""
+        if result.get("personality_modifier"):
+            priority_suffix = (
+                f" | base={result.get('base_priority')} "
+                f"personality={int(result.get('personality_modifier') or 0):+} "
+                f"effective={result.get('effective_priority')}"
+            )
 
         if result.get("job_claim_acquired"):
             self.caller.msg(
@@ -181,7 +199,7 @@ class CmdSizaDecisionStep(Command):
 
         if status in {"MOVED_GOAL", "ARRIVED_GOAL"}:
             self.caller.msg(
-                f"[DECISION] {npc.key}: {goal_type} {goal_id} (priority={priority}) | engine={engine}"
+                f"[DECISION] {npc.key}: {goal_type} {goal_id} (priority={priority}) | engine={engine}{priority_suffix}"
             )
             self.caller.msg(
                 f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
@@ -193,7 +211,7 @@ class CmdSizaDecisionStep(Command):
             self.caller.msg(
                 f"[DECISION] {npc.key}: WORKING | {goal_id} | "
                 f"work={result.get('work_done')}/{result.get('work_required')} "
-                f"(+{result.get('work_added')}) | activity={result.get('activity')}"
+                f"(+{result.get('work_added')}) | activity={result.get('activity')}{priority_suffix}"
             )
             return
 
@@ -203,13 +221,13 @@ class CmdSizaDecisionStep(Command):
                 schedule = f" | schedule={result.get('routine_schedule_label')}"
             self.caller.msg(
                 f"[DECISION] {npc.key}: ROUTINE WAITING | {result.get('location')} | "
-                f"activity={result.get('activity')} | hold={result.get('hold_remaining')}{schedule}"
+                f"activity={result.get('activity')} | hold={result.get('hold_remaining')}{schedule}{priority_suffix}"
             )
             return
 
         if status == "GOAL_COMPLETED" and result.get("from") and result.get("to"):
             self.caller.msg(
-                f"[DECISION] {npc.key}: GOAL_COMPLETED | {goal_type} {goal_id} (priority={priority})"
+                f"[DECISION] {npc.key}: GOAL_COMPLETED | {goal_type} {goal_id} (priority={priority}){priority_suffix}"
             )
             self.caller.msg(
                 f"[DECISION] {result.get('from')} -> {result.get('to')} por '{result.get('used_exit')}' "
@@ -221,7 +239,7 @@ class CmdSizaDecisionStep(Command):
             self.caller.msg(
                 f"[DECISION] {npc.key}: GOAL_COMPLETED | {goal_type} {goal_id} | "
                 f"work={result.get('work_done')}/{result.get('work_required')} | "
-                f"activity={result.get('activity')}"
+                f"activity={result.get('activity')}{priority_suffix}"
             )
             if result.get("job_completion_effects"):
                 self.caller.msg(
@@ -234,14 +252,14 @@ class CmdSizaDecisionStep(Command):
         if status in {"AT_GOAL", "GOAL_COMPLETED"}:
             self.caller.msg(
                 f"[DECISION] {npc.key}: {status} | {goal_type} {goal_id} | "
-                f"activity={result.get('activity')} | engine={engine}"
+                f"activity={result.get('activity')} | engine={engine}{priority_suffix}"
             )
             return
 
         if status == "NO_PATH":
             self.caller.msg(
                 f"[DECISION] {npc.key}: NO_PATH | goal={goal_id} | "
-                f"{result.get('from')} -> {result.get('target')}"
+                f"{result.get('from')} -> {result.get('target')}{priority_suffix}"
             )
             return
 
