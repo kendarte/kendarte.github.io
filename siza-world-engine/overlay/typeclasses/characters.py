@@ -1,7 +1,9 @@
 from evennia import DefaultCharacter
 
+from .objects import ObjectParent
 
-class Character(DefaultCharacter):
+
+class Character(DefaultCharacter, ObjectParent):
     """Player/NPC-compatible Siza character base."""
 
     def at_object_creation(self):
