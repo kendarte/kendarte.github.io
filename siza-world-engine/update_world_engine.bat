@@ -34,11 +34,14 @@ if errorlevel 1 goto :fail
 pushd runtime
 
 echo.
-echo 3. Recargando Evennia...
-python -m evennia reload
+echo 3. Reiniciando Evennia completamente...
+python -m evennia stop >nul 2>&1
+
+timeout /t 2 /nobreak >nul
+
+python -m evennia start
 if errorlevel 1 (
-  echo Reload no disponible; intentando start...
-  python -m evennia start
+  evennia start
   if errorlevel 1 (
     popd
     goto :fail
@@ -49,13 +52,12 @@ popd
 
 echo.
 echo ============================================
-echo UPDATE COMPLETO
-
-echo Pruebe en el juego:
-echo   voy hacia la plaza
-
-echo Si Ollama falla, ahora vera el error real.
+echo UPDATE COMPLETO - SERVIDOR REINICIADO
 echo ============================================
+echo.
+echo El mundo y la base de datos NO se borraron.
+echo Vuelva a conectar al webclient si se desconecto.
+echo.
 pause
 exit /b 0
 
