@@ -33,6 +33,11 @@ def _npc_candidates():
     ]
 
 
+def simulated_npcs():
+    """Return all Siza NPCs whose simulation flag is enabled."""
+    return [npc for npc in _npc_candidates() if bool(npc.db.simulation_enabled)]
+
+
 def find_npc(query=""):
     candidates = _npc_candidates()
     if not candidates:
@@ -143,13 +148,25 @@ def _advance_routine(npc):
         current = 0
     next_index = (current + 1) % len(routine)
     npc.db.routine_index = next_index
+    npc.db.routine_hold_remaining = 0
     return _routine_entry(npc, next_index)
+
+
+def _entry_duration(entry):
+    try:
+        return max(0, int((entry or {}).get("duration_ticks", 1) or 0))
+    except (TypeError, ValueError):
+        return 1
 
 
 def npc_state(npc):
     if not npc:
         return None
     index, entry = _routine_entry(npc)
+    try:
+        hold = int(npc.db.routine_hold_remaining or 0)
+    except (TypeError, ValueError):
+        hold = 0
     return {
         "npc": npc.key,
         "npc_id": npc.db.npc_id,
@@ -160,6 +177,7 @@ def npc_state(npc):
         "destination_id": npc.db.destination_id,
         "routine_index": index,
         "routine_entry": entry,
+        "routine_hold_remaining": hold,
         "simulation_enabled": bool(npc.db.simulation_enabled),
     }
 
@@ -187,10 +205,28 @@ def simstep(npc):
             "room_key": entry.get("room_key"),
         }
 
-    # If the current routine node was already reached, the next simulation step
-    # begins the following authored routine node rather than idling forever.
+    # When an NPC reaches an authored routine node, it may remain there for one
+    # or more world ticks. This prevents automatic simulation from turning a
+    # routine into a constant sprint around the map.
     if npc.location == target:
         npc.db.current_activity = entry.get("activity") or "en su rutina"
+        try:
+            hold = int(npc.db.routine_hold_remaining or 0)
+        except (TypeError, ValueError):
+            hold = 0
+        if hold > 0:
+            hold -= 1
+            npc.db.routine_hold_remaining = hold
+            return {
+                "status": "WAITING",
+                "npc": npc.key,
+                "location": npc.location.key,
+                "target": target.key,
+                "activity": npc.db.current_activity,
+                "routine_index": index,
+                "hold_remaining": hold,
+            }
+
         index, entry = _advance_routine(npc)
         target = _target_room(entry)
         if not target:
@@ -210,11 +246,13 @@ def simstep(npc):
 
     if not path:
         npc.db.current_activity = entry.get("activity") or "en su rutina"
+        npc.db.routine_hold_remaining = _entry_duration(entry)
         return {
             "status": "AT_TARGET",
             "npc": npc.key,
             "location": npc.location.key,
             "activity": npc.db.current_activity,
+            "hold_remaining": npc.db.routine_hold_remaining,
         }
 
     exit_obj = path[0]
@@ -237,9 +275,11 @@ def simstep(npc):
 
     if npc.location == target:
         npc.db.current_activity = entry.get("activity") or "en su rutina"
+        npc.db.routine_hold_remaining = _entry_duration(entry)
         status = "ARRIVED"
     else:
         npc.db.current_activity = f"en camino a {target.key}"
+        npc.db.routine_hold_remaining = 0
         status = "MOVED"
 
     return {
@@ -252,4 +292,5 @@ def simstep(npc):
         "destination_id": npc.db.destination_id,
         "activity": npc.db.current_activity,
         "routine_index": index,
+        "hold_remaining": int(npc.db.routine_hold_remaining or 0),
     }
