@@ -68,6 +68,22 @@ def _producer_lines(packet):
     return []
 
 
+def _handoff_lines(packet):
+    if packet.get("status") == "ERROR":
+        return [f"[SHIFT HANDOFF] ERROR={packet.get('error')}"]
+    if packet.get("status") != "RELEASED":
+        return []
+
+    progress = ""
+    if packet.get("work_required") is not None:
+        progress = f" | work={packet.get('work_done')}/{packet.get('work_required')}"
+    return [
+        f"[SHIFT HANDOFF] {packet.get('task_id')} | owner={packet.get('npc_name')} | "
+        f"reason={packet.get('reason')} | policy={packet.get('policy')} | "
+        f"shift={packet.get('shift')} | time=day {packet.get('day')} {packet.get('time')}{progress}"
+    ]
+
+
 def _arbitration_lines(packet):
     if packet.get("status") == "ERROR":
         return [f"[ARBITRATION] ERROR={packet.get('error')}"]
@@ -166,7 +182,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including time, arbitration, needs, claims and work."""
+    """Show recent persistent World Tick history, including time, shifts, arbitration, needs and work."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
@@ -208,6 +224,11 @@ class CmdSizaSimTrace(Command):
 
             for packet in entry.get("need_results") or []:
                 for line in _need_lines(packet):
+                    self.caller.msg("  " + line)
+                    emitted = True
+
+            for packet in entry.get("handoff_results") or []:
+                for line in _handoff_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
