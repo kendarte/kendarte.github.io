@@ -8,7 +8,7 @@ from services.npc_simulation import simulated_npcs, simstep
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.8.0-worksite-rules"
+WORLD_TICK_BUILD = "0.9.0-needs"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
