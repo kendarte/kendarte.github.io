@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 cd /d "%~dp0"
 
 echo ============================================
@@ -7,25 +7,72 @@ echo SIZA WORLD ENGINE - SETUP WINDOWS
 echo ============================================
 echo.
 
-echo [1/7] Verificando Python 3.12...
-py -3.12 --version
-if errorlevel 1 (
-  echo ERROR: No encuentro Python 3.12 mediante el launcher py.
-  echo Pruebe: py -0p
+set "PYTHON_EXE="
+set "PYTHON_ARGS="
+
+echo [1/7] Buscando Python 3.12...
+
+rem 1) Python Launcher
+py -3.12 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
+if not errorlevel 1 (
+  set "PYTHON_EXE=py"
+  set "PYTHON_ARGS=-3.12"
+)
+
+rem 2) python en PATH
+if not defined PYTHON_EXE (
+  python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
+  if not errorlevel 1 set "PYTHON_EXE=python"
+)
+
+rem 3) python3.12 en PATH
+if not defined PYTHON_EXE (
+  python3.12 -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
+  if not errorlevel 1 set "PYTHON_EXE=python3.12"
+)
+
+rem 4) Rutas comunes del instalador oficial de Python
+if not defined PYTHON_EXE if exist "%LocalAppData%\Programs\Python\Python312\python.exe" (
+  set "PYTHON_EXE=%LocalAppData%\Programs\Python\Python312\python.exe"
+)
+if not defined PYTHON_EXE if exist "%ProgramFiles%\Python312\python.exe" (
+  set "PYTHON_EXE=%ProgramFiles%\Python312\python.exe"
+)
+if not defined PYTHON_EXE if defined ProgramFiles^(x86^) if exist "%ProgramFiles(x86)%\Python312\python.exe" (
+  set "PYTHON_EXE=%ProgramFiles(x86)%\Python312\python.exe"
+)
+
+if not defined PYTHON_EXE (
+  echo.
+  echo ERROR: Python 3.12 puede estar instalado, pero Windows no lo expone por una ruta que este instalador pueda detectar.
+  echo.
+  echo Ejecute estos tres comandos y copie el resultado:
+  echo   python --version
+  echo   where python
+  echo   py -0p
+  echo.
   pause
   exit /b 1
 )
 
+echo Python detectado:
+"%PYTHON_EXE%" %PYTHON_ARGS% --version
+if errorlevel 1 goto :fail
+
 echo.
 echo [2/7] Creando entorno virtual...
 if not exist ".venv\Scripts\python.exe" (
-  py -3.12 -m venv .venv
+  "%PYTHON_EXE%" %PYTHON_ARGS% -m venv .venv
   if errorlevel 1 goto :fail
 ) else (
   echo .venv ya existe; se reutiliza.
 )
 
 call ".venv\Scripts\activate.bat"
+if errorlevel 1 goto :fail
+
+echo Python del entorno virtual:
+python --version
 if errorlevel 1 goto :fail
 
 echo.
