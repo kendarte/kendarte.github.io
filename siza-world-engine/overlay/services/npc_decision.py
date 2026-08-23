@@ -8,10 +8,11 @@ from services.job_claims import (
 )
 from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
-from services.npc_simulation import find_path, simulated_npcs, simstep
+from services.npc_simulation import find_path, routine_entry, simulated_npcs, simstep
+from services.world_clock import schedule_label
 
 
-DECISION_BUILD = "0.15.0-priority-aware-arbitration"
+DECISION_BUILD = "0.16.0-world-clock-schedules"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -79,19 +80,11 @@ def _goal_from_raw(raw, priorities):
 
 
 def _routine_candidate(npc, priorities):
-    routine = _plain_list(npc.db.routine)
-    if not routine:
-        return None
-    try:
-        index = int(npc.db.routine_index or 0) % len(routine)
-    except (TypeError, ValueError):
-        index = 0
-
-    try:
-        entry = {str(key): value for key, value in routine[index].items()}
-    except Exception:
+    index, entry = routine_entry(npc)
+    if entry is None:
         return None
 
+    schedule = entry.get("schedule")
     return {
         "id": f"ROUTINE:{entry.get('id') or index}",
         "type": "ROUTINE",
@@ -103,11 +96,13 @@ def _routine_candidate(npc, priorities):
         "one_shot": False,
         "source": "ROUTINE_FALLBACK",
         "routine_index": index,
+        "routine_schedule": schedule,
+        "routine_schedule_label": schedule_label(schedule),
     }
 
 
 def collect_candidates(npc):
-    """Collect authored, NEED, claim-aware JOB and routine goals."""
+    """Collect authored, NEED, shift/claim-aware JOB and scheduled routine goals."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -399,6 +394,7 @@ def decision_step(npc):
         "need_rule_id": goal.get("need_rule_id"),
         "affordance": goal.get("affordance"),
         "affordance_id": goal.get("affordance_id"),
+        "routine_schedule_label": goal.get("routine_schedule_label"),
     }
 
     if goal.get("source") == "ROUTINE_FALLBACK":
