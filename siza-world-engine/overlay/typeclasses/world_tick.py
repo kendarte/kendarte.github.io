@@ -7,10 +7,11 @@ from services.job_engine import refresh_world_job_rules
 from services.need_dynamics import advance_need_dynamics, apply_activity_need_dynamics
 from services.npc_decision import decision_step
 from services.npc_simulation import simulated_npcs, simstep
+from services.world_clock import advance_world_clock, ensure_world_clock, world_clock_state
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.15.0-priority-aware-arbitration"
+WORLD_TICK_BUILD = "0.16.0-world-clock-schedules"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -33,13 +34,14 @@ def _append_trace(
     script,
     tick_number,
     timestamp,
+    world_clock_result,
     producer_results,
     arbitration_results,
     need_results,
     activity_need_results,
     results,
 ):
-    """Persist a short rolling trace so transient autonomous decisions stay inspectable."""
+    """Persist a short rolling trace so autonomous state changes stay inspectable."""
     try:
         history = list(script.db.trace_history or [])
     except Exception:
@@ -49,6 +51,7 @@ def _append_trace(
         {
             "tick": int(tick_number),
             "timestamp": timestamp,
+            "world_clock_result": dict(world_clock_result or {}),
             "producer_results": list(producer_results or []),
             "arbitration_results": list(arbitration_results or []),
             "need_results": list(need_results or []),
@@ -60,7 +63,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent global world tick for producers, needs, arbitration and NPC simulation."""
+    """Persistent global world tick for time, producers, needs, arbitration and NPC simulation."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
@@ -73,16 +76,27 @@ class SizaWorldTick(DefaultScript):
         self.db.tick_count = 0
         self.db.last_tick_at = None
         self.db.last_results = []
+        self.db.last_world_clock_result = {}
         self.db.last_producer_results = []
         self.db.last_arbitration_results = []
         self.db.last_need_results = []
         self.db.last_activity_need_results = []
         self.db.trace_history = []
         self.db.build = WORLD_TICK_BUILD
+        ensure_world_clock(self)
 
     def at_repeat(self):
         if not bool(self.db.manual_enabled):
             return
+
+        # World time advances first. Everything in this tick sees the new time.
+        try:
+            world_clock_result = advance_world_clock(self)
+        except Exception as exc:
+            world_clock_result = {
+                "status": "ERROR",
+                "error": str(exc),
+            }
 
         try:
             producer_results = refresh_world_job_rules()
@@ -97,9 +111,8 @@ class SizaWorldTick(DefaultScript):
 
         npcs = list(simulated_npcs())
 
-        # CLOCK dynamics must resolve before arbitration. Otherwise an NPC could
-        # receive a JOB claim in the same tick that a higher-priority NEED becomes
-        # active. ACTIVITY dynamics still run after the executed action.
+        # CLOCK needs resolve before arbitration. ACTIVITY consequences resolve
+        # only after the action actually executed later in this same tick.
         need_results = []
         for npc in npcs:
             try:
@@ -113,8 +126,8 @@ class SizaWorldTick(DefaultScript):
                 }
             need_results.append(need_result)
 
-        # Claims coordinate tasks across NPCs. Clear stale owners, then arbitrate
-        # globally after current NEED state is known and before any NPC executes.
+        # Arbitration now sees current world time, current shift windows and
+        # current higher-priority needs before any individual NPC executes.
         try:
             refresh_job_claims()
             arbitration_results = arbitrate_job_claims(npcs)
@@ -163,6 +176,7 @@ class SizaWorldTick(DefaultScript):
         self.db.tick_count = tick_number
         self.db.last_tick_at = timestamp
         self.db.last_results = results
+        self.db.last_world_clock_result = world_clock_result
         self.db.last_producer_results = producer_results
         self.db.last_arbitration_results = arbitration_results
         self.db.last_need_results = need_results
@@ -172,6 +186,7 @@ class SizaWorldTick(DefaultScript):
             self,
             tick_number=tick_number,
             timestamp=timestamp,
+            world_clock_result=world_clock_result,
             producer_results=producer_results,
             arbitration_results=arbitration_results,
             need_results=need_results,
@@ -209,15 +224,19 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         )
         script.db.manual_enabled = True
         script.db.build = WORLD_TICK_BUILD
+        script.db.last_world_clock_result = {}
         script.db.last_producer_results = []
         script.db.last_arbitration_results = []
         script.db.last_need_results = []
         script.db.last_activity_need_results = []
         script.db.trace_history = []
+        ensure_world_clock(script)
         return script, True
 
     script.db.manual_enabled = True
     script.db.build = WORLD_TICK_BUILD
+    if script.db.last_world_clock_result is None:
+        script.db.last_world_clock_result = {}
     if script.db.last_producer_results is None:
         script.db.last_producer_results = []
     if script.db.last_arbitration_results is None:
@@ -228,6 +247,7 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
         script.db.last_activity_need_results = []
     if script.db.trace_history is None:
         script.db.trace_history = []
+    ensure_world_clock(script)
     script.start(interval=seconds, start_delay=seconds, repeats=0)
     return script, False
 
@@ -252,12 +272,14 @@ def world_tick_state():
             "tick_count": 0,
             "last_tick_at": None,
             "last_results": [],
+            "last_world_clock_result": {},
             "last_producer_results": [],
             "last_arbitration_results": [],
             "last_need_results": [],
             "last_activity_need_results": [],
             "trace_history": [],
             "next_repeat": None,
+            "world_clock": world_clock_state(),
             "build": WORLD_TICK_BUILD,
         }
 
@@ -266,6 +288,7 @@ def world_tick_state():
     except Exception:
         next_repeat = None
 
+    ensure_world_clock(script)
     return {
         "exists": True,
         "enabled": bool(script.db.manual_enabled),
@@ -274,11 +297,13 @@ def world_tick_state():
         "tick_count": int(script.db.tick_count or 0),
         "last_tick_at": script.db.last_tick_at,
         "last_results": list(script.db.last_results or []),
+        "last_world_clock_result": dict(script.db.last_world_clock_result or {}),
         "last_producer_results": list(script.db.last_producer_results or []),
         "last_arbitration_results": list(script.db.last_arbitration_results or []),
         "last_need_results": list(script.db.last_need_results or []),
         "last_activity_need_results": list(script.db.last_activity_need_results or []),
         "trace_history": list(script.db.trace_history or []),
         "next_repeat": next_repeat,
+        "world_clock": world_clock_state(script),
         "build": str(script.db.build or WORLD_TICK_BUILD),
     }
