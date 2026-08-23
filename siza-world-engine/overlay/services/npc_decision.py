@@ -5,7 +5,7 @@ from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.9.0-needs"
+DECISION_BUILD = "0.10.1-autonomous-needs-trace"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -105,19 +105,16 @@ def collect_candidates(npc):
     priorities = _priority_map(npc)
     candidates = []
 
-    # Explicit authored goals such as world events/debug events attached to the NPC.
     for raw in _plain_list(npc.db.decision_goals):
         goal = _goal_from_raw(raw, priorities)
         if not goal or not goal.get("active"):
             continue
         candidates.append(goal)
 
-    # NEED goals are derived from persistent NPC state and world affordances.
     candidates.extend(
         collect_need_candidates(npc, default_priority=priorities.get("NEED", 70))
     )
 
-    # JOB goals are derived from persistent task records stored in the world.
     candidates.extend(
         collect_job_candidates(npc, default_priority=priorities.get("JOB", 60))
     )
