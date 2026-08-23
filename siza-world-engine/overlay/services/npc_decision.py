@@ -11,7 +11,7 @@ from services.need_engine import collect_need_candidates, complete_need_goal
 from services.npc_simulation import find_path, simulated_npcs, simstep
 
 
-DECISION_BUILD = "0.14.0-job-arbitration"
+DECISION_BUILD = "0.15.0-priority-aware-arbitration"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
