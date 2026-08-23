@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import unicodedata
 import urllib.error
 import urllib.request
 
@@ -9,6 +11,7 @@ from evennia.utils import logger
 from services.narration_queue import run_serialized
 
 
+NARRATOR_BUILD = "0.3.0-guard"
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_NUM_CTX = int(os.getenv("SIZA_OLLAMA_NUM_CTX", "8192"))
@@ -28,26 +31,29 @@ REGLAS DURAS
   detras, norte, sur, este u oeste SOLO pueden aparecer si los datos autorizados las dicen literalmente.
 - No conviertas una conexion entre Rooms en una posicion espacial que no haya sido escrita.
 - No expliques mecanicas ni menciones JSON, paquetes, World Engine o instrucciones internas.
-- Si una tirada no descubre nada, no inventes una pista compensatoria.
 
 ESTILO SIZA
 - Espanol contemporaneo, fluido y concreto. No arcaico, no grandilocuente, no pseudo-poetico.
 - Haz que el lector pueda imaginar el espacio usando unicamente geometria y elementos autorizados.
 - Evita redundancias y frases mecanicas.
-- Evita abusar de 'el ambiente es', 'se percibe', 'se siente', 'parece' y adjetivos emocionales genericos.
-- No describas una salida con tautologias.
 - Prefiere 2-4 oraciones limpias a rellenar el parrafo con detalles nuevos.
 
 MAL: 'La unica salida es salir a la plaza.'
 BIEN: 'El acceso comunica con la Plaza de Recepcion.'
-MAL: 'A la izquierda esta la cantina' si izquierda no fue autorizada.
-BIEN: 'Desde la plaza se puede acceder a la cantina.' si esa conexion fue autorizada.
-MAL: 'El ambiente es calido y acogedor.' si temperatura y atmosfera no fueron autorizadas.
-MAL: 'No hay muebles ni personas.' cuando las listas vienen vacias.
-BIEN: simplemente no menciones muebles ni personas.
+MAL: 'A tu espalda esta la plaza' si esa posicion no fue autorizada.
+MAL: 'El ambiente es calido y acogedor' si no hay datos de temperatura o atmosfera.
+MAL: 'No hay muebles ni personas' cuando las listas vienen vacias.
 
 La prosa puede enlazar y reformular hechos con naturalidad, pero nunca agregar hechos nuevos.
 """
+
+
+def _normalize(text):
+    text = unicodedata.normalize("NFD", str(text or ""))
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    text = text.lower()
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
 def _json_safe(value):
@@ -69,6 +75,24 @@ def _json_safe(value):
         except Exception:
             pass
     return str(value)
+
+
+def _plain_dict(value):
+    if not value:
+        return {}
+    try:
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    except Exception:
+        return {}
+
+
+def _plain_list(value):
+    if not value:
+        return []
+    try:
+        return [_json_safe(item) for item in value]
+    except Exception:
+        return []
 
 
 def _visible_contents(room, exclude=None):
@@ -96,10 +120,6 @@ def _room_packet(room, exclude=None):
             "sensory_facts": room.db.sensory_facts or {},
             "visible_contents": _visible_contents(room, exclude=exclude),
             "conditions": room.db.conditions or {},
-            "important_note": (
-                "No infieras izquierda/derecha/delante/detras/cardinales. "
-                "Solo space_profile puede autorizar relaciones espaciales."
-            ),
         }
     )
 
@@ -122,43 +142,129 @@ def build_move_packet(character, source, destination, exit_obj):
             },
             "resolution": "SUCCESS",
             "instruction": (
-                "Narra solamente la llegada inmediata en 35-70 palabras. "
-                "Presenta la forma del lugar y uno o dos elementos autorizados. "
-                "No enumeres conexiones ni inventes orientacion. No rellenes espacio con atmosfera."
+                "Narra solamente la llegada inmediata en 30-60 palabras. "
+                "Usa la forma del lugar y uno o dos elementos autorizados. "
+                "No enumeres conexiones ni inventes orientacion o atmosfera."
             ),
         }
     )
 
 
-def build_perception_packet(character, result):
+def _first_sensory(room, sense):
+    sensory = _plain_dict(room.db.sensory_facts if room else {})
+    values = _plain_list(sensory.get(sense, []))
+    return str(values[0]) if values else ""
+
+
+def _clean_fragment(text):
+    text = str(text or "").strip().rstrip(".")
+    return text
+
+
+def _sentence(text):
+    text = _clean_fragment(text)
+    if not text:
+        return ""
+    return text[0].upper() + text[1:] + "."
+
+
+def _render_room_core(room, include_name=True):
+    """Deterministic spatial prose made only from authored Room data."""
+    if not room:
+        return ""
+
+    profile = _plain_dict(room.db.space_profile)
+    geometry = _clean_fragment(profile.get("geometry", ""))
+    scale = _clean_fragment(profile.get("scale", ""))
+    focal_points = [str(item) for item in _plain_list(profile.get("focal_points", [])) if item]
+    hearing = _first_sensory(room, "hearing")
+    sight = _first_sensory(room, "sight")
+
+    sentences = []
+    if geometry:
+        if include_name:
+            sentences.append(f"{room.key} esta dispuesto como {geometry}.")
+        else:
+            sentences.append(f"El lugar esta dispuesto como {geometry}.")
+    elif room.db.desc:
+        sentences.append(_sentence(room.db.desc))
+
+    if scale and scale.lower() not in _normalize(" ".join(sentences)):
+        sentences.append(f"Es de escala {scale}.")
+
+    if focal_points:
+        sentences.append(_sentence(focal_points[0]))
+    elif sight:
+        sentences.append(_sentence(sight))
+
+    if hearing:
+        sentences.append(f"Se oyen {hearing.rstrip('.')}.")
+
+    return " ".join(sentence for sentence in sentences if sentence)
+
+
+def _render_move_fallback(destination):
+    core = _render_room_core(destination, include_name=False)
+    if core:
+        return f"Entras en {destination.key}. {core}"
+    return f"Llegas a {destination.key}."
+
+
+def _render_observation(character, result):
     room = getattr(character, "location", None)
-    status = result.get("status")
+    core = _render_room_core(room, include_name=True)
+    known = [str(item) for item in result.get("already_known", []) if item]
+    if known:
+        core = (core + " " + " ".join(_sentence(item) for item in known)).strip()
+    return core or "No hay datos descriptivos adicionales autorizados para este lugar."
 
-    instructions = {
-        "OBSERVED": (
-            "Describe en 30-65 palabras lo que el personaje capta sin tirada. "
-            "Usa solo geometria, hechos obvios y descubrimientos previos autorizados. "
-            "No inventes posiciones ni conductas de personas."
-        ),
-        "AUTO_SUCCESS": (
-            "El objetivo solicitado esta claramente visible. Indicalo de manera natural; "
-            "no inventes detalles del objetivo."
-        ),
-        "DISCOVERY": (
-            "Narra en 25-55 palabras el descubrimiento de los hechos nuevos autorizados. "
-            "No anadas pistas, causas ni interpretaciones nuevas."
-        ),
-    }
 
-    return _json_safe(
-        {
-            "mode": "PERCEPTION",
-            "actor": character.key,
-            "room": _room_packet(room, exclude=character),
-            "resolution": result,
-            "instruction": instructions.get(status, "Narra solamente los hechos autorizados en 25-55 palabras."),
-        }
-    )
+def _render_auto_success(result):
+    targets = [str(item) for item in result.get("visible_targets", []) if item]
+    if not targets:
+        return "El objetivo es visible sin necesidad de una busqueda minuciosa."
+    if len(targets) == 1:
+        return f"A simple vista distingues {targets[0]}."
+    return "A simple vista distingues " + ", ".join(targets[:-1]) + " y " + targets[-1] + "."
+
+
+def _render_discovery(result):
+    discovered = [str(item).strip() for item in result.get("discovered", []) if item]
+    if not discovered:
+        return "La busqueda no descubre ningun detalle nuevo."
+    return " ".join(_sentence(item) for item in discovered)
+
+
+# If Qwen uses one of these concepts without that concept appearing anywhere in
+# the authoritative packet, its output is rejected and deterministic prose wins.
+GUARDED_TERMS = [
+    "a tu espalda", "a sus espaldas", "izquierda", "derecha", "delante", "detras",
+    "norte", "sur", "este", "oeste",
+    "sombra", "sombras", "luz", "luces", "iluminacion", "reflejo", "reflejos",
+    "calido", "calida", "acogedor", "acogedora", "frio", "fria", "temperatura",
+    "olor", "huele", "aroma",
+]
+
+NEGATIVE_ASSERTIONS = [
+    "no hay", "no esta", "no existe", "esta vacio", "esta vacia", "no se ve", "nadie",
+]
+
+
+def _validate_narration(text, packet):
+    output = _normalize(text)
+    source = _normalize(json.dumps(_json_safe(packet), ensure_ascii=False))
+
+    for term in GUARDED_TERMS:
+        normalized_term = _normalize(term)
+        if normalized_term in output and normalized_term not in source:
+            return False, f"detalle no autorizado: {term}"
+
+    for phrase in NEGATIVE_ASSERTIONS:
+        normalized_phrase = _normalize(phrase)
+        if normalized_phrase in output and normalized_phrase not in source:
+            return False, f"afirmacion negativa no autorizada: {phrase}"
+
+    return True, ""
 
 
 def _post_chat(payload):
@@ -192,8 +298,8 @@ def _request_chat(packet):
         "stream": False,
         "think": False,
         "options": {
-            "temperature": 0.2,
-            "num_predict": 140,
+            "temperature": 0.15,
+            "num_predict": 120,
             "num_ctx": OLLAMA_NUM_CTX,
         },
     }
@@ -216,21 +322,21 @@ def _threaded_request(packet):
 
 
 def _narrate_async(character, packet, fallback_text):
-    # Narrations for the same character are serialized so delayed local-model
-    # responses cannot overtake later actions and appear out of order.
     deferred = run_serialized(character, _threaded_request, packet)
 
     def _ok(text):
         if text:
-            character.msg("\n" + text)
-        else:
-            character.msg("\n" + fallback_text)
+            valid, reason = _validate_narration(text, packet)
+            if valid:
+                character.msg("\n" + text)
+                return
+            logger.log_err(f"SIZA rejected narrator output ({NARRATOR_BUILD}): {reason}; text={text[:240]}")
+        character.msg("\n" + fallback_text)
 
     def _failed(failure):
         reason = failure.getErrorMessage() if hasattr(failure, "getErrorMessage") else str(failure)
         logger.log_err(f"SIZA Ollama narrator error: {reason}")
-        short_reason = reason.replace("\n", " ")[:220]
-        character.msg(f"\n{fallback_text} [Ollama error: {short_reason}]")
+        character.msg("\n" + fallback_text)
 
     deferred.addCallbacks(_ok, _failed)
     return deferred
@@ -238,36 +344,39 @@ def _narrate_async(character, packet, fallback_text):
 
 def narrate_move_async(character, source, destination, exit_obj):
     packet = build_move_packet(character, source, destination, exit_obj)
-    return _narrate_async(character, packet, f"Llegas a {destination.key}.")
+    return _narrate_async(character, packet, _render_move_fallback(destination))
 
 
 def narrate_perception_async(character, result):
+    """Perception prose is deterministic: the LLM never decides what a failed search means."""
     status = result.get("status")
     target = (result.get("target") or "").strip()
 
-    # These states are intentionally deterministic. Qwen is not allowed to turn
-    # 'no authorized information' into 'the target is absent'.
+    if status == "OBSERVED":
+        character.msg("\n" + _render_observation(character, result))
+        return None
+
+    if status == "AUTO_SUCCESS":
+        character.msg("\n" + _render_auto_success(result))
+        return None
+
+    if status == "DISCOVERY":
+        character.msg("\n" + _render_discovery(result))
+        return None
+
     if status == "NO_AUTHORIZED_DISCOVERY":
         if target:
-            character.msg(f"\nLa busqueda no revela informacion nueva sobre {target}.")
+            character.msg(f"\nLa busqueda no aporta informacion nueva sobre {target}.")
         else:
-            character.msg("\nLa busqueda no revela informacion nueva.")
+            character.msg("\nLa busqueda no aporta informacion nueva.")
         return None
 
     if status == "NO_DISCOVERY":
         if target:
-            character.msg(f"\nBuscas indicios sobre {target}, pero no descubres ningun detalle nuevo.")
+            character.msg(f"\nBuscas indicios relacionados con {target}, pero no descubres ningun detalle nuevo.")
         else:
             character.msg("\nLa busqueda no descubre ningun detalle nuevo.")
         return None
 
-    packet = build_perception_packet(character, result)
-    if status == "DISCOVERY" and result.get("discovered"):
-        fallback = "Descubres: " + "; ".join(result["discovered"])
-    elif status == "AUTO_SUCCESS" and result.get("visible_targets"):
-        fallback = "Ves: " + ", ".join(result["visible_targets"])
-    elif status == "OBSERVED":
-        fallback = "Observas el lugar sin que haga falta una busqueda minuciosa."
-    else:
-        fallback = "No obtienes informacion nueva."
-    return _narrate_async(character, packet, fallback)
+    character.msg("\nNo obtienes informacion nueva con esa accion.")
+    return None
