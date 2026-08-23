@@ -339,6 +339,19 @@ def claim_job_task(
                 "npc_name": existing.get("npc_name"),
             }
 
+        other_claim = _owned_other_claim(npc_id, wanted)
+        if other_claim:
+            return {
+                "success": False,
+                "acquired": False,
+                "reason": "BUSY_OTHER_JOB",
+                "site": site,
+                "task_id": wanted,
+                "npc_id": npc_id,
+                "npc_name": npc.key,
+                "other_task_id": other_claim.get("task_id"),
+            }
+
         policy = str(claim_policy or _task_policy(task)).upper()
         claims[wanted] = {
             "npc_id": npc_id,
@@ -503,12 +516,14 @@ def release_job_claim(task_id, npc=None, force=False):
 
 
 def filter_job_candidates_for_claim(npc, candidates):
-    """Hide tasks claimed by another NPC while retaining own/unclaimed tasks."""
+    """Hide tasks claimed by another NPC and other JOBs while this NPC owns one."""
     refresh_job_claims()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     output = []
     for item in list(candidates or []):
         task_id = str(item.get("task_id") or "")
+        if _owned_other_claim(npc_id, task_id):
+            continue
         claim = get_job_claim(task_id) if task_id else None
         if claim and str(claim.get("npc_id") or "") != npc_id:
             continue
