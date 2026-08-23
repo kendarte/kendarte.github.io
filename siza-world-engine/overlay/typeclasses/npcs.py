@@ -32,6 +32,7 @@ class NPC(Character):
         self.db.need_rules = []
         self.db.need_dynamics = []
         self.db.need_dynamics_clock = 0
+        self.db.need_activity_counters = {}
 
         # Decision Layer. Goals are explicit persistent records supplied by
         # authored systems; NPCs do not invent world facts, targets or priorities.
