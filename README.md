@@ -8,11 +8,6 @@ Static GitHub Pages edition of Kendall Angulo Jhonson's Unity gameplay and syste
 - Horse Racer — deterministic race orchestration, cinematic direction and automated capture.
 - Euclid Wars — first-person exploration, environmental interaction and narrative flow.
 
-## SIZA — documentación de diseño
-
-- [Abrir documentos de diseño de SIZA](documentos/)
-- [Abrir catálogo de Conocimientos Player/NPC](documentos/conocimientos/)
-
 ## Stack
 
 Semantic HTML, responsive CSS and native browser video. No application runtime or build step is required.
