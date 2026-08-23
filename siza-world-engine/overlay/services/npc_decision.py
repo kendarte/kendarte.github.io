@@ -1,9 +1,10 @@
 from evennia import search_object
 
+from services.job_engine import collect_job_candidates, complete_job_task
 from services.npc_simulation import find_path, simstep
 
 
-DECISION_BUILD = "0.6.0-decision-dispatch"
+DECISION_BUILD = "0.7.0-world-job"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -99,15 +100,22 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect only persistent/authored goals plus the existing routine fallback."""
+    """Collect authored goals, world-produced JOB goals and the routine fallback."""
     priorities = _priority_map(npc)
     candidates = []
 
+    # Explicit persistent goals authored directly for the NPC (events, debug goals, etc.).
     for raw in _plain_list(npc.db.decision_goals):
         goal = _goal_from_raw(raw, priorities)
         if not goal or not goal.get("active"):
             continue
         candidates.append(goal)
+
+    # JOB candidates are derived from persistent task records stored in the world.
+    # They do not live in npc.db.decision_goals.
+    candidates.extend(
+        collect_job_candidates(npc, default_priority=priorities.get("JOB", 60))
+    )
 
     routine = _routine_candidate(npc, priorities)
     if routine:
@@ -216,6 +224,33 @@ def _run_routine_fallback(npc, goal):
     return result
 
 
+def _complete_selected_goal(npc, goal):
+    """Commit completion back to the authoritative source that produced the goal."""
+    source = str(goal.get("source") or "")
+
+    if source == "WORLD_JOB":
+        site = complete_job_task(npc, goal.get("task_id"))
+        return {
+            "completed": bool(site),
+            "completion_source": "WORLD_JOB",
+            "completion_site": site.key if site else None,
+        }
+
+    if source == "AUTHORED_GOAL" and goal.get("one_shot"):
+        changed = _disable_goal(npc, goal.get("id"))
+        return {
+            "completed": bool(changed),
+            "completion_source": "AUTHORED_GOAL",
+            "completion_site": None,
+        }
+
+    return {
+        "completed": False,
+        "completion_source": source or None,
+        "completion_site": None,
+    }
+
+
 def decision_step(npc):
     """Choose one authorized goal and execute at most one real Exit hop."""
     decision = choose_goal(npc)
@@ -237,10 +272,9 @@ def decision_step(npc):
         "target_room_key": goal.get("target_room_key"),
         "activity": goal.get("activity"),
         "source": goal.get("source"),
+        "task_id": goal.get("task_id"),
     }
 
-    # Routine remains a real fallback system rather than being reimplemented as
-    # a static goal. This preserves hold ticks and routine-index advancement.
     if goal.get("source") == "ROUTINE_FALLBACK":
         return _run_routine_fallback(npc, goal)
 
@@ -257,11 +291,8 @@ def decision_step(npc):
 
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
-        if goal.get("one_shot") and goal.get("source") == "AUTHORED_GOAL":
-            _disable_goal(npc, goal.get("id"))
-            status = "GOAL_COMPLETED"
-        else:
-            status = "AT_GOAL"
+        completion = _complete_selected_goal(npc, goal)
+        status = "GOAL_COMPLETED" if completion.get("completed") else "AT_GOAL"
         return {
             "status": status,
             "npc": npc.key,
@@ -271,6 +302,7 @@ def decision_step(npc):
             "priority": goal.get("priority"),
             "location": npc.location.key,
             "activity": npc.db.current_activity,
+            **completion,
         }
 
     path = find_path(npc.location, target)
@@ -314,13 +346,15 @@ def decision_step(npc):
             "attempted_exit": exit_obj.key,
         }
 
+    completion = {
+        "completed": False,
+        "completion_source": None,
+        "completion_site": None,
+    }
     if npc.location == target:
         npc.db.current_activity = goal.get("activity") or "cumpliendo un objetivo"
-        if goal.get("one_shot") and goal.get("source") == "AUTHORED_GOAL":
-            _disable_goal(npc, goal.get("id"))
-            status = "GOAL_COMPLETED"
-        else:
-            status = "ARRIVED_GOAL"
+        completion = _complete_selected_goal(npc, goal)
+        status = "GOAL_COMPLETED" if completion.get("completed") else "ARRIVED_GOAL"
     else:
         npc.db.current_activity = f"en camino a {target.key}"
         status = "MOVED_GOAL"
@@ -337,4 +371,5 @@ def decision_step(npc):
         "target": target.key,
         "used_exit": exit_obj.key,
         "activity": npc.db.current_activity,
+        **completion,
     }
