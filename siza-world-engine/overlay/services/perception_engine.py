@@ -70,13 +70,10 @@ def parse_perception_intent(raw):
     target_tokens = [token for token in tokens if token not in {normalize(w) for w in TARGET_STOPWORDS}]
     target = " ".join(target_tokens).strip()
 
-    # A broad look around reveals only already-obvious/stored visible facts and does not roll.
-    active_search = not broad_observe
-
     return {
         "intent": "PERCEIVE",
         "sense": sense,
-        "active_search": active_search,
+        "active_search": not broad_observe,
         "target": target,
         "raw": raw,
     }
@@ -118,23 +115,40 @@ def _fact_matches_target(fact, target):
 
 def _visible_matching_objects(location, target):
     if not location or not target:
-        return []
+        return [], []
+
     target_tokens = set(_tokens(target))
-    matches = []
+    names = []
+    details = []
+
     for obj in location.contents:
         if getattr(obj, "destination", None):
             continue
         if getattr(obj.db, "hidden", False):
             continue
-        names = [obj.key]
+
+        object_names = [obj.key]
         try:
-            names.extend(obj.aliases.all())
+            object_names.extend(obj.aliases.all())
         except Exception:
             pass
-        object_tokens = set(_tokens(" ".join(str(name) for name in names if name)))
-        if target_tokens and target_tokens & object_tokens:
-            matches.append(obj.key)
-    return matches
+        object_tokens = set(_tokens(" ".join(str(name) for name in object_names if name)))
+        if not (target_tokens and target_tokens & object_tokens):
+            continue
+
+        names.append(obj.key)
+        details.append(
+            {
+                "name": obj.key,
+                "desc": str(obj.db.desc or "").strip(),
+                "object_id": obj.db.object_id,
+                "npc_id": obj.db.npc_id,
+                "is_npc": bool(obj.db.is_npc),
+                "state": _plain_dict(obj.db.state),
+            }
+        )
+
+    return names, details
 
 
 def _get_per_value(character):
@@ -166,7 +180,7 @@ def resolve_perception(character, intent):
 
     sensory = _plain_dict(location.db.sensory_facts)
     obvious = _plain_list(sensory.get(sense, []))
-    visible_targets = _visible_matching_objects(location, target)
+    visible_targets, visible_target_details = _visible_matching_objects(location, target)
 
     facts = []
     for raw_fact in _plain_list(location.db.perception_facts):
@@ -194,16 +208,15 @@ def resolve_perception(character, intent):
         "target": target,
         "obvious_facts": obvious,
         "visible_targets": visible_targets,
+        "visible_target_details": visible_target_details,
         "already_known": [fact.get("fact") for fact in already_known if fact.get("fact")],
         "discovered": [],
         "roll": None,
     }
 
-    # Looking around does not auto-roll. It returns only obvious facts + previous discoveries.
     if not active_search:
         return result
 
-    # If the target is plainly present, no roll is needed to notice it.
     if visible_targets:
         result["status"] = "AUTO_SUCCESS"
         return result
@@ -212,7 +225,6 @@ def resolve_perception(character, intent):
         fact for fact in facts if str(fact.get("id", "")) not in known_ids
     ]
 
-    # No authored uncertain fact means there is nothing legitimate for PER to invent.
     if not undiscovered:
         result["status"] = "NO_AUTHORIZED_DISCOVERY"
         return result
