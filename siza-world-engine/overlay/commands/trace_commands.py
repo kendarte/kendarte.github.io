@@ -76,6 +76,10 @@ def _npc_lines(result):
         movement = f"      location={result.get('location')}"
 
     lines = [head]
+    if result.get("job_claim_acquired"):
+        lines.append(
+            f"      [CLAIM] {goal_id} -> {result.get('job_claim_owner_name') or npc}"
+        )
     if movement:
         lines.append(movement)
     if result.get("activity"):
@@ -98,6 +102,9 @@ def _npc_lines(result):
             f"{effect.get('before')} -> {effect.get('after')}"
         )
 
+    if result.get("job_claim_released"):
+        lines.append(f"      [CLAIM RELEASED] {goal_id}")
+
     for effect in result.get("need_effects") or []:
         lines.append(
             f"      [RESOLVE NEED] {effect.get('field')} "
@@ -108,7 +115,7 @@ def _npc_lines(result):
 
 
 class CmdSizaSimTrace(Command):
-    """Show recent persistent World Tick history, including transient need and work changes."""
+    """Show recent persistent World Tick history, including needs, claims and work changes."""
 
     key = "siza-sim-trace"
     aliases = ["sim-trace"]
