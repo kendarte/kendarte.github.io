@@ -1,16 +1,17 @@
 from evennia import search_object
 
 from services.job_claims import (
+    arbitrate_job_claims,
     claim_job_task,
     filter_job_candidates_for_claim,
     release_job_claim,
 )
 from services.job_engine import advance_job_task, collect_job_candidates
 from services.need_engine import collect_need_candidates, complete_need_goal
-from services.npc_simulation import find_path, simstep
+from services.npc_simulation import find_path, simulated_npcs, simstep
 
 
-DECISION_BUILD = "0.13.0-job-claims"
+DECISION_BUILD = "0.14.0-job-arbitration"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -324,6 +325,9 @@ def _claim_meta(packet):
         "job_claim_owner_id": packet.get("npc_id"),
         "job_claim_owner_name": packet.get("npc_name"),
         "job_claim_reason": packet.get("reason"),
+        "job_claim_source": packet.get("claim_source"),
+        "job_claim_policy": packet.get("claim_policy"),
+        "job_claim_distance": packet.get("claim_distance"),
     }
 
 
@@ -349,6 +353,17 @@ def _claim_selected_job(npc, decision, goal):
 
 def decision_step(npc):
     """Choose one authorized goal and execute at most one Exit hop or one work action."""
+    try:
+        arbitrate_job_claims(simulated_npcs())
+    except Exception as exc:
+        return {
+            "status": "ARBITRATION_ERROR",
+            "npc": npc.key if npc else "UNKNOWN",
+            "engine": "DECISION",
+            "action_kind": "IDLE",
+            "error": str(exc),
+        }
+
     decision = choose_goal(npc)
     goal = decision.get("selected")
     decision, goal, claim_packet = _claim_selected_job(npc, decision, goal)
