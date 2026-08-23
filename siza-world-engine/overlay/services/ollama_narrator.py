@@ -11,7 +11,7 @@ from evennia.utils import logger
 from services.narration_queue import run_serialized
 
 
-NARRATOR_BUILD = "0.4.1-memory-state"
+NARRATOR_BUILD = "0.4.2-persistence-check"
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_NUM_CTX = int(os.getenv("SIZA_OLLAMA_NUM_CTX", "8192"))
@@ -135,6 +135,35 @@ def _sentence(text):
     return text[0].upper() + text[1:] + "."
 
 
+def _contains_basic_verb(fragment):
+    words = set(_normalize(fragment).split())
+    common_verbs = {
+        "es", "son", "esta", "estan", "ocupa", "ocupan", "comunica", "comunican",
+        "conecta", "conectan", "organiza", "organizan", "espera", "esperan",
+        "recibe", "reciben", "pasa", "pasan", "queda", "quedan", "lleva", "llevan",
+    }
+    return bool(words & common_verbs)
+
+
+def _render_focal(fragment):
+    fragment = _clean_fragment(fragment)
+    if not fragment:
+        return ""
+    if _contains_basic_verb(fragment):
+        return _sentence(fragment)
+    return f"Entre los elementos visibles destacan {fragment}."
+
+
+def _render_hearing(fragment):
+    fragment = _clean_fragment(fragment)
+    if not fragment:
+        return ""
+    first = _normalize(fragment).split()[0] if _normalize(fragment) else ""
+    plural = first.endswith("s") and not first.endswith("us")
+    verb = "Se escuchan" if plural else "Se escucha"
+    return f"{verb} {fragment}."
+
+
 def _render_room_core(room, include_name=True):
     if not room:
         return ""
@@ -163,12 +192,12 @@ def _render_room_core(room, include_name=True):
         sentences.append(_sentence(orientation))
 
     if focal_points:
-        sentences.append(_sentence(focal_points[0]))
+        sentences.append(_render_focal(focal_points[0]))
     elif sight:
-        sentences.append(_sentence(sight))
+        sentences.append(_render_focal(sight))
 
     if hearing:
-        sentences.append(f"Se oyen {hearing.rstrip('.')}.")
+        sentences.append(_render_hearing(hearing))
 
     return " ".join(sentence for sentence in sentences if sentence)
 
