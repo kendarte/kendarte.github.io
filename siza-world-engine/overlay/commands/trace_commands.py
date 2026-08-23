@@ -8,13 +8,29 @@ def _need_lines(packet):
     npc = packet.get("npc", "UNKNOWN")
     clock = packet.get("clock")
     if packet.get("error"):
-        return [f"[NEED] {npc} clock={clock} ERROR={packet.get('error')}"]
+        return [f"[NEED CLOCK] {npc} clock={clock} ERROR={packet.get('error')}"]
 
     for change in packet.get("changes") or []:
         lines.append(
-            f"[NEED] {npc} clock={clock} | {change.get('field')} "
+            f"[NEED CLOCK] {npc} clock={clock} | {change.get('field')} "
             f"{change.get('before')} -> {change.get('after')} "
             f"({change.get('id')})"
+        )
+    return lines
+
+
+def _activity_need_lines(packet):
+    lines = []
+    npc = packet.get("npc", "UNKNOWN")
+    kind = packet.get("activity_kind") or "UNKNOWN"
+    if packet.get("error"):
+        return [f"[NEED ACTIVITY] {npc} action={kind} ERROR={packet.get('error')}"]
+
+    for change in packet.get("changes") or []:
+        lines.append(
+            f"[NEED ACTIVITY] {npc} action={kind} | {change.get('field')} "
+            f"{change.get('before')} -> {change.get('after')} "
+            f"({change.get('id')} count={change.get('action_count')})"
         )
     return lines
 
@@ -40,10 +56,13 @@ def _npc_lines(result):
     goal_type = result.get("goal_type")
     goal_id = result.get("goal_id")
     engine = result.get("engine")
+    action_kind = result.get("action_kind")
 
     head = f"[NPC] {npc} | {status}"
     if goal_type:
         head += f" | {goal_type} {goal_id}"
+    if action_kind:
+        head += f" | action={action_kind}"
     if engine:
         head += f" | engine={engine}"
 
@@ -112,6 +131,11 @@ class CmdSizaSimTrace(Command):
 
             for result in entry.get("npc_results") or []:
                 for line in _npc_lines(result):
+                    self.caller.msg("  " + line)
+                    emitted = True
+
+            for packet in entry.get("activity_need_results") or []:
+                for line in _activity_need_lines(packet):
                     self.caller.msg("  " + line)
                     emitted = True
 
