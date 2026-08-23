@@ -1,5 +1,10 @@
 from evennia import default_cmds
 
+from commands.decision_commands import (
+    CmdSizaDecide,
+    CmdSizaDecisionStep,
+    CmdSizaGoalToggle,
+)
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
@@ -24,6 +29,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaSimStart())
         self.add(CmdSizaSimStop())
         self.add(CmdSizaSimStatus())
+        self.add(CmdSizaDecide())
+        self.add(CmdSizaGoalToggle())
+        self.add(CmdSizaDecisionStep())
         self.add(CmdSizaNoMatch())
 
 
