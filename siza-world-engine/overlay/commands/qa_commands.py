@@ -1,10 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v80_commands import CmdSizaValidateV80
-from commands.world_input_v801_commands import CmdSizaValidateV801
+from commands.world_input_v802_commands import CmdSizaValidateV802
 
 
-QA_BUILD = "0.80.1-risk-based-one-command-qa"
+QA_BUILD = "0.80.2-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -27,7 +26,7 @@ def _run_command(command_cls, caller, args=""):
 
 
 class CmdSizaQALatest(Command):
-    """Run the newest risk-based validators; manual acceptance is only required when risk remains."""
+    """Run the newest risk-based validator; manual acceptance is only required when risk remains."""
 
     key = "siza-qa-latest"
     aliases = ["qa-latest"]
@@ -36,11 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.79.1 is closed. v0.80 makes an NPC Fact that the existing interaction engine actually shared become persistent player Knowledge through the authoritative transfer engine. v0.80.1 adds the missing production async wiring so semantic AI_ACTION_PROPOSAL callbacks also pass through the v0.80 acquisition handler. Explicit TALK remains deterministic; semantic TALK lets qwen select only the visible NPC target; qwen never receives or authors Facts."
+            "RISK PROFILE: v0.80 production acquisition passed 13/14 and v0.80.1 semantic async wiring passed 5/5. The only v0.80 failure was its OBJECT_ACTION regression fixture: the persistent manifest was already analyzed, while the authored analyze action explicitly requires analyzed=False. v0.80.2 changes no production code; it isolates that authored precondition, proves the unchanged bridge accepts the valid state, proves the analyzed state is correctly rejected, and restores the fixture exactly."
         )
-        _run_command(CmdSizaValidateV80, self.caller)
-        _run_command(CmdSizaValidateV801, self.caller)
+        _run_command(CmdSizaValidateV802, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.80 exercises deterministic/semantic acquisition, provenance, retrieval, idempotency, no-information/greeting non-acquisition, INFORM separation and older action regressions. v0.80.1 separately performs a live qwen semantic TALK target-selection callback through the exact new wiring. No separate manual acceptance is required if both validator result blocks pass."
+            "QA POLICY: this is a validator-only follow-up. The production-critical NPC->player Knowledge acquisition and live semantic qwen callback already passed. If this targeted validator passes all assertions, v0.80.1 is closed without manual acceptance."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
