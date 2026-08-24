@@ -2,7 +2,7 @@ from services.context_effect_engine import context_decision_modifiers
 from services.faction_engine import faction_context_modifiers
 
 
-DECISION_PERSONALITY_BUILD = "0.26.0-memory-relationship-context"
+DECISION_PERSONALITY_BUILD = "0.27.0-action-consequence-memory"
 
 MIN_MODIFIER = -100
 MAX_MODIFIER = 100
