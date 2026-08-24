@@ -31,6 +31,7 @@ class CmdSizaConsequences(Command):
                 memory = dict(rule.get("memory") or {})
                 effect = dict(memory.get("decision_effect") or {})
                 knowledge = dict(rule.get("knowledge") or {})
+                social_intent = dict(rule.get("social_intent") or {})
                 extras = []
                 if effect:
                     extras.append(
@@ -41,6 +42,12 @@ class CmdSizaConsequences(Command):
                     extras.append(
                         f"knowledge={knowledge.get('knowledge_key')} mode={knowledge.get('mode') or 'SET'} "
                         f"value={knowledge.get('value')}"
+                    )
+                if social_intent:
+                    extras.append(
+                        f"social_intent={social_intent.get('kind') or 'INFORM'} "
+                        f"target={social_intent.get('target_npc_id')} event={social_intent.get('event_id')} "
+                        f"occurrence={social_intent.get('occurrence')} priority={social_intent.get('priority')}"
                     )
                 extra_text = " | " + " | ".join(extras) if extras else ""
                 self.caller.msg(
@@ -60,6 +67,8 @@ class CmdSizaConsequences(Command):
                 subject = f" | order={entry.get('order_id')}"
             elif entry.get("task_id"):
                 subject = f" | task={entry.get('task_id')}"
+            elif entry.get("event_id"):
+                subject = f" | event={entry.get('event_id')}"
             self.caller.msg(
                 f"  {entry.get('action_id')} | type={entry.get('action_type')} | "
                 f"actor={entry.get('actor_name') or entry.get('actor_npc_id')} | "
@@ -77,6 +86,14 @@ class CmdSizaConsequences(Command):
                         details.append(
                             f"knowledge={row.get('knowledge_key')} {row.get('knowledge_before')}->{row.get('knowledge_after')} "
                             f"mode={row.get('knowledge_mode')} changed={row.get('knowledge_changed')}"
+                        )
+                    if row.get("social_intent_obligation_id") or row.get("social_intent_reason"):
+                        details.append(
+                            f"social_intent={row.get('social_intent_obligation_id') or row.get('social_intent_kind')} "
+                            f"target={row.get('social_intent_target_name') or row.get('social_intent_target_npc_id')} "
+                            f"event={row.get('social_intent_event_id')} occurrence={row.get('social_intent_occurrence')} "
+                            f"priority={row.get('social_intent_priority')} success={row.get('social_intent_success')} "
+                            f"reason={row.get('social_intent_reason')}"
                         )
                     self.caller.msg(
                         f"    {result.get('rule_id')} -> {row.get('npc_name') or row.get('npc_id')} | "
