@@ -2,10 +2,12 @@ from datetime import datetime, timezone
 
 from evennia import search_tag
 
+from services.skill_engine import check_task_skills, task_skill_requirements
+
 
 JOB_SITE_TAG = "siza_job_site"
 JOB_SITE_CATEGORY = "siza_job"
-JOB_ENGINE_BUILD = "0.29.0-job-completion-actions"
+JOB_ENGINE_BUILD = "0.31.0-skills-competence"
 
 
 def _plain_list(value):
@@ -234,7 +236,7 @@ def refresh_world_job_rules():
 
 
 def collect_job_candidates(npc, default_priority=60):
-    """Derive JOB goals from persistent tasks stored in the world, not on the NPC."""
+    """Derive JOB goals from persistent tasks, filtering hard skill eligibility."""
     if not npc:
         return []
 
@@ -255,6 +257,10 @@ def collect_job_candidates(npc, default_priority=60):
             if required_job and required_job != npc_job_id:
                 continue
             if assigned_npc and assigned_npc != npc_id:
+                continue
+
+            skill_check = check_task_skills(npc, task)
+            if not skill_check.get("eligible", True):
                 continue
 
             try:
@@ -284,6 +290,7 @@ def collect_job_candidates(npc, default_priority=60):
                     "work_done": _nonnegative_int(task.get("work_done"), 0),
                     "work_required": _positive_int(task.get("work_required"), 1),
                     "work_per_action": _positive_int(task.get("work_per_action"), 1),
+                    "skill_requirements": task_skill_requirements(task),
                     "canon_status": str(task.get("canon_status") or "prototype"),
                 }
             )
@@ -331,8 +338,23 @@ def advance_job_task(npc, task_id, work_units=None):
                     "completion_effects": [],
                 }
 
+            skill_check = check_task_skills(npc, task)
+            if not skill_check.get("eligible", True):
+                return {
+                    "site": site,
+                    "task_id": task_id,
+                    "completed": False,
+                    "worked": False,
+                    "status": "skill_blocked",
+                    "work_done": _nonnegative_int(task.get("work_done"), 0),
+                    "work_required": _positive_int(task.get("work_required"), 1),
+                    "work_added": 0,
+                    "completion_effects": [],
+                    "skill_check": skill_check,
+                }
+
             required = _positive_int(task.get("work_required"), 1)
-            done_before = min(required, _nonnegative_int(task.get("work_done"), 0))
+            done_before = min(required, _nonnegative_int(task.get("work_done", 0), 0))
             default_units = _positive_int(task.get("work_per_action"), 1)
             units = _positive_int(work_units, default_units) if work_units is not None else default_units
             done_after = min(required, done_before + units)
@@ -476,7 +498,7 @@ def inspect_worksites():
 
 
 def inspect_job_tasks(npc=None):
-    """Return persistent job tasks with eligibility metadata for debugging."""
+    """Return persistent job tasks with job and skill eligibility metadata."""
     npc_job_id = _npc_job_id(npc) if npc else ""
     npc_id = str(npc.db.npc_id or "") if npc else ""
     rows = []
@@ -487,10 +509,18 @@ def inspect_job_tasks(npc=None):
                 continue
             required_job = str(task.get("job_id") or "")
             assigned_npc = str(task.get("assigned_npc_id") or "")
+            skill_check = check_task_skills(npc, task) if npc else {
+                "eligible": True,
+                "requirements": task_skill_requirements(task),
+                "checks": [],
+                "missing": [],
+            }
             eligible = True
             if npc:
-                eligible = (not required_job or required_job == npc_job_id) and (
-                    not assigned_npc or assigned_npc == npc_id
+                eligible = (
+                    (not required_job or required_job == npc_job_id)
+                    and (not assigned_npc or assigned_npc == npc_id)
+                    and bool(skill_check.get("eligible", True))
                 )
             rows.append(
                 {
@@ -504,6 +534,9 @@ def inspect_job_tasks(npc=None):
                     "priority": task.get("priority"),
                     "activity": task.get("activity"),
                     "eligible": bool(eligible),
+                    "skill_requirements": skill_check.get("requirements") or [],
+                    "skill_checks": skill_check.get("checks") or [],
+                    "skill_missing": skill_check.get("missing") or [],
                     "work_done": _nonnegative_int(task.get("work_done"), 0),
                     "work_required": _positive_int(task.get("work_required"), 1),
                     "work_per_action": _positive_int(task.get("work_per_action"), 1),
