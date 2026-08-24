@@ -6,6 +6,7 @@ from services.knowledge_fact_engine import find_knowledge_fact, upsert_knowledge
 
 
 FACT_TRANSFER_BUILD = "0.58.0-persistent-fact-transfer"
+TRANSFER_PROVENANCE_BUILD = "0.60.0-multihop-fact-provenance"
 TRANSFER_HISTORY_LIMIT = 25
 
 
@@ -56,6 +57,23 @@ def _transfer_entry(source, target, fact_id, transfer_id, shared_at):
     }
 
 
+def _merge_transfer_history(*histories):
+    """Preserve upstream provenance and existing recipient routes, unique by transfer id."""
+    output = []
+    seen = set()
+    for history in histories:
+        for raw in _plain_list(history):
+            row = _record(raw)
+            if row is None:
+                continue
+            transfer_id = str(row.get("id") or "").strip()
+            if not transfer_id or transfer_id in seen:
+                continue
+            seen.add(transfer_id)
+            output.append(row)
+    return output[-TRANSFER_HISTORY_LIMIT:]
+
+
 def transfer_knowledge_fact(source, target, fact_id):
     """Share one known structured Fact locally while preserving its original provenance."""
     if not source:
@@ -99,18 +117,23 @@ def transfer_knowledge_fact(source, target, fact_id):
             "target_name": target.key,
             "target_known": bool(fact_knowledge_state(target, existing or fact).get("known")),
             "build": FACT_TRANSFER_BUILD,
+            "provenance_build": TRANSFER_PROVENANCE_BUILD,
         }
 
     now = datetime.now(timezone.utc).isoformat()
     recipient_fact = dict(fact)
-    # Keep the original source and learned_by untouched; transfer is a second provenance layer.
+    # Keep the original evidence/learning untouched; transfer history is a separate provenance layer.
     recipient_fact["source"] = _plain_dict(fact.get("source"))
     recipient_fact["learned_by"] = _plain_dict(fact.get("learned_by"))
     recipient_fact["origin_learned_at"] = fact.get("origin_learned_at") or fact.get("learned_at")
 
-    history = list(existing_history)
-    history.append(_transfer_entry(source, target, wanted_fact_id, transfer_id, now))
-    recipient_fact["transfer_history"] = history[-TRANSFER_HISTORY_LIMIT:]
+    source_history = _plain_list(fact.get("transfer_history"))
+    history = _merge_transfer_history(source_history, existing_history)
+    history = _merge_transfer_history(
+        history,
+        [_transfer_entry(source, target, wanted_fact_id, transfer_id, now)],
+    )
+    recipient_fact["transfer_history"] = history
 
     required = int(recipient_fact.get("required_level", 1) or 1)
     knowledge_key = str(recipient_fact.get("knowledge_key") or "").strip()
@@ -163,4 +186,5 @@ def transfer_knowledge_fact(source, target, fact_id):
         "fact": stored,
         "action_consequence": consequence,
         "build": FACT_TRANSFER_BUILD,
+        "provenance_build": TRANSFER_PROVENANCE_BUILD,
     }
