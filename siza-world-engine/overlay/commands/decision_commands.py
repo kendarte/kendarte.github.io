@@ -14,24 +14,26 @@ def _priority_text(item):
     effective = item.get("effective_priority", item.get("priority"))
     base = item.get("base_priority", effective)
     total = int(item.get("personality_modifier", 0) or 0)
-    authored = item.get("authored_personality_modifier")
-    loyalty = item.get("faction_loyalty_modifier")
+    authored = int(item.get("authored_personality_modifier", 0) or 0)
+    loyalty = int(item.get("faction_loyalty_modifier", 0) or 0)
+    memory = int(item.get("memory_modifier", 0) or 0)
+    relationship = int(item.get("relationship_context_modifier", 0) or 0)
     if effective is None:
         return "priority=None"
     if not total:
         return f"priority={effective}"
 
     parts = [f"priority={effective}", f"base={base}"]
-    if authored is None and loyalty is None:
-        parts.append(f"modifier={total:+}")
-        return " | ".join(parts)
-
-    authored = int(authored or 0)
-    loyalty = int(loyalty or 0)
     if authored:
         parts.append(f"personality={authored:+}")
     if loyalty:
         parts.append(f"loyalty={loyalty:+}")
+    if memory:
+        parts.append(f"memory={memory:+}")
+    if relationship:
+        parts.append(f"relationship={relationship:+}")
+    if len(parts) == 2:
+        parts.append(f"modifier={total:+}")
     return " | ".join(parts)
 
 
