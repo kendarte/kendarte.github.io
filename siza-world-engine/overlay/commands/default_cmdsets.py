@@ -70,6 +70,7 @@ from commands.time_commands import (
     CmdSizaTimeSet,
 )
 from commands.trace_commands import CmdSizaSimTrace
+from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -91,6 +92,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDecisionStep())
         self.add(CmdSizaPersonality())
         self.add(CmdSizaPersonalityToggle())
+        self.add(CmdSizaTraits())
+        self.add(CmdSizaTraitToggle())
         self.add(CmdSizaContextEffects())
         self.add(CmdSizaContextEffectToggle())
         self.add(CmdSizaConsequences())
