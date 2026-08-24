@@ -97,8 +97,15 @@ def handle_action_proposal_result_v81(
     render_async_callable=None,
     provider_options=None,
 ):
-    """Preserve v0.80 authority, then optionally render only the exact Fact it transferred."""
-    if parse_semantic_fact_inform_intent(raw_player_input):
+    """Preserve v0.80 authority; only accepted ordinary INTERACTION is intercepted for rendering."""
+    proposal = proposal_result if isinstance(proposal_result, dict) else {}
+    proposal_kind = str((proposal.get("proposal") or {}).get("kind") or "")
+    accepted_interaction = (
+        proposal.get("status") == "ACCEPTED"
+        and proposal.get("accepted") is True
+        and proposal_kind == "INTERACTION"
+    )
+    if parse_semantic_fact_inform_intent(raw_player_input) or not accepted_interaction:
         return handle_action_proposal_result_v80(
             actor,
             proposal_result,
@@ -436,7 +443,6 @@ class CmdSizaValidateV81(Command):
                 f"status={inform.get('status')} build={inform.get('build')}",
             )
 
-            # Non-interaction bridge regression: valid authored OBJECT_ACTION still delegates to v0.80 unchanged.
             manifest_state = _clone(getattr(manifest.db, "state", {}))
             if not isinstance(manifest_state, dict):
                 manifest_state = {}
