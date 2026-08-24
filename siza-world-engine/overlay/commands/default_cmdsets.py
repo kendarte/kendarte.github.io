@@ -14,6 +14,7 @@ from commands.event_commands import (
 from commands.faction_commands import (
     CmdSizaFactionLoyalty,
     CmdSizaFactionMembershipToggle,
+    CmdSizaFactionRank,
     CmdSizaFactions,
 )
 from commands.job_commands import (
@@ -25,7 +26,12 @@ from commands.job_commands import (
     CmdSizaWorksite,
 )
 from commands.need_commands import CmdSizaNeeds, CmdSizaNeedSet
-from commands.order_commands import CmdSizaOrders, CmdSizaOrderToggle
+from commands.order_commands import (
+    CmdSizaOrderAuthority,
+    CmdSizaOrderIssue,
+    CmdSizaOrders,
+    CmdSizaOrderToggle,
+)
 from commands.personality_commands import (
     CmdSizaPersonality,
     CmdSizaPersonalityToggle,
@@ -75,8 +81,11 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaFactions())
         self.add(CmdSizaFactionLoyalty())
         self.add(CmdSizaFactionMembershipToggle())
+        self.add(CmdSizaFactionRank())
         self.add(CmdSizaOrders())
         self.add(CmdSizaOrderToggle())
+        self.add(CmdSizaOrderAuthority())
+        self.add(CmdSizaOrderIssue())
         self.add(CmdSizaJobs())
         self.add(CmdSizaJobToggle())
         self.add(CmdSizaJobRelease())
