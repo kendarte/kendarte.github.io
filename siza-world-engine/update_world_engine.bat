@@ -1,6 +1,8 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
+set "NO_PAUSE=0"
+if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 
 echo ============================================
 echo SIZA WORLD ENGINE - UPDATE
@@ -58,7 +60,7 @@ echo.
 echo El mundo y la base de datos NO se borraron.
 echo Vuelva a conectar al webclient si se desconecto.
 echo.
-pause
+if "%NO_PAUSE%"=="0" pause
 exit /b 0
 
 :fail
@@ -68,5 +70,5 @@ echo UPDATE DETENIDO POR ERROR
 
 echo Copie la salida desde la primera linea de ERROR.
 echo ============================================
-pause
+if "%NO_PAUSE%"=="0" pause
 exit /b 1
