@@ -1,13 +1,13 @@
 from evennia import Command
 
 from services.authority_order_engine import (
-    AUTHORITY_ORDER_BUILD,
     check_order_authority,
     collect_order_candidates,
     inspect_orders,
     issue_order,
     set_order_active,
 )
+from services.faction_engine import FACTION_BUILD
 from services.npc_simulation import find_npc
 
 
@@ -25,7 +25,7 @@ class CmdSizaOrders(Command):
             self.caller.msg("No identifico un NPC de Siza con ese nombre.")
             return
 
-        self.caller.msg(f"=== SIZA AUTHORITY ORDERS | {AUTHORITY_ORDER_BUILD} ===")
+        self.caller.msg(f"=== SIZA AUTHORITY ORDERS | {FACTION_BUILD} ===")
         if npc:
             self.caller.msg(f"NPC: {npc.key}")
             candidates = collect_order_candidates(npc)
