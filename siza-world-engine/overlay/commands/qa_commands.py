@@ -39,6 +39,6 @@ class CmdSizaQALatest(Command):
         )
         _run_command(CmdSizaValidateV77, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.77 adds persistent Knowledge/Knowledge Fact mutation after a perception discovery, so automatic QA snapshots/restores discovered_facts, Knowledge, Knowledge Facts and room perception facts. A short manual search plus recall/inquiry acceptance check is required if all assertions pass."
+            "QA POLICY: v0.77 projection is fully exercised by the live qwen->PER->discovery->Knowledge->retrieval path and every touched state is restored. No separate manual projection fixture is required. The previously pending v0.76 real __nomatch active-search acceptance remains the only manual check."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
