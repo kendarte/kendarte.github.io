@@ -6,7 +6,7 @@ from services.knowledge_fact_retrieval_engine import (
 )
 
 
-GROUNDED_NARRATION_BUILD = "0.65.0-grounded-narration-request-boundary"
+GROUNDED_NARRATION_BUILD = "0.65.1-grounded-narration-clean-provider-text"
 DEFAULT_NARRATION_MAX_FACTS = min(6, DEFAULT_MAX_FACTS)
 DEFAULT_NARRATION_CHAR_BUDGET = min(1200, DEFAULT_CHAR_BUDGET)
 
@@ -15,6 +15,8 @@ SYSTEM_INSTRUCTIONS = (
     "para afirmar hechos concretos sobre el mundo, personajes, objetos, lugares o sucesos. "
     "No inventes ni completes datos ausentes. Si la información solicitada no aparece en el contexto autorizado, "
     "indica de forma natural que ese dato no está establecido o no es conocido por este personaje. "
+    "No menciones identificadores internos, IDs de Facts, nombres de campos, provenance ni mecanismos del sistema. "
+    "Redacta como narrador del mundo, no como depurador. Responde de forma concisa en un máximo de tres oraciones completas. "
     "Puedes redactar con fluidez, pero no conviertas inferencias en hechos."
 )
 
@@ -45,7 +47,16 @@ def _world_state(entity, retrieval):
 
 
 def _fact_lines(retrieval):
-    return [str(row.get("context_line") or "") for row in _plain_list((retrieval or {}).get("selected")) if row.get("context_line")]
+    """Provider-facing Fact text deliberately excludes internal Fact IDs and provenance metadata."""
+    output = []
+    for raw in _plain_list((retrieval or {}).get("selected")):
+        row = _plain_dict(raw)
+        text = str(row.get("text") or "").strip()
+        topic = str(row.get("topic") or "").strip()
+        payload = text or topic
+        if payload:
+            output.append(payload)
+    return output
 
 
 def _prompt_text(world_state, query, fact_lines):
@@ -63,7 +74,8 @@ def _prompt_text(world_state, query, fact_lines):
         f"{request}\n\n"
         "GROUNDING RULE\n"
         "Toda afirmación factual específica debe estar respaldada por WORLD STATE o KNOWN FACTS. "
-        "Si falta respaldo, reconoce la ausencia de información en vez de inventarla."
+        "Si falta respaldo, reconoce la ausencia de información en vez de inventarla. "
+        "No expongas identificadores internos ni detalles de implementación."
     )
 
 
