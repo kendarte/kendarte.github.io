@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from evennia import search_object, search_tag
 
 
-WORLD_EVENT_BUILD = "0.19.0-world-danger"
+WORLD_EVENT_BUILD = "0.23.0-authority-orders"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 
@@ -106,8 +106,30 @@ def _event_goal_type(event):
     return str((event or {}).get("goal_type") or (event or {}).get("type") or "EVENT").upper()
 
 
+def _default_priority(goal_type, event_default=80):
+    goal_type = str(goal_type or "EVENT").upper()
+    if goal_type == "DANGER":
+        return 100
+    if goal_type == "ORDER":
+        return 60
+    return int(event_default)
+
+
+def _default_activity(goal_type):
+    goal_type = str(goal_type or "EVENT").upper()
+    if goal_type == "DANGER":
+        return "evacuando un peligro del mundo"
+    if goal_type == "ORDER":
+        return "cumpliendo una orden de autoridad"
+    return "atendiendo un evento del mundo"
+
+
 def _affected_room_ids(site, event):
-    values = {str(value) for value in _plain_list((event or {}).get("affected_room_ids")) if value}
+    values = {
+        str(value)
+        for value in _plain_list((event or {}).get("affected_room_ids"))
+        if value
+    }
     if not values and _event_goal_type(event) == "DANGER":
         room_id = str(getattr(site.db, "room_id", "") or "")
         if room_id:
@@ -134,7 +156,7 @@ def _audience_matches(npc, event):
 
 
 def refresh_world_event_rules():
-    """Evaluate persistent world state and activate/deactivate EVENT/DANGER instances."""
+    """Evaluate persistent world state and activate/deactivate EVENT/DANGER/ORDER instances."""
     results = []
     now = datetime.now(timezone.utc).isoformat()
 
@@ -159,7 +181,7 @@ def refresh_world_event_rules():
                 continue
 
             goal_type = str(rule.get("goal_type") or "EVENT").upper()
-            default_priority = 100 if goal_type == "DANGER" else 80
+            default_priority = _default_priority(goal_type)
             response_mode = str(
                 rule.get("response_mode")
                 or ("PERSISTENT" if goal_type == "DANGER" else "ACK")
@@ -192,18 +214,19 @@ def refresh_world_event_rules():
                     "goal_type": goal_type,
                     "response_mode": response_mode,
                     "priority": int(rule.get("priority", default_priority) or default_priority),
-                    "target_room_id": rule.get("target_room_id") or getattr(site.db, "room_id", None),
+                    "target_room_id": rule.get("target_room_id")
+                    or getattr(site.db, "room_id", None),
                     "target_room_key": rule.get("target_room_key") or site.key,
-                    "activity": rule.get("activity")
-                    or (
-                        "evacuando un peligro del mundo"
-                        if goal_type == "DANGER"
-                        else "atendiendo un evento del mundo"
-                    ),
+                    "activity": rule.get("activity") or _default_activity(goal_type),
                     "affected_room_ids": _plain_list(rule.get("affected_room_ids")),
                     "blocks_jobs": bool(rule.get("blocks_jobs", goal_type == "DANGER")),
                     "npc_ids": _plain_list(rule.get("npc_ids")),
                     "job_ids": _plain_list(rule.get("job_ids")),
+                    "authority_id": rule.get("authority_id"),
+                    "authority_name": rule.get("authority_name"),
+                    "issuer_id": rule.get("issuer_id"),
+                    "issuer_name": rule.get("issuer_name"),
+                    "order_kind": rule.get("order_kind"),
                     "canon_status": rule.get("canon_status") or "prototype",
                 }
             )
@@ -241,6 +264,8 @@ def refresh_world_event_rules():
                     "event_active": bool(event.get("active")),
                     "event_status": event.get("status"),
                     "occurrence": event.get("occurrence"),
+                    "authority_id": event.get("authority_id"),
+                    "authority_name": event.get("authority_name"),
                     "build": WORLD_EVENT_BUILD,
                 }
             )
@@ -252,16 +277,16 @@ def refresh_world_event_rules():
 
 
 def collect_event_candidates(npc, default_priority=80):
-    """Return active persistent EVENT/DANGER goals relevant to this NPC.
-
-    EVENT uses one ACK per occurrence. DANGER never ACKs; it persists while the
-    NPC is inside an affected room, or while an already-started evacuation has
-    not yet reached its safe target.
-    """
+    """Return active persistent EVENT/DANGER/ORDER goals relevant to this NPC."""
     if not npc or not bool(npc.db.decision_enabled):
         return []
+
     npc_id = str(getattr(npc.db, "npc_id", "") or "")
-    current_room_id = str(getattr(getattr(npc, "location", None).db, "room_id", "") or "") if npc.location else ""
+    current_room_id = (
+        str(getattr(getattr(npc, "location", None).db, "room_id", "") or "")
+        if npc.location
+        else ""
+    )
     current_goal = _plain_dict(getattr(npc.db, "current_goal", {}))
     output = []
 
@@ -279,19 +304,21 @@ def collect_event_candidates(npc, default_priority=80):
                 in_affected_room = bool(current_room_id and current_room_id in affected)
                 continuing_escape = (
                     str(current_goal.get("source") or "") == "WORLD_EVENT"
-                    and str(current_goal.get("event_id") or "") == str(event.get("id") or "")
+                    and str(current_goal.get("event_id") or "")
+                    == str(event.get("id") or "")
                     and current_room_id != target_room_id
                 )
                 if not in_affected_room and not continuing_escape:
                     continue
             else:
                 acknowledged = {
-                    str(value) for value in _plain_list(event.get("acknowledged_by"))
+                    str(value)
+                    for value in _plain_list(event.get("acknowledged_by"))
                 }
                 if npc_id in acknowledged:
                     continue
 
-            fallback_priority = 100 if goal_type == "DANGER" else default_priority
+            fallback_priority = _default_priority(goal_type, event_default=default_priority)
             try:
                 priority = int(event.get("priority", fallback_priority))
             except (TypeError, ValueError):
@@ -301,17 +328,13 @@ def collect_event_candidates(npc, default_priority=80):
                 {
                     "id": f"{goal_type}:{event.get('id')}",
                     "event_id": event.get("id"),
+                    "order_id": event.get("id") if goal_type == "ORDER" else None,
                     "type": goal_type,
                     "priority": priority,
                     "active": True,
                     "target_room_id": event.get("target_room_id"),
                     "target_room_key": event.get("target_room_key"),
-                    "activity": event.get("activity")
-                    or (
-                        "evacuando un peligro del mundo"
-                        if goal_type == "DANGER"
-                        else "atendiendo un evento del mundo"
-                    ),
+                    "activity": event.get("activity") or _default_activity(goal_type),
                     "one_shot": False,
                     "source": "WORLD_EVENT",
                     "occurrence": event.get("occurrence"),
@@ -319,6 +342,11 @@ def collect_event_candidates(npc, default_priority=80):
                     "response_mode": event.get("response_mode"),
                     "affected_room_ids": list(_affected_room_ids(site, event)),
                     "blocks_jobs": bool(event.get("blocks_jobs", False)),
+                    "authority_id": event.get("authority_id"),
+                    "authority_name": event.get("authority_name"),
+                    "issuer_id": event.get("issuer_id"),
+                    "issuer_name": event.get("issuer_name"),
+                    "order_kind": event.get("order_kind"),
                 }
             )
     return output
@@ -343,6 +371,7 @@ def acknowledge_world_event(npc, event_id):
                     "acknowledged": False,
                     "reason": "EVENT_INACTIVE",
                     "event_id": wanted,
+                    "goal_type": _event_goal_type(event),
                     "site": site,
                 }
             if not _audience_matches(npc, event):
@@ -351,19 +380,32 @@ def acknowledge_world_event(npc, event_id):
                     "acknowledged": False,
                     "reason": "NOT_AUDIENCE",
                     "event_id": wanted,
+                    "goal_type": _event_goal_type(event),
                     "site": site,
                 }
 
             goal_type = _event_goal_type(event)
             if goal_type == "DANGER":
                 target_room_id = str(event.get("target_room_id") or "")
-                current_room_id = str(getattr(getattr(npc, "location", None).db, "room_id", "") or "") if npc.location else ""
+                current_room_id = (
+                    str(
+                        getattr(
+                            getattr(npc, "location", None).db,
+                            "room_id",
+                            "",
+                        )
+                        or ""
+                    )
+                    if npc.location
+                    else ""
+                )
                 if target_room_id and current_room_id != target_room_id:
                     return {
                         "completed": False,
                         "acknowledged": False,
                         "reason": "DANGER_NOT_CLEAR",
                         "event_id": wanted,
+                        "goal_type": goal_type,
                         "event_occurrence": event.get("occurrence"),
                         "event_site": site.key,
                         "site": site,
@@ -373,6 +415,7 @@ def acknowledge_world_event(npc, event_id):
                     "acknowledged": False,
                     "reason": "DANGER_ESCAPED",
                     "event_id": wanted,
+                    "goal_type": goal_type,
                     "event_occurrence": event.get("occurrence"),
                     "event_site": site.key,
                     "site": site,
@@ -392,13 +435,24 @@ def acknowledge_world_event(npc, event_id):
                 changed = True
             if changed:
                 site.db.world_event_instances = instances
+
+            if goal_type == "ORDER":
+                reason = "ORDER_ALREADY_COMPLETED" if already else "ORDER_COMPLETED"
+            else:
+                reason = "ALREADY_ACKNOWLEDGED" if already else "ACKNOWLEDGED"
+
             return {
                 "completed": True,
                 "acknowledged": not already,
-                "reason": "ALREADY_ACKNOWLEDGED" if already else "ACKNOWLEDGED",
+                "reason": reason,
                 "event_id": wanted,
+                "goal_type": goal_type,
                 "event_occurrence": event.get("occurrence"),
                 "event_site": site.key,
+                "authority_id": event.get("authority_id"),
+                "authority_name": event.get("authority_name"),
+                "issuer_id": event.get("issuer_id"),
+                "issuer_name": event.get("issuer_name"),
                 "site": site,
             }
 
