@@ -1,7 +1,7 @@
 from evennia import Command
 
 from services.decision_personality import DECISION_PERSONALITY_BUILD
-from services.npc_decision import (
+from services.fact_driven_decision import (
     choose_goal,
     decision_step,
     set_goal_active,
