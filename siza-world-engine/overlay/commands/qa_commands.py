@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v79_commands import CmdSizaValidateV79
+from commands.world_input_v792_commands import CmdSizaValidateV792
 
 
-QA_BUILD = "0.79.1-risk-based-one-command-qa"
+QA_BUILD = "0.79.2-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.78 passed 10/10 and closed deterministic/semantic perception parity. v0.79.1 adds natural Known-Fact informing: qwen may select only a current visible TALK recipient; the topic comes only from player text and is filtered only for conversational stopwords before deterministic known-Fact retrieval, preventing articles from creating false Fact ambiguity. Exactly one Fact the player actually knows may be transferred, and the existing transfer engine owns recipient Knowledge, provenance and the KNOWLEDGE_FACT_SHARED world action. Running real perception->Known Fact setup, provider-boundary privacy, low-confidence/unknown/stale rejection, live qwen recipient selection, authoritative transfer provenance, idempotency, and targeted PERCEPTION/INTERACTION/OBJECT_ACTION/MOVEMENT regressions."
+            "RISK PROFILE: v0.79.1 already passed the production-critical live path through qwen recipient selection and FACT_TRANSFERRED; its validator then crashed while json.dumps tried to serialize an Evennia _SaverList. v0.79.2 changes no production code. This targeted rerun clones persistent Saver containers to plain Python before JSON inspection, rechecks that model reason never persists, verifies transfer idempotency, and runs the PERCEPTION/INTERACTION/OBJECT_ACTION/MOVEMENT regressions that the prior validator did not reach."
         )
-        _run_command(CmdSizaValidateV79, self.caller)
+        _run_command(CmdSizaValidateV792, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.79.1 performs the complete live qwen recipient-selection and real transfer path after creating the source Fact through the real perception engine, then restores actor/NPC state and consequence-registry state exactly. No separate manual acceptance is required if all checks pass."
+            "QA POLICY: this is a validator-only follow-up. The previous v0.79.1 run already proved the live qwen->recipient->authoritative FACT_TRANSFERRED path. If this targeted validator passes all assertions, v0.79.1 production INFORM is closed without a separate manual acceptance."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
