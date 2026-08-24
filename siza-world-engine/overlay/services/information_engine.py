@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 
 from evennia import search_tag
 
+from services.faction_engine import has_active_membership
+
 
 INFORMATION_BUILD = "0.33.0-event-information-propagation"
 EVENT_SITE_TAG = "siza_event_site"
@@ -32,6 +34,36 @@ def _record(value):
 
 def _npc_id(npc):
     return str(getattr(npc.db, "npc_id", "") or "").strip() if npc else ""
+
+
+def _npc_job_id(npc):
+    try:
+        job = dict(getattr(npc.db, "job", {}) or {})
+    except Exception:
+        job = {}
+    return str(job.get("id") or "").strip()
+
+
+def _audience_matches(npc, incident):
+    if not npc or not incident:
+        return False
+    npc_id = _npc_id(npc)
+    if not npc_id:
+        return False
+
+    npc_ids = {str(value) for value in _plain_list(incident.get("npc_ids")) if value}
+    if npc_ids and npc_id not in npc_ids:
+        return False
+
+    job_ids = {str(value) for value in _plain_list(incident.get("job_ids")) if value}
+    if job_ids and _npc_job_id(npc) not in job_ids:
+        return False
+
+    faction_ids = {str(value) for value in _plain_list(incident.get("faction_ids")) if value}
+    if faction_ids and not any(has_active_membership(npc, faction_id) for faction_id in faction_ids):
+        return False
+
+    return True
 
 
 def _event_key(event_id, occurrence):
@@ -69,9 +101,9 @@ def event_knowledge_route(npc, incident):
     if goal_type != "EVENT":
         return {"known": True, "via": goal_type, "record": None}
 
-    mode = str(incident.get("awareness_mode") or EVENT_AWARENESS_AUDIENCE).upper()
     npc_id = _npc_id(npc)
-    if mode == EVENT_AWARENESS_AUDIENCE:
+    mode = str(incident.get("awareness_mode") or EVENT_AWARENESS_AUDIENCE).upper()
+    if mode == EVENT_AWARENESS_AUDIENCE and _audience_matches(npc, incident):
         return {"known": True, "via": "AUDIENCE", "record": None}
 
     aware = {str(value) for value in _plain_list(incident.get("aware_npc_ids")) if value}
