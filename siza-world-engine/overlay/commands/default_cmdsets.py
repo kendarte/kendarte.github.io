@@ -62,6 +62,7 @@ from commands.personality_commands import (
 from commands.player_roll_v52_commands import (
     CmdSizaResetV52,
     CmdSizaRoll,
+    CmdSizaSelfStatClear,
     CmdSizaSelfStatSet,
 )
 from commands.relationship_commands import (
@@ -130,6 +131,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaStats())
         self.add(CmdSizaStatSet())
         self.add(CmdSizaSelfStatSet())
+        self.add(CmdSizaSelfStatClear())
         self.add(CmdSizaCheckContract())
         self.add(CmdSizaValidateV38())
         self.add(CmdSizaValidateV39())
