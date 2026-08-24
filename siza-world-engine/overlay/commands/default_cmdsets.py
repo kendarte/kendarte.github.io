@@ -108,6 +108,7 @@ from commands.world_object_v50_commands import CmdSizaValidateV50
 from commands.world_object_v511_commands import CmdSizaResetV51, CmdSizaValidateV51Fixed
 from commands.world_object_v52_commands import CmdSizaValidateV52
 from commands.world_object_v53_commands import CmdSizaValidateV53
+from commands.world_object_v531_commands import CmdSizaValidateV531
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -162,6 +163,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV52())
         self.add(CmdSizaResetV52())
         self.add(CmdSizaValidateV53())
+        self.add(CmdSizaValidateV531())
         self.add(CmdSizaResetV53())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
