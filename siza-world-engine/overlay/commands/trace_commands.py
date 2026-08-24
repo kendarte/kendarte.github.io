@@ -74,12 +74,20 @@ def _event_lines(packet):
     if not packet.get("condition_met") and not packet.get("event_active"):
         return []
     goal_type = str(packet.get("goal_type") or "EVENT").upper()
-    label = "WORLD DANGER" if goal_type == "DANGER" else "WORLD EVENT"
+    if goal_type == "DANGER":
+        label = "WORLD DANGER"
+    elif goal_type == "ORDER":
+        label = "WORLD ORDER"
+    else:
+        label = "WORLD EVENT"
+    authority = ""
+    if goal_type == "ORDER" and (packet.get("authority_name") or packet.get("authority_id")):
+        authority = f" | authority={packet.get('authority_name') or packet.get('authority_id')}"
     return [
         f"[{label}] {packet.get('event_id')} | site={packet.get('site')} | "
         f"{packet.get('field')}={packet.get('actual')} | condition={packet.get('condition_met')} | "
         f"active={packet.get('event_active')} | status={packet.get('event_status')} | "
-        f"occurrence={packet.get('occurrence')}"
+        f"occurrence={packet.get('occurrence')}{authority}"
     ]
 
 
@@ -193,7 +201,13 @@ def _npc_lines(result):
     if result.get("routine_schedule_label") and result.get("routine_schedule_label") != "ALWAYS":
         lines.append(f"      schedule={result.get('routine_schedule_label')}")
 
-    if result.get("event_acknowledged"):
+    if result.get("order_completed"):
+        lines.append(
+            f"      [ORDER COMPLETED] {result.get('order_id')} | "
+            f"occurrence={result.get('order_occurrence')} | "
+            f"authority={result.get('authority_name') or result.get('authority_id')}"
+        )
+    elif result.get("event_acknowledged"):
         lines.append(
             f"      [EVENT ACK] {result.get('event_id')} | occurrence={result.get('event_occurrence')}"
         )
