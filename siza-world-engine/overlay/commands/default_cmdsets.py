@@ -147,6 +147,7 @@ from commands.world_object_v63_commands import (
     CmdSizaV63Fact,
     CmdSizaValidateV63,
 )
+from commands.world_object_v64_commands import CmdSizaFactContextV64, CmdSizaValidateV64
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -227,6 +228,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV63())
         self.add(CmdSizaResetV63())
         self.add(CmdSizaV63Fact())
+        self.add(CmdSizaValidateV64())
+        self.add(CmdSizaFactContextV64())
         self.add(CmdSizaQALatest())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
