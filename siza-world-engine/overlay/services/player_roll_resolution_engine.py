@@ -2,10 +2,11 @@ from services.action_resolution_engine import action_resolution_history
 from services.accumulate_d6_resolution_engine import resolve_pending_object_action_accumulate_d6
 from services.confront_d6_resolution_engine import resolve_pending_object_action_confront_d6
 from services.direct_d6_resolution_engine import pending_object_actions, resolve_pending_object_action_d6
+from services.player_recipient_consequence_engine import apply_player_actor_consequences
 from services.synchronize_d6_resolution_engine import resolve_pending_object_action_synchronize_d6
 
 
-PLAYER_ROLL_BUILD = "0.55.0-player-roll-mode-dispatch"
+PLAYER_ROLL_BUILD = "0.56.0-player-recipient-consequence-dispatch"
 
 
 def _pending_action(actor, attempt_id=None):
@@ -22,6 +23,33 @@ def _resolution_record(actor, resolution_id):
         if str(row.get("resolution_id") or "") == wanted:
             return dict(row)
     return None
+
+
+def _finalize_player_recipient(actor, packet):
+    result = dict(packet or {})
+    if str(result.get("status") or "") != "RESOLVED":
+        return result
+
+    site = getattr(actor, "location", None) if actor else None
+    action_packet = {
+        "action_id": f"OBJECT_ACTION_RESOLVED:{result.get('attempt_id')}",
+        "action_type": "OBJECT_ACTION_RESOLVED",
+        "actor_npc_id": str(getattr(actor.db, "npc_id", "") or "") if actor else "",
+        "actor_dbref": int(actor.id) if actor else None,
+        "actor_name": actor.key if actor else None,
+        "object_action_id": result.get("object_action_id"),
+        "attempt_id": result.get("attempt_id"),
+        "resolution_id": result.get("resolution_id"),
+        "outcome": result.get("outcome"),
+        "provider": result.get("provider"),
+        "site_dbref": int(site.id) if site else None,
+        "site_room_id": str(getattr(site.db, "room_id", "") or "") if site else None,
+        "site_name": site.key if site else None,
+        "object_dbref": result.get("object_dbref"),
+        "object_id": result.get("object_id"),
+    }
+    result["player_recipient_consequence"] = apply_player_actor_consequences(actor, action_packet)
+    return result
 
 
 def resolve_pending_object_action_roll(
@@ -61,7 +89,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "DIRECT"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return packet
+        return _finalize_player_recipient(actor, packet)
 
     if mode == "ACCUMULATE":
         packet = resolve_pending_object_action_accumulate_d6(
@@ -71,7 +99,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "ACCUMULATE"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return packet
+        return _finalize_player_recipient(actor, packet)
 
     if mode == "CONFRONT":
         packet = resolve_pending_object_action_confront_d6(
@@ -82,7 +110,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "CONFRONT"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return packet
+        return _finalize_player_recipient(actor, packet)
 
     if mode == "SYNCHRONIZE":
         packet = resolve_pending_object_action_synchronize_d6(
@@ -92,7 +120,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "SYNCHRONIZE"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return packet
+        return _finalize_player_recipient(actor, packet)
 
     return {
         "status": "UNSUPPORTED_MODE",
