@@ -3,9 +3,10 @@ from datetime import datetime, timezone
 from evennia import create_script, search_script, search_tag
 
 from services.relationship_engine import create_information_obligation
+from services.state_effect_engine import apply_state_effects
 
 
-CONSEQUENCE_BUILD = "0.36.0-consequence-social-intents"
+CONSEQUENCE_BUILD = "0.43.0-outcome-state-effects"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
@@ -121,7 +122,7 @@ def set_consequence_rule_active(rule_id, active):
 
 
 def _normalize_compare(key, value):
-    if key in {"action_type", "goal_type", "type", "source"}:
+    if key in {"action_type", "goal_type", "type", "source", "outcome"}:
         return str(value or "").upper()
     return str(value or "")
 
@@ -306,8 +307,7 @@ def _apply_knowledge_consequence(rule, action, npc):
     if not spec or not npc:
         return None
 
-    resolved = _resolve_template(spec, action)
-    resolved = _plain_dict(resolved)
+    resolved = _plain_dict(_resolve_template(spec, action))
     knowledge_key = str(resolved.get("knowledge_key") or "").strip()
     if not knowledge_key:
         return None
@@ -402,17 +402,32 @@ def emit_world_action(action):
     action_type = str(packet.get("action_type") or "").upper().strip()
     action_id = str(packet.get("action_id") or "").strip()
     if not action_type or not action_id:
-        return {"status": "BAD_ACTION", "action_id": action_id, "action_type": action_type, "results": []}
+        return {
+            "status": "BAD_ACTION",
+            "action_id": action_id,
+            "action_type": action_type,
+            "results": [],
+        }
 
     packet["action_type"] = action_type
     packet.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
     registry = get_consequence_registry(create=False)
     if registry is None:
-        return {"status": "NO_REGISTRY", "action_id": action_id, "action_type": action_type, "results": []}
+        return {
+            "status": "NO_REGISTRY",
+            "action_id": action_id,
+            "action_type": action_type,
+            "results": [],
+        }
 
     processed = [str(value) for value in _plain_list(registry.db.processed_action_ids)]
     if action_id in processed:
-        return {"status": "ALREADY_PROCESSED", "action_id": action_id, "action_type": action_type, "results": []}
+        return {
+            "status": "ALREADY_PROCESSED",
+            "action_id": action_id,
+            "action_type": action_type,
+            "results": [],
+        }
 
     npcs = _npc_map()
     rule_results = []
@@ -422,6 +437,10 @@ def emit_world_action(action):
         when = _plain_dict(rule.get("when"))
         if when and not _condition_matches(packet, when):
             continue
+
+        resolved_state_specs = _resolve_template(rule.get("state_effects"), packet)
+        state_results = apply_state_effects(packet, resolved_state_specs)
+        state_applied = any(bool(row.get("success")) for row in state_results)
 
         applied = []
         for recipient_id in _recipient_ids(rule, packet):
@@ -446,15 +465,25 @@ def emit_world_action(action):
                 row["knowledge_applied"] = True
             if social_result:
                 row.update(social_result)
-                row["social_intent_applied"] = bool(social_result.get("social_intent_success"))
+                row["social_intent_applied"] = bool(
+                    social_result.get("social_intent_success")
+                )
             if row.get("memory_applied") or row.get("knowledge_applied") or social_result:
                 applied.append(row)
+
+        if applied or state_applied:
+            rule_status = "APPLIED"
+        elif state_results:
+            rule_status = "STATE_EFFECT_FAILED"
+        else:
+            rule_status = "NO_RECIPIENTS"
 
         rule_results.append(
             {
                 "rule_id": rule.get("id"),
-                "status": "APPLIED" if applied else "NO_RECIPIENTS",
+                "status": rule_status,
                 "applied": applied,
+                "state_effects": state_results,
             }
         )
 
@@ -472,6 +501,11 @@ def emit_world_action(action):
             "order_id": packet.get("order_id"),
             "task_id": packet.get("task_id"),
             "job_id": packet.get("job_id"),
+            "world_action_id": packet.get("world_action_id"),
+            "attempt_id": packet.get("attempt_id"),
+            "outcome": packet.get("outcome"),
+            "site_dbref": packet.get("site_dbref"),
+            "site_room_id": packet.get("site_room_id"),
             "occurrence": packet.get("occurrence"),
             "recipient_ids": _plain_list(packet.get("recipient_ids")),
             "rule_results": rule_results,
