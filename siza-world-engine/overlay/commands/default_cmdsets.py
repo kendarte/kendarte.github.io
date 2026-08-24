@@ -33,6 +33,11 @@ from commands.job_commands import (
     CmdSizaWorkSet,
     CmdSizaWorksite,
 )
+from commands.knowledge_commands import (
+    CmdSizaKnowledge,
+    CmdSizaKnowledgeEffectToggle,
+    CmdSizaKnowledgeSet,
+)
 from commands.need_commands import CmdSizaNeeds, CmdSizaNeedSet
 from commands.order_commands import (
     CmdSizaOrderAuthority,
@@ -90,6 +95,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaContextEffectToggle())
         self.add(CmdSizaConsequences())
         self.add(CmdSizaConsequenceToggle())
+        self.add(CmdSizaKnowledge())
+        self.add(CmdSizaKnowledgeEffectToggle())
+        self.add(CmdSizaKnowledgeSet())
         self.add(CmdSizaFactions())
         self.add(CmdSizaFactionLoyalty())
         self.add(CmdSizaFactionMembershipToggle())
