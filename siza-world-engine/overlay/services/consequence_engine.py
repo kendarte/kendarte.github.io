@@ -5,7 +5,7 @@ from evennia import create_script, search_script
 from services.npc_simulation import simulated_npcs
 
 
-CONSEQUENCE_BUILD = "0.27.1-action-consequence-persistent-templates"
+CONSEQUENCE_BUILD = "0.29.0-action-consequence-knowledge"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
@@ -31,6 +31,13 @@ def _record(value):
         return {str(key): item for key, item in value.items()}
     except Exception:
         return None
+
+
+def _safe_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(default)
 
 
 def get_consequence_registry(create=False):
@@ -136,8 +143,6 @@ def _resolve_template(value, action):
     if isinstance(value, str) and value.startswith("$"):
         return (action or {}).get(value[1:])
 
-    # Evennia SaverDict/SaverOrderedDict are mapping-like but are not guaranteed
-    # to pass isinstance(value, dict). Normalize any object exposing items().
     if hasattr(value, "items"):
         try:
             return {
@@ -150,8 +155,6 @@ def _resolve_template(value, action):
     if isinstance(value, (list, tuple, set)):
         return [_resolve_template(item, action) for item in value]
 
-    # SaverList and similar persistent sequence wrappers may also not subclass
-    # the builtin list type. Only attempt this for non-string iterables.
     if not isinstance(value, (str, bytes)) and hasattr(value, "__iter__"):
         try:
             return [_resolve_template(item, action) for item in value]
@@ -174,6 +177,12 @@ def _recipient_ids(rule, action):
     mode = str((rule or {}).get("recipient_mode") or "ACTION_RECIPIENTS").upper()
     if mode == "EXPLICIT":
         values = _plain_list((rule or {}).get("recipient_ids"))
+    elif mode == "ACTOR":
+        actor_id = str((action or {}).get("actor_npc_id") or "").strip()
+        values = [actor_id] if actor_id else []
+    elif mode == "TARGET":
+        target_id = str((action or {}).get("target_npc_id") or "").strip()
+        values = [target_id] if target_id else []
     else:
         values = _plain_list((action or {}).get("recipient_ids"))
     return [str(value) for value in values if value]
@@ -286,6 +295,53 @@ def _apply_memory_consequence(rule, action, npc):
     }
 
 
+def _apply_knowledge_consequence(rule, action, npc):
+    """Apply an explicit persistent Knowledge mutation to one resolved recipient."""
+    spec = _plain_dict((rule or {}).get("knowledge"))
+    if not spec or not npc:
+        return None
+
+    resolved = _resolve_template(spec, action)
+    resolved = _plain_dict(resolved)
+    knowledge_key = str(resolved.get("knowledge_key") or "").strip()
+    if not knowledge_key:
+        return None
+
+    mode = str(resolved.get("mode") or "SET").upper()
+    value = _safe_int(resolved.get("value"), 0)
+    levels = _plain_dict(getattr(npc.db, "knowledge", {}))
+    before = _safe_int(levels.get(knowledge_key), 0)
+
+    if mode == "ADD":
+        after = before + value
+    elif mode == "MAX":
+        after = max(before, value)
+    elif mode == "MIN":
+        after = min(before, value)
+    else:
+        mode = "SET"
+        after = value
+
+    if resolved.get("min_level") is not None:
+        after = max(after, _safe_int(resolved.get("min_level"), after))
+    if resolved.get("max_level") is not None:
+        after = min(after, _safe_int(resolved.get("max_level"), after))
+    after = max(0, int(after))
+
+    levels[knowledge_key] = after
+    npc.db.knowledge = levels
+    return {
+        "npc_id": str(getattr(npc.db, "npc_id", "") or ""),
+        "npc_name": npc.key,
+        "knowledge_key": knowledge_key,
+        "knowledge_mode": mode,
+        "knowledge_value": value,
+        "knowledge_before": before,
+        "knowledge_after": after,
+        "knowledge_changed": before != after,
+    }
+
+
 def emit_world_action(action):
     """Evaluate one structured world action exactly once against active consequence rules."""
     packet = _record(action) or {}
@@ -319,10 +375,22 @@ def emit_world_action(action):
             if not npc:
                 applied.append({"npc_id": recipient_id, "status": "RECIPIENT_NOT_FOUND"})
                 continue
-            result = _apply_memory_consequence(rule, packet, npc)
-            if result:
-                result["status"] = "MEMORY_APPLIED"
-                applied.append(result)
+
+            row = {
+                "npc_id": recipient_id,
+                "npc_name": npc.key,
+                "status": "APPLIED",
+            }
+            memory_result = _apply_memory_consequence(rule, packet, npc)
+            knowledge_result = _apply_knowledge_consequence(rule, packet, npc)
+            if memory_result:
+                row.update(memory_result)
+                row["memory_applied"] = True
+            if knowledge_result:
+                row.update(knowledge_result)
+                row["knowledge_applied"] = True
+            if row.get("memory_applied") or row.get("knowledge_applied"):
+                applied.append(row)
 
         rule_results.append(
             {
@@ -343,6 +411,8 @@ def emit_world_action(action):
             "actor_npc_id": packet.get("actor_npc_id"),
             "actor_name": packet.get("actor_name"),
             "order_id": packet.get("order_id"),
+            "task_id": packet.get("task_id"),
+            "job_id": packet.get("job_id"),
             "occurrence": packet.get("occurrence"),
             "recipient_ids": _plain_list(packet.get("recipient_ids")),
             "rule_results": rule_results,
