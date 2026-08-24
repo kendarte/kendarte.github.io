@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v68_commands import CmdSizaValidateV68
+from commands.world_input_v69_commands import CmdSizaValidateV69
 
 
-QA_BUILD = "0.68.1-risk-based-one-command-qa"
+QA_BUILD = "0.69.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: real __nomatch player input now gains an Ollama fallback, with an additional guard against old token matchers treating questions as mutating actions. "
-            "Running strong object-action routing, interaction/perception/movement precedence, strong-inquiry mutation blocking, inquiry-only AI gating, unknown-action rejection, viewer-private Fact isolation, async-dispatch contract, live qwen3:8b narration and no-persistence assertions."
+            "RISK PROFILE: free-form action interpretation is entering the LLM boundary, but execution remains disconnected. "
+            "Running deterministic current-room capability catalogs, Ollama JSON-schema constrained structured outputs, hallucinated-capability rejection, kind mismatch rejection, explicit UNSUPPORTED behavior, two live qwen3:8b proposals and no-mutation assertions."
         )
-        _run_command(CmdSizaValidateV68, self.caller)
+        _run_command(CmdSizaValidateV69, self.caller)
         self.caller.msg(
-            "QA POLICY: because this changes the real player input router, successful automatic QA is followed by a short real-input acceptance check of the critical branches only."
+            "QA POLICY: v0.69 is proposal-only. Even an accepted model proposal must not execute or mutate world state; execution is a separate future bridge."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
