@@ -119,7 +119,7 @@ def build():
             "value": 1,
             "activate_value": 1,
             "deactivate_value": 0,
-            "priority": 60,
+            "priority": 55,
             "target_room_id": PLAZA_ID,
             "target_room_key": plaza.key,
             "activity": "presentándose ante una autoridad de prueba en la plaza",
@@ -164,7 +164,7 @@ def build():
     plaza.tags.add(UPGRADE_TAG, category=UPGRADE_CATEGORY)
 
     caller.msg("Kalnaj Pilot v0.23 aplicado: Authority / Orders persistentes.")
-    caller.msg(f"Orden prototype: {ORDER_ID} | authority={AUTHORITY_ID} | base_priority=60 | INACTIVE.")
+    caller.msg(f"Orden prototype: {ORDER_ID} | authority={AUTHORITY_ID} | base_priority=55 | INACTIVE.")
     caller.msg("Audience prototype: Mara y Trabajador B; la orden existe fuera de ambos NPCs.")
     caller.msg(f"Mara harness: {MARA_MOD_ID} | ORDER -15 | DISABLED.")
     caller.msg(f"Worker B harness: {WORKER_MOD_ID} | ORDER +20 | DISABLED.")
