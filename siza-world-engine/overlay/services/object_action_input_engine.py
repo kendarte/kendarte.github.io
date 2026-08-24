@@ -4,7 +4,7 @@ import unicodedata
 from services.object_action_engine import authored_object_actions, begin_object_action
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.50.0-player-object-action-input"
+OBJECT_ACTION_INPUT_BUILD = "0.53.1-player-facing-blocker-messages"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
@@ -175,6 +175,23 @@ def route_object_action_input(actor, raw, attempt_id=None):
     }
 
 
+def _human_requirement_message(blockers, object_name):
+    kinds = {str(row.get("kind") or "").strip().upper() for row in blockers}
+    if kinds and kinds <= {"OBJECT_STATE"}:
+        return f"Esa acción ya no está disponible en el estado actual de {object_name}."
+    if "OBJECT_NOT_VISIBLE" in kinds:
+        return f"No puedes interactuar con {object_name} en su estado actual."
+    if "OBJECT_NOT_LOCAL" in kinds:
+        return f"{object_name} no está en tu ubicación actual."
+    if "SKILL" in kinds:
+        return "No tienes la habilidad necesaria para realizar esa acción."
+    if "KNOWLEDGE" in kinds:
+        return "No tienes el conocimiento necesario para realizar esa acción."
+    if kinds & {"WORLD_STATE", "STATE"}:
+        return "El estado actual del lugar no permite realizar esa acción."
+    return "No cumples los requisitos necesarios para realizar esa acción."
+
+
 def render_object_action_input_result(packet):
     """Human-facing deterministic feedback for one routed object action."""
     status = str((packet or {}).get("status") or "")
@@ -196,8 +213,7 @@ def render_object_action_input_result(packet):
         return f"{object_name} no está en tu ubicación actual."
     if status == "OBJECT_ACTION_REQUIREMENTS_UNMET":
         blockers = result.get("blockers") or []
-        kinds = ", ".join(str(row.get("kind") or "REQUISITO") for row in blockers)
-        return f"No puedes ejecutar '{action_name}': {kinds or 'requisitos no cumplidos'}."
+        return _human_requirement_message(blockers, object_name)
     if status == "PENDING_RESOLUTION":
         return (
             f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
