@@ -3,11 +3,19 @@ from datetime import datetime, timezone
 from evennia import search_object, search_tag
 
 from services.faction_engine import has_active_membership
+from services.perception_engine import (
+    EVENT_AWARENESS_AUDIENCE,
+    event_awareness_matches,
+    normalize_event_awareness_mode,
+    snapshot_event_awareness,
+)
 
 
-WORLD_EVENT_BUILD = "0.24.0-faction-membership-loyalty"
+WORLD_EVENT_BUILD = "0.32.0-event-awareness"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
+ENTITY_TAG = "kalnaj_pilot_v03_entities"
+ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -96,6 +104,14 @@ def _find_room(room_key, room_id=None):
     return None
 
 
+def _all_npcs():
+    return [
+        obj
+        for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY)
+        if bool(getattr(obj.db, "is_npc", False))
+    ]
+
+
 def _npc_job_id(npc):
     try:
         job = dict(npc.db.job or {})
@@ -161,6 +177,23 @@ def _audience_matches(npc, event):
     return True
 
 
+def _snapshot_event_awareness(site, event):
+    """Freeze perception only for normal EVENT occurrences. ORDER/DANGER keep their own semantics."""
+    if _event_goal_type(event) != "EVENT":
+        return []
+    mode = normalize_event_awareness_mode(event.get("awareness_mode"))
+    if mode == EVENT_AWARENESS_AUDIENCE:
+        return []
+    eligible = [npc for npc in _all_npcs() if _audience_matches(npc, event)]
+    return snapshot_event_awareness(eligible, site, mode=mode)
+
+
+def _event_is_known_to(npc, event):
+    if _event_goal_type(event) != "EVENT":
+        return True
+    return event_awareness_matches(npc, event)
+
+
 def refresh_world_event_rules():
     """Evaluate persistent world state and activate/deactivate EVENT/DANGER/ORDER instances."""
     results = []
@@ -192,6 +225,7 @@ def refresh_world_event_rules():
                 rule.get("response_mode")
                 or ("PERSISTENT" if goal_type == "DANGER" else "ACK")
             ).upper()
+            awareness_mode = normalize_event_awareness_mode(rule.get("awareness_mode"))
 
             actual = state.get(field)
             condition_met = _compare(actual, rule.get("op"), rule.get("value"))
@@ -235,6 +269,7 @@ def refresh_world_event_rules():
                     "issuer_id": rule.get("issuer_id"),
                     "issuer_name": rule.get("issuer_name"),
                     "order_kind": rule.get("order_kind"),
+                    "awareness_mode": awareness_mode,
                     "canon_status": rule.get("canon_status") or "prototype",
                 }
             )
@@ -249,6 +284,10 @@ def refresh_world_event_rules():
                     event.pop("last_ack_npc_id", None)
                     event.pop("last_ack_npc_name", None)
                     event.pop("last_ack_at", None)
+                    if goal_type == "EVENT":
+                        event["aware_npc_ids"] = _snapshot_event_awareness(site, event)
+                    else:
+                        event.pop("aware_npc_ids", None)
                     changed = True
             else:
                 if was_active or event.get("status") != "inactive":
@@ -275,6 +314,8 @@ def refresh_world_event_rules():
                     "authority_id": event.get("authority_id"),
                     "authority_name": event.get("authority_name"),
                     "faction_id": event.get("faction_id"),
+                    "awareness_mode": event.get("awareness_mode"),
+                    "aware_npc_ids": _plain_list(event.get("aware_npc_ids")),
                     "build": WORLD_EVENT_BUILD,
                 }
             )
@@ -286,7 +327,7 @@ def refresh_world_event_rules():
 
 
 def collect_event_candidates(npc, default_priority=80):
-    """Return active persistent EVENT/DANGER/ORDER goals relevant to this NPC."""
+    """Return active persistent EVENT/DANGER/ORDER goals relevant and known to this NPC."""
     if not npc or not bool(npc.db.decision_enabled):
         return []
 
@@ -307,6 +348,9 @@ def collect_event_candidates(npc, default_priority=80):
                 continue
 
             goal_type = _event_goal_type(event)
+            if goal_type == "EVENT" and not _event_is_known_to(npc, event):
+                continue
+
             if goal_type == "DANGER":
                 target_room_id = str(event.get("target_room_id") or "")
                 affected = _affected_room_ids(site, event)
@@ -358,6 +402,8 @@ def collect_event_candidates(npc, default_priority=80):
                     "issuer_id": event.get("issuer_id"),
                     "issuer_name": event.get("issuer_name"),
                     "order_kind": event.get("order_kind"),
+                    "awareness_mode": event.get("awareness_mode"),
+                    "aware_npc_ids": _plain_list(event.get("aware_npc_ids")),
                 }
             )
     return output
@@ -396,6 +442,18 @@ def acknowledge_world_event(npc, event_id):
                 }
 
             goal_type = _event_goal_type(event)
+            if goal_type == "EVENT" and not _event_is_known_to(npc, event):
+                return {
+                    "completed": False,
+                    "acknowledged": False,
+                    "reason": "NOT_AWARE",
+                    "event_id": wanted,
+                    "goal_type": goal_type,
+                    "event_occurrence": event.get("occurrence"),
+                    "event_site": site.key,
+                    "site": site,
+                }
+
             if goal_type == "DANGER":
                 target_room_id = str(event.get("target_room_id") or "")
                 current_room_id = (
@@ -465,6 +523,7 @@ def acknowledge_world_event(npc, event_id):
                 "faction_id": event.get("faction_id"),
                 "issuer_id": event.get("issuer_id"),
                 "issuer_name": event.get("issuer_name"),
+                "awareness_mode": event.get("awareness_mode"),
                 "site": site,
             }
 
