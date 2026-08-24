@@ -65,6 +65,7 @@ from commands.player_roll_v52_commands import (
     CmdSizaSelfStatSet,
 )
 from commands.player_roll_v53_commands import (
+    CmdSizaResetV53,
     CmdSizaSelfStatRestore,
     CmdSizaSelfStatTemp,
 )
