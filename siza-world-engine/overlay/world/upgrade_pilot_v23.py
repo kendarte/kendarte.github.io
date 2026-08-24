@@ -48,9 +48,9 @@ def _find_npc(npc_id):
     return None
 
 
-def _find_room(room_id):
-    for obj in search_object("*"):
-        if str(getattr(obj.db, "room_id", "") or "") == room_id:
+def _find_plaza():
+    for obj in search_object("Plaza de Recepcion"):
+        if str(getattr(obj.db, "room_id", "") or "") == PLAZA_ID:
             return obj
     return None
 
@@ -92,7 +92,7 @@ def _upsert_rule(site, rule):
 def build():
     mara = _find_npc(MARA_ID)
     worker = _find_npc(WORKER_ID)
-    plaza = _find_room(PLAZA_ID)
+    plaza = _find_plaza()
     if not mara or not worker or not plaza:
         caller.msg("No puedo aplicar v0.23: faltan Mara, Trabajador B o Plaza de Recepcion.")
         return
