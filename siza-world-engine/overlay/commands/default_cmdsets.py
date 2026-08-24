@@ -1,5 +1,10 @@
 from evennia import default_cmds
 
+from commands.action_resolution_commands import (
+    CmdSizaCheckContract,
+    CmdSizaStats,
+    CmdSizaStatSet,
+)
 from commands.consequence_commands import (
     CmdSizaConsequences,
     CmdSizaConsequenceToggle,
@@ -98,6 +103,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaTraitToggle())
         self.add(CmdSizaSkills())
         self.add(CmdSizaSkillSet())
+        self.add(CmdSizaStats())
+        self.add(CmdSizaStatSet())
+        self.add(CmdSizaCheckContract())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
