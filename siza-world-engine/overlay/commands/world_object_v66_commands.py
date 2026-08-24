@@ -191,9 +191,12 @@ class CmdSizaValidateV66(Command):
             )
 
             check(
-                "unknown-stored-fact-never-crosses-ollama-http-request-boundary",
-                UNKNOWN_SENTINEL not in serialized_chat and UNKNOWN_FACT_ID not in serialized_chat,
-                f"sentinel_leaked={UNKNOWN_SENTINEL in serialized_chat}",
+                "internal-and-unknown-fact-metadata-never-crosses-ollama-http-boundary",
+                UNKNOWN_SENTINEL not in serialized_chat
+                and UNKNOWN_FACT_ID not in serialized_chat
+                and KNOWN_FACT_ID not in serialized_chat
+                and "FACT-" not in serialized_chat,
+                f"known_id_leaked={KNOWN_FACT_ID in serialized_chat} unknown_leaked={UNKNOWN_SENTINEL in serialized_chat}",
             )
 
             repeated = build_ollama_chat_payload(provider)
@@ -204,7 +207,7 @@ class CmdSizaValidateV66(Command):
             )
 
             valid_parse = parse_ollama_chat_response(
-                {"model": DEFAULT_OLLAMA_MODEL, "message": {"role": "assistant", "content": "respuesta de prueba"}, "done": True},
+                {"model": DEFAULT_OLLAMA_MODEL, "message": {"role": "assistant", "content": "respuesta de prueba"}, "done": True, "done_reason": "stop"},
                 http_status=200,
             )
             check(
@@ -260,19 +263,24 @@ class CmdSizaValidateV66(Command):
             )
 
             check(
-                "live-local-ollama-returns-nonempty-assistant-content",
-                live.get("status") == "OK" and bool(str(live.get("text") or "").strip()),
-                f"model={live.get('model')} chars={len(str(live.get('text') or ''))} eval_count={live.get('eval_count')}",
+                "live-local-ollama-returns-complete-nonempty-assistant-content",
+                live.get("status") == "OK"
+                and bool(str(live.get("text") or "").strip())
+                and live.get("done") is True
+                and str(live.get("done_reason") or "").lower() != "length",
+                f"model={live.get('model')} chars={len(str(live.get('text') or ''))} eval_count={live.get('eval_count')} done_reason={live.get('done_reason')}",
             )
 
             live_request = live.get("request_payload") or {}
             live_serialized = json.dumps(live_request, ensure_ascii=False, sort_keys=True)
             check(
-                "live-http-request-is-the-same-audited-grounded-request",
+                "live-http-request-is-the-same-audited-clean-grounded-request",
                 live_request == chat
                 and UNKNOWN_SENTINEL not in live_serialized
-                and UNKNOWN_FACT_ID not in live_serialized,
-                f"same_request={live_request == chat} sentinel_leaked={UNKNOWN_SENTINEL in live_serialized}",
+                and UNKNOWN_FACT_ID not in live_serialized
+                and KNOWN_FACT_ID not in live_serialized
+                and "FACT-" not in live_serialized,
+                f"same_request={live_request == chat} internal_id_leaked={'FACT-' in live_serialized}",
             )
 
             check(
@@ -282,16 +290,19 @@ class CmdSizaValidateV66(Command):
                 "knowledge_and_facts_unchanged=True",
             )
 
+            live_text = str(live.get("text") or "")
             check(
-                "live-model-never-receives-or-echoes-unknown-sentinel",
-                UNKNOWN_SENTINEL not in str(live.get("text") or "")
-                and UNKNOWN_FACT_ID not in str(live.get("text") or ""),
-                f"sentinel_in_response={UNKNOWN_SENTINEL in str(live.get('text') or '')}",
+                "live-model-never-receives-or-echoes-internal-or-unknown-metadata",
+                UNKNOWN_SENTINEL not in live_text
+                and UNKNOWN_FACT_ID not in live_text
+                and KNOWN_FACT_ID not in live_text
+                and "FACT-" not in live_text,
+                f"internal_id_in_response={'FACT-' in live_text} sentinel_in_response={UNKNOWN_SENTINEL in live_text}",
             )
 
             if live.get("status") == "OK":
                 self.caller.msg("--- LIVE OLLAMA SAMPLE ---")
-                self.caller.msg(str(live.get("text") or ""))
+                self.caller.msg(live_text)
                 self.caller.msg("--- END LIVE SAMPLE ---")
 
         except Exception as exc:
