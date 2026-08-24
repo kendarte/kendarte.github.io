@@ -1,6 +1,6 @@
 from evennia import Command
 
-from services.job_claims import get_job_claim, release_job_claim
+from services.job_claims import get_job_claim, refresh_job_claims, release_job_claim
 from services.job_engine import (
     inspect_job_tasks,
     inspect_worksites,
@@ -202,6 +202,7 @@ class CmdSizaWorkSet(Command):
 
         state = set_work_state(site, field, value)
         refresh = refresh_world_job_rules()
+        released = refresh_job_claims()
         self.caller.msg(f"{site.key}: {field}={state.get(field)}")
         relevant = [row for row in refresh if row.get("room_id") == site.db.room_id]
         for row in relevant:
@@ -210,6 +211,12 @@ class CmdSizaWorkSet(Command):
                 f"task={row.get('task_id')} active={row.get('task_active')} "
                 f"status={row.get('task_status')} | work={row.get('work_done')}/{row.get('work_required')}"
             )
+        for row in released:
+            if row.get("site") == site.key:
+                self.caller.msg(
+                    f"[CLAIM RELEASED] {row.get('task_id')} | owner={row.get('npc_name')} | "
+                    f"reason={row.get('reason')}"
+                )
 
 
 class CmdSizaJobRefresh(Command):
