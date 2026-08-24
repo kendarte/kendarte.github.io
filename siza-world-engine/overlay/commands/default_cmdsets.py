@@ -11,6 +11,11 @@ from commands.event_commands import (
     CmdSizaEvents,
     CmdSizaEventSet,
 )
+from commands.faction_commands import (
+    CmdSizaFactionLoyalty,
+    CmdSizaFactionMembershipToggle,
+    CmdSizaFactions,
+)
 from commands.job_commands import (
     CmdSizaJobRefresh,
     CmdSizaJobRelease,
@@ -67,6 +72,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDecisionStep())
         self.add(CmdSizaPersonality())
         self.add(CmdSizaPersonalityToggle())
+        self.add(CmdSizaFactions())
+        self.add(CmdSizaFactionLoyalty())
+        self.add(CmdSizaFactionMembershipToggle())
         self.add(CmdSizaOrders())
         self.add(CmdSizaOrderToggle())
         self.add(CmdSizaJobs())
