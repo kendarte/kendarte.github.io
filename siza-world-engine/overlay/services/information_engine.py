@@ -5,7 +5,7 @@ from evennia import search_tag
 from services.faction_engine import has_active_membership
 
 
-INFORMATION_BUILD = "0.33.1-event-occurrence-history"
+INFORMATION_BUILD = "0.34.0-rumor-multihop"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 EVENT_AWARENESS_AUDIENCE = "AUDIENCE"
