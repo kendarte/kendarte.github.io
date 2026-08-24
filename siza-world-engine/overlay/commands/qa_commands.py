@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v73_commands import CmdSizaValidateV73
+from commands.world_input_v74_commands import CmdSizaValidateV74
 
 
-QA_BUILD = "0.73.0-risk-based-one-command-qa"
+QA_BUILD = "0.74.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.73 expands structured async fallback to INTERACTION while deliberately keeping semantic topics disabled. "
-            "The model may select only a current visible TALK capability; the bridge rebuilds the current catalog, confirms the NPC is still local/visible, then converts the selection into a canonical TALK intent for the existing interaction engine. Running deterministic-talk preservation, semantic fallback, low-confidence rejection, NPC-moved stale rejection, real memory/relationship mutation, Knowledge/Fact isolation, live qwen target selection, and OBJECT_ACTION/MOVEMENT regressions."
+            "RISK PROFILE: v0.74 allows semantic TALK fallback to carry an explicit conversation topic, but qwen still selects only the current visible NPC. "
+            "Topic text is extracted deterministically from the original player input, never from model reason; the request boundary still excludes NPC Knowledge/Facts. The existing interaction engine then applies the NPC Knowledge gate and chooses the Fact response. Running deterministic talk preservation, player-topic extraction, provider-boundary privacy, blocked/allowed Knowledge levels, modern Fact.text compatibility, stale-NPC rejection, live qwen target selection, greeting regression and OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV73, self.caller)
+        _run_command(CmdSizaValidateV74, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.73 changes real player social input and persistent memory/relationship state. Automatic QA snapshots/restores both actor and NPC social state; a short real __nomatch interaction acceptance check is required if all assertions pass."
+            "QA POLICY: v0.74 touches persistent social memory and authorized Fact disclosure. Automatic QA isolates a temporary modern Fact, tests both denied and allowed Knowledge levels, performs one live qwen target-selection path, and restores actor/NPC state exactly. A short manual topic-conversation acceptance check is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
