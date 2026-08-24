@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v71_commands import CmdSizaValidateV71
+from commands.world_input_v72_commands import CmdSizaValidateV72
 
 
-QA_BUILD = "0.71.1-risk-based-one-command-qa"
+QA_BUILD = "0.72.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.71 automatic QA exposed a weak ambiguous object-action edge case: multiple low-score deterministic candidates could be treated as authoritative and prevent the structured proposal fallback. "
-            "v0.71.1 preserves strong deterministic matches but routes weak ambiguous matches through the same reactor-safe structured proposal path. Running deterministic-route preservation, inquiry separation, weak-ambiguity upgrade, unsupported/low-confidence/stale rejection, live prebuilt qwen proposal, real pending-resolution dispatch, deterministic renderer and no-model-prose-persistence assertions."
+            "RISK PROFILE: v0.72 expands the real async structured-proposal path from OBJECT_ACTION to MOVEMENT. "
+            "A movement proposal must be accepted, high-confidence and present in a freshly rebuilt current-room catalog; the bridge then resolves the exact current Evennia Exit and executes that Exit command rather than moving directly. Running deterministic movement preservation, semantic fallback, low-confidence/stale rejection, OBJECT_ACTION regression, live qwen movement selection, exact traversal and no-model-prose/state assertions."
         )
-        _run_command(CmdSizaValidateV71, self.caller)
+        _run_command(CmdSizaValidateV72, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.71.1 changes real player input and asynchronous execution scheduling. Automatic QA validates the full snapshot->proposal->bridge data path; a short manual __nomatch acceptance check is required if all assertions pass."
+            "QA POLICY: v0.72 changes real player movement through async __nomatch. Automatic QA performs controlled real Exit traversals and restores location/state; a short manual semantic-movement acceptance check is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
