@@ -84,9 +84,9 @@ from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
 from commands.world_action_commands import (
     CmdSizaAction,
     CmdSizaActionResolve,
-    CmdSizaActions,
     CmdSizaValidateV41,
 )
+from commands.world_action_v42_commands import CmdSizaActionsV42, CmdSizaValidateV42
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -118,10 +118,11 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV38())
         self.add(CmdSizaValidateV39())
         self.add(CmdSizaValidateEngine())
-        self.add(CmdSizaActions())
+        self.add(CmdSizaActionsV42())
         self.add(CmdSizaAction())
         self.add(CmdSizaActionResolve())
         self.add(CmdSizaValidateV41())
+        self.add(CmdSizaValidateV42())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
