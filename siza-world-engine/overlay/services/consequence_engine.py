@@ -2,11 +2,13 @@ from datetime import datetime, timezone
 
 from evennia import create_script, search_script, search_tag
 
+from services.knowledge_fact_engine import upsert_knowledge_fact
 from services.relationship_engine import create_information_obligation
 from services.state_effect_engine import apply_state_effects
 
 
 CONSEQUENCE_BUILD = "0.43.0-outcome-state-effects"
+NPC_KNOWLEDGE_FACT_CONSEQUENCE_BUILD = "0.63.0-npc-structured-knowledge-facts"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
@@ -347,6 +349,34 @@ def _apply_knowledge_consequence(rule, action, npc):
     }
 
 
+def _apply_knowledge_fact_consequence(rule, action, npc):
+    """Persist one structured Knowledge Fact on an NPC recipient from a normal consequence rule."""
+    spec = _plain_dict((rule or {}).get("knowledge_fact"))
+    if not spec or not npc:
+        return None
+
+    resolved = _plain_dict(_resolve_template(spec, action))
+    if not str(resolved.get("id") or "").strip():
+        return None
+
+    packet = upsert_knowledge_fact(npc, resolved, action=action)
+    if str(packet.get("status") or "") not in {"CREATED", "UPDATED"}:
+        return None
+
+    fact = _plain_dict(packet.get("fact"))
+    return {
+        "fact_id": packet.get("fact_id"),
+        "fact_status": packet.get("status"),
+        "fact_topic": fact.get("topic"),
+        "fact_text": fact.get("text"),
+        "fact_knowledge_key": fact.get("knowledge_key"),
+        "fact_required_level": fact.get("required_level"),
+        "fact_source": _plain_dict(fact.get("source")),
+        "fact_learned_by": _plain_dict(fact.get("learned_by")),
+        "knowledge_fact_build": NPC_KNOWLEDGE_FACT_CONSEQUENCE_BUILD,
+    }
+
+
 def _apply_social_intent_consequence(rule, action, npc, npcs):
     """Create an explicit social INFORM obligation from a structured consequence rule."""
     spec = _plain_dict((rule or {}).get("social_intent"))
@@ -456,6 +486,7 @@ def emit_world_action(action):
             }
             memory_result = _apply_memory_consequence(rule, packet, npc)
             knowledge_result = _apply_knowledge_consequence(rule, packet, npc)
+            fact_result = _apply_knowledge_fact_consequence(rule, packet, npc)
             social_result = _apply_social_intent_consequence(rule, packet, npc, npcs)
             if memory_result:
                 row.update(memory_result)
@@ -463,12 +494,20 @@ def emit_world_action(action):
             if knowledge_result:
                 row.update(knowledge_result)
                 row["knowledge_applied"] = True
+            if fact_result:
+                row.update(fact_result)
+                row["knowledge_fact_applied"] = True
             if social_result:
                 row.update(social_result)
                 row["social_intent_applied"] = bool(
                     social_result.get("social_intent_success")
                 )
-            if row.get("memory_applied") or row.get("knowledge_applied") or social_result:
+            if (
+                row.get("memory_applied")
+                or row.get("knowledge_applied")
+                or row.get("knowledge_fact_applied")
+                or social_result
+            ):
                 applied.append(row)
 
         if applied or state_applied:
