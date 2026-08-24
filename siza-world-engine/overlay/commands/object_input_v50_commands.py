@@ -1,6 +1,5 @@
 from commands.siza_commands import CmdSizaNoMatch
 from services.object_action_input_engine import (
-    OBJECT_ACTION_INPUT_BUILD,
     render_object_action_input_result,
     route_object_action_input,
 )
@@ -23,9 +22,3 @@ class CmdSizaNoMatchV50(CmdSizaNoMatch):
                     caller.msg("\n" + text)
                 return
         return super().func()
-
-
-class CmdSizaObjectInputBuild(CommandError if False else CmdSizaNoMatch):
-    """Internal placeholder never registered; keeps build discoverable without adding a command."""
-
-    pass
