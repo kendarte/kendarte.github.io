@@ -1,9 +1,10 @@
 from services.context_effect_engine import context_decision_modifiers
 from services.faction_engine import faction_context_modifiers
 from services.knowledge_context_engine import knowledge_decision_modifiers
+from services.trait_engine import trait_decision_modifiers
 
 
-DECISION_PERSONALITY_BUILD = "0.28.0-knowledge-aware-decisions"
+DECISION_PERSONALITY_BUILD = "0.30.0-virtue-defect-traits"
 
 MIN_MODIFIER = -100
 MAX_MODIFIER = 100
@@ -87,7 +88,7 @@ def decision_biases(npc):
 
 
 def apply_decision_personality(npc, goal, base_priority=None):
-    """Apply personality plus explicit faction, memory, relationship and knowledge context."""
+    """Apply personality plus explicit faction, memory, relationship, knowledge and trait context."""
     item = dict(goal or {})
     goal_type = str(item.get("type") or "").upper()
     if base_priority is None:
@@ -100,6 +101,7 @@ def apply_decision_personality(npc, goal, base_priority=None):
     memory_total = 0
     relationship_total = 0
     knowledge_total = 0
+    trait_total = 0
 
     type_bias = decision_biases(npc).get(goal_type, 0)
     if type_bias:
@@ -184,7 +186,23 @@ def apply_decision_personality(npc, goal, base_priority=None):
             }
         )
 
-    total = authored_total + faction_total + memory_total + relationship_total + knowledge_total
+    for modifier in trait_decision_modifiers(npc, item):
+        value = _clamp(_safe_int(modifier.get("value"), 0), MIN_MODIFIER, MAX_MODIFIER)
+        if not value:
+            continue
+        trait_total += value
+        applied.append(
+            {
+                "id": str(modifier.get("id") or "TRAIT_CONTEXT"),
+                "value": value,
+                "source": "trait",
+                "trait_id": modifier.get("trait_id"),
+                "trait_name": modifier.get("trait_name"),
+                "trait_kind": modifier.get("trait_kind"),
+            }
+        )
+
+    total = authored_total + faction_total + memory_total + relationship_total + knowledge_total + trait_total
     effective = _clamp(base + total, MIN_EFFECTIVE_PRIORITY, MAX_EFFECTIVE_PRIORITY)
     item["base_priority"] = base
     item["authored_personality_modifier"] = authored_total
@@ -192,6 +210,7 @@ def apply_decision_personality(npc, goal, base_priority=None):
     item["memory_modifier"] = memory_total
     item["relationship_context_modifier"] = relationship_total
     item["knowledge_modifier"] = knowledge_total
+    item["trait_modifier"] = trait_total
     item["personality_modifier"] = total
     item["effective_priority"] = effective
     item["priority"] = effective
