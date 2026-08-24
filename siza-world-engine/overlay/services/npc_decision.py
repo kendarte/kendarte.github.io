@@ -22,12 +22,13 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.22.1-decision-personality-tick-arbitration"
+DECISION_BUILD = "0.23.0-authority-orders"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
     "EVENT": 80,
     "NEED": 70,
+    "ORDER": 60,
     "JOB": 60,
     "RELATIONSHIP": 50,
     "ROUTINE": 10,
@@ -176,7 +177,11 @@ def collect_candidates(npc):
             item["reachable"] = path is not None
             item["path_length"] = len(path) if path is not None else None
 
-        item = apply_decision_personality(npc, item, base_priority=item.get("priority", 0))
+        item = apply_decision_personality(
+            npc,
+            item,
+            base_priority=item.get("priority", 0),
+        )
         evaluated.append(item)
 
     evaluated.sort(
@@ -273,15 +278,33 @@ def _complete_selected_goal(npc, goal):
 
     if source == "WORLD_EVENT":
         packet = acknowledge_world_event(npc, goal.get("event_id"))
-        return {
+        result = {
             "completed": bool(packet.get("completed")),
             "completion_source": "WORLD_EVENT",
             "completion_site": packet.get("event_site"),
             "event_id": packet.get("event_id"),
+            "event_goal_type": packet.get("goal_type") or goal.get("type"),
             "event_occurrence": packet.get("event_occurrence"),
             "event_acknowledged": bool(packet.get("acknowledged")),
             "event_ack_reason": packet.get("reason"),
         }
+        if str(goal.get("type") or "").upper() == "ORDER":
+            result.update(
+                {
+                    "order_completed": bool(packet.get("completed")),
+                    "order_id": packet.get("event_id") or goal.get("order_id"),
+                    "order_occurrence": packet.get("event_occurrence")
+                    or goal.get("occurrence"),
+                    "authority_id": packet.get("authority_id")
+                    or goal.get("authority_id"),
+                    "authority_name": packet.get("authority_name")
+                    or goal.get("authority_name"),
+                    "issuer_id": packet.get("issuer_id") or goal.get("issuer_id"),
+                    "issuer_name": packet.get("issuer_name")
+                    or goal.get("issuer_name"),
+                }
+            )
+        return result
 
     if source == "NPC_NEED":
         return complete_need_goal(npc, goal)
@@ -362,11 +385,17 @@ def _goal_action_kind(goal):
     if source == "WORLD_JOB":
         return "WORK"
     if source == "WORLD_EVENT":
-        return "DANGER" if goal_type == "DANGER" else "EVENT"
+        if goal_type == "DANGER":
+            return "DANGER"
+        if goal_type == "ORDER":
+            return "ORDER"
+        return "EVENT"
     if source == "RELATIONSHIP":
         return "SOCIAL"
     if goal_type == "DANGER":
         return "DANGER"
+    if goal_type == "ORDER":
+        return "ORDER"
     if goal_type == "RELATIONSHIP":
         return "SOCIAL"
     if goal_type == "EVENT":
@@ -463,11 +492,19 @@ def decision_step(npc, prepare_world_state=True):
         "source": goal.get("source"),
         "event_id": goal.get("event_id"),
         "event_occurrence": goal.get("occurrence"),
+        "order_id": goal.get("order_id"),
+        "authority_id": goal.get("authority_id"),
+        "authority_name": goal.get("authority_name"),
+        "issuer_id": goal.get("issuer_id"),
+        "issuer_name": goal.get("issuer_name"),
+        "order_kind": goal.get("order_kind"),
         "task_id": goal.get("task_id"),
         "work_done": goal.get("work_done"),
         "work_required": goal.get("work_required"),
-        "claim_npc_id": claim_meta.get("job_claim_owner_id") or goal.get("claim_npc_id"),
-        "claim_npc_name": claim_meta.get("job_claim_owner_name") or goal.get("claim_npc_name"),
+        "claim_npc_id": claim_meta.get("job_claim_owner_id")
+        or goal.get("claim_npc_id"),
+        "claim_npc_name": claim_meta.get("job_claim_owner_name")
+        or goal.get("claim_npc_name"),
         "relationship_obligation_id": goal.get("relationship_obligation_id"),
         "relationship_target_npc_id": goal.get("relationship_target_npc_id"),
         "relationship_target_name": goal.get("relationship_target_name"),
