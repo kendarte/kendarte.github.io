@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 
 from evennia import search_object, search_tag
 
+from services.faction_engine import has_active_membership
 
-WORLD_EVENT_BUILD = "0.23.0-authority-orders"
+
+WORLD_EVENT_BUILD = "0.24.0-faction-membership-loyalty"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 
@@ -152,6 +154,10 @@ def _audience_matches(npc, event):
     if job_ids and _npc_job_id(npc) not in job_ids:
         return False
 
+    faction_ids = {str(value) for value in _plain_list(event.get("faction_ids")) if value}
+    if faction_ids and not any(has_active_membership(npc, faction_id) for faction_id in faction_ids):
+        return False
+
     return True
 
 
@@ -222,6 +228,8 @@ def refresh_world_event_rules():
                     "blocks_jobs": bool(rule.get("blocks_jobs", goal_type == "DANGER")),
                     "npc_ids": _plain_list(rule.get("npc_ids")),
                     "job_ids": _plain_list(rule.get("job_ids")),
+                    "faction_ids": _plain_list(rule.get("faction_ids")),
+                    "faction_id": rule.get("faction_id"),
                     "authority_id": rule.get("authority_id"),
                     "authority_name": rule.get("authority_name"),
                     "issuer_id": rule.get("issuer_id"),
@@ -266,6 +274,7 @@ def refresh_world_event_rules():
                     "occurrence": event.get("occurrence"),
                     "authority_id": event.get("authority_id"),
                     "authority_name": event.get("authority_name"),
+                    "faction_id": event.get("faction_id"),
                     "build": WORLD_EVENT_BUILD,
                 }
             )
@@ -342,6 +351,8 @@ def collect_event_candidates(npc, default_priority=80):
                     "response_mode": event.get("response_mode"),
                     "affected_room_ids": list(_affected_room_ids(site, event)),
                     "blocks_jobs": bool(event.get("blocks_jobs", False)),
+                    "faction_ids": _plain_list(event.get("faction_ids")),
+                    "faction_id": event.get("faction_id"),
                     "authority_id": event.get("authority_id"),
                     "authority_name": event.get("authority_name"),
                     "issuer_id": event.get("issuer_id"),
@@ -451,6 +462,7 @@ def acknowledge_world_event(npc, event_id):
                 "event_site": site.key,
                 "authority_id": event.get("authority_id"),
                 "authority_name": event.get("authority_name"),
+                "faction_id": event.get("faction_id"),
                 "issuer_id": event.get("issuer_id"),
                 "issuer_name": event.get("issuer_name"),
                 "site": site,
