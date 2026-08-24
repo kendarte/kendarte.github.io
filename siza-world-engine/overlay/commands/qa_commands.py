@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_object_v64_commands import CmdSizaValidateV64
+from commands.world_object_v65_commands import CmdSizaValidateV65
 
 
-QA_BUILD = "0.64.1-risk-based-one-command-qa"
+QA_BUILD = "0.65.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: deterministic Fact retrieval relevance gate patched so location can rank but never create relevance. "
-            "Running known-only filtering, semantic relevance, site tie-break, provenance, budget, stability and no-mutation assertions."
+            "RISK PROFILE: grounded narration provider boundary added on top of v0.64 known-only retrieval. "
+            "Running provider-payload leak checks, grounding contract, world-state authorization, provenance, stability and no-mutation assertions."
         )
-        _run_command(CmdSizaValidateV64, self.caller)
+        _run_command(CmdSizaValidateV65, self.caller)
         self.caller.msg(
             "QA POLICY: manual acceptance is required only if this validator fails or exposes a behavior not covered by its assertions."
         )
