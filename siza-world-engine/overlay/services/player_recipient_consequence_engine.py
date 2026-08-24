@@ -1,8 +1,9 @@
 from services.consequence_engine import consequence_rules
 from services.knowledge_context_engine import knowledge_levels, set_knowledge_level
+from services.knowledge_fact_engine import upsert_knowledge_fact
 
 
-PLAYER_RECIPIENT_BUILD = "0.56.0-player-actor-knowledge-consequences"
+PLAYER_RECIPIENT_BUILD = "0.57.0-player-actor-knowledge-facts"
 APPLIED_ACTIONS_ATTR = "player_consequence_action_ids"
 APPLIED_ACTIONS_LIMIT = 100
 
@@ -112,8 +113,32 @@ def _knowledge_result(actor, rule, action):
     }
 
 
+def _fact_result(actor, rule, action):
+    spec = _plain_dict((rule or {}).get("knowledge_fact"))
+    if not spec:
+        return None
+    resolved = _plain_dict(_resolve_template(spec, action))
+    if not str(resolved.get("id") or "").strip():
+        return None
+    packet = upsert_knowledge_fact(actor, resolved, action=action)
+    if str(packet.get("status") or "") not in {"CREATED", "UPDATED"}:
+        return None
+    fact = _plain_dict(packet.get("fact"))
+    return {
+        "fact_id": packet.get("fact_id"),
+        "fact_status": packet.get("status"),
+        "fact_topic": fact.get("topic"),
+        "fact_text": fact.get("text"),
+        "fact_knowledge_key": fact.get("knowledge_key"),
+        "fact_required_level": fact.get("required_level"),
+        "fact_source": _plain_dict(fact.get("source")),
+        "fact_learned_by": _plain_dict(fact.get("learned_by")),
+        "knowledge_fact_applied": True,
+    }
+
+
 def apply_player_actor_consequences(actor, action):
-    """Apply ACTOR Knowledge consequences to a real Character that has no Siza npc_id."""
+    """Apply ACTOR Knowledge and Knowledge Facts to a real Character without a Siza npc_id."""
     if not actor:
         return {"status": "NO_ACTOR", "build": PLAYER_RECIPIENT_BUILD, "results": []}
     if str(getattr(actor.db, "npc_id", "") or "").strip():
@@ -146,9 +171,17 @@ def apply_player_actor_consequences(actor, action):
         when = _plain_dict(rule.get("when"))
         if when and not _condition_matches(packet, when):
             continue
-        result = _knowledge_result(actor, rule, packet)
-        if result:
-            results.append(result)
+
+        knowledge_result = _knowledge_result(actor, rule, packet)
+        fact_result = _fact_result(actor, rule, packet)
+        if not knowledge_result and not fact_result:
+            continue
+        row = {"rule_id": rule.get("id")}
+        if knowledge_result:
+            row.update(knowledge_result)
+        if fact_result:
+            row.update(fact_result)
+        results.append(row)
 
     if not results:
         return {
