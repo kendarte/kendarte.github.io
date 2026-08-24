@@ -6,10 +6,15 @@ from services.knowledge_fact_retrieval_engine import retrieve_known_facts
 from services.knowledge_fact_transfer_engine import transfer_knowledge_fact
 
 
-SEMANTIC_FACT_INFORM_BUILD = "0.79.0-player-known-fact-inform"
+SEMANTIC_FACT_INFORM_BUILD = "0.79.1-player-known-fact-inform-precise-topic"
 INFORM_WORDS = {
     "cuento", "contar", "comparto", "compartir", "informo", "informar",
     "comunico", "comunicar", "relato", "relatar",
+}
+INFORM_TOPIC_STOPWORDS = {
+    "a", "al", "el", "la", "los", "las", "de", "del", "en", "por", "para",
+    "un", "una", "unos", "unas", "que", "sobre", "acerca", "tema", "asunto",
+    "esto", "eso", "esta", "este", "ese", "esa", "lo", "le", "me", "mi",
 }
 MAX_RETRIEVAL_FACTS = 3
 
@@ -21,6 +26,12 @@ def _proposal_dict(proposal_result):
         return {}
 
 
+def fact_inform_retrieval_query(topic):
+    """Remove only conversational stopwords so generic articles cannot make unrelated known Facts ambiguous."""
+    tokens = [token for token in normalize(topic).split() if token and token not in INFORM_TOPIC_STOPWORDS]
+    return " ".join(tokens).strip()
+
+
 def parse_semantic_fact_inform_intent(raw):
     """Recognize a narrow player-authored fact-sharing intent without deriving factual content from the model."""
     text = normalize(raw)
@@ -30,10 +41,15 @@ def parse_semantic_fact_inform_intent(raw):
     topic = extract_player_authored_topic(raw)
     if not topic:
         return None
+    retrieval_query = fact_inform_retrieval_query(topic)
+    if not retrieval_query:
+        return None
     return {
         "intent": "INFORM_FACT",
         "topic": topic,
         "topic_source": "PLAYER_INPUT",
+        "retrieval_query": retrieval_query,
+        "retrieval_query_source": "PLAYER_INPUT_FILTERED",
         "raw": str(raw or ""),
     }
 
@@ -138,9 +154,10 @@ def execute_validated_fact_inform_proposal(
         }
 
     topic = str(intent.get("topic") or "").strip()
+    retrieval_query = str(intent.get("retrieval_query") or "").strip()
     retrieval = retrieve_known_facts(
         actor,
-        query=topic,
+        query=retrieval_query,
         site=getattr(actor, "location", None),
         max_facts=MAX_RETRIEVAL_FACTS,
     )
@@ -153,6 +170,8 @@ def execute_validated_fact_inform_proposal(
             "target_name": str(npc.key),
             "topic": topic,
             "topic_source": "PLAYER_INPUT",
+            "retrieval_query": retrieval_query,
+            "retrieval_query_source": "PLAYER_INPUT_FILTERED",
             "retrieval": retrieval,
             "build": SEMANTIC_FACT_INFORM_BUILD,
         }
@@ -164,6 +183,8 @@ def execute_validated_fact_inform_proposal(
             "target_name": str(npc.key),
             "topic": topic,
             "topic_source": "PLAYER_INPUT",
+            "retrieval_query": retrieval_query,
+            "retrieval_query_source": "PLAYER_INPUT_FILTERED",
             "candidate_fact_ids": [row.get("id") for row in selected],
             "retrieval": retrieval,
             "build": SEMANTIC_FACT_INFORM_BUILD,
@@ -201,6 +222,8 @@ def execute_validated_fact_inform_proposal(
         "target_name": str(npc.key),
         "topic": topic,
         "topic_source": "PLAYER_INPUT",
+        "retrieval_query": retrieval_query,
+        "retrieval_query_source": "PLAYER_INPUT_FILTERED",
         "fact_id": fact_id,
         "fact_topic": fact.get("topic"),
         "retrieval_score": fact.get("relevance_score"),
