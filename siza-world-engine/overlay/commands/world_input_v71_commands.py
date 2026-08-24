@@ -3,7 +3,11 @@ import json
 from evennia import Command
 from evennia.utils import logger
 
-from commands.world_input_v68_commands import CmdSizaNoMatchV68, classify_v68_input
+from commands.world_input_v68_commands import (
+    CmdSizaNoMatchV68,
+    STRONG_OBJECT_ACTION_MIN_SCORE,
+    classify_v68_input,
+)
 from services.action_intent_proposal_engine import build_action_proposal_request, build_local_capability_catalog
 from services.action_proposal_async_runtime import (
     ASYNC_ACTION_PROPOSAL_BUILD,
@@ -23,20 +27,27 @@ from world.upgrade_pilot_v52 import ANALYZE_ACTION_ID
 from world.upgrade_pilot_v63 import ensure_v63_pilot_content
 
 
-NATURAL_ACTION_INPUT_BUILD = "0.71.0-async-unknown-action-proposal-execution"
+NATURAL_ACTION_INPUT_BUILD = "0.71.1-weak-ambiguity-aware-async-action-proposal"
 SITUATION_CHANGED_TEXT = "La situación cambió antes de completar esa acción."
 
 
 def classify_v71_input(actor, raw):
-    """Preserve v0.68 routes and upgrade only LEGACY_UNKNOWN into an async action proposal route."""
+    """Preserve strong v0.68 routes; upgrade unknown or weak ambiguous object matches into structured proposals."""
     base = classify_v68_input(actor, raw)
-    if base.get("route") == "LEGACY_UNKNOWN":
+    object_score = int(base.get("object_score") or 0)
+    weak_ambiguous_object = (
+        base.get("route") == "OBJECT_ACTION"
+        and str(base.get("object_status") or "") == "AMBIGUOUS_OBJECT_ACTION"
+        and object_score < STRONG_OBJECT_ACTION_MIN_SCORE
+    )
+    if base.get("route") == "LEGACY_UNKNOWN" or weak_ambiguous_object:
         return {
             **base,
             "build": NATURAL_ACTION_INPUT_BUILD,
             "route": "AI_ACTION_PROPOSAL",
             "ai_allowed": True,
             "mutation_requires_bridge": True,
+            "weak_ambiguous_object_fallback": bool(weak_ambiguous_object),
         }
     return {**base, "build": NATURAL_ACTION_INPUT_BUILD}
 
@@ -113,7 +124,7 @@ def dispatch_unknown_action_v71(actor, raw, **provider_options):
 
 
 class CmdSizaNoMatchV71(CmdSizaNoMatchV68):
-    """Use deterministic v0.68 routing first; only otherwise-unknown action text reaches structured action proposal."""
+    """Use deterministic v0.68 routing first; unknown or weak ambiguous action text reaches structured proposal."""
 
     key = "__nomatch_command"
     locks = "cmd:all()"
@@ -186,7 +197,7 @@ class CmdSizaValidateV71(Command):
 
         self.caller.msg(f"=== SIZA VALIDATION v0.71 | {NATURAL_ACTION_INPUT_BUILD} ===")
         self.caller.msg(
-            "real __nomatch unknown action -> reactor snapshot -> worker structured proposal -> reactor bridge -> real Object Action Engine"
+            "real __nomatch unknown/weak-ambiguous action -> reactor snapshot -> worker structured proposal -> reactor bridge -> real Object Action Engine"
         )
 
         try:
@@ -224,11 +235,11 @@ class CmdSizaValidateV71(Command):
             paraphrase = "quiero estudiar detenidamente las cifras del documento de carga"
             action_route = classify_v71_input(actor, paraphrase)
             check(
-                "previously-unknown-action-is-upgraded-to-structured-proposal-route",
+                "weak-ambiguous-or-previously-unknown-action-is-upgraded-to-structured-proposal-route",
                 action_route.get("route") == "AI_ACTION_PROPOSAL"
                 and action_route.get("ai_allowed") is True
                 and action_route.get("mutation_requires_bridge") is True,
-                f"route={action_route.get('route')}",
+                f"route={action_route.get('route')} weak_ambiguous={action_route.get('weak_ambiguous_object_fallback')}",
             )
 
             request = build_action_proposal_request(actor, paraphrase)
@@ -292,7 +303,6 @@ class CmdSizaValidateV71(Command):
                 f"rendered={rendered!r}",
             )
 
-            # Restore histories before stale/live probes so each branch has an isolated baseline.
             actor.db.object_action_history = list(original_object_history or [])
             actor.db.action_resolution_history = list(original_resolution_history or [])
 
@@ -393,6 +403,6 @@ class CmdSizaValidateV71(Command):
             "STATE RESTORED: actor location/stats/action histories/Knowledge/Facts and manifest state restored exactly"
         )
         self.caller.msg(
-            "PERSISTENT SYSTEM RETAINED: real unknown player actions may reach async structured proposal, but only fresh high-confidence OBJECT_ACTION capabilities can enter the existing World Engine"
+            "PERSISTENT SYSTEM RETAINED: real unknown or weak-ambiguous player actions may reach async structured proposal, but only fresh high-confidence OBJECT_ACTION capabilities can enter the existing World Engine"
         )
         self.caller.msg("========================================================")
