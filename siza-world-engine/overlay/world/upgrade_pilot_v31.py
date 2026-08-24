@@ -1,6 +1,6 @@
 from evennia import search_object, search_tag
 
-from services.skill_engine import set_skill_level
+from services.skill_engine import set_skill_level, skill_level
 
 
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
@@ -62,6 +62,7 @@ def build():
     for raw in _plain_list(site.db.job_tasks):
         task = _record(raw)
         if task is None:
+            tasks.append(raw)
             continue
         if str(task.get("id") or "") == TASK_ID:
             found = True
@@ -80,8 +81,18 @@ def build():
         return
 
     site.db.job_tasks = tasks
-    set_skill_level(mara, SKILL_ID, max(1, int((getattr(mara.db, "skills", {}) or {}).get(SKILL_ID, {}).get("level", 0) if hasattr((getattr(mara.db, "skills", {}) or {}).get(SKILL_ID, {}), "get") else 0)), name=SKILL_NAME)
-    set_skill_level(worker, SKILL_ID, max(1, int((getattr(worker.db, "skills", {}) or {}).get(SKILL_ID, {}).get("level", 0) if hasattr((getattr(worker.db, "skills", {}) or {}).get(SKILL_ID, {}), "get") else 0)), name=SKILL_NAME)
+    set_skill_level(
+        mara,
+        SKILL_ID,
+        max(MIN_LEVEL, skill_level(mara, SKILL_ID)),
+        name=SKILL_NAME,
+    )
+    set_skill_level(
+        worker,
+        SKILL_ID,
+        max(MIN_LEVEL, skill_level(worker, SKILL_ID)),
+        name=SKILL_NAME,
+    )
     site.tags.add(UPGRADE_TAG, category=UPGRADE_CATEGORY)
 
     caller.msg("Kalnaj Pilot v0.31 aplicado: Skills / Competence.")
