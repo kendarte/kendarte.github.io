@@ -6,6 +6,10 @@ import unicodedata
 
 # Prototype-only die. Kept configurable so this does not freeze Siza's final dice math.
 PERCEPTION_DIE_SIDES = int(os.getenv("SIZA_PERCEPTION_DIE_SIDES", "6"))
+PERCEPTION_BUILD = "0.32.0-event-awareness"
+
+EVENT_AWARENESS_AUDIENCE = "AUDIENCE"
+EVENT_AWARENESS_LOCAL = "LOCAL"
 
 SENSE_WORDS = {
     "hearing": {"escucho", "escuchar", "oigo", "oir", "oír", "sonido", "ruido"},
@@ -261,3 +265,41 @@ def resolve_perception(character, intent):
     result["discovered"] = discovered
     result["status"] = "DISCOVERY" if discovered else "NO_DISCOVERY"
     return result
+
+
+def normalize_event_awareness_mode(value):
+    """Empty keeps legacy audience behavior. Unknown explicit modes fail closed."""
+    text = str(value or "").strip().upper()
+    return text or EVENT_AWARENESS_AUDIENCE
+
+
+def snapshot_event_awareness(npcs, origin, mode=EVENT_AWARENESS_AUDIENCE):
+    """Freeze who perceived one occurrence. LOCAL means physically co-located at activation."""
+    mode = normalize_event_awareness_mode(mode)
+    if mode == EVENT_AWARENESS_AUDIENCE:
+        return []
+    if mode != EVENT_AWARENESS_LOCAL or not origin:
+        return []
+
+    aware = []
+    for npc in list(npcs or []):
+        npc_id = str(getattr(npc.db, "npc_id", "") or "").strip() if npc else ""
+        if npc_id and getattr(npc, "location", None) == origin:
+            aware.append(npc_id)
+    return sorted(set(aware))
+
+
+def event_awareness_matches(npc, incident):
+    """Check a frozen occurrence. AUDIENCE remains backward-compatible and non-spatial."""
+    mode = normalize_event_awareness_mode((incident or {}).get("awareness_mode"))
+    if mode == EVENT_AWARENESS_AUDIENCE:
+        return True
+    npc_id = str(getattr(npc.db, "npc_id", "") or "").strip() if npc else ""
+    if not npc_id:
+        return False
+    aware = {
+        str(value)
+        for value in _plain_list((incident or {}).get("aware_npc_ids"))
+        if value
+    }
+    return npc_id in aware
