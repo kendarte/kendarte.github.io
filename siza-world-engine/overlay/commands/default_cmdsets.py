@@ -64,7 +64,12 @@ from commands.player_roll_v52_commands import (
     CmdSizaSelfStatClear,
     CmdSizaSelfStatSet,
 )
-from commands.player_roll_v53_commands import CmdSizaResetV53, CmdSizaRollV53
+from commands.player_roll_v53_commands import (
+    CmdSizaResetV53,
+    CmdSizaRollV53,
+    CmdSizaSelfStatRestore,
+    CmdSizaSelfStatTemp,
+)
 from commands.relationship_commands import (
     CmdSizaRelationships,
     CmdSizaRelationshipToggle,
@@ -133,6 +138,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaStatSet())
         self.add(CmdSizaSelfStatSet())
         self.add(CmdSizaSelfStatClear())
+        self.add(CmdSizaSelfStatTemp())
+        self.add(CmdSizaSelfStatRestore())
         self.add(CmdSizaCheckContract())
         self.add(CmdSizaValidateV38())
         self.add(CmdSizaValidateV39())
