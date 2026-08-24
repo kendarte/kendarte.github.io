@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v72_commands import CmdSizaValidateV72
+from commands.world_input_v721_commands import CmdSizaValidateV721
 
 
-QA_BUILD = "0.72.0-risk-based-one-command-qa"
+QA_BUILD = "0.72.1-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.72 expands the real async structured-proposal path from OBJECT_ACTION to MOVEMENT. "
-            "A movement proposal must be accepted, high-confidence and present in a freshly rebuilt current-room catalog; the bridge then resolves the exact current Evennia Exit and executes that Exit command rather than moving directly. Running deterministic movement preservation, semantic fallback, low-confidence/stale rejection, OBJECT_ACTION regression, live qwen movement selection, exact traversal and no-model-prose/state assertions."
+            "RISK PROFILE: v0.72 production bridge already passed 11/12 checks including real Exit traversal, stale/low-confidence rejection and OBJECT_ACTION regression. "
+            "The only failure was a QA phrase that the deterministic movement parser already understood. No gameplay code changed. Running a targeted semantic-fallback rerun with a phrase outside the deterministic movement vocabulary/strong exit matcher, then one live qwen selection and real Exit traversal with no-history/no-model-prose assertions."
         )
-        _run_command(CmdSizaValidateV72, self.caller)
+        _run_command(CmdSizaValidateV721, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.72 changes real player movement through async __nomatch. Automatic QA performs controlled real Exit traversals and restores location/state; a short manual semantic-movement acceptance check is required if all assertions pass."
+            "QA POLICY: production movement code is unchanged from v0.72. The previously passing bridge/regression checks are not repeated; this targeted suite retests only the failed semantic-fallback assumption and its live end-to-end traversal. Manual semantic-movement acceptance is required if all targeted assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
