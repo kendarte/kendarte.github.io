@@ -5,7 +5,7 @@ from evennia import create_script, search_script
 from services.npc_simulation import simulated_npcs
 
 
-CONSEQUENCE_BUILD = "0.27.0-action-consequence-memory"
+CONSEQUENCE_BUILD = "0.27.1-action-consequence-persistent-templates"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
@@ -132,12 +132,32 @@ def _condition_matches(action, when):
 
 
 def _resolve_template(value, action):
+    """Resolve $fields recursively through normal and Evennia persistent containers."""
     if isinstance(value, str) and value.startswith("$"):
         return (action or {}).get(value[1:])
-    if isinstance(value, dict):
-        return {str(key): _resolve_template(item, action) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
+
+    # Evennia SaverDict/SaverOrderedDict are mapping-like but are not guaranteed
+    # to pass isinstance(value, dict). Normalize any object exposing items().
+    if hasattr(value, "items"):
+        try:
+            return {
+                str(key): _resolve_template(item, action)
+                for key, item in value.items()
+            }
+        except Exception:
+            pass
+
+    if isinstance(value, (list, tuple, set)):
         return [_resolve_template(item, action) for item in value]
+
+    # SaverList and similar persistent sequence wrappers may also not subclass
+    # the builtin list type. Only attempt this for non-string iterables.
+    if not isinstance(value, (str, bytes)) and hasattr(value, "__iter__"):
+        try:
+            return [_resolve_template(item, action) for item in value]
+        except Exception:
+            pass
+
     return value
 
 
