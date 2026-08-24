@@ -22,7 +22,7 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.22.0-decision-personality"
+DECISION_BUILD = "0.22.1-decision-personality-tick-arbitration"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -416,19 +416,20 @@ def _claim_selected_job(npc, decision, goal):
     return decision, None, claim
 
 
-def decision_step(npc):
-    """Choose one authorized goal and execute at most one Exit hop or one work action."""
-    try:
-        refresh_world_event_rules()
-        arbitrate_job_claims(simulated_npcs())
-    except Exception as exc:
-        return {
-            "status": "ARBITRATION_ERROR",
-            "npc": npc.key if npc else "UNKNOWN",
-            "engine": "DECISION",
-            "action_kind": "IDLE",
-            "error": str(exc),
-        }
+def decision_step(npc, prepare_world_state=True):
+    """Choose and execute one goal; manual calls may prepare producers/arbitration first."""
+    if prepare_world_state:
+        try:
+            refresh_world_event_rules()
+            arbitrate_job_claims(simulated_npcs())
+        except Exception as exc:
+            return {
+                "status": "ARBITRATION_ERROR",
+                "npc": npc.key if npc else "UNKNOWN",
+                "engine": "DECISION",
+                "action_kind": "IDLE",
+                "error": str(exc),
+            }
 
     decision = choose_goal(npc)
     goal = decision.get("selected")
