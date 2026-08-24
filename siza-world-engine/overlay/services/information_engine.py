@@ -5,7 +5,7 @@ from evennia import search_tag
 from services.faction_engine import has_active_membership
 
 
-INFORMATION_BUILD = "0.33.0-event-information-propagation"
+INFORMATION_BUILD = "0.33.1-event-occurrence-history"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 EVENT_AWARENESS_AUDIENCE = "AUDIENCE"
@@ -130,12 +130,23 @@ def _event_instances(site):
     return output
 
 
+def _event_history(site):
+    output = []
+    for raw in _plain_list(getattr(site.db, "world_event_history", [])):
+        item = _record(raw)
+        if item is not None:
+            output.append(item)
+    return output
+
+
 def find_event_occurrence(event_id, occurrence=None):
+    """Resolve either the live EVENT occurrence or an archived historical occurrence."""
     wanted = str(event_id or "").strip()
     if not wanted:
         return None, None
 
     matches = []
+    wanted_occurrence = int(occurrence) if occurrence is not None else None
     for site in search_tag(EVENT_SITE_TAG, category=EVENT_SITE_CATEGORY):
         for event in _event_instances(site):
             if str(event.get("id") or "") != wanted:
@@ -143,13 +154,24 @@ def find_event_occurrence(event_id, occurrence=None):
             if str(event.get("goal_type") or event.get("type") or "EVENT").upper() != "EVENT":
                 continue
             current_occurrence = int(event.get("occurrence", 0) or 0)
-            if occurrence is not None and current_occurrence != int(occurrence):
+            if wanted_occurrence is not None and current_occurrence != wanted_occurrence:
                 continue
-            matches.append((bool(event.get("active", False)), current_occurrence, site, event))
+            rank = 3 if bool(event.get("active", False)) else 2
+            matches.append((rank, current_occurrence, site, event))
+
+        for event in _event_history(site):
+            if str(event.get("id") or "") != wanted:
+                continue
+            if str(event.get("goal_type") or event.get("type") or "EVENT").upper() != "EVENT":
+                continue
+            historical_occurrence = int(event.get("occurrence", 0) or 0)
+            if wanted_occurrence is not None and historical_occurrence != wanted_occurrence:
+                continue
+            matches.append((1, historical_occurrence, site, event))
 
     if not matches:
         return None, None
-    matches.sort(key=lambda row: (1 if row[0] else 0, row[1]), reverse=True)
+    matches.sort(key=lambda row: (row[0], row[1]), reverse=True)
     return matches[0][2], matches[0][3]
 
 
@@ -231,6 +253,7 @@ def share_event_information(source, target, event_id, occurrence=None):
             "room_name": source.location.key,
             "last_heard_at": now,
             "heard_count": int(existing.get("heard_count", 0) or 0) + 1,
+            "event_archived": str(event.get("status") or "").lower() == "historical",
             "canon_status": "prototype",
         }
     )
@@ -253,6 +276,7 @@ def share_event_information(source, target, event_id, occurrence=None):
         "source_via": source_route.get("via"),
         "hops": existing.get("hops"),
         "heard_count": existing.get("heard_count"),
+        "event_archived": existing.get("event_archived"),
         "site": site.key if site else None,
         "record": existing,
     }
