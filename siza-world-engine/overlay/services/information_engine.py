@@ -231,7 +231,13 @@ def share_event_information(source, target, event_id, occurrence=None):
     existing = dict(records.get(key) or {})
     created = not bool(existing)
     source_hops, origin_npc_id = _source_hops(source, event)
-    hops = source_hops + 1
+    candidate_hops = source_hops + 1
+
+    try:
+        existing_hops = int(existing.get("hops")) if existing.get("hops") is not None else None
+    except (TypeError, ValueError):
+        existing_hops = None
+    better_route = created or existing_hops is None or candidate_hops < existing_hops
 
     sources = [str(value) for value in _plain_list(existing.get("source_npc_ids")) if value]
     if source_id not in sources:
@@ -243,12 +249,7 @@ def share_event_information(source, target, event_id, occurrence=None):
             "event_id": event_id,
             "occurrence": occurrence,
             "knowledge_type": "REPORTED",
-            "source_npc_id": source_id,
-            "source_name": source.key,
-            "source_via": source_route.get("via"),
             "source_npc_ids": sources,
-            "origin_npc_id": str(existing.get("origin_npc_id") or origin_npc_id or source_id),
-            "hops": min(int(existing.get("hops", hops) or hops), hops) if not created else hops,
             "room_id": getattr(source.location.db, "room_id", None),
             "room_name": source.location.key,
             "last_heard_at": now,
@@ -257,6 +258,16 @@ def share_event_information(source, target, event_id, occurrence=None):
             "canon_status": "prototype",
         }
     )
+
+    if better_route:
+        existing["source_npc_id"] = source_id
+        existing["source_name"] = source.key
+        existing["source_via"] = source_route.get("via")
+        existing["origin_npc_id"] = str(origin_npc_id or source_id)
+        existing["hops"] = candidate_hops
+    elif existing_hops is not None:
+        existing["hops"] = existing_hops
+
     if created:
         existing["first_learned_at"] = now
 
@@ -274,6 +285,7 @@ def share_event_information(source, target, event_id, occurrence=None):
         "target_npc_id": target_id,
         "target_name": target.key,
         "source_via": source_route.get("via"),
+        "candidate_hops": candidate_hops,
         "hops": existing.get("hops"),
         "heard_count": existing.get("heard_count"),
         "event_archived": existing.get("event_archived"),
