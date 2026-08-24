@@ -16,3 +16,8 @@ class WorldObject(DefaultObject):
         # Optional authored visibility gate evaluated against the persistent
         # world_state of the object's current containing room/site.
         self.db.state_visibility_requirements = []
+
+        # Authored interactions available on this persistent object. Hard actor
+        # requirements reuse Skill/Knowledge/world_state gates; object_state_requirements
+        # are evaluated against this object's own persistent db.state.
+        self.db.object_actions = []
