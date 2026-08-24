@@ -4,7 +4,7 @@ import unicodedata
 from services.knowledge_context_engine import fact_knowledge_state, knowledge_facts
 
 
-FACT_RETRIEVAL_BUILD = "0.64.0-deterministic-known-fact-retrieval"
+FACT_RETRIEVAL_BUILD = "0.64.1-deterministic-known-fact-retrieval"
 DEFAULT_MAX_FACTS = 8
 DEFAULT_CHAR_BUDGET = 1600
 _TOKEN_RE = re.compile(r"[a-z0-9_:-]+")
@@ -79,22 +79,29 @@ def _relevance(fact, query_tokens, query_folded, site):
     fact_tokens = set(_tokens(search_text))
     overlap = sorted(set(query_tokens).intersection(fact_tokens))
 
+    semantic_score = 0
     score = 0
     reasons = []
     if query_folded and query_folded == fact_id:
+        semantic_score += 1000
         score += 1000
         reasons.append("EXACT_FACT_ID")
     if query_folded and query_folded == knowledge_key:
+        semantic_score += 800
         score += 800
         reasons.append("EXACT_KNOWLEDGE_KEY")
     if overlap:
+        semantic_score += 100 * len(overlap)
         score += 100 * len(overlap)
         reasons.append(f"TOKEN_OVERLAP:{','.join(overlap)}")
+
+    # Location is only a ranking bias among already relevant Facts. It must
+    # never make an unrelated Fact eligible for a non-empty semantic query.
     if _site_match(fact, site):
         score += 50
         reasons.append("CURRENT_SITE_SOURCE")
 
-    return score, reasons
+    return score, semantic_score, reasons
 
 
 def _context_line(fact):
@@ -147,8 +154,8 @@ def retrieve_known_facts(entity, query="", site=None, max_facts=DEFAULT_MAX_FACT
             omitted.append({"id": fact_id, "reason": "UNKNOWN"})
             continue
 
-        score, reasons = _relevance(fact, query_tokens, query_folded, site_packet)
-        if query_tokens and score <= 0:
+        score, semantic_score, reasons = _relevance(fact, query_tokens, query_folded, site_packet)
+        if query_folded and semantic_score <= 0:
             omitted.append({"id": fact_id, "reason": "NOT_RELEVANT"})
             continue
 
