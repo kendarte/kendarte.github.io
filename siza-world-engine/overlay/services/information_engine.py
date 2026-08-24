@@ -5,7 +5,7 @@ from evennia import search_tag
 from services.faction_engine import has_active_membership
 
 
-INFORMATION_BUILD = "0.34.0-rumor-multihop"
+INFORMATION_BUILD = "0.37.0-information-shared-actions"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 EVENT_AWARENESS_AUDIENCE = "AUDIENCE"
@@ -188,6 +188,39 @@ def _source_hops(source, event):
     return hops, origin
 
 
+def _emit_information_shared_action(source, target, event_id, occurrence, source_via, candidate_hops, stored_hops, heard_count, created, record):
+    """Emit a structured consequence action only after information was actually persisted."""
+    try:
+        from services.consequence_engine import emit_world_action
+    except Exception as exc:
+        return {"status": "IMPORT_ERROR", "error": str(exc)}
+
+    source_id = _npc_id(source)
+    target_id = _npc_id(target)
+    action_id = (
+        f"INFORMATION_SHARED:{event_id}:{int(occurrence)}:{source_id}:{target_id}:{int(heard_count or 0)}"
+    )
+    return emit_world_action(
+        {
+            "action_id": action_id,
+            "action_type": "INFORMATION_SHARED",
+            "actor_npc_id": source_id,
+            "actor_name": source.key,
+            "target_npc_id": target_id,
+            "target_name": target.key,
+            "event_id": event_id,
+            "occurrence": int(occurrence),
+            "source_via": source_via,
+            "candidate_hops": int(candidate_hops or 0),
+            "hops": int(stored_hops or 0),
+            "heard_count": int(heard_count or 0),
+            "created": bool(created),
+            "origin_npc_id": str((record or {}).get("origin_npc_id") or source_id),
+            "recipient_ids": [target_id],
+        }
+    )
+
+
 def share_event_information(source, target, event_id, occurrence=None):
     """Direct local communication of one known EVENT occurrence; never mutates witness snapshot."""
     source_id = _npc_id(source)
@@ -274,6 +307,19 @@ def share_event_information(source, target, event_id, occurrence=None):
     records[key] = existing
     target.db.event_information = records
 
+    action_consequence = _emit_information_shared_action(
+        source,
+        target,
+        event_id,
+        occurrence,
+        source_route.get("via"),
+        candidate_hops,
+        existing.get("hops"),
+        existing.get("heard_count"),
+        created,
+        existing,
+    )
+
     return {
         "success": True,
         "created": created,
@@ -290,6 +336,7 @@ def share_event_information(source, target, event_id, occurrence=None):
         "heard_count": existing.get("heard_count"),
         "event_archived": existing.get("event_archived"),
         "site": site.key if site else None,
+        "action_consequence": action_consequence,
         "record": existing,
     }
 
