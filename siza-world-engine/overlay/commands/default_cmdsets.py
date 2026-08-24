@@ -81,6 +81,12 @@ from commands.time_commands import (
 )
 from commands.trace_commands import CmdSizaSimTrace
 from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
+from commands.world_action_commands import (
+    CmdSizaAction,
+    CmdSizaActionResolve,
+    CmdSizaActions,
+    CmdSizaValidateV41,
+)
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -112,6 +118,10 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV38())
         self.add(CmdSizaValidateV39())
         self.add(CmdSizaValidateEngine())
+        self.add(CmdSizaActions())
+        self.add(CmdSizaAction())
+        self.add(CmdSizaActionResolve())
+        self.add(CmdSizaValidateV41())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
