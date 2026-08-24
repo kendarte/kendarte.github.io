@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v77_commands import CmdSizaValidateV77
+from commands.world_input_v78_commands import CmdSizaValidateV78
 
 
-QA_BUILD = "0.77.0-risk-based-one-command-qa"
+QA_BUILD = "0.78.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.76 already passed 18/18 including live qwen SEARCH, real PER rolls and discovered_facts persistence. v0.77 adds only an authored post-discovery projection: a newly discovered perception fact may explicitly grant a Knowledge level and structured Knowledge Fact. qwen still sees only the generic SEARCH capability and player text. Running atomic projection, normal known-Fact retrieval, idempotency, legacy no-projection compatibility, malformed-projection rollback, one live qwen->PER->Knowledge path, and targeted regressions for visible OBSERVE, INTERACTION, OBJECT_ACTION and MOVEMENT."
+            "RISK PROFILE: v0.77 passed 16/16 for semantic SEARCH discovery->Knowledge projection. v0.78 closes the remaining semantic mismatch: deterministic active perception recognized by the existing parser now applies the same authored post-discovery Knowledge projection and rollback rules. The validator invokes the real v0.78 __nomatch command, verifies retrieval/idempotency/legacy compatibility/malformed rollback, and checks semantic SEARCH plus TALK/OBJECT routing preservation."
         )
-        _run_command(CmdSizaValidateV77, self.caller)
+        _run_command(CmdSizaValidateV78, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.77 projection is fully exercised by the live qwen->PER->discovery->Knowledge->retrieval path and every touched state is restored. No separate manual projection fixture is required. The previously pending v0.76 real __nomatch active-search acceptance remains the only manual check."
+            "QA POLICY: v0.78 exercises the real synchronous __nomatch deterministic-search path directly, including persistent discovery, Knowledge projection and normal retrieval, then restores every touched state. No separate manual v0.78 acceptance is required if all checks pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
