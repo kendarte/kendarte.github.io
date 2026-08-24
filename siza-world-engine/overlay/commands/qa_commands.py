@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v811_commands import CmdSizaValidateV811
+from commands.world_input_v82_commands import CmdSizaValidateV82
 
 
-QA_BUILD = "0.81.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.82.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.81 already passed 9/11 including provider privacy, grounding rejection/fallback, live grounded read-only qwen rendering, no-information behavior, INFORM separation, OBJECT_ACTION and MOVEMENT. Its two failures shared one invalid test phrase: 'pregunto' is explicitly deterministic TALK since v0.74.1, while 'por' is not the semantic player-topic marker used by the qwen fallback bridge. v0.81.1 changes no production code; it reruns only the missing semantic path with the established 'saco el tema del ...' pattern, including a live qwen TALK target selection, authoritative Fact transfer before rendering, and model-reason non-persistence."
+            "RISK PROFILE: v0.81 is closed after its corrected semantic TALK fixture passed 4/4. v0.82 adds presentation-only NPC voice variation using explicit closed dialogue-style enums plus a neutral familiarity band derived from the existing relationship counter. Trait names/prose are never interpreted; only authored dialogue_effects with whitelisted enum dimensions can modify style. Fact selection/transfer still completes before rendering, qwen receives no IDs/provenance/private relationship data, and the v0.81 lexical grounding guard still owns factual safety. Running style sanitization, privacy, transfer-before-render, live two-profile grounded/read-only qwen rendering, no-information/INFORM separation, and PERCEPTION/OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV811, self.caller)
+        _run_command(CmdSizaValidateV82, self.caller)
         self.caller.msg(
-            "QA POLICY: validator-only follow-up. Production v0.81 dialogue rendering, Knowledge transfer, interaction routing and older action bridges are unchanged. If all targeted assertions pass, v0.81 is closed without manual acceptance."
+            "QA POLICY: factual safety and state isolation are automatic. Voice quality is presentation/nondeterministic, so manual acceptance remains only for comparing the two LIVE V082 STYLE result lines printed by this validator."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
