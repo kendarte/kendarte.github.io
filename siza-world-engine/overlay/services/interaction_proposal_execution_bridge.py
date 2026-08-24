@@ -1,9 +1,19 @@
 from services.action_intent_proposal_engine import build_local_capability_catalog
 from services.action_proposal_execution_bridge import MIN_EXECUTION_CONFIDENCE
-from services.interaction_engine import resolve_interaction
+from services.interaction_engine import normalize, resolve_interaction
 
 
-INTERACTION_BRIDGE_BUILD = "0.73.0-revalidated-interaction-proposal-bridge"
+INTERACTION_BRIDGE_BUILD = "0.74.0-player-authored-topic-interaction-bridge"
+MAX_TOPIC_CHARS = 180
+TOPIC_MARKERS = (
+    " tema del ",
+    " tema de ",
+    " asunto del ",
+    " asunto de ",
+    " acerca del ",
+    " acerca de ",
+    " sobre ",
+)
 
 
 def _proposal_dict(proposal_result):
@@ -11,6 +21,22 @@ def _proposal_dict(proposal_result):
         return {str(key): value for key, value in (proposal_result.get("proposal") or {}).items()}
     except Exception:
         return {}
+
+
+def extract_player_authored_topic(raw_player_input):
+    """Extract only an explicit topic phrase authored by the player; never derive topic text from the model proposal."""
+    text = normalize(raw_player_input)
+    if not text:
+        return ""
+    padded = f" {text} "
+    for marker in TOPIC_MARKERS:
+        if marker not in padded:
+            continue
+        tail = padded.split(marker, 1)[1].strip()
+        if not tail:
+            return ""
+        return tail[:MAX_TOPIC_CHARS].strip()
+    return ""
 
 
 def _find_local_visible_npc(actor, dbref):
@@ -36,9 +62,10 @@ def execute_validated_interaction_proposal(
     actor,
     proposal_result,
     *,
+    raw_player_input="",
     min_confidence=MIN_EXECUTION_CONFIDENCE,
 ):
-    """Revalidate one accepted INTERACTION proposal, then invoke the existing interaction engine with a canonical TALK intent."""
+    """Revalidate one INTERACTION proposal; qwen chooses only target, while optional topic comes solely from original player text."""
     if not actor:
         return {"status": "NO_ACTOR", "executed": False, "build": INTERACTION_BRIDGE_BUILD}
     if not isinstance(proposal_result, dict):
@@ -110,9 +137,13 @@ def execute_validated_interaction_proposal(
             "build": INTERACTION_BRIDGE_BUILD,
         }
 
+    topic = extract_player_authored_topic(raw_player_input)
+    canonical_raw = f"hablar con {npc.key}"
+    if topic:
+        canonical_raw = f"preguntar a {npc.key} sobre {topic}"
     canonical_intent = {
         "intent": "TALK",
-        "raw": f"hablar con {npc.key}",
+        "raw": canonical_raw,
     }
     response_text = str(resolve_interaction(actor, canonical_intent) or "").strip()
     if not response_text:
@@ -122,6 +153,7 @@ def execute_validated_interaction_proposal(
             "capability_id": capability_id,
             "target_dbref": int(npc.id),
             "target_name": str(npc.key),
+            "topic": topic or None,
             "build": INTERACTION_BRIDGE_BUILD,
         }
 
@@ -136,5 +168,7 @@ def execute_validated_interaction_proposal(
         "target_name": str(npc.key),
         "response_text": response_text,
         "interaction_intent": "TALK",
+        "topic": topic or None,
+        "topic_source": "PLAYER_INPUT" if topic else None,
         "build": INTERACTION_BRIDGE_BUILD,
     }
