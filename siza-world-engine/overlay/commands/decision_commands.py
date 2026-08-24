@@ -19,6 +19,7 @@ def _priority_text(item):
     memory = int(item.get("memory_modifier", 0) or 0)
     relationship = int(item.get("relationship_context_modifier", 0) or 0)
     knowledge = int(item.get("knowledge_modifier", 0) or 0)
+    trait = int(item.get("trait_modifier", 0) or 0)
     if effective is None:
         return "priority=None"
     if not total:
@@ -35,6 +36,8 @@ def _priority_text(item):
         parts.append(f"relationship={relationship:+}")
     if knowledge:
         parts.append(f"knowledge={knowledge:+}")
+    if trait:
+        parts.append(f"trait={trait:+}")
     if len(parts) == 2:
         parts.append(f"modifier={total:+}")
     return " | ".join(parts)
