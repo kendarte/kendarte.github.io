@@ -2,9 +2,10 @@ from services.action_resolution_engine import action_resolution_history
 from services.accumulate_d6_resolution_engine import resolve_pending_object_action_accumulate_d6
 from services.confront_d6_resolution_engine import resolve_pending_object_action_confront_d6
 from services.direct_d6_resolution_engine import pending_object_actions, resolve_pending_object_action_d6
+from services.synchronize_d6_resolution_engine import resolve_pending_object_action_synchronize_d6
 
 
-PLAYER_ROLL_BUILD = "0.54.0-player-roll-mode-dispatch"
+PLAYER_ROLL_BUILD = "0.55.0-player-roll-mode-dispatch"
 
 
 def _pending_action(actor, attempt_id=None):
@@ -80,6 +81,16 @@ def resolve_pending_object_action_roll(
             forced_target_roll=forced_target_roll,
         )
         packet["mode"] = "CONFRONT"
+        packet["dispatch_build"] = PLAYER_ROLL_BUILD
+        return packet
+
+    if mode == "SYNCHRONIZE":
+        packet = resolve_pending_object_action_synchronize_d6(
+            actor,
+            attempt_id=action.get("attempt_id"),
+            forced_roll=forced_roll,
+        )
+        packet["mode"] = "SYNCHRONIZE"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
         return packet
 
