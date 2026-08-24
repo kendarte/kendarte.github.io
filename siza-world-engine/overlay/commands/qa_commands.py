@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v74_commands import CmdSizaValidateV74
+from commands.world_input_v741_commands import CmdSizaValidateV741
 
 
-QA_BUILD = "0.74.0-risk-based-one-command-qa"
+QA_BUILD = "0.74.1-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.74 allows semantic TALK fallback to carry an explicit conversation topic, but qwen still selects only the current visible NPC. "
-            "Topic text is extracted deterministically from the original player input, never from model reason; the request boundary still excludes NPC Knowledge/Facts. The existing interaction engine then applies the NPC Knowledge gate and chooses the Fact response. Running deterministic talk preservation, player-topic extraction, provider-boundary privacy, blocked/allowed Knowledge levels, modern Fact.text compatibility, stale-NPC rejection, live qwen target selection, greeting regression and OBJECT_ACTION/MOVEMENT regressions."
+            "RISK PROFILE: v0.74 passed 12/13 checks; the only failure was routing precedence for an explicit TALK sentence containing an object noun. "
+            "v0.74.1 adds a narrow wrapper: parse_interaction_intent TALK wins before weak object ambiguity can reach qwen, while the semantic topic fallback remains unchanged. Running targeted explicit-TALK classification, exact real __nomatch execution through the existing Knowledge-gated interaction engine, semantic-fallback preservation and OBJECT_ACTION routing regression."
         )
-        _run_command(CmdSizaValidateV74, self.caller)
+        _run_command(CmdSizaValidateV741, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.74 touches persistent social memory and authorized Fact disclosure. Automatic QA isolates a temporary modern Fact, tests both denied and allowed Knowledge levels, performs one live qwen target-selection path, and restores actor/NPC state exactly. A short manual topic-conversation acceptance check is required if all assertions pass."
+            "QA POLICY: v0.74 Knowledge/privacy/live-qwen behavior already passed 12 checks and production topic/bridge code is unchanged. This targeted rerun validates only the new explicit-TALK precedence wrapper and restores all touched social/Knowledge state. Manual topic-conversation acceptance is required if all targeted assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
