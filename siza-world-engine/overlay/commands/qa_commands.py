@@ -1,12 +1,9 @@
 from evennia import Command
 
-from commands.decision_commands import CmdSizaDecide, CmdSizaDecisionStep
-from commands.world_object_v59_commands import CmdSizaFactGoalsV59
-from commands.world_object_v61_commands import CmdSizaResetV61
-from commands.world_object_v62_commands import CmdSizaValidateV62
+from commands.world_object_v63_commands import CmdSizaValidateV63
 
 
-QA_BUILD = "0.62.0-one-command-qa"
+QA_BUILD = "0.63.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -29,7 +26,7 @@ def _run_command(command_cls, caller, args=""):
 
 
 class CmdSizaQALatest(Command):
-    """Run the current manual acceptance sequence and newest automatic validator."""
+    """Run the newest risk-based validator; manual acceptance is only required when risk remains."""
 
     key = "siza-qa-latest"
     aliases = ["qa-latest"]
@@ -37,17 +34,12 @@ class CmdSizaQALatest(Command):
 
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
-        self.caller.msg("PHASE 1/2: v0.61 integration acceptance")
-
-        _run_command(CmdSizaResetV61, self.caller)
-        _run_command(CmdSizaFactGoalsV59, self.caller, "Mara")
-        _run_command(CmdSizaDecide, self.caller, "Mara")
-        _run_command(CmdSizaDecisionStep, self.caller, "Mara")
-        _run_command(CmdSizaDecisionStep, self.caller, "Mara")
-        _run_command(CmdSizaDecisionStep, self.caller, "Mara")
-        _run_command(CmdSizaFactGoalsV59, self.caller, "Mara")
-        _run_command(CmdSizaDecide, self.caller, "Mara")
-
-        self.caller.msg("PHASE 2/2: newest automatic validator v0.62")
-        _run_command(CmdSizaValidateV62, self.caller)
+        self.caller.msg(
+            "RISK PROFILE: Consequence Engine structured NPC Facts changed. "
+            "Running v0.63 validator with integrated v0.62 object/state regression and autonomous world-tick coverage."
+        )
+        _run_command(CmdSizaValidateV63, self.caller)
+        self.caller.msg(
+            "QA POLICY: manual acceptance is required only if this validator fails or exposes a behavior not covered by its assertions."
+        )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
