@@ -1,15 +1,17 @@
 from datetime import datetime, timezone
 
-from evennia import create_script, search_script
+from evennia import create_script, search_script, search_tag
 
-from services.npc_simulation import simulated_npcs
+from services.relationship_engine import create_information_obligation
 
 
-CONSEQUENCE_BUILD = "0.29.0-action-consequence-knowledge"
+CONSEQUENCE_BUILD = "0.36.0-consequence-social-intents"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
 MEMORY_LIMIT = 100
+ENTITY_TAG = "kalnaj_pilot_v03_entities"
+ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -165,8 +167,11 @@ def _resolve_template(value, action):
 
 
 def _npc_map():
+    """All persistent Siza NPCs, including non-simulated social/test recipients."""
     output = {}
-    for npc in simulated_npcs():
+    for npc in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
+        if not bool(getattr(npc.db, "is_npc", False)):
+            continue
         npc_id = str(getattr(npc.db, "npc_id", "") or "").strip()
         if npc_id:
             output[npc_id] = npc
@@ -342,6 +347,55 @@ def _apply_knowledge_consequence(rule, action, npc):
     }
 
 
+def _apply_social_intent_consequence(rule, action, npc, npcs):
+    """Create an explicit social INFORM obligation from a structured consequence rule."""
+    spec = _plain_dict((rule or {}).get("social_intent"))
+    if not spec or not npc:
+        return None
+
+    resolved = _plain_dict(_resolve_template(spec, action))
+    kind = str(resolved.get("kind") or "INFORM").upper()
+    if kind != "INFORM":
+        return {
+            "social_intent_success": False,
+            "social_intent_reason": "UNSUPPORTED_KIND",
+            "social_intent_kind": kind,
+        }
+
+    target_id = str(resolved.get("target_npc_id") or "").strip()
+    target = npcs.get(target_id)
+    if not target:
+        return {
+            "social_intent_success": False,
+            "social_intent_reason": "TARGET_NOT_FOUND",
+            "social_intent_kind": kind,
+            "social_intent_target_npc_id": target_id,
+        }
+
+    event_id = str(resolved.get("event_id") or "").strip()
+    occurrence = resolved.get("occurrence")
+    priority = _safe_int(resolved.get("priority"), 50)
+    packet = create_information_obligation(
+        npc,
+        target,
+        event_id,
+        occurrence,
+        priority,
+    )
+    return {
+        "social_intent_success": bool(packet.get("success")),
+        "social_intent_reason": packet.get("reason") or ("CREATED" if packet.get("success") else "FAILED"),
+        "social_intent_kind": kind,
+        "social_intent_created": packet.get("created"),
+        "social_intent_obligation_id": packet.get("obligation_id"),
+        "social_intent_target_npc_id": target_id,
+        "social_intent_target_name": target.key,
+        "social_intent_event_id": event_id,
+        "social_intent_occurrence": occurrence,
+        "social_intent_priority": priority,
+    }
+
+
 def emit_world_action(action):
     """Evaluate one structured world action exactly once against active consequence rules."""
     packet = _record(action) or {}
@@ -383,13 +437,17 @@ def emit_world_action(action):
             }
             memory_result = _apply_memory_consequence(rule, packet, npc)
             knowledge_result = _apply_knowledge_consequence(rule, packet, npc)
+            social_result = _apply_social_intent_consequence(rule, packet, npc, npcs)
             if memory_result:
                 row.update(memory_result)
                 row["memory_applied"] = True
             if knowledge_result:
                 row.update(knowledge_result)
                 row["knowledge_applied"] = True
-            if row.get("memory_applied") or row.get("knowledge_applied"):
+            if social_result:
+                row.update(social_result)
+                row["social_intent_applied"] = bool(social_result.get("social_intent_success"))
+            if row.get("memory_applied") or row.get("knowledge_applied") or social_result:
                 applied.append(row)
 
         rule_results.append(
@@ -410,6 +468,7 @@ def emit_world_action(action):
             "timestamp": packet.get("timestamp"),
             "actor_npc_id": packet.get("actor_npc_id"),
             "actor_name": packet.get("actor_name"),
+            "event_id": packet.get("event_id"),
             "order_id": packet.get("order_id"),
             "task_id": packet.get("task_id"),
             "job_id": packet.get("job_id"),
