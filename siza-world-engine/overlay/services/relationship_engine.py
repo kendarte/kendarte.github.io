@@ -2,8 +2,14 @@ from datetime import datetime, timezone
 
 from evennia import search_object, search_tag
 
+from services.information_engine import (
+    event_knowledge_route,
+    find_event_occurrence,
+    share_event_information,
+)
 
-RELATIONSHIP_BUILD = "0.21.0-relationship-identity"
+
+RELATIONSHIP_BUILD = "0.35.0-social-information-action"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -68,8 +74,19 @@ def _obligations(relation):
     return output
 
 
+def _information_obligation_ready(npc, obligation):
+    event_id = str((obligation or {}).get("event_id") or "").strip()
+    occurrence = (obligation or {}).get("occurrence")
+    if not event_id or occurrence is None:
+        return False, None, None
+    site, event = find_event_occurrence(event_id, occurrence=occurrence)
+    if not event:
+        return False, site, event
+    return bool(event_knowledge_route(npc, event).get("known")), site, event
+
+
 def collect_relationship_candidates(npc, default_priority=50):
-    """Derive persistent RELATIONSHIP goals that dynamically follow another NPC."""
+    """Derive persistent social goals that dynamically follow another NPC."""
     if not npc or not bool(npc.db.decision_enabled):
         return []
 
@@ -90,35 +107,122 @@ def collect_relationship_candidates(npc, default_priority=50):
             obligation_id = str(obligation.get("id") or "").strip()
             if not obligation_id:
                 continue
+            kind = str(obligation.get("kind") or "OBLIGATION").upper()
+            if kind == "INFORM":
+                ready, _site, _event = _information_obligation_ready(npc, obligation)
+                if not ready:
+                    continue
             try:
                 priority = int(obligation.get("priority", default_priority))
             except (TypeError, ValueError):
                 priority = int(default_priority)
 
-            output.append(
-                {
-                    "id": f"RELATIONSHIP:{obligation_id}",
-                    "relationship_obligation_id": obligation_id,
-                    "relationship_target_npc_id": str(target_npc_id),
-                    "relationship_target_name": target.key,
-                    "type": "RELATIONSHIP",
-                    "priority": priority,
-                    "active": True,
-                    "target_room_id": getattr(target.location.db, "room_id", None),
-                    "target_room_key": target.location.key,
-                    "activity": obligation.get("activity") or f"atendiendo un asunto con {target.key}",
-                    "source": "RELATIONSHIP",
-                    "one_shot": bool(obligation.get("one_shot", True)),
-                    "canon_status": obligation.get("canon_status") or "prototype",
-                    "relationship_kind": obligation.get("kind") or "OBLIGATION",
-                }
-            )
+            candidate = {
+                "id": f"RELATIONSHIP:{obligation_id}",
+                "relationship_obligation_id": obligation_id,
+                "relationship_target_npc_id": str(target_npc_id),
+                "relationship_target_name": target.key,
+                "type": "RELATIONSHIP",
+                "priority": priority,
+                "active": True,
+                "target_room_id": getattr(target.location.db, "room_id", None),
+                "target_room_key": target.location.key,
+                "activity": obligation.get("activity") or f"atendiendo un asunto con {target.key}",
+                "source": "RELATIONSHIP",
+                "one_shot": bool(obligation.get("one_shot", True)),
+                "canon_status": obligation.get("canon_status") or "prototype",
+                "relationship_kind": kind,
+            }
+            if kind == "INFORM":
+                candidate.update(
+                    {
+                        "information_event_id": obligation.get("event_id"),
+                        "information_occurrence": obligation.get("occurrence"),
+                    }
+                )
+            output.append(candidate)
 
     return output
 
 
+def create_information_obligation(source, target, event_id, occurrence, priority):
+    """Create or reactivate one explicit social intent to tell a target about a known occurrence."""
+    if not source or not target:
+        return {"success": False, "reason": "BAD_NPC"}
+    source_id = str(getattr(source.db, "npc_id", "") or "").strip()
+    target_id = str(getattr(target.db, "npc_id", "") or "").strip()
+    if not source_id or not target_id or source_id == target_id:
+        return {"success": False, "reason": "BAD_NPC"}
+    try:
+        occurrence = int(occurrence)
+        priority = int(priority)
+    except (TypeError, ValueError):
+        return {"success": False, "reason": "BAD_NUMBER"}
+
+    site, event = find_event_occurrence(event_id, occurrence=occurrence)
+    if not event:
+        return {"success": False, "reason": "EVENT_NOT_FOUND"}
+    route = event_knowledge_route(source, event)
+    if not route.get("known"):
+        return {"success": False, "reason": "SOURCE_NOT_AWARE"}
+
+    relationships = _relationships(source)
+    relation = _relation_record(relationships.get(target_id))
+    obligations = _obligations(relation)
+    obligation_id = f"INFORM-{target_id}-{str(event_id).strip()}-{occurrence}"
+    now = datetime.now(timezone.utc).isoformat()
+    payload = {
+        "id": obligation_id,
+        "kind": "INFORM",
+        "active": True,
+        "status": "pending",
+        "priority": priority,
+        "one_shot": True,
+        "event_id": str(event_id).strip(),
+        "occurrence": occurrence,
+        "activity": f"contándole a {target.key} sobre {str(event_id).strip()} occurrence {occurrence}",
+        "activated_at": now,
+        "canon_status": "prototype",
+    }
+
+    created = True
+    for index, existing in enumerate(obligations):
+        if str(existing.get("id") or "") != obligation_id:
+            continue
+        payload["created_at"] = existing.get("created_at") or now
+        obligations[index] = payload
+        created = False
+        break
+    if created:
+        payload["created_at"] = now
+        obligations.append(payload)
+
+    relation["obligations"] = obligations
+    relation["target_type"] = "NPC"
+    relation["target_npc_id"] = target_id
+    relation["target_dbref"] = int(target.id)
+    relation["target_name"] = target.key
+    relationships[target_id] = relation
+    source.db.relationships = relationships
+
+    return {
+        "success": True,
+        "created": created,
+        "obligation_id": obligation_id,
+        "source_npc_id": source_id,
+        "source_name": source.key,
+        "target_npc_id": target_id,
+        "target_name": target.key,
+        "event_id": str(event_id).strip(),
+        "occurrence": occurrence,
+        "priority": priority,
+        "source_via": route.get("via"),
+        "site": site.key if site else None,
+    }
+
+
 def resolve_relationship_goal(npc, obligation_id, target_npc_id):
-    """Resolve one obligation only when actor and target NPC physically coincide."""
+    """Resolve one social obligation only when actor and target NPC physically coincide."""
     if not npc:
         return {"completed": False, "resolved": False, "reason": "NO_NPC"}
 
@@ -141,6 +245,8 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
     obligations = _obligations(relation)
     changed = False
     now = datetime.now(timezone.utc).isoformat()
+    information_result = None
+    relationship_kind = None
 
     for index, obligation in enumerate(obligations):
         if str(obligation.get("id") or "") != wanted:
@@ -153,6 +259,36 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
                 "obligation_id": wanted,
                 "target_npc_id": target_id,
                 "target_name": target.key,
+            }
+
+        relationship_kind = str(obligation.get("kind") or "OBLIGATION").upper()
+        if relationship_kind == "INFORM":
+            information_result = share_event_information(
+                npc,
+                target,
+                obligation.get("event_id"),
+                occurrence=obligation.get("occurrence"),
+            )
+            if not information_result.get("success"):
+                return {
+                    "completed": False,
+                    "resolved": False,
+                    "reason": information_result.get("reason") or "INFORMATION_FAILED",
+                    "obligation_id": wanted,
+                    "target_npc_id": target_id,
+                    "target_name": target.key,
+                    "relationship_kind": relationship_kind,
+                    "information_shared": False,
+                    "information_result": information_result,
+                }
+            obligation["information_result"] = {
+                "event_id": information_result.get("event_id"),
+                "occurrence": information_result.get("occurrence"),
+                "created": information_result.get("created"),
+                "source_via": information_result.get("source_via"),
+                "candidate_hops": information_result.get("candidate_hops"),
+                "hops": information_result.get("hops"),
+                "heard_count": information_result.get("heard_count"),
             }
 
         obligation["active"] = False
@@ -191,6 +327,9 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
         "target_npc_id": target_id,
         "target_name": target.key,
         "location": npc.location.key if npc.location else None,
+        "relationship_kind": relationship_kind,
+        "information_shared": bool(information_result and information_result.get("success")),
+        "information_result": information_result,
     }
 
 
