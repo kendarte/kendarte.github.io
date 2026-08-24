@@ -1,4 +1,7 @@
-DECISION_PERSONALITY_BUILD = "0.22.0-decision-personality"
+from services.faction_engine import faction_context_modifiers
+
+
+DECISION_PERSONALITY_BUILD = "0.24.0-faction-membership-loyalty"
 
 MIN_MODIFIER = -100
 MAX_MODIFIER = 100
@@ -82,7 +85,7 @@ def decision_biases(npc):
 
 
 def apply_decision_personality(npc, goal, base_priority=None):
-    """Decorate one goal with base + NPC-specific modifiers = effective priority."""
+    """Decorate one goal with authored and contextual NPC-specific modifiers."""
     item = dict(goal or {})
     goal_type = str(item.get("type") or "").upper()
     if base_priority is None:
@@ -118,6 +121,22 @@ def apply_decision_personality(npc, goal, base_priority=None):
                 "id": str(modifier.get("id") or "UNNAMED_MODIFIER"),
                 "value": value,
                 "source": "decision_modifiers",
+            }
+        )
+
+    for modifier in faction_context_modifiers(npc, item):
+        value = _clamp(_safe_int(modifier.get("value"), 0), MIN_MODIFIER, MAX_MODIFIER)
+        if not value:
+            continue
+        total += value
+        applied.append(
+            {
+                "id": str(modifier.get("id") or "FACTION_CONTEXT"),
+                "value": value,
+                "source": modifier.get("source") or "faction_membership",
+                "faction_id": modifier.get("faction_id"),
+                "role": modifier.get("role"),
+                "rank": modifier.get("rank"),
             }
         )
 
