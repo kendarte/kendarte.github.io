@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_object_v67_commands import CmdSizaValidateV67
+from commands.world_input_v68_commands import CmdSizaValidateV68
 
 
-QA_BUILD = "0.67.0-risk-based-one-command-qa"
+QA_BUILD = "0.68.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: grounded narration is moving toward real player input, so knowledge ownership is now a security/gameplay boundary. "
-            "Running viewer-vs-NPC Fact isolation, subject-mention non-escalation, clean provider metadata, live qwen3:8b narration and no-persistence assertions."
+            "RISK PROFILE: real __nomatch player input now gains an Ollama fallback. "
+            "Running object/interaction/perception/movement precedence, inquiry-only AI gating, unknown-action rejection, viewer-private Fact isolation, async-dispatch contract, live qwen3:8b narration and no-persistence assertions."
         )
-        _run_command(CmdSizaValidateV67, self.caller)
+        _run_command(CmdSizaValidateV68, self.caller)
         self.caller.msg(
-            "QA POLICY: because this protects player perspective at the LLM boundary, the visible live viewer narration sample is part of acceptance."
+            "QA POLICY: because this changes the real player input router, successful automatic QA is followed by a short real-input acceptance check of the critical branches only."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
