@@ -184,10 +184,10 @@ class CmdSizaValidateV65(Command):
             )
 
             check(
-                "known-relevant-fact-enters-provider-prompt",
-                KNOWN_FACT_ID in provider_text
-                and "anotacion duplicada" in provider_text.lower(),
-                f"selected={selected_ids}",
+                "known-relevant-fact-enters-provider-prompt-without-internal-id",
+                "anotacion duplicada" in provider_text.lower()
+                and KNOWN_FACT_ID not in provider_text,
+                f"selected={selected_ids} id_leaked={KNOWN_FACT_ID in provider_text}",
             )
 
             check(
@@ -208,7 +208,8 @@ class CmdSizaValidateV65(Command):
                 "provider-system-enforces-explicit-grounding-contract",
                 provider.get("system") == SYSTEM_INSTRUCTIONS
                 and "No inventes" in str(provider.get("system") or "")
-                and "únicamente" in str(provider.get("system") or ""),
+                and "únicamente" in str(provider.get("system") or "")
+                and "No menciones identificadores internos" in str(provider.get("system") or ""),
                 "system_contract_present=True",
             )
 
