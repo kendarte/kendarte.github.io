@@ -11,11 +11,12 @@ from services.perception_engine import (
 )
 
 
-WORLD_EVENT_BUILD = "0.32.0-event-awareness"
+WORLD_EVENT_BUILD = "0.33.1-event-occurrence-history"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
+EVENT_HISTORY_LIMIT = 200
 
 
 def _plain_list(value):
@@ -93,6 +94,50 @@ def _rules(site):
         if item is not None:
             output.append(item)
     return output
+
+
+def _history(site):
+    output = []
+    for raw in _plain_list(getattr(site.db, "world_event_history", [])):
+        item = _record(raw)
+        if item is not None:
+            output.append(item)
+    return output
+
+
+def _archive_event_occurrence(site, event, archived_at=None):
+    """Persist one completed EVENT occurrence without changing the live instance schema."""
+    if not site or not event or _event_goal_type(event) != "EVENT":
+        return None
+    event_id = str(event.get("id") or "").strip()
+    occurrence = int(event.get("occurrence", 0) or 0)
+    if not event_id or occurrence <= 0:
+        return None
+
+    now = archived_at or datetime.now(timezone.utc).isoformat()
+    snapshot = dict(event)
+    snapshot["active"] = False
+    snapshot["status"] = "historical"
+    snapshot["archived_at"] = now
+    snapshot.setdefault("deactivated_at", now)
+
+    history = _history(site)
+    replaced = False
+    for index, existing in enumerate(history):
+        if (
+            str(existing.get("id") or "") == event_id
+            and int(existing.get("occurrence", 0) or 0) == occurrence
+        ):
+            history[index] = snapshot
+            replaced = True
+            break
+    if not replaced:
+        history.append(snapshot)
+
+    if len(history) > EVENT_HISTORY_LIMIT:
+        history = history[-EVENT_HISTORY_LIMIT:]
+    site.db.world_event_history = history
+    return snapshot
 
 
 def _find_room(room_key, room_id=None):
@@ -294,6 +339,8 @@ def refresh_world_event_rules():
                     event["active"] = False
                     event["status"] = "inactive"
                     event["deactivated_at"] = now
+                    if goal_type == "EVENT" and was_active:
+                        _archive_event_occurrence(site, event, archived_at=now)
                     changed = True
 
             instances[index] = event
@@ -595,6 +642,7 @@ def inspect_event_sites():
                 "state": _plain_dict(site.db.world_event_state),
                 "rules": _rules(site),
                 "instances": _instances(site),
+                "history": _history(site),
             }
         )
     return rows
