@@ -1,7 +1,7 @@
 from evennia import create_script, search_script
 
 
-FACTION_BUILD = "0.25.0-faction-rank-authority"
+FACTION_BUILD = "0.25.1-faction-rank-authority-persistent-maps"
 FACTION_REGISTRY_KEY = "SIZA_FACTION_REGISTRY"
 MIN_LOYALTY_BIAS = -100
 MAX_LOYALTY_BIAS = 100
@@ -76,9 +76,11 @@ def faction_definition(faction_id):
 
 
 def _normalize_ranks(raw):
+    """Normalize normal dicts and Evennia persistent mapping wrappers alike."""
     output = {}
-    if isinstance(raw, dict):
-        iterable = raw.items()
+    mapping = _plain_dict(raw)
+    if mapping:
+        iterable = mapping.items()
     else:
         iterable = []
         for value in _plain_list(raw):
@@ -137,9 +139,10 @@ def _membership_rows(npc):
         return []
     raw = getattr(npc.db, "faction_memberships", None)
     output = []
-    if isinstance(raw, dict):
+    mapping = _plain_dict(raw)
+    if mapping:
         iterable = []
-        for faction_id, value in raw.items():
+        for faction_id, value in mapping.items():
             item = _record(value) or {}
             item.setdefault("faction_id", str(faction_id))
             iterable.append(item)
