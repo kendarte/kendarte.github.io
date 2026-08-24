@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 
 from evennia import DefaultScript, create_script, search_script
 
+from services.fact_driven_decision import decision_step
 from services.job_claims import arbitrate_job_claims, refresh_job_claims
 from services.job_engine import refresh_world_job_rules
 from services.need_dynamics import advance_need_dynamics, apply_activity_need_dynamics
-from services.npc_decision import decision_step
 from services.npc_simulation import simulated_npcs, simstep
 from services.shift_handoff import release_offshift_claims
 from services.world_clock import advance_world_clock, ensure_world_clock, world_clock_state
@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.31.0-skills-competence"
+WORLD_TICK_BUILD = "0.59.0-fact-driven-decisions"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
