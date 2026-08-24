@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v792_commands import CmdSizaValidateV792
+from commands.world_input_v80_commands import CmdSizaValidateV80
 
 
-QA_BUILD = "0.79.2-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.80.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.79.1 already passed the production-critical live path through qwen recipient selection and FACT_TRANSFERRED; its validator then crashed while json.dumps tried to serialize an Evennia _SaverList. v0.79.2 changes no production code. This targeted rerun clones persistent Saver containers to plain Python before JSON inspection, rechecks that model reason never persists, verifies transfer idempotency, and runs the PERCEPTION/INTERACTION/OBJECT_ACTION/MOVEMENT regressions that the prior validator did not reach."
+            "RISK PROFILE: v0.79.1 is closed. v0.80 makes an NPC Fact that the existing interaction engine actually shared become persistent player Knowledge through the existing authoritative transfer engine. Explicit TALK remains deterministic; semantic TALK still lets qwen select only the visible NPC target. The model never receives Knowledge/Facts and never chooses fact_id/content. Running explicit and semantic acquisition, provenance, retrieval, idempotency, no-information/greeting non-acquisition, INFORM separation, provider-boundary privacy, and PERCEPTION/OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV792, self.caller)
+        _run_command(CmdSizaValidateV80, self.caller)
         self.caller.msg(
-            "QA POLICY: this is a validator-only follow-up. The previous v0.79.1 run already proved the live qwen->recipient->authoritative FACT_TRANSFERRED path. If this targeted validator passes all assertions, v0.79.1 production INFORM is closed without a separate manual acceptance."
+            "QA POLICY: v0.80 uses the real interaction engine and real Fact transfer in both deterministic and semantic TALK fixtures, snapshots/restores persistent Knowledge/social/consequence state, and exercises all changed boundaries automatically. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
