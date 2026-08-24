@@ -1,5 +1,9 @@
 from evennia import default_cmds
 
+from commands.consequence_commands import (
+    CmdSizaConsequences,
+    CmdSizaConsequenceToggle,
+)
 from commands.context_effect_commands import (
     CmdSizaContextEffects,
     CmdSizaContextEffectToggle,
@@ -84,6 +88,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaPersonalityToggle())
         self.add(CmdSizaContextEffects())
         self.add(CmdSizaContextEffectToggle())
+        self.add(CmdSizaConsequences())
+        self.add(CmdSizaConsequenceToggle())
         self.add(CmdSizaFactions())
         self.add(CmdSizaFactionLoyalty())
         self.add(CmdSizaFactionMembershipToggle())
