@@ -349,15 +349,12 @@ class CmdSizaValidateV58(Command):
             )
 
             consequence = transferred.get("action_consequence") or {}
+            expected_action_id = f"KNOWLEDGE_FACT_SHARED:{transferred.get('transfer_id')}"
             check(
                 "fact-transfer-emits-structured-world-action",
                 consequence.get("status") == "PROCESSED"
-                and any(
-                    str(row.get("action_type") or "") == "KNOWLEDGE_FACT_SHARED"
-                    and str(row.get("fact_id") or "") == FACT_ID
-                    for row in _plain_list(getattr(registry.db, "action_log", []))
-                ),
-                f"consequence={consequence.get('status')}",
+                and consequence.get("action_id") == expected_action_id,
+                f"status={consequence.get('status')} action_id={consequence.get('action_id')}",
             )
 
             repeated = transfer_knowledge_fact(source, target, FACT_ID)
