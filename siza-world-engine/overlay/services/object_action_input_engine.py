@@ -1,10 +1,11 @@
 import re
 import unicodedata
 
+from services.action_resolution_engine import stat_value
 from services.object_action_engine import authored_object_actions, begin_object_action
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.53.1-player-facing-blocker-messages"
+OBJECT_ACTION_INPUT_BUILD = "0.54.0-player-facing-confront-input"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
@@ -215,6 +216,18 @@ def render_object_action_input_result(packet):
         blockers = result.get("blockers") or []
         return _human_requirement_message(blockers, object_name)
     if status == "PENDING_RESOLUTION":
+        mode = str(result.get("resolution_mode") or "").upper()
+        if mode == "CONFRONT":
+            action = (packet or {}).get("action") or {}
+            check = action.get("check") or {}
+            target_stat = check.get("target_stat")
+            target_obj = (packet or {}).get("object")
+            target_value = stat_value(target_obj, target_stat) if target_obj and target_stat else None
+            return (
+                f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
+                f"attempt_id={result.get('attempt_id')} | {result.get('actor_stat')}={result.get('actor_stat_value')} "
+                f"vs {object_name} {target_stat}={target_value} | escribe 'tirar' para resolver"
+            )
         return (
             f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
             f"attempt_id={result.get('attempt_id')} | stat={result.get('actor_stat')} | "
