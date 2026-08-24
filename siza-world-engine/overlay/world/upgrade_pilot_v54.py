@@ -75,6 +75,9 @@ def ensure_v54_pilot_content():
             "build": PILOT_BUILD,
         }
 
+    if target.location != site:
+        target.move_to(site, quiet=True)
+
     stats = adventure_stats(target)
     target_stat_authored = TARGET_STAT in stats
     if not target_stat_authored:
