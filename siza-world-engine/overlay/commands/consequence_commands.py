@@ -66,6 +66,22 @@ class CmdSizaConsequences(Command):
                 f"occurrence={entry.get('occurrence')}{subject} | recipients={entry.get('recipient_ids') or []} | "
                 f"rules={applied or 'NONE'}"
             )
+            for result in entry.get("rule_results") or []:
+                for row in result.get("applied") or []:
+                    details = []
+                    if row.get("memory_applied"):
+                        details.append(
+                            f"memory={row.get('memory_id')} occurrences={row.get('occurrences_after')}"
+                        )
+                    if row.get("knowledge_applied"):
+                        details.append(
+                            f"knowledge={row.get('knowledge_key')} {row.get('knowledge_before')}->{row.get('knowledge_after')} "
+                            f"mode={row.get('knowledge_mode')} changed={row.get('knowledge_changed')}"
+                        )
+                    self.caller.msg(
+                        f"    {result.get('rule_id')} -> {row.get('npc_name') or row.get('npc_id')} | "
+                        + (" | ".join(details) if details else row.get("status", "APPLIED"))
+                    )
         self.caller.msg("====================================================")
 
 
