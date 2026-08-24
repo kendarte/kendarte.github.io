@@ -6,7 +6,7 @@ from services.player_recipient_consequence_engine import apply_player_actor_cons
 from services.synchronize_d6_resolution_engine import resolve_pending_object_action_synchronize_d6
 
 
-PLAYER_ROLL_BUILD = "0.56.0-player-recipient-consequence-dispatch"
+PLAYER_ROLL_BUILD = "0.57.0-persistent-knowledge-facts-dispatch"
 
 
 def _pending_action(actor, attempt_id=None):
@@ -31,6 +31,7 @@ def _finalize_player_recipient(actor, packet):
         return result
 
     site = getattr(actor, "location", None) if actor else None
+    action_result = result.get("action_result") or {}
     action_packet = {
         "action_id": f"OBJECT_ACTION_RESOLVED:{result.get('attempt_id')}",
         "action_type": "OBJECT_ACTION_RESOLVED",
@@ -47,6 +48,7 @@ def _finalize_player_recipient(actor, packet):
         "site_name": site.key if site else None,
         "object_dbref": result.get("object_dbref"),
         "object_id": result.get("object_id"),
+        "object_name": action_result.get("object_name"),
     }
     result["player_recipient_consequence"] = apply_player_actor_consequences(actor, action_packet)
     return result
