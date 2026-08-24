@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.24.0-faction-membership-loyalty"
+WORLD_TICK_BUILD = "0.27.0-action-consequence-memory"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
