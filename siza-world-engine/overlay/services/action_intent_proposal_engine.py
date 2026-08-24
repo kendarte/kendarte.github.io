@@ -8,7 +8,7 @@ from services.object_action_engine import authored_object_actions
 from services.ollama_narration_provider import DEFAULT_OLLAMA_ENDPOINT, DEFAULT_OLLAMA_MODEL
 
 
-ACTION_PROPOSAL_BUILD = "0.69.0-structured-action-intent-proposal"
+ACTION_PROPOSAL_BUILD = "0.69.1-structured-action-intent-proposal"
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_NUM_PREDICT = 160
 ALLOWED_KINDS = {"OBJECT_ACTION", "MOVEMENT", "INTERACTION", "PERCEPTION", "UNSUPPORTED"}
@@ -114,7 +114,12 @@ def _proposal_schema(catalog):
         "properties": {
             "kind": {"type": "string", "enum": sorted(ALLOWED_KINDS)},
             "capability_id": {"type": "string", "enum": [""] + capability_ids},
-            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Decimal confidence from 0.0 to 1.0. Never use a percentage such as 80 or 100.",
+            },
             "reason": {"type": "string"},
         },
         "required": ["kind", "capability_id", "confidence", "reason"],
@@ -138,7 +143,9 @@ def build_action_proposal_request(actor, raw):
     system = (
         "Eres un parser de intención de Siza, no un narrador y no ejecutas acciones. "
         "Selecciona únicamente una capability incluida en AVAILABLE CAPABILITIES cuando represente claramente la acción del jugador. "
-        "Si ninguna capability corresponde, responde UNSUPPORTED con capability_id vacío. No inventes capacidades, IDs, objetos ni resultados."
+        "Si ninguna capability corresponde, responde UNSUPPORTED con capability_id vacío. No inventes capacidades, IDs, objetos ni resultados. "
+        "El campo confidence SIEMPRE es un número decimal entre 0.0 y 1.0, nunca un porcentaje: usa 1.0 para certeza total, no 100. "
+        "Para UNSUPPORTED también usa la escala decimal 0.0-1.0 según tu certeza de que ninguna capability corresponde."
     )
     prompt = (
         "AVAILABLE CAPABILITIES\n"
