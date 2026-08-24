@@ -4,6 +4,7 @@ from commands.action_resolution_commands import (
     CmdSizaCheckContract,
     CmdSizaStats,
     CmdSizaStatSet,
+    CmdSizaValidateV38,
 )
 from commands.consequence_commands import (
     CmdSizaConsequences,
@@ -106,6 +107,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaStats())
         self.add(CmdSizaStatSet())
         self.add(CmdSizaCheckContract())
+        self.add(CmdSizaValidateV38())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
