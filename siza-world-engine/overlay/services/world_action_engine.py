@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from services.action_requirement_engine import check_action_requirements
 from services.action_resolution_engine import (
     action_requires_resolution,
     begin_action_resolution,
@@ -9,7 +10,7 @@ from services.action_resolution_engine import (
 from services.consequence_engine import emit_world_action
 
 
-WORLD_ACTION_BUILD = "0.41.0-generic-action-pipeline"
+WORLD_ACTION_BUILD = "0.42.0-action-requirement-gates"
 WORLD_ACTION_HISTORY_LIMIT = 50
 
 
@@ -52,24 +53,44 @@ def authored_world_actions(site):
         item.setdefault("activity", item.get("name") or action_id)
         item.setdefault("canon_status", "prototype")
         item["metadata"] = _plain_dict(item.get("metadata"))
+        item["skill_requirements"] = [
+            _plain_dict(row) for row in _plain_list(item.get("skill_requirements"))
+        ]
+        item["knowledge_requirements"] = [
+            _plain_dict(row) for row in _plain_list(item.get("knowledge_requirements"))
+        ]
         if item.get("check") is not None:
             item["check"] = _plain_dict(item.get("check"))
         output.append(item)
     return output
 
 
-def available_world_actions(actor):
-    """Actions are local by construction: only the actor's current location is queried."""
+def inspect_world_actions(actor):
+    """Show every enabled local action plus its current eligibility state."""
     if not actor or not getattr(actor, "location", None):
         return []
-    return [item for item in authored_world_actions(actor.location) if bool(item.get("enabled", True))]
+    output = []
+    for action in authored_world_actions(actor.location):
+        if not bool(action.get("enabled", True)):
+            continue
+        item = dict(action)
+        item["requirement_check"] = check_action_requirements(actor, action)
+        item["eligible"] = bool(item["requirement_check"].get("eligible"))
+        output.append(item)
+    return output
 
 
-def find_world_action(actor, action_id):
+def available_world_actions(actor):
+    """Executable actions are local, enabled and pass all explicit hard requirements."""
+    return [row for row in inspect_world_actions(actor) if bool(row.get("eligible"))]
+
+
+def find_world_action(actor, action_id, eligible_only=True):
     wanted = str(action_id or "").strip()
     if not wanted:
         return None
-    for item in available_world_actions(actor):
+    rows = available_world_actions(actor) if eligible_only else inspect_world_actions(actor)
+    for item in rows:
         if str(item.get("id") or "") == wanted:
             return item
     return None
@@ -104,18 +125,30 @@ def _site_payload(actor):
 
 
 def begin_world_action(actor, action_id, target=None, attempt_id=None):
-    """Start one authored local action. Checked actions become pending; routine actions complete immediately."""
+    """Start one authored local action after hard eligibility; checked actions then enter resolution."""
     if not actor:
         return {"status": "NO_ACTOR", "build": WORLD_ACTION_BUILD}
     if not getattr(actor, "location", None):
         return {"status": "NO_LOCATION", "build": WORLD_ACTION_BUILD}
 
-    action = find_world_action(actor, action_id)
+    action = find_world_action(actor, action_id, eligible_only=False)
     if not action:
         return {
             "status": "ACTION_NOT_AVAILABLE",
             "world_action_id": str(action_id or "").strip(),
             "build": WORLD_ACTION_BUILD,
+        }
+
+    requirement_check = check_action_requirements(actor, action)
+    if not bool(requirement_check.get("eligible")):
+        return {
+            "status": "ACTION_REQUIREMENTS_UNMET",
+            "world_action_id": action.get("id"),
+            "world_action_name": action.get("name"),
+            "requirement_check": requirement_check,
+            "blockers": list(requirement_check.get("blockers") or []),
+            "build": WORLD_ACTION_BUILD,
+            **_site_payload(actor),
         }
 
     attempt_id = str(attempt_id or "").strip() or f"WACT-{uuid4().hex}"
@@ -138,6 +171,7 @@ def begin_world_action(actor, action_id, target=None, attempt_id=None):
         "actor_name": actor.key,
         "created_at": now,
         "metadata": _plain_dict(action.get("metadata")),
+        "requirement_check": requirement_check,
         "build": WORLD_ACTION_BUILD,
         **_site_payload(actor),
     }
