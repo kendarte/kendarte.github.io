@@ -90,6 +90,7 @@ from commands.world_action_v42_commands import CmdSizaActionsV42, CmdSizaValidat
 from commands.world_action_v43_commands import CmdSizaValidateV43
 from commands.world_action_v44_commands import CmdSizaValidateV44
 from commands.world_action_v46_commands import CmdSizaValidateV46
+from commands.world_object_v47_commands import CmdSizaValidateV47
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -131,6 +132,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV44())
         self.add(CmdSizaValidateV45())
         self.add(CmdSizaValidateV46())
+        self.add(CmdSizaValidateV47())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
@@ -157,9 +159,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaJobRefresh())
         self.add(CmdSizaNeeds())
         self.add(CmdSizaNeedSet())
-        self.add(CmdSizaEvents())
         self.add(CmdSizaEventSet())
         self.add(CmdSizaEventRefresh())
+        self.add(CmdSizaEvents())
         self.add(CmdSizaRelationships())
         self.add(CmdSizaRelationshipToggle())
         self.add(CmdSizaTime())
