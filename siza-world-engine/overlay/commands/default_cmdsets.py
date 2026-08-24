@@ -87,6 +87,7 @@ from commands.world_action_commands import (
     CmdSizaValidateV41,
 )
 from commands.world_action_v42_commands import CmdSizaActionsV42, CmdSizaValidateV42
+from commands.world_action_v43_commands import CmdSizaValidateV43
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -123,6 +124,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaActionResolve())
         self.add(CmdSizaValidateV41())
         self.add(CmdSizaValidateV42())
+        self.add(CmdSizaValidateV43())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
