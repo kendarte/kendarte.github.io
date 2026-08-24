@@ -1,5 +1,7 @@
 from evennia import DefaultRoom
 
+from services.room_presentation_engine import render_room_state_text
+
 
 class Room(DefaultRoom):
     """Atomic persistent location for Siza."""
@@ -42,3 +44,17 @@ class Room(DefaultRoom):
 
         self.db.conditions = {}
         self.db.world_state = {}
+
+        # Optional authored text fragments whose visibility depends only on persistent
+        # room world_state. They augment, never replace, the room's normal description.
+        self.db.state_presentations = []
+
+    def return_appearance(self, looker, **kwargs):
+        """Preserve Evennia's normal room appearance and append active state-authored text."""
+        base = super().return_appearance(looker, **kwargs)
+        state_text = render_room_state_text(self)
+        if not state_text:
+            return base
+        if not base:
+            return state_text
+        return f"{base}\n{state_text}"
