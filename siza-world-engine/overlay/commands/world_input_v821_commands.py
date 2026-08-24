@@ -123,8 +123,9 @@ class CmdSizaValidateV821(Command):
                 f"status={warm_ok.get('status')}",
             )
 
+            formal_reject_text = "Mira, el sello fue estampado tras el cierre de la dársena."
             formal_style_check = validate_style_delivery(
-                compliant_warm_text,
+                formal_reject_text,
                 style_context=STYLE_A,
             )
             check(
