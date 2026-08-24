@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v70_commands import CmdSizaValidateV70
+from commands.world_input_v71_commands import CmdSizaValidateV71
 
 
-QA_BUILD = "0.70.0-risk-based-one-command-qa"
+QA_BUILD = "0.71.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.70 introduces the first mutation bridge from an accepted LLM proposal into the real World Engine. "
-            "Execution is restricted to high-confidence OBJECT_ACTION proposals, the current capability catalog is rebuilt immediately before dispatch, and the existing Object Action Engine rechecks locality, visibility, requirements and resolution. Running stale/hallucinated/low-confidence rejection, mechanical gate revalidation, one live qwen->engine dispatch, pending-resolution identity, duplicate protection, no-consequence-before-resolution and exact state restoration assertions."
+            "RISK PROFILE: v0.71 exposes structured action proposals to the real __nomatch path for inputs that v0.68 previously classified as unknown. "
+            "Capabilities are snapshotted on the Evennia reactor, HTTP/JSON runs on a worker using plain dicts only, and the callback returns to the reactor where v0.70 rebuilds the current catalog and the existing Object Action Engine rechecks mechanics. Running deterministic-route preservation, inquiry separation, unknown-action upgrade, unsupported/low-confidence/stale rejection, live prebuilt qwen proposal, real pending-resolution dispatch, deterministic renderer and no-model-prose-persistence assertions."
         )
-        _run_command(CmdSizaValidateV70, self.caller)
+        _run_command(CmdSizaValidateV71, self.caller)
         self.caller.msg(
-            "QA POLICY: this is a real mutation boundary, but v0.70 is not wired into normal player input. Automatic QA performs one controlled live dispatch and restores every touched field; manual gameplay acceptance begins only when the bridge is exposed to __nomatch in a later version."
+            "QA POLICY: v0.71 changes real player input and asynchronous execution scheduling. Automatic QA validates the full snapshot->proposal->bridge data path; a short manual __nomatch acceptance check is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
