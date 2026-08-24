@@ -30,16 +30,23 @@ class CmdSizaConsequences(Command):
             for rule in rules:
                 memory = dict(rule.get("memory") or {})
                 effect = dict(memory.get("decision_effect") or {})
-                effect_text = ""
+                knowledge = dict(rule.get("knowledge") or {})
+                extras = []
                 if effect:
-                    effect_text = (
-                        f" | effect={effect.get('id')} value={int(effect.get('value', 0) or 0):+} "
+                    extras.append(
+                        f"memory_effect={effect.get('id')} value={int(effect.get('value', 0) or 0):+} "
                         f"when={effect.get('when') or {}}"
                     )
+                if knowledge:
+                    extras.append(
+                        f"knowledge={knowledge.get('knowledge_key')} mode={knowledge.get('mode') or 'SET'} "
+                        f"value={knowledge.get('value')}"
+                    )
+                extra_text = " | " + " | ".join(extras) if extras else ""
                 self.caller.msg(
                     f"  {rule.get('id')} | enabled={bool(rule.get('enabled'))} | "
                     f"when={rule.get('when') or {}} | recipients={rule.get('recipient_mode') or 'ACTION_RECIPIENTS'}"
-                    f"{effect_text} | status={rule.get('canon_status') or 'prototype'}"
+                    f"{extra_text} | status={rule.get('canon_status') or 'prototype'}"
                 )
 
         log = state.get("action_log") or []
@@ -48,10 +55,15 @@ class CmdSizaConsequences(Command):
             applied = []
             for result in entry.get("rule_results") or []:
                 applied.append(f"{result.get('rule_id')}:{result.get('status')}")
+            subject = ""
+            if entry.get("order_id"):
+                subject = f" | order={entry.get('order_id')}"
+            elif entry.get("task_id"):
+                subject = f" | task={entry.get('task_id')}"
             self.caller.msg(
                 f"  {entry.get('action_id')} | type={entry.get('action_type')} | "
                 f"actor={entry.get('actor_name') or entry.get('actor_npc_id')} | "
-                f"occurrence={entry.get('occurrence')} | recipients={entry.get('recipient_ids') or []} | "
+                f"occurrence={entry.get('occurrence')}{subject} | recipients={entry.get('recipient_ids') or []} | "
                 f"rules={applied or 'NONE'}"
             )
         self.caller.msg("====================================================")
