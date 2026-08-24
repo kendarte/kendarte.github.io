@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from services.faction_engine import membership_authority, membership_for
+from services.npc_simulation import simulated_npcs
 from services.world_event_engine import (
     collect_event_candidates,
     inspect_event_sites,
@@ -68,8 +69,8 @@ def _order_rows():
                     "authority_name": rule.get("authority_name"),
                     "issuer_id": context.get("issuer_id") or rule.get("issuer_id"),
                     "issuer_name": context.get("issuer_name") or rule.get("issuer_name"),
-                    "issuer_rank_id": context.get("issuer_rank_id"),
-                    "issuer_authority": context.get("issuer_authority"),
+                    "issuer_rank_id": context.get("issuer_rank_id") or rule.get("issuer_rank_id"),
+                    "issuer_authority": context.get("issuer_authority") if context.get("issuer_authority") is not None else rule.get("issuer_authority"),
                     "faction_id": rule.get("faction_id"),
                     "faction_ids": _plain_list(rule.get("faction_ids")),
                     "required_issuer_authority": int(rule.get("required_issuer_authority", 0) or 0),
@@ -112,8 +113,8 @@ def collect_order_candidates(npc):
         item["authority_name"] = row.get("authority_name")
         item["issuer_id"] = item.get("issuer_id") or row.get("issuer_id")
         item["issuer_name"] = item.get("issuer_name") or row.get("issuer_name")
-        item["issuer_rank_id"] = item.get("issuer_rank_id") or row.get("issuer_rank_id")
-        item["issuer_authority"] = item.get("issuer_authority") if item.get("issuer_authority") is not None else row.get("issuer_authority")
+        item["issuer_rank_id"] = row.get("issuer_rank_id")
+        item["issuer_authority"] = row.get("issuer_authority")
         item["faction_id"] = row.get("faction_id")
         item["faction_ids"] = list(row.get("faction_ids") or [])
         item["required_issuer_authority"] = row.get("required_issuer_authority")
@@ -127,6 +128,53 @@ def _write_issue_context(site, order_id, context):
     contexts = _plain_dict(getattr(site.db, "world_order_issue_context", {}))
     contexts[str(order_id)] = dict(context or {})
     site.db.world_order_issue_context = contexts
+
+
+def _persist_runtime_rule(row, issuer, recipient_ids, check):
+    site = row.get("site")
+    order_id = str(row.get("order_id") or "")
+    output = []
+    changed = False
+    for raw in _plain_list(site.db.world_event_rules):
+        item = _record(raw)
+        current_id = str(item.get("event_id") or item.get("id") or "")
+        if current_id == order_id:
+            item["npc_ids"] = list(recipient_ids or [])
+            item["issuer_id"] = check.get("issuer_id")
+            item["issuer_name"] = issuer.key
+            item["issuer_rank_id"] = check.get("issuer_rank_id")
+            item["issuer_authority"] = check.get("issuer_authority")
+            changed = True
+        output.append(item)
+    if changed:
+        site.db.world_event_rules = output
+    return changed
+
+
+def _eligible_recipients(row, issuer):
+    faction_id = str(row.get("faction_id") or "").strip()
+    rank_scope = {str(value) for value in row.get("recipient_rank_ids") or [] if value}
+    role_scope = {str(value) for value in row.get("recipient_roles") or [] if value}
+    issuer_id = str(getattr(issuer.db, "npc_id", "") or "") if issuer else ""
+    output = []
+
+    for npc in simulated_npcs():
+        npc_id = str(getattr(npc.db, "npc_id", "") or "")
+        if not npc_id:
+            continue
+        if row.get("exclude_issuer") and npc_id == issuer_id:
+            continue
+        membership = membership_for(npc, faction_id, active_only=True)
+        if not membership:
+            continue
+        rank_id = str(membership.get("rank_id") or membership.get("rank") or "")
+        role = str(membership.get("role") or "")
+        if rank_scope and rank_id not in rank_scope:
+            continue
+        if role_scope and role not in role_scope:
+            continue
+        output.append(npc_id)
+    return output
 
 
 def check_order_authority(order_id, issuer):
@@ -167,8 +215,7 @@ def check_order_authority(order_id, issuer):
             "issuer_rank_id": issuer_rank_id,
         }
 
-    authority = membership_authority(issuer, faction_id, active_only=True)
-    authority = int(authority or 0)
+    authority = int(membership_authority(issuer, faction_id, active_only=True) or 0)
     required = int(row.get("required_issuer_authority", 0) or 0)
     if authority < required:
         return {
@@ -196,7 +243,7 @@ def check_order_authority(order_id, issuer):
 
 
 def issue_order(order_id, issuer):
-    """Issue one persistent ORDER only after faction/rank authority validation."""
+    """Issue one persistent ORDER after authority validation and audience snapshot."""
     check = check_order_authority(order_id, issuer)
     if not check.get("allowed"):
         return check
@@ -208,6 +255,15 @@ def issue_order(order_id, issuer):
     if not site or not field:
         return {**check, "allowed": False, "reason": "ORDER_HAS_NO_PRODUCER"}
 
+    recipient_ids = _eligible_recipients(row, issuer)
+    if not recipient_ids:
+        return {
+            **check,
+            "allowed": False,
+            "reason": "NO_ELIGIBLE_RECIPIENTS",
+            "recipient_ids": [],
+        }
+
     context = {
         "issuer_id": check.get("issuer_id"),
         "issuer_name": issuer.key,
@@ -215,9 +271,11 @@ def issue_order(order_id, issuer):
         "issuer_rank_id": check.get("issuer_rank_id"),
         "issuer_authority": check.get("issuer_authority"),
         "required_issuer_authority": check.get("required_issuer_authority"),
+        "recipient_ids": list(recipient_ids),
         "issued_at": datetime.now(timezone.utc).isoformat(),
     }
     _write_issue_context(site, order_id, context)
+    _persist_runtime_rule(row, issuer, recipient_ids, check)
 
     value = rule.get("activate_value", rule.get("value", 1))
     state = set_event_state(site, field, value)
@@ -234,6 +292,7 @@ def issue_order(order_id, issuer):
         "value": state.get(field) if state else value,
         "producer": packet,
         "issue_context": context,
+        "recipient_ids": list(recipient_ids),
     }
 
 
@@ -287,6 +346,7 @@ def inspect_orders(npc=None):
     for row in _order_rows():
         instance = dict(row.get("instance") or {})
         rule = dict(row.get("rule") or {})
+        context = dict(row.get("issue_context") or {})
         output.append(
             {
                 **row,
@@ -296,10 +356,11 @@ def inspect_orders(npc=None):
                 "completed_by": _plain_list(instance.get("acknowledged_by")),
                 "priority": instance.get("priority", rule.get("priority")),
                 "activity": instance.get("activity") or rule.get("activity"),
-                "issuer_id": instance.get("issuer_id") or row.get("issuer_id"),
-                "issuer_name": instance.get("issuer_name") or row.get("issuer_name"),
-                "issuer_rank_id": instance.get("issuer_rank_id") or row.get("issuer_rank_id"),
-                "issuer_authority": instance.get("issuer_authority") if instance.get("issuer_authority") is not None else row.get("issuer_authority"),
+                "issuer_id": instance.get("issuer_id") or context.get("issuer_id") or rule.get("issuer_id"),
+                "issuer_name": instance.get("issuer_name") or context.get("issuer_name") or rule.get("issuer_name"),
+                "issuer_rank_id": context.get("issuer_rank_id") or rule.get("issuer_rank_id"),
+                "issuer_authority": context.get("issuer_authority") if context.get("issuer_authority") is not None else rule.get("issuer_authority"),
+                "recipient_ids": context.get("recipient_ids") or _plain_list(rule.get("npc_ids")),
             }
         )
     return output
