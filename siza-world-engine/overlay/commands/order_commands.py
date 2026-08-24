@@ -1,13 +1,13 @@
 from evennia import Command
 
 from services.authority_order_engine import (
+    AUTHORITY_ORDER_BUILD,
     check_order_authority,
     collect_order_candidates,
     inspect_orders,
     issue_order,
     set_order_active,
 )
-from services.faction_engine import FACTION_BUILD
 from services.npc_simulation import find_npc
 
 
@@ -25,7 +25,7 @@ class CmdSizaOrders(Command):
             self.caller.msg("No identifico un NPC de Siza con ese nombre.")
             return
 
-        self.caller.msg(f"=== SIZA AUTHORITY ORDERS | {FACTION_BUILD} ===")
+        self.caller.msg(f"=== SIZA AUTHORITY ORDERS | {AUTHORITY_ORDER_BUILD} ===")
         if npc:
             self.caller.msg(f"NPC: {npc.key}")
             candidates = collect_order_candidates(npc)
@@ -143,7 +143,7 @@ class CmdSizaOrderAuthority(Command):
 
 
 class CmdSizaOrderIssue(Command):
-    """Issue an authored faction order using real membership/rank authority validation."""
+    """Issue an authored faction order using real authority and Action/Consequence dispatch."""
 
     key = "siza-order-issue"
     aliases = ["order-issue"]
@@ -178,3 +178,16 @@ class CmdSizaOrderIssue(Command):
             f"recipients={packet.get('recipient_ids') or []} | active={producer.get('event_active')} | "
             f"occurrence={producer.get('occurrence')}"
         )
+
+        consequence = packet.get("consequence") or {}
+        if consequence.get("status"):
+            self.caller.msg(
+                f"[ACTION CONSEQUENCE] {consequence.get('action_id')} | status={consequence.get('status')}"
+            )
+            for rule_result in consequence.get("results") or []:
+                for applied in rule_result.get("applied") or []:
+                    self.caller.msg(
+                        f"  rule={rule_result.get('rule_id')} | recipient={applied.get('npc_name') or applied.get('npc_id')} | "
+                        f"memory={applied.get('memory_id')} | effect={applied.get('decision_effect_id')} | "
+                        f"created={applied.get('created')} | occurrences={applied.get('occurrences_after')}"
+                    )
