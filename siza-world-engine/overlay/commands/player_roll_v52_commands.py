@@ -1,6 +1,10 @@
 from evennia import Command
 
-from services.action_resolution_engine import set_adventure_stat
+from services.action_resolution_engine import (
+    adventure_stats,
+    normalize_stat_key,
+    set_adventure_stat,
+)
 from services.direct_d6_resolution_engine import (
     DIRECT_D6_BUILD,
     resolve_pending_object_action_d6,
@@ -57,6 +61,24 @@ class CmdSizaSelfStatSet(Command):
         self.caller.msg(
             f"[SELF STAT SET] {packet.get('stat')} | {packet.get('before')} -> {packet.get('after')}"
         )
+
+
+class CmdSizaSelfStatClear(Command):
+    """Admin/playtest: return one Character stat to truly UNSET without touching the others."""
+
+    key = "siza-self-stat-clear"
+    aliases = ["self-stat-clear"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        stat = normalize_stat_key((self.args or "").strip())
+        if not stat:
+            self.caller.msg("Uso: siza-self-stat-clear <FUE|AGI|COO|INT|PER|PSI>")
+            return
+        stats = adventure_stats(self.caller)
+        before = stats.pop(stat, None)
+        self.caller.db.adventure_stats = stats
+        self.caller.msg(f"[SELF STAT CLEAR] {stat} | {before} -> UNSET")
 
 
 class CmdSizaResetV52(Command):
