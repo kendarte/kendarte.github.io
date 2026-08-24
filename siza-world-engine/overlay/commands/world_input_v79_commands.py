@@ -29,7 +29,7 @@ from world.upgrade_pilot_v52 import ANALYZE_ACTION_ID
 from world.upgrade_pilot_v63 import ensure_v63_pilot_content
 
 
-NATURAL_FACT_INFORM_BUILD = "0.79.0-semantic-known-fact-inform"
+NATURAL_FACT_INFORM_BUILD = "0.79.1-semantic-known-fact-inform-precise-topic"
 INFORM_PHRASE = "me acerco a Mara y le cuento sobre la rozadura bajo el mostrador"
 UNKNOWN_INFORM_PHRASE = "me acerco a Mara y le cuento sobre una caja fuerte secreta en el techo"
 TEST_PERCEPTION_FACT_ID = "FACT-V079-PESCADERIA-ROZADURA-001"
@@ -267,8 +267,10 @@ class CmdSizaValidateV79(Command):
                 and intent.get("intent") == "INFORM_FACT"
                 and intent.get("topic") == "la rozadura bajo el mostrador"
                 and intent.get("topic_source") == "PLAYER_INPUT"
+                and intent.get("retrieval_query") == "rozadura bajo mostrador"
+                and intent.get("retrieval_query_source") == "PLAYER_INPUT_FILTERED"
                 and classification.get("route") == "AI_ACTION_PROPOSAL",
-                f"route={classification.get('route')} topic={(intent or {}).get('topic')!r}",
+                f"route={classification.get('route')} topic={(intent or {}).get('topic')!r} query={(intent or {}).get('retrieval_query')!r}",
             )
 
             site.db.perception_facts = [_projectable_fact()]
@@ -283,11 +285,11 @@ class CmdSizaValidateV79(Command):
                 f"engine={discovery.get('engine_status')} known={None if source_fact is None else fact_knowledge_state(actor, source_fact).get('known')}",
             )
 
-            retrieval = retrieve_known_facts(actor, query="la rozadura bajo el mostrador", max_facts=3)
+            retrieval = retrieve_known_facts(actor, query=(intent or {}).get("retrieval_query") or "", max_facts=3)
             check(
                 "player-topic-retrieval-selects-exactly-one-known-fact",
                 list(retrieval.get("selected_fact_ids") or []) == [TEST_KNOWLEDGE_FACT_ID],
-                f"selected={retrieval.get('selected_fact_ids')}",
+                f"query={retrieval.get('query')!r} selected={retrieval.get('selected_fact_ids')}",
             )
 
             request = build_active_perception_proposal_request(actor, INFORM_PHRASE)
@@ -456,6 +458,7 @@ class CmdSizaValidateV79(Command):
                 "proposal": live.get("proposal"),
                 "handler_status": live_handled.get("status"),
                 "topic": live_handled.get("topic"),
+                "retrieval_query": live_handled.get("retrieval_query"),
                 "fact_id": live_handled.get("fact_id"),
                 "target": live_handled.get("target_name"),
                 "transfer_reason": (live_handled.get("transfer") or {}).get("reason"),
