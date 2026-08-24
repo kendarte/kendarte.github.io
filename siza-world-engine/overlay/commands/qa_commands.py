@@ -3,7 +3,7 @@ from evennia import Command
 from commands.world_object_v64_commands import CmdSizaValidateV64
 
 
-QA_BUILD = "0.64.0-risk-based-one-command-qa"
+QA_BUILD = "0.64.1-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,8 +35,8 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: deterministic read-only Fact retrieval added. "
-            "Running known-only filtering, relevance/site ranking, provenance, budget, stability and no-mutation assertions."
+            "RISK PROFILE: deterministic Fact retrieval relevance gate patched so location can rank but never create relevance. "
+            "Running known-only filtering, semantic relevance, site tie-break, provenance, budget, stability and no-mutation assertions."
         )
         _run_command(CmdSizaValidateV64, self.caller)
         self.caller.msg(
