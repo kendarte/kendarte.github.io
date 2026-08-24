@@ -3,7 +3,7 @@ from evennia import Command
 from commands.world_input_v69_commands import CmdSizaValidateV69
 
 
-QA_BUILD = "0.69.0-risk-based-one-command-qa"
+QA_BUILD = "0.69.1-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: free-form action interpretation is entering the LLM boundary, but execution remains disconnected. "
-            "Running deterministic current-room capability catalogs, Ollama JSON-schema constrained structured outputs, hallucinated-capability rejection, kind mismatch rejection, explicit UNSUPPORTED behavior, two live qwen3:8b proposals and no-mutation assertions."
+            "RISK PROFILE: v0.69 proposal semantics were correct, but qwen returned confidence=100 despite the 0..1 schema. "
+            "The contract is now reinforced explicitly as decimal 0.0-1.0 with no percentage coercion; all catalog, hallucination rejection, UNSUPPORTED, live proposal and no-mutation checks run again."
         )
         _run_command(CmdSizaValidateV69, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.69 is proposal-only. Even an accepted model proposal must not execute or mutate world state; execution is a separate future bridge."
+            "QA POLICY: v0.69 remains proposal-only. Invalid model contracts are rejected rather than silently normalized, and no accepted proposal executes or mutates world state."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
