@@ -118,6 +118,13 @@ from commands.world_object_v57_commands import (
     CmdSizaResetV57,
     CmdSizaValidateV57,
 )
+from commands.world_object_v58_commands import (
+    CmdSizaNPCFactsV58,
+    CmdSizaResetV58,
+    CmdSizaShareFactV58,
+    CmdSizaSharePilotFactV58,
+    CmdSizaValidateV58,
+)
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -182,6 +189,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaResetV56())
         self.add(CmdSizaValidateV57())
         self.add(CmdSizaResetV57())
+        self.add(CmdSizaValidateV58())
+        self.add(CmdSizaResetV58())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
@@ -193,6 +202,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaKnowledgeEffectToggle())
         self.add(CmdSizaKnowledgeSet())
         self.add(CmdSizaMyKnowledgeV57())
+        self.add(CmdSizaNPCFactsV58())
+        self.add(CmdSizaShareFactV58())
+        self.add(CmdSizaSharePilotFactV58())
         self.add(CmdSizaFactions())
         self.add(CmdSizaFactionLoyalty())
         self.add(CmdSizaFactionMembershipToggle())
