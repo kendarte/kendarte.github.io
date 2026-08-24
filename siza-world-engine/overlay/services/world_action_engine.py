@@ -10,7 +10,7 @@ from services.action_resolution_engine import (
 from services.consequence_engine import emit_world_action
 
 
-WORLD_ACTION_BUILD = "0.42.0-action-requirement-gates"
+WORLD_ACTION_BUILD = "0.43.0-outcome-state-effects"
 WORLD_ACTION_HISTORY_LIMIT = 50
 
 
@@ -240,6 +240,7 @@ def begin_world_action(actor, action_id, target=None, attempt_id=None):
             "world_action_id": action.get("id"),
             "attempt_id": attempt_id,
             "outcome": "COMPLETED",
+            "site_dbref": record.get("site_dbref"),
             "site_room_id": record.get("site_room_id"),
             "site_name": record.get("site_name"),
             "recipient_ids": [_actor_npc_id(actor)] if _actor_npc_id(actor) else [],
@@ -316,6 +317,7 @@ def resolve_world_action(actor, attempt_id, outcome, provider, resolution_data=N
                 "resolution_id": resolution_id,
                 "outcome": resolved.get("outcome"),
                 "provider": resolved.get("provider"),
+                "site_dbref": record.get("site_dbref"),
                 "site_room_id": record.get("site_room_id"),
                 "site_name": record.get("site_name"),
                 "recipient_ids": [_actor_npc_id(actor)] if _actor_npc_id(actor) else [],
