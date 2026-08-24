@@ -3,10 +3,12 @@ import random
 import re
 import unicodedata
 
+from services.information_engine import knows_event_occurrence
+
 
 # Prototype-only die. Kept configurable so this does not freeze Siza's final dice math.
 PERCEPTION_DIE_SIDES = int(os.getenv("SIZA_PERCEPTION_DIE_SIDES", "6"))
-PERCEPTION_BUILD = "0.32.0-event-awareness"
+PERCEPTION_BUILD = "0.33.0-event-information-propagation"
 
 EVENT_AWARENESS_AUDIENCE = "AUDIENCE"
 EVENT_AWARENESS_LOCAL = "LOCAL"
@@ -290,16 +292,5 @@ def snapshot_event_awareness(npcs, origin, mode=EVENT_AWARENESS_AUDIENCE):
 
 
 def event_awareness_matches(npc, incident):
-    """Check a frozen occurrence. AUDIENCE remains backward-compatible and non-spatial."""
-    mode = normalize_event_awareness_mode((incident or {}).get("awareness_mode"))
-    if mode == EVENT_AWARENESS_AUDIENCE:
-        return True
-    npc_id = str(getattr(npc.db, "npc_id", "") or "").strip() if npc else ""
-    if not npc_id:
-        return False
-    aware = {
-        str(value)
-        for value in _plain_list((incident or {}).get("aware_npc_ids"))
-        if value
-    }
-    return npc_id in aware
+    """Witness snapshot plus explicit reported information; witness list itself remains immutable."""
+    return knows_event_occurrence(npc, incident)
