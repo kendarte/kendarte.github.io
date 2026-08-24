@@ -71,6 +71,7 @@ from commands.player_roll_v53_commands import (
 )
 from commands.player_roll_v54_commands import CmdSizaResetV54
 from commands.player_roll_v55_commands import CmdSizaResetV55, CmdSizaRollV55
+from commands.qa_commands import CmdSizaQALatest
 from commands.relationship_commands import (
     CmdSizaRelationships,
     CmdSizaRelationshipToggle,
@@ -218,6 +219,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV62())
         self.add(CmdSizaResetV62())
         self.add(CmdSizaV62ManifestState())
+        self.add(CmdSizaQALatest())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
