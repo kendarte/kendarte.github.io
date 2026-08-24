@@ -10,7 +10,8 @@ from services.npc_decision import (
 )
 
 
-FACT_DRIVEN_DECISION_BUILD = "0.60.0-fact-driven-completion-dispatch"
+FACT_DRIVEN_DECISION_BUILD = "0.59.0-fact-driven-decision-wrapper"
+FACT_DRIVEN_COMPLETION_BUILD = "0.60.0-fact-driven-completion-dispatch"
 
 
 def choose_goal(npc):
@@ -18,6 +19,7 @@ def choose_goal(npc):
     packet = dict(_choose_goal(npc) or {})
     packet["fact_goal_refresh"] = refresh
     packet["fact_driven_build"] = FACT_DRIVEN_DECISION_BUILD
+    packet["fact_driven_completion_build"] = FACT_DRIVEN_COMPLETION_BUILD
     return packet
 
 
@@ -30,4 +32,5 @@ def decision_step(npc, prepare_world_state=True):
     packet["fact_goal_completion"] = completion
     packet["fact_goal_completion_build"] = FACT_GOAL_COMPLETION_BUILD
     packet["fact_driven_build"] = FACT_DRIVEN_DECISION_BUILD
+    packet["fact_driven_completion_build"] = FACT_DRIVEN_COMPLETION_BUILD
     return packet
