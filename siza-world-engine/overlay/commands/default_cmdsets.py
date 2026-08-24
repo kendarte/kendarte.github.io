@@ -134,7 +134,7 @@ from commands.world_object_v59_commands import (
 from commands.world_object_v60_commands import (
     CmdSizaFactCompletionsV60,
     CmdSizaResetV60,
-    CmdSizaFactCompletionsV60,
+    CmdSizaValidateV60,
 )
 from commands.world_object_v61_commands import CmdSizaResetV61, CmdSizaValidateV61
 from commands.world_object_v62_commands import (
