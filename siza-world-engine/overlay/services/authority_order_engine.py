@@ -6,7 +6,7 @@ from services.world_event_engine import (
 )
 
 
-AUTHORITY_ORDER_BUILD = "0.23.0-authority-orders"
+AUTHORITY_ORDER_BUILD = "0.24.0-faction-membership-loyalty"
 
 
 def _plain_list(value):
@@ -55,6 +55,8 @@ def _order_rows():
                     "authority_name": rule.get("authority_name"),
                     "issuer_id": rule.get("issuer_id"),
                     "issuer_name": rule.get("issuer_name"),
+                    "faction_id": rule.get("faction_id"),
+                    "faction_ids": _plain_list(rule.get("faction_ids")),
                     "order_kind": rule.get("order_kind") or "DIRECTIVE",
                     "target_room_id": rule.get("target_room_id"),
                     "target_room_key": rule.get("target_room_key"),
@@ -76,7 +78,7 @@ def _row_for_order(order_id):
 
 
 def collect_order_candidates(npc):
-    """Return ORDER candidates enriched with authority metadata for diagnostics."""
+    """Return ORDER candidates enriched with authority/faction metadata."""
     refresh_world_event_rules()
     meta = {str(row.get("order_id")): row for row in _order_rows()}
     output = []
@@ -90,6 +92,8 @@ def collect_order_candidates(npc):
         item["authority_name"] = row.get("authority_name")
         item["issuer_id"] = row.get("issuer_id")
         item["issuer_name"] = row.get("issuer_name")
+        item["faction_id"] = row.get("faction_id")
+        item["faction_ids"] = list(row.get("faction_ids") or [])
         item["order_kind"] = row.get("order_kind") or "DIRECTIVE"
         output.append(item)
     return output
@@ -131,6 +135,7 @@ def set_order_active(order_id, active):
         "producer": packet,
         "authority_id": row.get("authority_id"),
         "authority_name": row.get("authority_name"),
+        "faction_id": row.get("faction_id"),
     }
 
 
