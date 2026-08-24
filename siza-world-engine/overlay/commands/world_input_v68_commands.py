@@ -28,12 +28,13 @@ from services.perspective_narration_engine import (
 from world.upgrade_pilot_v63 import ensure_v63_pilot_content
 
 
-NATURAL_INPUT_BUILD = "0.68.0-guarded-natural-input-grounded-narration"
+NATURAL_INPUT_BUILD = "0.68.1-guarded-natural-input-grounded-narration"
 PLAYER_FACT_ID = "FACT-V068-PLAYER-MANIFEST-001"
 PLAYER_KEY = "V068_PLAYER_MANIFEST"
 MARA_PRIVATE_FACT_ID = "FACT-V068-MARA-PRIVATE-001"
 MARA_PRIVATE_KEY = "V068_MARA_PRIVATE"
 PRIVATE_SENTINEL = "NEVER_LEAK_V068_MARA_PRIVATE_SENTINEL"
+STRONG_OBJECT_ACTION_MIN_SCORE = 500
 
 INQUIRY_PREFIXES = (
     "que ",
@@ -53,6 +54,9 @@ INQUIRY_PREFIXES = (
     "quiero saber ",
     "me pregunto ",
     "sabes ",
+    "puedo ",
+    "podria ",
+    "deberia ",
 )
 
 
@@ -64,15 +68,19 @@ def _normalize(text):
     return " ".join(value.split())
 
 
-def _looks_like_inquiry(raw):
-    text = str(raw or "").strip()
-    normalized = _normalize(text)
+def _starts_like_inquiry(raw):
+    normalized = _normalize(raw)
     if not normalized:
         return False
-    if "?" in text or "¿" in text:
-        return True
     padded = normalized + " "
     return any(padded.startswith(prefix) for prefix in INQUIRY_PREFIXES)
+
+
+def _looks_like_inquiry(raw):
+    text = str(raw or "").strip()
+    if not text:
+        return False
+    return _starts_like_inquiry(text) or "?" in text or "¿" in text
 
 
 def _movement_probe(caller, raw):
@@ -109,47 +117,59 @@ def classify_v68_input(caller, raw):
             "ai_allowed": False,
         }
 
-    object_probe = match_object_action_input(caller, text)
-    if bool(object_probe.get("matched")):
-        return {
-            "build": NATURAL_INPUT_BUILD,
-            "route": "OBJECT_ACTION",
-            "raw": text,
-            "ai_allowed": False,
-            "object_status": object_probe.get("status"),
-            "object_action_id": object_probe.get("object_action_id"),
-            "object_name": object_probe.get("object_name"),
-        }
+    # A strong interrogative prefix is never allowed to trigger a mutating route just
+    # because an old token matcher shares a noun with the question.
+    strong_inquiry = _starts_like_inquiry(text)
 
-    interaction = parse_interaction_intent(text)
-    if interaction:
-        return {
-            "build": NATURAL_INPUT_BUILD,
-            "route": "INTERACTION",
-            "raw": text,
-            "ai_allowed": False,
-            "intent": dict(interaction),
-        }
+    if not strong_inquiry:
+        object_probe = match_object_action_input(caller, text)
+        object_status = str(object_probe.get("status") or "")
+        object_score = int(object_probe.get("score") or 0)
+        strong_object_match = bool(object_probe.get("matched")) and (
+            object_status == "AMBIGUOUS_OBJECT_ACTION"
+            or object_score >= STRONG_OBJECT_ACTION_MIN_SCORE
+        )
+        if strong_object_match:
+            return {
+                "build": NATURAL_INPUT_BUILD,
+                "route": "OBJECT_ACTION",
+                "raw": text,
+                "ai_allowed": False,
+                "object_status": object_probe.get("status"),
+                "object_score": object_score,
+                "object_action_id": object_probe.get("object_action_id"),
+                "object_name": object_probe.get("object_name"),
+            }
 
-    perception = parse_perception_intent(text)
-    if perception:
-        return {
-            "build": NATURAL_INPUT_BUILD,
-            "route": "PERCEPTION",
-            "raw": text,
-            "ai_allowed": False,
-            "intent": dict(perception),
-        }
+        interaction = parse_interaction_intent(text)
+        if interaction:
+            return {
+                "build": NATURAL_INPUT_BUILD,
+                "route": "INTERACTION",
+                "raw": text,
+                "ai_allowed": False,
+                "intent": dict(interaction),
+            }
 
-    movement = _movement_probe(caller, text)
-    if bool(movement.get("matched")):
-        return {
-            "build": NATURAL_INPUT_BUILD,
-            "route": "MOVEMENT",
-            "raw": text,
-            "ai_allowed": False,
-            "movement": movement,
-        }
+        perception = parse_perception_intent(text)
+        if perception:
+            return {
+                "build": NATURAL_INPUT_BUILD,
+                "route": "PERCEPTION",
+                "raw": text,
+                "ai_allowed": False,
+                "intent": dict(perception),
+            }
+
+        movement = _movement_probe(caller, text)
+        if bool(movement.get("matched")):
+            return {
+                "build": NATURAL_INPUT_BUILD,
+                "route": "MOVEMENT",
+                "raw": text,
+                "ai_allowed": False,
+                "movement": movement,
+            }
 
     if _looks_like_inquiry(text):
         return {
@@ -157,6 +177,7 @@ def classify_v68_input(caller, raw):
             "route": "AI_INQUIRY",
             "raw": text,
             "ai_allowed": True,
+            "strong_inquiry": bool(strong_inquiry),
         }
 
     return {
@@ -315,9 +336,11 @@ class CmdSizaValidateV68(Command):
 
             object_route = classify_v68_input(viewer, "analizar manifiesto")
             check(
-                "authored-object-action-keeps-first-priority-over-ai",
-                object_route.get("route") == "OBJECT_ACTION" and object_route.get("ai_allowed") is False,
-                f"route={object_route.get('route')} action={object_route.get('object_action_id')}",
+                "strong-authored-object-action-keeps-priority-over-ai",
+                object_route.get("route") == "OBJECT_ACTION"
+                and object_route.get("ai_allowed") is False
+                and int(object_route.get("object_score") or 0) >= STRONG_OBJECT_ACTION_MIN_SCORE,
+                f"route={object_route.get('route')} score={object_route.get('object_score')} action={object_route.get('object_action_id')}",
             )
 
             interaction_route = classify_v68_input(viewer, "hablo con Mara")
@@ -344,9 +367,19 @@ class CmdSizaValidateV68(Command):
             query = "Que se sobre el manifiesto duplicado y el relevo de cierre?"
             inquiry_route = classify_v68_input(viewer, query)
             check(
-                "otherwise-unmatched-inquiry-is-the-only-ai-fallback-route",
-                inquiry_route.get("route") == "AI_INQUIRY" and inquiry_route.get("ai_allowed") is True,
+                "strong-inquiry-cannot-be-stolen-by-weak-object-name-overlap",
+                inquiry_route.get("route") == "AI_INQUIRY"
+                and inquiry_route.get("ai_allowed") is True
+                and inquiry_route.get("strong_inquiry") is True,
                 f"route={inquiry_route.get('route')}",
+            )
+
+            question_action = classify_v68_input(viewer, "Puedo analizar el manifiesto?")
+            check(
+                "question-containing-action-words-does-not-execute-world-mutation",
+                question_action.get("route") == "AI_INQUIRY"
+                and question_action.get("ai_allowed") is True,
+                f"route={question_action.get('route')}",
             )
 
             unknown_action = classify_v68_input(viewer, "bailo en circulos sobre una mesa imaginaria")
@@ -478,6 +511,6 @@ class CmdSizaValidateV68(Command):
         self.caller.msg(f"RESULT: {passed}/{total} PASS")
         self.caller.msg("STATE RESTORED: viewer/Mara Knowledge/Facts and viewer location restored exactly")
         self.caller.msg(
-            "PERSISTENT SYSTEM RETAINED: deterministic input routes remain authoritative; only unmatched inquiries reach async viewer-grounded Ollama"
+            "PERSISTENT SYSTEM RETAINED: deterministic action routes require action-shaped input; unmatched inquiries reach async viewer-grounded Ollama"
         )
         self.caller.msg("========================================================")
