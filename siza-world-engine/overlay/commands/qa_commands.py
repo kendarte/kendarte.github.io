@@ -3,7 +3,7 @@ from evennia import Command
 from commands.world_input_v68_commands import CmdSizaValidateV68
 
 
-QA_BUILD = "0.68.0-risk-based-one-command-qa"
+QA_BUILD = "0.68.1-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,8 +35,8 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: real __nomatch player input now gains an Ollama fallback. "
-            "Running object/interaction/perception/movement precedence, inquiry-only AI gating, unknown-action rejection, viewer-private Fact isolation, async-dispatch contract, live qwen3:8b narration and no-persistence assertions."
+            "RISK PROFILE: real __nomatch player input now gains an Ollama fallback, with an additional guard against old token matchers treating questions as mutating actions. "
+            "Running strong object-action routing, interaction/perception/movement precedence, strong-inquiry mutation blocking, inquiry-only AI gating, unknown-action rejection, viewer-private Fact isolation, async-dispatch contract, live qwen3:8b narration and no-persistence assertions."
         )
         _run_command(CmdSizaValidateV68, self.caller)
         self.caller.msg(
