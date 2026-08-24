@@ -22,7 +22,7 @@ from services.world_event_engine import (
 )
 
 
-DECISION_BUILD = "0.23.0-authority-orders"
+DECISION_BUILD = "0.24.0-faction-membership-loyalty"
 
 DEFAULT_PRIORITIES = {
     "DANGER": 100,
@@ -125,7 +125,7 @@ def _routine_candidate(npc, priorities):
 
 
 def collect_candidates(npc):
-    """Collect goals, then apply NPC-specific personality modifiers before sorting."""
+    """Collect goals, then apply NPC-specific personality/context modifiers before sorting."""
     priorities = _priority_map(npc)
     candidates = []
 
@@ -299,6 +299,8 @@ def _complete_selected_goal(npc, goal):
                     or goal.get("authority_id"),
                     "authority_name": packet.get("authority_name")
                     or goal.get("authority_name"),
+                    "faction_id": packet.get("faction_id")
+                    or goal.get("faction_id"),
                     "issuer_id": packet.get("issuer_id") or goal.get("issuer_id"),
                     "issuer_name": packet.get("issuer_name")
                     or goal.get("issuer_name"),
@@ -495,6 +497,8 @@ def decision_step(npc, prepare_world_state=True):
         "order_id": goal.get("order_id"),
         "authority_id": goal.get("authority_id"),
         "authority_name": goal.get("authority_name"),
+        "faction_id": goal.get("faction_id"),
+        "faction_ids": list(goal.get("faction_ids") or []),
         "issuer_id": goal.get("issuer_id"),
         "issuer_name": goal.get("issuer_name"),
         "order_kind": goal.get("order_kind"),
