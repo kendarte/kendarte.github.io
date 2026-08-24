@@ -12,3 +12,7 @@ class WorldObject(DefaultObject):
         self.db.state = {}
         self.db.interaction_facts = []
         self.db.canon_status = "prototype"
+
+        # Optional authored visibility gate evaluated against the persistent
+        # world_state of the object's current containing room/site.
+        self.db.state_visibility_requirements = []
