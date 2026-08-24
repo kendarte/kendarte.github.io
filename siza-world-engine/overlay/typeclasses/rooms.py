@@ -1,5 +1,6 @@
 from evennia import DefaultRoom
 
+from services.object_visibility_engine import object_visible_in_world_state
 from services.room_presentation_engine import render_room_state_text
 
 
@@ -48,6 +49,11 @@ class Room(DefaultRoom):
         # Optional authored text fragments whose visibility depends only on persistent
         # room world_state. They augment, never replace, the room's normal description.
         self.db.state_presentations = []
+
+    def filter_visible(self, obj_list, looker, **kwargs):
+        """Preserve Evennia visibility locks, then apply optional Siza world_state visibility gates."""
+        visible = super().filter_visible(obj_list, looker, **kwargs)
+        return [obj for obj in visible if object_visible_in_world_state(obj, site=self)]
 
     def return_appearance(self, looker, **kwargs):
         """Preserve Evennia's normal room appearance and append active state-authored text."""
