@@ -6,11 +6,11 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-OLLAMA_PROVIDER_BUILD = "0.66.0-local-ollama-grounded-narration"
+OLLAMA_PROVIDER_BUILD = "0.66.1-local-ollama-grounded-narration"
 DEFAULT_OLLAMA_ENDPOINT = os.environ.get("SIZA_OLLAMA_ENDPOINT", "http://127.0.0.1:11434/api/chat")
 DEFAULT_OLLAMA_MODEL = os.environ.get("SIZA_OLLAMA_MODEL", "qwen3:8b")
 DEFAULT_TIMEOUT_SECONDS = 60.0
-DEFAULT_NUM_PREDICT = 96
+DEFAULT_NUM_PREDICT = 192
 
 
 def _plain_dict(value):
@@ -26,7 +26,7 @@ def build_ollama_chat_payload(
     num_predict=DEFAULT_NUM_PREDICT,
     temperature=0,
 ):
-    """Translate only the v0.65 provider boundary into Ollama's /api/chat schema."""
+    """Translate only the grounded provider boundary into Ollama's /api/chat schema."""
     provider = _plain_dict(provider_payload)
     system = str(provider.get("system") or "")
     prompt = str(provider.get("prompt") or "")
