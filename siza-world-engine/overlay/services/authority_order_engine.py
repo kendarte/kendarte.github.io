@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from services.consequence_engine import emit_world_action
 from services.faction_engine import membership_authority, membership_for
 from services.npc_simulation import simulated_npcs
 from services.world_event_engine import (
@@ -10,7 +11,7 @@ from services.world_event_engine import (
 )
 
 
-AUTHORITY_ORDER_BUILD = "0.25.0-faction-rank-authority"
+AUTHORITY_ORDER_BUILD = "0.27.0-action-consequence-memory"
 
 
 def _plain_list(value):
@@ -243,7 +244,7 @@ def check_order_authority(order_id, issuer):
 
 
 def issue_order(order_id, issuer):
-    """Issue one persistent ORDER after authority validation and audience snapshot."""
+    """Issue one persistent ORDER and emit a structured action for consequence rules."""
     check = check_order_authority(order_id, issuer)
     if not check.get("allowed"):
         return check
@@ -284,6 +285,27 @@ def issue_order(order_id, issuer):
         (item for item in results if str(item.get("event_id") or "") == str(order_id)),
         None,
     )
+
+    occurrence = int((packet or {}).get("occurrence", 0) or 0)
+    action = {
+        "action_id": f"ORDER_ISSUED:{order_id}:{occurrence}",
+        "action_type": "ORDER_ISSUED",
+        "timestamp": context.get("issued_at"),
+        "actor_npc_id": check.get("issuer_id"),
+        "actor_name": issuer.key,
+        "issuer_id": check.get("issuer_id"),
+        "issuer_name": issuer.key,
+        "issuer_rank_id": check.get("issuer_rank_id"),
+        "issuer_authority": check.get("issuer_authority"),
+        "faction_id": check.get("faction_id"),
+        "order_id": str(order_id),
+        "occurrence": occurrence,
+        "recipient_ids": list(recipient_ids),
+        "target_room_id": row.get("target_room_id"),
+        "target_room_key": row.get("target_room_key"),
+    }
+    consequence = emit_world_action(action)
+
     return {
         **check,
         "active_requested": True,
@@ -293,6 +315,8 @@ def issue_order(order_id, issuer):
         "producer": packet,
         "issue_context": context,
         "recipient_ids": list(recipient_ids),
+        "world_action": action,
+        "consequence": consequence,
     }
 
 
