@@ -53,6 +53,7 @@ from commands.relationship_commands import (
     CmdSizaRelationships,
     CmdSizaRelationshipToggle,
 )
+from commands.skill_commands import CmdSizaSkills, CmdSizaSkillSet
 from commands.siza_commands import (
     CmdSizaNoMatch,
     CmdSizaNPCState,
@@ -94,6 +95,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaPersonalityToggle())
         self.add(CmdSizaTraits())
         self.add(CmdSizaTraitToggle())
+        self.add(CmdSizaSkills())
+        self.add(CmdSizaSkillSet())
         self.add(CmdSizaContextEffects())
         self.add(CmdSizaContextEffectToggle())
         self.add(CmdSizaConsequences())
