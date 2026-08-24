@@ -25,7 +25,7 @@ from commands.faction_commands import (
     CmdSizaFactionRank,
     CmdSizaFactions,
 )
-from commands.information_commands import CmdSizaInform, CmdSizaInformation
+from commands.information_commands import CmdSizaInform, CmdSizaInformGoal, CmdSizaInformation
 from commands.job_commands import (
     CmdSizaJobRefresh,
     CmdSizaJobRelease,
@@ -100,6 +100,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaSkillSet())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
+        self.add(CmdSizaInformGoal())
         self.add(CmdSizaContextEffects())
         self.add(CmdSizaContextEffectToggle())
         self.add(CmdSizaConsequences())
