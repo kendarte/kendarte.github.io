@@ -85,7 +85,7 @@ def decision_biases(npc):
 
 
 def apply_decision_personality(npc, goal, base_priority=None):
-    """Decorate one goal with authored and contextual NPC-specific modifiers."""
+    """Decorate one goal with authored personality plus contextual faction loyalty."""
     item = dict(goal or {})
     goal_type = str(item.get("type") or "").upper()
     if base_priority is None:
@@ -93,11 +93,12 @@ def apply_decision_personality(npc, goal, base_priority=None):
     base = _safe_int(base_priority, 0)
 
     applied = []
-    total = 0
+    authored_total = 0
+    faction_total = 0
 
     type_bias = decision_biases(npc).get(goal_type, 0)
     if type_bias:
-        total += type_bias
+        authored_total += type_bias
         applied.append(
             {
                 "id": f"BIAS:{goal_type}",
@@ -115,7 +116,7 @@ def apply_decision_personality(npc, goal, base_priority=None):
         value = _clamp(_safe_int(modifier.get("value"), 0), MIN_MODIFIER, MAX_MODIFIER)
         if not value:
             continue
-        total += value
+        authored_total += value
         applied.append(
             {
                 "id": str(modifier.get("id") or "UNNAMED_MODIFIER"),
@@ -128,7 +129,7 @@ def apply_decision_personality(npc, goal, base_priority=None):
         value = _clamp(_safe_int(modifier.get("value"), 0), MIN_MODIFIER, MAX_MODIFIER)
         if not value:
             continue
-        total += value
+        faction_total += value
         applied.append(
             {
                 "id": str(modifier.get("id") or "FACTION_CONTEXT"),
@@ -140,8 +141,11 @@ def apply_decision_personality(npc, goal, base_priority=None):
             }
         )
 
+    total = authored_total + faction_total
     effective = _clamp(base + total, MIN_EFFECTIVE_PRIORITY, MAX_EFFECTIVE_PRIORITY)
     item["base_priority"] = base
+    item["authored_personality_modifier"] = authored_total
+    item["faction_loyalty_modifier"] = faction_total
     item["personality_modifier"] = total
     item["effective_priority"] = effective
     item["priority"] = effective
