@@ -7,11 +7,12 @@ from services.job_engine import job_sites
 from services.need_engine import collect_need_candidates
 from services.npc_simulation import find_path, find_room, routine_entry
 from services.relationship_engine import collect_relationship_candidates
+from services.skill_engine import check_task_skills
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
 from services.world_event_engine import collect_event_candidates, danger_blocks_room
 
 
-CLAIM_BUILD = "0.22.0-decision-personality"
+CLAIM_BUILD = "0.31.0-skills-competence"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
@@ -99,14 +100,18 @@ def _priority_map(npc):
     return priorities
 
 
-def _npc_exists(npc_id):
+def _npc_by_id(npc_id):
     wanted = str(npc_id or "").strip()
     if not wanted:
-        return False
+        return None
     for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
         if str(getattr(obj.db, "npc_id", "") or "") == wanted:
-            return True
-    return False
+            return obj
+    return None
+
+
+def _npc_exists(npc_id):
+    return _npc_by_id(npc_id) is not None
 
 
 def _site_tasks(site):
@@ -334,6 +339,23 @@ def _availability_for_task(npc, task_id, task):
             "blocker": None,
         }
 
+    skill_check = check_task_skills(npc, task)
+    if not skill_check.get("eligible", True):
+        missing = (skill_check.get("missing") or [{}])[0]
+        return {
+            "available": False,
+            "reason": "SKILL_REQUIREMENT",
+            "blocker": {
+                "id": missing.get("skill_id"),
+                "type": "SKILL",
+                "priority": None,
+                "source": "SKILL_GATE",
+                "level": missing.get("level"),
+                "required_level": missing.get("min_level"),
+            },
+            "skill_check": skill_check,
+        }
+
     shift = _shift_status(npc)
     if shift.get("scheduled") and not shift.get("active"):
         return {
@@ -426,7 +448,7 @@ def _availability_for_task(npc, task_id, task):
 
 
 def refresh_job_claims():
-    """Remove claims whose task vanished/became inactive or whose owner no longer exists."""
+    """Remove claims invalidated by task state, owner existence or lost skill eligibility."""
     released = []
     for site in job_sites():
         tasks = _site_tasks(site)
@@ -436,20 +458,27 @@ def refresh_job_claims():
             task = tasks.get(task_id)
             claim = claims.get(task_id) or {}
             owner_id = str(claim.get("npc_id") or "")
+            owner = _npc_by_id(owner_id)
             invalid_task = (
                 task is None
                 or not bool(task.get("active", False))
                 or str(task.get("status") or "") in {"inactive", "completed"}
             )
-            invalid_owner = not _npc_exists(owner_id)
-            if invalid_task or invalid_owner:
+            invalid_owner = owner is None
+            invalid_skill = bool(
+                task is not None
+                and owner is not None
+                and not check_task_skills(owner, task).get("eligible", True)
+            )
+            if invalid_task or invalid_owner or invalid_skill:
+                reason = "TASK_INACTIVE" if invalid_task else "OWNER_MISSING" if invalid_owner else "SKILL_REQUIREMENT"
                 released.append(
                     {
                         "task_id": task_id,
                         "site": site.key,
                         "npc_id": owner_id,
                         "npc_name": claim.get("npc_name"),
-                        "reason": "TASK_INACTIVE" if invalid_task else "OWNER_MISSING",
+                        "reason": reason,
                     }
                 )
                 claims.pop(task_id, None)
@@ -732,7 +761,7 @@ def release_job_claim(task_id, npc=None, force=False):
 
 
 def filter_job_candidates_for_claim(npc, candidates):
-    """Hide tasks blocked by ownership, shifts, other JOBs or active target danger."""
+    """Hide tasks blocked by ownership, shifts, skills, other JOBs or active target danger."""
     refresh_job_claims()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     output = []
@@ -748,14 +777,14 @@ def filter_job_candidates_for_claim(npc, candidates):
         if site and danger_blocks_room(site, npc=npc):
             continue
 
-        # Existing owners retain their task across a closed shift, but the target
-        # is still hidden while a DANGER actively blocks work there.
-        if not claim:
-            task = _site_tasks(site).get(task_id) if site else None
-            if task:
-                shift = _shift_status(npc)
-                if shift.get("scheduled") and not shift.get("active"):
-                    continue
+        task = _site_tasks(site).get(task_id) if site else None
+        if task and not check_task_skills(npc, task).get("eligible", True):
+            continue
+
+        if not claim and task:
+            shift = _shift_status(npc)
+            if shift.get("scheduled") and not shift.get("active"):
+                continue
 
         candidate = dict(item)
         shift = _shift_status(npc)
