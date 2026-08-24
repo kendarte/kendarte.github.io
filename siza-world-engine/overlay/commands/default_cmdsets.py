@@ -130,6 +130,11 @@ from commands.world_object_v59_commands import (
     CmdSizaResetV59,
     CmdSizaValidateV59,
 )
+from commands.world_object_v60_commands import (
+    CmdSizaFactCompletionsV60,
+    CmdSizaResetV60,
+    CmdSizaValidateV60,
+)
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -199,6 +204,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV59())
         self.add(CmdSizaResetV59())
         self.add(CmdSizaFactGoalsV59())
+        self.add(CmdSizaValidateV60())
+        self.add(CmdSizaResetV60())
+        self.add(CmdSizaFactCompletionsV60())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
