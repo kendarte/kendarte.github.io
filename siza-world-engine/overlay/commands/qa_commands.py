@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v69_commands import CmdSizaValidateV69
+from commands.world_input_v70_commands import CmdSizaValidateV70
 
 
-QA_BUILD = "0.69.1-risk-based-one-command-qa"
+QA_BUILD = "0.70.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.69 proposal semantics were correct, but qwen returned confidence=100 despite the 0..1 schema. "
-            "The contract is now reinforced explicitly as decimal 0.0-1.0 with no percentage coercion; all catalog, hallucination rejection, UNSUPPORTED, live proposal and no-mutation checks run again."
+            "RISK PROFILE: v0.70 introduces the first mutation bridge from an accepted LLM proposal into the real World Engine. "
+            "Execution is restricted to high-confidence OBJECT_ACTION proposals, the current capability catalog is rebuilt immediately before dispatch, and the existing Object Action Engine rechecks locality, visibility, requirements and resolution. Running stale/hallucinated/low-confidence rejection, mechanical gate revalidation, one live qwen->engine dispatch, pending-resolution identity, duplicate protection, no-consequence-before-resolution and exact state restoration assertions."
         )
-        _run_command(CmdSizaValidateV69, self.caller)
+        _run_command(CmdSizaValidateV70, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.69 remains proposal-only. Invalid model contracts are rejected rather than silently normalized, and no accepted proposal executes or mutates world state."
+            "QA POLICY: this is a real mutation boundary, but v0.70 is not wired into normal player input. Automatic QA performs one controlled live dispatch and restores every touched field; manual gameplay acceptance begins only when the bridge is exposed to __nomatch in a later version."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
