@@ -1,6 +1,7 @@
 from evennia import Command
 
 from services.world_event_engine import (
+    WORLD_EVENT_BUILD,
     collect_event_candidates,
     inspect_event_sites,
     refresh_world_event_rules,
@@ -33,8 +34,18 @@ def _goal_type(item):
     return str((item or {}).get("goal_type") or (item or {}).get("type") or "EVENT").upper()
 
 
+def _awareness_text(item):
+    goal_type = _goal_type(item)
+    if goal_type != "EVENT":
+        return ""
+    mode = str((item or {}).get("awareness_mode") or "AUDIENCE").upper()
+    if mode == "AUDIENCE":
+        return " | awareness=AUDIENCE"
+    return f" | awareness={mode} | aware={list((item or {}).get('aware_npc_ids') or [])}"
+
+
 class CmdSizaEvents(Command):
-    """Inspect persistent world incident sites, state and active EVENT/DANGER instances."""
+    """Inspect persistent world incident sites, state and awareness-gated EVENT instances."""
 
     key = "siza-events"
     aliases = ["events-state"]
@@ -45,7 +56,7 @@ class CmdSizaEvents(Command):
         query = (self.args or "").strip()
         npc = find_npc(query) if query else None
 
-        self.caller.msg("=== SIZA WORLD EVENTS ===")
+        self.caller.msg(f"=== SIZA WORLD EVENTS | {WORLD_EVENT_BUILD} ===")
         if npc:
             self.caller.msg(f"NPC: {npc.key}")
             candidates = collect_event_candidates(npc)
@@ -55,6 +66,7 @@ class CmdSizaEvents(Command):
                 self.caller.msg(
                     f"  {_goal_type(item)} {item.get('event_id')} | priority={item.get('priority')} | "
                     f"target={item.get('target_room_key')} | occurrence={item.get('occurrence')}"
+                    f"{_awareness_text(item)}"
                 )
             self.caller.msg("=========================")
             return
@@ -73,6 +85,7 @@ class CmdSizaEvents(Command):
                     f"  {goal_type} {event.get('id')} | active={event.get('active')} | "
                     f"status={event.get('status')} | priority={event.get('priority')} | "
                     f"occurrence={event.get('occurrence')} | ack={ack_text}"
+                    f"{_awareness_text(event)}"
                 )
         self.caller.msg("=========================")
 
@@ -103,10 +116,16 @@ class CmdSizaEventSet(Command):
             if packet.get("site") != site.key:
                 continue
             goal_type = str(packet.get("goal_type") or "EVENT").upper()
+            awareness = ""
+            if goal_type == "EVENT":
+                mode = packet.get("awareness_mode") or "AUDIENCE"
+                awareness = f" | awareness={mode}"
+                if str(mode).upper() != "AUDIENCE":
+                    awareness += f" | aware={packet.get('aware_npc_ids') or []}"
             self.caller.msg(
                 f"[{goal_type} PRODUCER] {packet.get('event_id')}: condition={packet.get('condition_met')} | "
                 f"active={packet.get('event_active')} | status={packet.get('event_status')} | "
-                f"occurrence={packet.get('occurrence')}"
+                f"occurrence={packet.get('occurrence')}{awareness}"
             )
 
 
@@ -122,8 +141,14 @@ class CmdSizaEventRefresh(Command):
         self.caller.msg(f"World incident producer refreshed: {len(results)} rule(s).")
         for packet in results:
             goal_type = str(packet.get("goal_type") or "EVENT").upper()
+            awareness = ""
+            if goal_type == "EVENT":
+                mode = packet.get("awareness_mode") or "AUDIENCE"
+                awareness = f" | awareness={mode}"
+                if str(mode).upper() != "AUDIENCE":
+                    awareness += f" | aware={packet.get('aware_npc_ids') or []}"
             self.caller.msg(
                 f"{goal_type} {packet.get('event_id')} | site={packet.get('site')} | "
                 f"condition={packet.get('condition_met')} | active={packet.get('event_active')} | "
-                f"occurrence={packet.get('occurrence')}"
+                f"occurrence={packet.get('occurrence')}{awareness}"
             )
