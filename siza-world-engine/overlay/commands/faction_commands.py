@@ -2,16 +2,18 @@ from evennia import Command
 
 from services.faction_engine import (
     FACTION_BUILD,
+    faction_ranks,
     inspect_factions,
     inspect_memberships,
     set_loyalty_bias,
     set_membership_active,
+    set_membership_rank,
 )
 from services.npc_simulation import find_npc
 
 
 class CmdSizaFactions(Command):
-    """Inspect persistent faction definitions or one NPC's memberships."""
+    """Inspect persistent faction definitions, ranks or one NPC's memberships."""
 
     key = "siza-factions"
     aliases = ["factions-state", "npc-factions"]
@@ -35,7 +37,9 @@ class CmdSizaFactions(Command):
                 self.caller.msg(
                     f"  {row.get('faction_id')} | faction={row.get('faction_name')} | "
                     f"active={bool(row.get('active'))} | role={row.get('role') or 'NONE'} | "
-                    f"rank={row.get('rank') or 'NONE'} | loyalty_bias={int(row.get('loyalty_bias', 0) or 0):+} | "
+                    f"rank={row.get('rank_name') or row.get('rank_id') or 'NONE'} "
+                    f"({row.get('rank_id') or 'NONE'}) | authority={row.get('authority_level')} | "
+                    f"loyalty_bias={int(row.get('loyalty_bias', 0) or 0):+} | "
                     f"status={row.get('canon_status') or 'prototype'}"
                 )
             self.caller.msg("===============================================")
@@ -46,10 +50,18 @@ class CmdSizaFactions(Command):
         if not rows:
             self.caller.msg("No hay facciones persistentes registradas.")
         for row in rows:
+            faction_id = row.get("id")
             self.caller.msg(
-                f"{row.get('id')} | name={row.get('name')} | active={bool(row.get('active', True))} | "
+                f"{faction_id} | name={row.get('name')} | active={bool(row.get('active', True))} | "
                 f"status={row.get('canon_status') or 'prototype'}"
             )
+            ranks = faction_ranks(faction_id)
+            if ranks:
+                for rank_id, rank in sorted(ranks.items(), key=lambda pair: int(pair[1].get('authority_level', 0))):
+                    self.caller.msg(
+                        f"  rank={rank_id} | name={rank.get('name')} | authority={rank.get('authority_level')} | "
+                        f"status={rank.get('canon_status') or 'prototype'}"
+                    )
         self.caller.msg("===============================================")
 
 
@@ -124,4 +136,41 @@ class CmdSizaFactionMembershipToggle(Command):
         self.caller.msg(
             f"{npc.key}: faction={faction_id} | active={bool(membership.get('active'))} | "
             f"loyalty_bias={int(membership.get('loyalty_bias', 0) or 0):+}"
+        )
+
+
+class CmdSizaFactionRank(Command):
+    """Admin/debug: assign one existing data-driven faction rank to an NPC."""
+
+    key = "siza-faction-rank"
+    aliases = ["faction-rank"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        parts = (self.args or "").strip().split()
+        if len(parts) < 3:
+            self.caller.msg("Uso: siza-faction-rank <NPC> <FACTION_ID> <RANK_ID>")
+            return
+
+        rank_id = parts[-1]
+        faction_id = parts[-2]
+        npc_query = " ".join(parts[:-2])
+        npc = find_npc(npc_query)
+        if not npc:
+            self.caller.msg("No identifico un NPC de Siza con ese nombre.")
+            return
+
+        membership = set_membership_rank(npc, faction_id, rank_id)
+        if not membership:
+            self.caller.msg(
+                f"No pude asignar {rank_id}: membership o rango inexistente en {faction_id}."
+            )
+            return
+
+        rows = [row for row in inspect_memberships(npc) if row.get("faction_id") == faction_id]
+        row = rows[0] if rows else {}
+        self.caller.msg(
+            f"{npc.key}: faction={faction_id} | rank={row.get('rank_name') or rank_id} "
+            f"({row.get('rank_id')}) | authority={row.get('authority_level')} | "
+            f"loyalty_bias={int(row.get('loyalty_bias', 0) or 0):+}"
         )
