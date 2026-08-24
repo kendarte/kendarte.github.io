@@ -267,7 +267,7 @@ class CmdSizaValidateV79(Command):
                 and intent.get("intent") == "INFORM_FACT"
                 and intent.get("topic") == "la rozadura bajo el mostrador"
                 and intent.get("topic_source") == "PLAYER_INPUT"
-                and intent.get("retrieval_query") == "rozadura bajo mostrador"
+                and intent.get("retrieval_query") == "rozadura mostrador"
                 and intent.get("retrieval_query_source") == "PLAYER_INPUT_FILTERED"
                 and classification.get("route") == "AI_ACTION_PROPOSAL",
                 f"route={classification.get('route')} topic={(intent or {}).get('topic')!r} query={(intent or {}).get('retrieval_query')!r}",
