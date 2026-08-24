@@ -21,6 +21,7 @@ from commands.decision_commands import (
     CmdSizaDecisionStep,
     CmdSizaGoalToggle,
 )
+from commands.engine_validation_commands import CmdSizaValidateEngine
 from commands.event_commands import (
     CmdSizaEventRefresh,
     CmdSizaEvents,
@@ -110,6 +111,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaCheckContract())
         self.add(CmdSizaValidateV38())
         self.add(CmdSizaValidateV39())
+        self.add(CmdSizaValidateEngine())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
