@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v741_commands import CmdSizaValidateV741
+from commands.world_input_v75_commands import CmdSizaValidateV75
 
 
-QA_BUILD = "0.74.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.75.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.74 passed 12/13 checks; the only failure was routing precedence for an explicit TALK sentence containing an object noun. "
-            "v0.74.1 adds a narrow wrapper: parse_interaction_intent TALK wins before weak object ambiguity can reach qwen, while the semantic topic fallback remains unchanged. Running targeted explicit-TALK classification, exact real __nomatch execution through the existing Knowledge-gated interaction engine, semantic-fallback preservation and OBJECT_ACTION routing regression."
+            "RISK PROFILE: v0.75 adds structured PERCEPTION execution only for a fresh visible OBSERVE capability. "
+            "The bridge invokes the existing perception engine with the exact visible target and accepts only AUTO_SUCCESS with no roll, no discovery and no discovered_facts mutation; otherwise it restores the snapshot and rejects. Running deterministic-perception preservation, semantic fallback, provider-boundary privacy, low-confidence/stale rejection, live qwen target selection, no-mutation assertions, and INTERACTION/OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV741, self.caller)
+        _run_command(CmdSizaValidateV75, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.74 Knowledge/privacy/live-qwen behavior already passed 12 checks and production topic/bridge code is unchanged. This targeted rerun validates only the new explicit-TALK precedence wrapper and restores all touched social/Knowledge state. Manual topic-conversation acceptance is required if all targeted assertions pass."
+            "QA POLICY: v0.75 changes real player observation through async __nomatch but deliberately forbids perception rolls/discovery on the structured-proposal path. Automatic QA performs a live qwen OBSERVE selection and exact perception-engine execution while snapshotting/restoring all relevant state; a short manual semantic-observation acceptance check is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
