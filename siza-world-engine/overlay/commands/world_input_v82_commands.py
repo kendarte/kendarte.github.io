@@ -322,7 +322,7 @@ class CmdSizaValidateV82(Command):
                     "knowledge_key": TEST_KNOWLEDGE_KEY,
                     "required_level": 1,
                     "canon_status": "prototype",
-                    "source": {"private": PRIVATE_STYLE_SENTINEL},
+                    "source": {"validator": "v0.82"},
                     "learned_by": {"provider": "V082_VALIDATOR"},
                 },
             )
