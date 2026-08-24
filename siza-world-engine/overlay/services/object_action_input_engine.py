@@ -5,7 +5,7 @@ from services.action_resolution_engine import stat_value
 from services.object_action_engine import authored_object_actions, begin_object_action
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.54.0-player-facing-confront-input"
+OBJECT_ACTION_INPUT_BUILD = "0.55.0-player-facing-synchronize-input"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
@@ -227,6 +227,17 @@ def render_object_action_input_result(packet):
                 f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
                 f"attempt_id={result.get('attempt_id')} | {result.get('actor_stat')}={result.get('actor_stat_value')} "
                 f"vs {object_name} {target_stat}={target_value} | escribe 'tirar' para resolver"
+            )
+        if mode == "SYNCHRONIZE":
+            action = (packet or {}).get("action") or {}
+            check = action.get("check") or {}
+            metadata = check.get("metadata") or {}
+            parity = str(metadata.get("parity") or "").upper()
+            parity_text = "PAR" if parity in {"EVEN", "PAR"} else "IMPAR"
+            return (
+                f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
+                f"attempt_id={result.get('attempt_id')} | {result.get('actor_stat')}={result.get('actor_stat_value')} "
+                f"| sincronia={parity_text} | escribe 'tirar' para resolver"
             )
         return (
             f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
