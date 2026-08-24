@@ -1,4 +1,9 @@
-ACTION_RESOLUTION_BUILD = "0.38.0-adventure-stats-check-contract"
+from datetime import datetime, timezone
+from uuid import uuid4
+
+
+ACTION_RESOLUTION_BUILD = "0.39.0-action-resolution-lifecycle"
+RESOLUTION_HISTORY_LIMIT = 50
 
 ADVENTURE_STATS = (
     "FUE",
@@ -39,12 +44,26 @@ CHECK_TRIGGERS = (
     "SYNCHRONY",
 )
 
+MODE_OUTCOMES = {
+    "DIRECT": ("SUCCESS", "FAILURE"),
+    "ACCUMULATE": ("PROGRESS", "SETBACK", "COMPLETE", "FAILURE"),
+    "CONFRONT": ("ACTOR_WIN", "TARGET_WIN", "TIE"),
+    "SYNCHRONIZE": ("SYNC", "MISS"),
+}
+
 
 def _plain_dict(value):
     try:
         return {str(key): item for key, item in (value or {}).items()}
     except Exception:
         return {}
+
+
+def _plain_list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
 
 
 def normalize_stat_key(value):
@@ -60,6 +79,10 @@ def normalize_check_mode(value):
 def normalize_check_trigger(value):
     trigger = str(value or "").strip().upper()
     return trigger if trigger in CHECK_TRIGGERS else None
+
+
+def allowed_outcomes(mode):
+    return tuple(MODE_OUTCOMES.get(normalize_check_mode(mode), ()))
 
 
 def adventure_stats(npc):
@@ -165,7 +188,7 @@ def action_requires_resolution(action_spec):
 
 
 def prepare_action_check(actor, check_spec, target=None):
-    """Build an authoritative check packet. No outcome is resolved until mode formulas are authored."""
+    """Build an authoritative check packet. No outcome is resolved until a math/provider layer supplies one."""
     check = normalize_check_spec(check_spec)
     if not check.get("valid"):
         return {
@@ -221,4 +244,131 @@ def prepare_action_check(actor, check_spec, target=None):
         "resolved": False,
         "outcome": None,
         "reason": "FORMULA_NOT_AUTHORED",
+    }
+
+
+def action_resolution_history(actor):
+    output = []
+    if not actor:
+        return output
+    for raw in _plain_list(getattr(actor.db, "action_resolution_history", [])):
+        item = _plain_dict(raw)
+        if item.get("resolution_id"):
+            output.append(item)
+    return output
+
+
+def _save_history(actor, history):
+    actor.db.action_resolution_history = list(history)[-RESOLUTION_HISTORY_LIMIT:]
+
+
+def begin_action_resolution(actor, check_spec, target=None, resolution_id=None):
+    """Persist a prepared check as PENDING_RESOLUTION without selecting any dice/math policy."""
+    prepared = prepare_action_check(actor, check_spec, target=target)
+    if prepared.get("status") != "READY_UNRESOLVED":
+        packet = dict(prepared)
+        packet["resolution_status"] = "BLOCKED"
+        return packet
+
+    check = dict(prepared.get("check") or {})
+    rid = str(resolution_id or "").strip() or f"RES-{uuid4().hex}"
+    history = action_resolution_history(actor)
+    if any(str(row.get("resolution_id")) == rid for row in history):
+        return {
+            "status": "DUPLICATE_RESOLUTION_ID",
+            "resolution_id": rid,
+            "build": ACTION_RESOLUTION_BUILD,
+        }
+
+    record = {
+        "resolution_id": rid,
+        "check_id": check.get("id"),
+        "status": "PENDING_RESOLUTION",
+        "resolved": False,
+        "outcome": None,
+        "provider": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "actor_npc_id": prepared.get("actor_npc_id"),
+        "actor_name": prepared.get("actor"),
+        "actor_stat": prepared.get("actor_stat"),
+        "actor_stat_value": prepared.get("actor_stat_value"),
+        "target_npc_id": prepared.get("target_npc_id"),
+        "target_name": prepared.get("target"),
+        "target_stat": prepared.get("target_stat"),
+        "target_stat_value": prepared.get("target_stat_value"),
+        "trigger": check.get("trigger"),
+        "mode": check.get("mode"),
+        "difficulty": check.get("difficulty"),
+        "metadata": _plain_dict(check.get("metadata")),
+        "allowed_outcomes": list(allowed_outcomes(check.get("mode"))),
+        "resolution_data": {},
+        "build": ACTION_RESOLUTION_BUILD,
+    }
+    history.append(record)
+    _save_history(actor, history)
+    return dict(record)
+
+
+def resolve_action_resolution(actor, resolution_id, outcome, provider, resolution_data=None):
+    """Accept an outcome from an explicit provider; this layer validates and persists but does not calculate it."""
+    if not actor:
+        return {"status": "NO_ACTOR", "build": ACTION_RESOLUTION_BUILD}
+    rid = str(resolution_id or "").strip()
+    provider = str(provider or "").strip()
+    wanted_outcome = str(outcome or "").strip().upper()
+    if not rid:
+        return {"status": "BAD_RESOLUTION_ID", "build": ACTION_RESOLUTION_BUILD}
+    if not provider:
+        return {"status": "MISSING_PROVIDER", "resolution_id": rid, "build": ACTION_RESOLUTION_BUILD}
+
+    history = action_resolution_history(actor)
+    for index, current in enumerate(history):
+        if str(current.get("resolution_id")) != rid:
+            continue
+        record = dict(current)
+        if bool(record.get("resolved")) or str(record.get("status")) == "RESOLVED":
+            return {
+                "status": "ALREADY_RESOLVED",
+                "resolution_id": rid,
+                "outcome": record.get("outcome"),
+                "provider": record.get("provider"),
+                "build": ACTION_RESOLUTION_BUILD,
+            }
+
+        allowed = set(allowed_outcomes(record.get("mode")))
+        if wanted_outcome not in allowed:
+            return {
+                "status": "INVALID_OUTCOME",
+                "resolution_id": rid,
+                "mode": record.get("mode"),
+                "outcome": wanted_outcome,
+                "allowed_outcomes": sorted(allowed),
+                "build": ACTION_RESOLUTION_BUILD,
+            }
+
+        record["status"] = "RESOLVED"
+        record["resolved"] = True
+        record["outcome"] = wanted_outcome
+        record["provider"] = provider
+        record["resolved_at"] = datetime.now(timezone.utc).isoformat()
+        record["resolution_data"] = _plain_dict(resolution_data)
+        history[index] = record
+        _save_history(actor, history)
+        return dict(record)
+
+    return {
+        "status": "RESOLUTION_NOT_FOUND",
+        "resolution_id": rid,
+        "build": ACTION_RESOLUTION_BUILD,
+    }
+
+
+def inspect_action_resolutions(actor):
+    history = action_resolution_history(actor)
+    return {
+        "build": ACTION_RESOLUTION_BUILD,
+        "actor": actor.key if actor else None,
+        "actor_npc_id": str(getattr(actor.db, "npc_id", "") or "") if actor else None,
+        "count": len(history),
+        "records": history,
     }
