@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v721_commands import CmdSizaValidateV721
+from commands.world_input_v73_commands import CmdSizaValidateV73
 
 
-QA_BUILD = "0.72.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.73.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.72 production bridge already passed 11/12 checks including real Exit traversal, stale/low-confidence rejection and OBJECT_ACTION regression. "
-            "The only failure was a QA phrase that the deterministic movement parser already understood. No gameplay code changed. Running a targeted semantic-fallback rerun with a phrase outside the deterministic movement vocabulary/strong exit matcher, then one live qwen selection and real Exit traversal with no-history/no-model-prose assertions."
+            "RISK PROFILE: v0.73 expands structured async fallback to INTERACTION while deliberately keeping semantic topics disabled. "
+            "The model may select only a current visible TALK capability; the bridge rebuilds the current catalog, confirms the NPC is still local/visible, then converts the selection into a canonical TALK intent for the existing interaction engine. Running deterministic-talk preservation, semantic fallback, low-confidence rejection, NPC-moved stale rejection, real memory/relationship mutation, Knowledge/Fact isolation, live qwen target selection, and OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV721, self.caller)
+        _run_command(CmdSizaValidateV73, self.caller)
         self.caller.msg(
-            "QA POLICY: production movement code is unchanged from v0.72. The previously passing bridge/regression checks are not repeated; this targeted suite retests only the failed semantic-fallback assumption and its live end-to-end traversal. Manual semantic-movement acceptance is required if all targeted assertions pass."
+            "QA POLICY: v0.73 changes real player social input and persistent memory/relationship state. Automatic QA snapshots/restores both actor and NPC social state; a short real __nomatch interaction acceptance check is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
