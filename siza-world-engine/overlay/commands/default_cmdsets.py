@@ -65,7 +65,6 @@ from commands.player_roll_v52_commands import (
     CmdSizaSelfStatSet,
 )
 from commands.player_roll_v53_commands import (
-    CmdSizaResetV53,
     CmdSizaSelfStatRestore,
     CmdSizaSelfStatTemp,
 )
@@ -135,6 +134,7 @@ from commands.world_object_v60_commands import (
     CmdSizaResetV60,
     CmdSizaValidateV60,
 )
+from commands.world_object_v61_commands import CmdSizaResetV61, CmdSizaValidateV61
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -207,6 +207,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaValidateV60())
         self.add(CmdSizaResetV60())
         self.add(CmdSizaFactCompletionsV60())
+        self.add(CmdSizaValidateV61())
+        self.add(CmdSizaResetV61())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
