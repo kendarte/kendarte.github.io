@@ -15,6 +15,7 @@ INFORM_TOPIC_STOPWORDS = {
     "a", "al", "el", "la", "los", "las", "de", "del", "en", "por", "para",
     "un", "una", "unos", "unas", "que", "sobre", "acerca", "tema", "asunto",
     "esto", "eso", "esta", "este", "ese", "esa", "lo", "le", "me", "mi",
+    "con", "sin", "bajo", "tras", "detras", "debajo", "encima",
 }
 MAX_RETRIEVAL_FACTS = 3
 
@@ -27,7 +28,7 @@ def _proposal_dict(proposal_result):
 
 
 def fact_inform_retrieval_query(topic):
-    """Remove only conversational stopwords so generic articles cannot make unrelated known Facts ambiguous."""
+    """Remove only conversational/spatial stopwords so generic words cannot make unrelated known Facts ambiguous."""
     tokens = [token for token in normalize(topic).split() if token and token not in INFORM_TOPIC_STOPWORDS]
     return " ".join(tokens).strip()
 
