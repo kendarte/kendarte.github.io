@@ -61,10 +61,10 @@ from commands.personality_commands import (
 )
 from commands.player_roll_v52_commands import (
     CmdSizaResetV52,
-    CmdSizaRoll,
     CmdSizaSelfStatClear,
     CmdSizaSelfStatSet,
 )
+from commands.player_roll_v53_commands import CmdSizaResetV53, CmdSizaRollV53
 from commands.relationship_commands import (
     CmdSizaRelationships,
     CmdSizaRelationshipToggle,
@@ -102,6 +102,7 @@ from commands.world_object_v49_commands import CmdSizaValidateV49
 from commands.world_object_v50_commands import CmdSizaValidateV50
 from commands.world_object_v511_commands import CmdSizaResetV51, CmdSizaValidateV51Fixed
 from commands.world_object_v52_commands import CmdSizaValidateV52
+from commands.world_object_v53_commands import CmdSizaValidateV53
 from commands.world_presentation_v45_commands import CmdSizaValidateV45
 
 
@@ -153,6 +154,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaResetV51())
         self.add(CmdSizaValidateV52())
         self.add(CmdSizaResetV52())
+        self.add(CmdSizaValidateV53())
+        self.add(CmdSizaResetV53())
         self.add(CmdSizaInformation())
         self.add(CmdSizaInform())
         self.add(CmdSizaInformGoal())
@@ -188,7 +191,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaTimeSet())
         self.add(CmdSizaTimeRate())
         self.add(CmdSizaTimeAdvance())
-        self.add(CmdSizaRoll())
+        self.add(CmdSizaRollV53())
         self.add(CmdSizaNoMatchV50())
 
 
