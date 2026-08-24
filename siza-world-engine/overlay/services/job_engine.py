@@ -5,7 +5,7 @@ from evennia import search_tag
 
 JOB_SITE_TAG = "siza_job_site"
 JOB_SITE_CATEGORY = "siza_job"
-JOB_ENGINE_BUILD = "0.12.0-job-progress"
+JOB_ENGINE_BUILD = "0.29.0-job-completion-actions"
 
 
 def _plain_list(value):
@@ -187,9 +187,6 @@ def refresh_world_job_rules():
                 task["active"] = True
                 task["rule_id"] = rule.get("id")
                 if not was_active:
-                    # A fresh recurrence of the world condition creates a fresh
-                    # work cycle. Progress is persistent while active, but resets
-                    # when the task is newly produced again.
                     task["status"] = "available"
                     task["work_done"] = 0
                     task.pop("work_started_at", None)
@@ -204,7 +201,6 @@ def refresh_world_job_rules():
                     task["status"] = "available"
             else:
                 task["active"] = False
-                # Preserve completed as history until the condition becomes true again.
                 if previous_status != "completed":
                     task["status"] = "inactive"
 
@@ -314,12 +310,7 @@ def _rewrite_task(site, task_id, updater):
 
 
 def advance_job_task(npc, task_id, work_units=None):
-    """Apply one persistent WORK action to a world task.
-
-    Returns progress without completing the task until work_done reaches
-    work_required. Authored completion effects are applied only on that final
-    WORK action.
-    """
+    """Apply one persistent WORK action and emit JOB_COMPLETED on the final action."""
     timestamp = datetime.now(timezone.utc).isoformat()
     for site in job_sites():
         tasks = _plain_list(site.db.job_tasks)
@@ -355,8 +346,11 @@ def advance_job_task(npc, task_id, work_units=None):
 
             completed = done_after >= required
             effects = []
+            completion_occurrence = _nonnegative_int(task.get("completion_occurrence"), 0)
             if completed:
                 effects = _apply_completion_effects(site, task_id)
+                completion_occurrence += 1
+                task["completion_occurrence"] = completion_occurrence
                 task["active"] = False
                 task["status"] = "completed"
                 task["completed_by_npc_id"] = str(npc.db.npc_id or "")
@@ -369,6 +363,38 @@ def advance_job_task(npc, task_id, work_units=None):
 
             tasks[index] = task
             site.db.job_tasks = tasks
+
+            world_action = None
+            consequence = None
+            if completed:
+                world_action = {
+                    "action_id": f"JOB_COMPLETED:{task_id}:{completion_occurrence}",
+                    "action_type": "JOB_COMPLETED",
+                    "timestamp": timestamp,
+                    "actor_npc_id": str(npc.db.npc_id or ""),
+                    "actor_name": npc.key,
+                    "recipient_ids": [str(npc.db.npc_id or "")],
+                    "task_id": str(task_id),
+                    "job_id": str(task.get("job_id") or _npc_job_id(npc)),
+                    "occurrence": completion_occurrence,
+                    "target_room_id": getattr(site.db, "room_id", None),
+                    "target_room_key": site.key,
+                    "work_done": done_after,
+                    "work_required": required,
+                }
+                try:
+                    from services.consequence_engine import emit_world_action
+
+                    consequence = emit_world_action(world_action)
+                except Exception as exc:
+                    consequence = {
+                        "status": "ERROR",
+                        "action_id": world_action.get("action_id"),
+                        "action_type": "JOB_COMPLETED",
+                        "error": str(exc),
+                        "results": [],
+                    }
+
             return {
                 "site": site,
                 "task_id": task_id,
@@ -380,6 +406,9 @@ def advance_job_task(npc, task_id, work_units=None):
                 "work_required": required,
                 "work_added": done_after - done_before,
                 "completion_effects": effects,
+                "completion_occurrence": completion_occurrence if completed else None,
+                "world_action": world_action,
+                "consequence": consequence,
             }
 
     return None
@@ -479,6 +508,7 @@ def inspect_job_tasks(npc=None):
                     "work_required": _positive_int(task.get("work_required"), 1),
                     "work_per_action": _positive_int(task.get("work_per_action"), 1),
                     "work_last_npc_name": task.get("work_last_npc_name"),
+                    "completion_occurrence": _nonnegative_int(task.get("completion_occurrence"), 0),
                     "completion_effects_applied": task.get("completion_effects_applied"),
                 }
             )
