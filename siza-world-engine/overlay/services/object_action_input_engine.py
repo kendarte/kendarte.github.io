@@ -202,7 +202,7 @@ def render_object_action_input_result(packet):
         return (
             f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
             f"attempt_id={result.get('attempt_id')} | stat={result.get('actor_stat')} | "
-            f"difficulty={result.get('difficulty')}"
+            f"difficulty={result.get('difficulty')} | escribe 'tirar' para resolver"
         )
     if status == "COMPLETED":
         return f"[OBJECT ACTION] {action_name} -> COMPLETED"
