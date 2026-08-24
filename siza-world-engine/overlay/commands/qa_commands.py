@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_object_v65_commands import CmdSizaValidateV65
+from commands.world_object_v66_commands import CmdSizaValidateV66
 
 
-QA_BUILD = "0.65.0-risk-based-one-command-qa"
+QA_BUILD = "0.66.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,11 +35,11 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: grounded narration provider boundary added on top of v0.64 known-only retrieval. "
-            "Running provider-payload leak checks, grounding contract, world-state authorization, provenance, stability and no-mutation assertions."
+            "RISK PROFILE: local Ollama HTTP integration added beyond the grounded v0.65 provider boundary. "
+            "Running exact request mapping, leakage, parser/error handling, deterministic payload, live qwen3:8b call and no-persistence assertions."
         )
-        _run_command(CmdSizaValidateV65, self.caller)
+        _run_command(CmdSizaValidateV66, self.caller)
         self.caller.msg(
-            "QA POLICY: manual acceptance is required only if this validator fails or exposes a behavior not covered by its assertions."
+            "QA POLICY: because this is an LLM/network boundary, a successful automatic validator is followed by one visible real narration acceptance check."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
