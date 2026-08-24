@@ -1,10 +1,12 @@
 from evennia import create_script, search_script
 
 
-FACTION_BUILD = "0.24.0-faction-membership-loyalty"
+FACTION_BUILD = "0.25.0-faction-rank-authority"
 FACTION_REGISTRY_KEY = "SIZA_FACTION_REGISTRY"
 MIN_LOYALTY_BIAS = -100
 MAX_LOYALTY_BIAS = 100
+MIN_AUTHORITY = 0
+MAX_AUTHORITY = 1000
 
 
 def _plain_dict(value):
@@ -69,6 +71,48 @@ def faction_definitions():
     return output
 
 
+def faction_definition(faction_id):
+    return faction_definitions().get(str(faction_id or "").strip())
+
+
+def _normalize_ranks(raw):
+    output = {}
+    if isinstance(raw, dict):
+        iterable = raw.items()
+    else:
+        iterable = []
+        for value in _plain_list(raw):
+            item = _record(value) or {}
+            rank_id = str(item.get("id") or item.get("rank_id") or "").strip()
+            if rank_id:
+                iterable.append((rank_id, item))
+
+    for rank_id, value in iterable:
+        item = _record(value) or {}
+        rid = str(item.get("id") or rank_id or "").strip()
+        if not rid:
+            continue
+        item["id"] = rid
+        item.setdefault("name", rid)
+        item["authority_level"] = _clamp(
+            _safe_int(item.get("authority_level"), 0),
+            MIN_AUTHORITY,
+            MAX_AUTHORITY,
+        )
+        item.setdefault("canon_status", "prototype")
+        output[rid] = item
+    return output
+
+
+def faction_ranks(faction_id):
+    faction = faction_definition(faction_id) or {}
+    return _normalize_ranks(faction.get("ranks"))
+
+
+def rank_definition(faction_id, rank_id):
+    return faction_ranks(faction_id).get(str(rank_id or "").strip())
+
+
 def upsert_faction(faction):
     item = _record(faction)
     faction_id = str((item or {}).get("id") or "").strip()
@@ -80,6 +124,8 @@ def upsert_faction(faction):
     item.setdefault("name", faction_id)
     item.setdefault("active", True)
     item.setdefault("canon_status", "prototype")
+    if "ranks" in item:
+        item["ranks"] = _normalize_ranks(item.get("ranks"))
     factions[faction_id] = item
     registry.db.factions = factions
     registry.db.build = FACTION_BUILD
@@ -114,8 +160,10 @@ def _membership_rows(npc):
             MIN_LOYALTY_BIAS,
             MAX_LOYALTY_BIAS,
         )
+        rank_id = str(item.get("rank_id") or item.get("rank") or "").strip()
+        item["rank_id"] = rank_id or None
         item.setdefault("role", None)
-        item.setdefault("rank", None)
+        item.setdefault("rank", rank_id or None)
         item.setdefault("canon_status", "prototype")
         output.append(item)
     return output
@@ -136,6 +184,24 @@ def membership_for(npc, faction_id, active_only=False):
     return None
 
 
+def membership_authority(npc, faction_id, active_only=True):
+    membership = membership_for(npc, faction_id, active_only=active_only)
+    if not membership:
+        return None
+    if membership.get("authority_level") is not None:
+        return _clamp(
+            _safe_int(membership.get("authority_level"), 0),
+            MIN_AUTHORITY,
+            MAX_AUTHORITY,
+        )
+    rank = rank_definition(faction_id, membership.get("rank_id")) or {}
+    return _clamp(
+        _safe_int(rank.get("authority_level"), 0),
+        MIN_AUTHORITY,
+        MAX_AUTHORITY,
+    )
+
+
 def upsert_membership(npc, membership):
     if not npc:
         return None
@@ -150,8 +216,10 @@ def upsert_membership(npc, membership):
         MIN_LOYALTY_BIAS,
         MAX_LOYALTY_BIAS,
     )
+    rank_id = str(item.get("rank_id") or item.get("rank") or "").strip()
+    item["rank_id"] = rank_id or None
     item.setdefault("role", None)
-    item.setdefault("rank", None)
+    item.setdefault("rank", rank_id or None)
     item.setdefault("canon_status", "prototype")
 
     output = []
@@ -187,6 +255,21 @@ def set_loyalty_bias(npc, faction_id, value):
         MIN_LOYALTY_BIAS,
         MAX_LOYALTY_BIAS,
     )
+    return upsert_membership(npc, current)
+
+
+def set_membership_rank(npc, faction_id, rank_id):
+    current = membership_for(npc, faction_id)
+    if not current:
+        return None
+    wanted = str(rank_id or "").strip()
+    rank = rank_definition(faction_id, wanted)
+    if not rank:
+        return None
+    current = dict(current)
+    current["rank_id"] = wanted
+    current["rank"] = rank.get("name") or wanted
+    current.pop("authority_level", None)
     return upsert_membership(npc, current)
 
 
@@ -226,7 +309,7 @@ def faction_context_modifiers(npc, goal):
             "source": "faction_membership",
             "faction_id": faction_id,
             "role": membership.get("role"),
-            "rank": membership.get("rank"),
+            "rank": membership.get("rank_id") or membership.get("rank"),
         }
     ]
 
@@ -245,11 +328,16 @@ def inspect_memberships(npc):
     for membership in npc_memberships(npc):
         faction_id = str(membership.get("faction_id") or "")
         faction = definitions.get(faction_id) or {}
+        rank_id = membership.get("rank_id")
+        rank = rank_definition(faction_id, rank_id) or {}
         rows.append(
             {
                 **membership,
                 "faction_name": faction.get("name") or faction_id,
                 "faction_active": bool(faction.get("active", True)) if faction else None,
+                "rank_id": rank_id,
+                "rank_name": rank.get("name") or membership.get("rank") or rank_id,
+                "authority_level": membership_authority(npc, faction_id, active_only=False),
             }
         )
     return rows
