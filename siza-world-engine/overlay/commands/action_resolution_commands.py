@@ -2,6 +2,7 @@ from evennia import Command
 
 from services.action_resolution_engine import (
     ACTION_RESOLUTION_BUILD,
+    action_requires_resolution,
     inspect_adventure_stats,
     prepare_action_check,
     set_adventure_stat,
@@ -119,3 +120,118 @@ class CmdSizaCheckContract(Command):
         if check.get("errors"):
             self.caller.msg(f"errors={check.get('errors')}")
         self.caller.msg("=================================================")
+
+
+class CmdSizaValidateV38(Command):
+    """Run the complete non-destructive v0.38 Adventure Stats / Check Contract validation."""
+
+    key = "siza-validate-v38"
+    aliases = ["validate-v38"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        query = (self.args or "").strip() or "Informante C"
+        npc = find_npc(query)
+        if not npc:
+            self.caller.msg("[V0.38 VALIDATION] FAIL | no identifico el NPC de prueba.")
+            return
+
+        try:
+            original_stats = {str(k): v for k, v in (npc.db.adventure_stats or {}).items()}
+        except Exception:
+            original_stats = {}
+
+        results = []
+
+        def check(label, passed, detail=""):
+            results.append(bool(passed))
+            suffix = f" | {detail}" if detail else ""
+            self.caller.msg(f"{'PASS' if passed else 'FAIL'} {label}{suffix}")
+
+        self.caller.msg(f"=== SIZA VALIDATION v0.38 | {ACTION_RESOLUTION_BUILD} ===")
+        self.caller.msg(f"Harness NPC: {npc.key}")
+
+        try:
+            # Test from a clean temporary stat state, then restore exactly what was there.
+            npc.db.adventure_stats = {}
+            empty = inspect_adventure_stats(npc)
+            values = empty.get("stats") or {}
+            check(
+                "stats-unset-are-not-zero",
+                empty.get("authored_count") == 0 and all(value is None for value in values.values()),
+                f"authored_count={empty.get('authored_count')}",
+            )
+
+            set_packet = set_adventure_stat(npc, "PER", 4)
+            after = inspect_adventure_stats(npc)
+            after_values = after.get("stats") or {}
+            check(
+                "single-stat-persists",
+                bool(set_packet.get("success"))
+                and after_values.get("PER") == 4
+                and after.get("authored_count") == 1
+                and all(after_values.get(key) is None for key in ("FUE", "AGI", "COO", "INT", "PSI")),
+                f"PER={after_values.get('PER')} authored_count={after.get('authored_count')}",
+            )
+
+            ready = prepare_action_check(
+                npc,
+                {
+                    "id": "VALIDATE-V38-PER",
+                    "trigger": "OBSTACLE",
+                    "mode": "ACCUMULATE",
+                    "stat": "PER",
+                },
+            )
+            check(
+                "authored-check-contract-ready",
+                ready.get("status") == "READY_UNRESOLVED"
+                and ready.get("actor_stat") == "PER"
+                and ready.get("actor_stat_value") == 4
+                and ready.get("resolved") is False
+                and ready.get("outcome") is None
+                and ready.get("reason") == "FORMULA_NOT_AUTHORED",
+                f"status={ready.get('status')} value={ready.get('actor_stat_value')} reason={ready.get('reason')}",
+            )
+
+            missing = prepare_action_check(
+                npc,
+                {
+                    "id": "VALIDATE-V38-FUE",
+                    "trigger": "OBSTACLE",
+                    "mode": "ACCUMULATE",
+                    "stat": "FUE",
+                },
+            )
+            check(
+                "missing-stat-blocks-check",
+                missing.get("status") == "MISSING_ACTOR_STAT" and missing.get("actor_stat") == "FUE",
+                f"status={missing.get('status')}",
+            )
+
+            no_check = action_requires_resolution({"id": "ROUTINE-NO-CHECK"})
+            explicit_check = action_requires_resolution(
+                {
+                    "id": "OBSTACLE-WITH-CHECK",
+                    "check": {
+                        "trigger": "OBSTACLE",
+                        "mode": "DIRECT",
+                        "stat": "PER",
+                    },
+                }
+            )
+            check(
+                "resolution-is-explicit-not-routine-default",
+                no_check is False and explicit_check is True,
+                f"routine={no_check} authored_obstacle={explicit_check}",
+            )
+        except Exception as exc:
+            check("validator-runtime", False, f"error={exc}")
+        finally:
+            npc.db.adventure_stats = original_stats
+
+        passed = sum(1 for value in results if value)
+        total = len(results)
+        self.caller.msg(f"RESULT: {passed}/{total} PASS")
+        self.caller.msg(f"STATE RESTORED: adventure_stats restored for {npc.key}")
+        self.caller.msg("========================================================")
