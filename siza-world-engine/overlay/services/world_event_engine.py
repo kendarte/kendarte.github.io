@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from evennia import search_object, search_tag
 
+from services.consequence_engine import emit_world_action
 from services.faction_engine import has_active_membership
 from services.perception_engine import (
     EVENT_AWARENESS_AUDIENCE,
@@ -11,7 +12,7 @@ from services.perception_engine import (
 )
 
 
-WORLD_EVENT_BUILD = "0.33.1-event-occurrence-history"
+WORLD_EVENT_BUILD = "0.36.0-event-acknowledgement-actions"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
@@ -457,7 +458,7 @@ def collect_event_candidates(npc, default_priority=80):
 
 
 def acknowledge_world_event(npc, event_id):
-    """Resolve one world incident response without mutating its world condition."""
+    """Resolve one world incident response and emit a structured acknowledgement action."""
     wanted = str(event_id or "").strip()
     npc_id = str(getattr(npc.db, "npc_id", "") or "") if npc else ""
     if not wanted or not npc or not npc_id:
@@ -541,6 +542,7 @@ def acknowledge_world_event(npc, event_id):
                 str(value) for value in _plain_list(event.get("acknowledged_by"))
             ]
             already = npc_id in acknowledged
+            action_consequence = None
             if not already:
                 acknowledged.append(npc_id)
                 event["acknowledged_by"] = acknowledged
@@ -551,6 +553,24 @@ def acknowledge_world_event(npc, event_id):
                 changed = True
             if changed:
                 site.db.world_event_instances = instances
+
+            if goal_type == "EVENT" and not already:
+                occurrence = int(event.get("occurrence", 0) or 0)
+                action_consequence = emit_world_action(
+                    {
+                        "action_id": f"EVENT_ACKNOWLEDGED:{wanted}:{occurrence}:{npc_id}",
+                        "action_type": "EVENT_ACKNOWLEDGED",
+                        "actor_npc_id": npc_id,
+                        "actor_name": npc.key,
+                        "event_id": wanted,
+                        "occurrence": occurrence,
+                        "event_site": site.key,
+                        "event_room_id": getattr(site.db, "room_id", None),
+                        "target_room_id": event.get("target_room_id"),
+                        "target_room_key": event.get("target_room_key"),
+                        "recipient_ids": [npc_id],
+                    }
+                )
 
             if goal_type == "ORDER":
                 reason = "ORDER_ALREADY_COMPLETED" if already else "ORDER_COMPLETED"
@@ -571,6 +591,7 @@ def acknowledge_world_event(npc, event_id):
                 "issuer_id": event.get("issuer_id"),
                 "issuer_name": event.get("issuer_name"),
                 "awareness_mode": event.get("awareness_mode"),
+                "action_consequence": action_consequence,
                 "site": site,
             }
 
