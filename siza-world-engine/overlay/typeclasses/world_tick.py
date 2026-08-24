@@ -13,7 +13,7 @@ from services.world_event_engine import refresh_world_event_rules
 
 
 WORLD_TICK_KEY = "SIZA_WORLD_TICK"
-WORLD_TICK_BUILD = "0.22.0-decision-personality"
+WORLD_TICK_BUILD = "0.22.1-decision-personality-tick-arbitration"
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 5
 MAX_INTERVAL = 3600
@@ -21,9 +21,9 @@ TRACE_LIMIT = 20
 
 
 def simulate_npc_tick(npc):
-    """Dispatch one NPC tick without changing unapproved NPC behavior."""
+    """Dispatch one NPC action using the world state already prepared for this tick."""
     if bool(npc.db.decision_enabled):
-        result = dict(decision_step(npc) or {})
+        result = dict(decision_step(npc, prepare_world_state=False) or {})
         result.setdefault("engine", "DECISION")
         return result
 
@@ -69,7 +69,7 @@ def _append_trace(
 
 
 class SizaWorldTick(DefaultScript):
-    """Persistent world tick; NPC decisions include per-character personality modifiers."""
+    """Persistent world tick with one global arbitration phase before NPC actions."""
 
     def at_script_creation(self):
         self.key = WORLD_TICK_KEY
