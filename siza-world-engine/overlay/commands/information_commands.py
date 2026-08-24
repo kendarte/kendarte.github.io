@@ -5,6 +5,7 @@ from services.information_engine import (
     share_event_information,
 )
 from services.npc_simulation import find_npc
+from services.relationship_engine import create_information_obligation
 
 
 class CmdSizaInformation(Command):
@@ -91,9 +92,60 @@ class CmdSizaInform(Command):
             )
             return
 
+        candidate = result.get("candidate_hops")
+        candidate_text = f" | candidate_hops={candidate}" if candidate is not None else ""
         self.caller.msg(
             f"[INFORMATION SHARED] {source.key} -> {target.key} | "
             f"event={result.get('event_id')} | occurrence={result.get('occurrence')} | "
             f"source_via={result.get('source_via')} | created={result.get('created')} | "
-            f"hops={result.get('hops')} | heard_count={result.get('heard_count')}"
+            f"hops={result.get('hops')}{candidate_text} | heard_count={result.get('heard_count')}"
+        )
+
+
+class CmdSizaInformGoal(Command):
+    """Admin/debug: author one explicit social intent to tell another NPC about an occurrence."""
+
+    key = "siza-inform-goal"
+    aliases = ["inform-goal"]
+    locks = "cmd:perm(Admin)"
+
+    def func(self):
+        parts = [part.strip() for part in (self.args or "").split("|")]
+        if len(parts) != 5 or not all(parts):
+            self.caller.msg(
+                "Uso: siza-inform-goal <SOURCE NPC> | <TARGET NPC> | <EVENT_ID> | <occurrence> | <priority>"
+            )
+            return
+
+        source = find_npc(parts[0])
+        target = find_npc(parts[1])
+        if not source or not target:
+            self.caller.msg("No identifico source o target como NPC de Siza.")
+            return
+        try:
+            occurrence = int(parts[3])
+            priority = int(parts[4])
+        except ValueError:
+            self.caller.msg("occurrence y priority deben ser enteros.")
+            return
+
+        result = create_information_obligation(
+            source,
+            target,
+            parts[2],
+            occurrence,
+            priority,
+        )
+        if not result.get("success"):
+            self.caller.msg(
+                f"[INFORM GOAL DENIED] source={source.key} | target={target.key} | "
+                f"event={parts[2]} | occurrence={occurrence} | reason={result.get('reason')}"
+            )
+            return
+
+        self.caller.msg(
+            f"[INFORM GOAL] {source.key} -> {target.key} | id={result.get('obligation_id')} | "
+            f"event={result.get('event_id')} | occurrence={result.get('occurrence')} | "
+            f"priority={result.get('priority')} | source_via={result.get('source_via')} | "
+            f"created={result.get('created')}"
         )
