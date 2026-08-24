@@ -13,12 +13,26 @@ from services.world_clock import format_world_time, world_clock_state
 def _priority_text(item):
     effective = item.get("effective_priority", item.get("priority"))
     base = item.get("base_priority", effective)
-    modifier = item.get("personality_modifier", 0) or 0
+    total = int(item.get("personality_modifier", 0) or 0)
+    authored = item.get("authored_personality_modifier")
+    loyalty = item.get("faction_loyalty_modifier")
     if effective is None:
         return "priority=None"
-    if modifier:
-        return f"priority={effective} | base={base} | personality={int(modifier):+}"
-    return f"priority={effective}"
+    if not total:
+        return f"priority={effective}"
+
+    parts = [f"priority={effective}", f"base={base}"]
+    if authored is None and loyalty is None:
+        parts.append(f"modifier={total:+}")
+        return " | ".join(parts)
+
+    authored = int(authored or 0)
+    loyalty = int(loyalty or 0)
+    if authored:
+        parts.append(f"personality={authored:+}")
+    if loyalty:
+        parts.append(f"loyalty={loyalty:+}")
+    return " | ".join(parts)
 
 
 def _candidate_line(item, selected_id=None):
@@ -35,11 +49,14 @@ def _candidate_line(item, selected_id=None):
         schedule = f" | shift={item.get('shift_schedule')}"
     elif item.get("type") == "ROUTINE" and item.get("routine_schedule_label"):
         schedule = f" | schedule={item.get('routine_schedule_label')}"
+    faction = ""
+    if item.get("faction_id"):
+        faction = f" | faction={item.get('faction_id')}"
     return (
         f"[{marker}] {item.get('type')} | {_priority_text(item)} | "
         f"id={item.get('id')} | target={item.get('target_name') or item.get('target_room_key')} | "
         f"reachable={reachable} | path={item.get('path_length')} | source={item.get('source')}"
-        f"{progress}{claim}{schedule}"
+        f"{progress}{claim}{schedule}{faction}"
     )
 
 
@@ -87,10 +104,13 @@ class CmdSizaDecide(Command):
                 winner_schedule = f" | shift={selected.get('shift_schedule')}"
             elif selected.get("type") == "ROUTINE" and selected.get("routine_schedule_label"):
                 winner_schedule = f" | schedule={selected.get('routine_schedule_label')}"
+            winner_faction = ""
+            if selected.get("faction_id"):
+                winner_faction = f" | faction={selected.get('faction_id')}"
             self.caller.msg(
                 f"Winner: {selected.get('type')} {selected.get('id')} -> "
                 f"{selected.get('target_name')} | {_priority_text(selected)}"
-                f"{winner_progress}{winner_claim}{winner_schedule}"
+                f"{winner_progress}{winner_claim}{winner_schedule}{winner_faction}"
             )
         else:
             self.caller.msg("Winner: NONE")
@@ -186,11 +206,7 @@ class CmdSizaDecisionStep(Command):
         engine = result.get("engine")
         priority_suffix = ""
         if result.get("personality_modifier"):
-            priority_suffix = (
-                f" | base={result.get('base_priority')} "
-                f"personality={int(result.get('personality_modifier') or 0):+} "
-                f"effective={result.get('effective_priority')}"
-            )
+            priority_suffix = f" | {_priority_text(result)}"
 
         if result.get("job_claim_acquired"):
             self.caller.msg(
