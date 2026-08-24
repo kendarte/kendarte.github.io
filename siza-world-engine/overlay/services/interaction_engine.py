@@ -238,6 +238,8 @@ def resolve_talk(character, intent):
         response = str(fact.get("response", "")).strip()
         if not response:
             response = str(fact.get("fact", "")).strip()
+        if not response:
+            response = str(fact.get("text", "")).strip()
         if response:
             _record_conversation(
                 character,
