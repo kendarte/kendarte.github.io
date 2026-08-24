@@ -1,7 +1,7 @@
 from evennia import Command
 
+from services.decision_personality import DECISION_PERSONALITY_BUILD
 from services.npc_decision import (
-    DECISION_BUILD,
     choose_goal,
     decision_step,
     set_goal_active,
@@ -80,7 +80,7 @@ class CmdSizaDecide(Command):
         selected_id = selected.get("id") if selected else None
         clock = world_clock_state()
 
-        self.caller.msg(f"=== SIZA DECISION | {DECISION_BUILD} ===")
+        self.caller.msg(f"=== SIZA DECISION | {DECISION_PERSONALITY_BUILD} ===")
         self.caller.msg(
             f"NPC: {npc.key} | location={decision.get('location')} | "
             f"decision_enabled={decision.get('decision_enabled')} | "
