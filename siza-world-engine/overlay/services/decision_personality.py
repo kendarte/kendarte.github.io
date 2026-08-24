@@ -1,7 +1,8 @@
+from services.context_effect_engine import context_decision_modifiers
 from services.faction_engine import faction_context_modifiers
 
 
-DECISION_PERSONALITY_BUILD = "0.24.0-faction-membership-loyalty"
+DECISION_PERSONALITY_BUILD = "0.26.0-memory-relationship-context"
 
 MIN_MODIFIER = -100
 MAX_MODIFIER = 100
@@ -85,7 +86,7 @@ def decision_biases(npc):
 
 
 def apply_decision_personality(npc, goal, base_priority=None):
-    """Decorate one goal with authored personality plus contextual faction loyalty."""
+    """Apply authored personality, faction loyalty, memory and relationship context."""
     item = dict(goal or {})
     goal_type = str(item.get("type") or "").upper()
     if base_priority is None:
@@ -95,6 +96,8 @@ def apply_decision_personality(npc, goal, base_priority=None):
     applied = []
     authored_total = 0
     faction_total = 0
+    memory_total = 0
+    relationship_total = 0
 
     type_bias = decision_biases(npc).get(goal_type, 0)
     if type_bias:
@@ -141,11 +144,34 @@ def apply_decision_personality(npc, goal, base_priority=None):
             }
         )
 
-    total = authored_total + faction_total
+    for modifier in context_decision_modifiers(npc, item):
+        value = _clamp(_safe_int(modifier.get("value"), 0), MIN_MODIFIER, MAX_MODIFIER)
+        if not value:
+            continue
+        source = str(modifier.get("source") or "context").lower()
+        if source == "memory":
+            memory_total += value
+        elif source == "relationship":
+            relationship_total += value
+        applied.append(
+            {
+                "id": str(modifier.get("id") or "CONTEXT_EFFECT"),
+                "value": value,
+                "source": source,
+                "memory_id": modifier.get("memory_id"),
+                "relationship_identity": modifier.get("relationship_identity"),
+                "subject_npc_id": modifier.get("subject_npc_id"),
+                "target_npc_id": modifier.get("target_npc_id"),
+            }
+        )
+
+    total = authored_total + faction_total + memory_total + relationship_total
     effective = _clamp(base + total, MIN_EFFECTIVE_PRIORITY, MAX_EFFECTIVE_PRIORITY)
     item["base_priority"] = base
     item["authored_personality_modifier"] = authored_total
     item["faction_loyalty_modifier"] = faction_total
+    item["memory_modifier"] = memory_total
+    item["relationship_context_modifier"] = relationship_total
     item["personality_modifier"] = total
     item["effective_priority"] = effective
     item["priority"] = effective
