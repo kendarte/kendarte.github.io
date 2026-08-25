@@ -275,8 +275,8 @@ def refresh_fact_share_obligations(npc):
                 rule_id,
                 reason="SOURCE_NO_LONGER_KNOWS_FACT",
             )
-            # Compatibility for old explicit obligations created before v0.92 source indexing.
-            explicit_target = str(rule.get("target_npc_id") or "").strip()
+            mode = str(rule.get("target_mode") or "EXPLICIT").upper()
+            explicit_target = str(rule.get("target_npc_id") or "").strip() if mode == "EXPLICIT" else ""
             explicit_obligation = f"SHARE-FACT-{explicit_target}-{fact_id}" if explicit_target else ""
             legacy_cancelled = False
             if explicit_target and explicit_obligation:
@@ -285,12 +285,17 @@ def refresh_fact_share_obligations(npc):
                     explicit_target,
                     explicit_obligation,
                 )
+            compatibility_obligation_id = explicit_obligation or (
+                str(cancelled[0].get("obligation_id") or "") if len(cancelled) == 1 else ""
+            )
             skipped.append(
                 {
                     "rule_id": rule_id,
                     "reason": "SOURCE_DOES_NOT_KNOW_FACT",
+                    "obligation_id": compatibility_obligation_id or None,
                     "cancelled_pending": bool(cancelled or legacy_cancelled),
                     "cancelled_obligations": cancelled,
+                    "target_mode": mode,
                 }
             )
             continue
