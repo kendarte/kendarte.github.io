@@ -37,7 +37,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
-          const files=['siza-mobile-test/index.html','siza-core/card-effects.js','siza-core/card-schema.js','siza-core/cards.js','siza-core/card-renderer.js','siza-core/manifest-rules.js','.github/scripts/siza-arena-regression.js','.github/scripts/siza-combat-effects-regression.js','.github/scripts/siza-prism-effects-regression.js','.github/scripts/siza-equipment-effects-regression.js','.github/scripts/siza-battlefield-ui-index-regression.js'];
+          const files=['siza-mobile-test/index.html','siza-core/card-effects.js','siza-core/card-schema.js','siza-core/cards.js','siza-core/card-renderer.js','siza-core/manifest-rules.js','siza-core/crystal-rules.js','.github/scripts/siza-arena-regression.js','.github/scripts/siza-combat-effects-regression.js','.github/scripts/siza-prism-effects-regression.js','.github/scripts/siza-equipment-effects-regression.js','.github/scripts/siza-battlefield-ui-index-regression.js'];
           const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
           (async()=>{
             for(const path of files){
