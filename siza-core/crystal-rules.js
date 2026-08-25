@@ -52,5 +52,18 @@ function paymentPlan(player,card,resolveCard){
   return directPlan(player,card)||offeringPlan(player,card,resolveCard);
 }
 
-global.SizaCrystalRules=Object.freeze({COLORS,crystalReq,spellCost,directPlan,offeringPlan,paymentPlan});
+function resetPool(player){
+  player.crystals={};
+  for(const [key,count] of Object.entries(player?.aff||{}))if(count>0)player.crystals[key]=count;
+  player.offeringUsed=false;
+  player.artifactExhausted=[];
+}
+
+function spend(player,spent){
+  for(const [key,count] of Object.entries(spent||{}))if((player?.crystals?.[key]||0)<count)return false;
+  for(const [key,count] of Object.entries(spent||{}))player.crystals[key]-=count;
+  return true;
+}
+
+global.SizaCrystalRules=Object.freeze({COLORS,crystalReq,spellCost,directPlan,offeringPlan,paymentPlan,resetPool,spend});
 })(window);
