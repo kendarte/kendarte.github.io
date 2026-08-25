@@ -1,0 +1,57 @@
+name: Siza Arena Tests
+
+on:
+  push:
+    paths:
+      - 'siza-mobile-test/index.html'
+      - '.github/workflows/siza-arena-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  arena-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Run Arena v0.7.1 contract
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { JSDOM, VirtualConsole } = require('jsdom');
+
+          const html = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
+          const virtualConsole = new VirtualConsole();
+          virtualConsole.on('jsdomError', error => {
+            console.error('[JSDOM]', error.message);
+          });
+
+          const dom = new JSDOM(html, {
+            runScripts: 'dangerously',
+            url: 'https://siza.local/',
+            virtualConsole
+          });
+
+          const runner = dom.window.SIZA?.runArenaCriticalV071;
+          if (typeof runner !== 'function') {
+            console.error('FAIL: SIZA.runArenaCriticalV071 is not available.');
+            process.exit(1);
+          }
+
+          const report = runner();
+          console.log(`SIZA Arena contract ${report.version}: ${report.passed}/${report.total}`);
+          for (const result of report.results) {
+            console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
+          }
+
+          dom.window.close();
+          if (report.passed !== report.total) process.exit(1);
+          NODE
