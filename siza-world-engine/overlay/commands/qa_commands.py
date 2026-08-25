@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v90_commands import CmdSizaValidateV90
+from commands.world_input_v91_commands import CmdSizaValidateV91
 
 
-QA_BUILD = "0.90.0-risk-based-one-command-qa"
+QA_BUILD = "0.91.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.89 is closed after its packet-contract follow-up passed 4/4. v0.90 closes a scaling gap in social Fact propagation: an authored SHARE_FACT rule must not send an NPC across the world to tell a target an exact Fact the target already knows, and a pending share must become stale if the target learns independently while the source is en route. The v0.89 transfer/contact authority is unchanged. refresh_fact_share_obligations now checks the target's authoritative Fact+Knowledge state before creating a share, retires an already-pending redundant obligation as completed_without_contact, and fact_driven_decision already runs that refresh before underlying candidate collection. Historical v0.59/v0.89 build IDs remain stable and v0.90 is exposed as a separate target-awareness capability. Running pre-known suppression, normal unknown-target materialization, independent-learning stale retirement, relationship-candidate removal, wrapper-order integration and one-shot anti-cycle behavior with exact state restoration."
+            "RISK PROFILE: v0.90 is closed at 6/6 after proving target-aware Fact-share pruning prevents redundant social travel and retires pending shares when the target independently learns the exact Fact. v0.91 closes the symmetric persistent-state gap: relationship candidate collection already refused a SHARE_FACT goal when the source no longer knew the Fact, but the underlying obligation remained active/pending forever. refresh_fact_share_obligations now cancels an active pending share as SOURCE_NO_LONGER_KNOWS_FACT before candidate collection. Cancellation is deliberately reversible rather than terminal completion: if the source later relearns the exact Fact while the target remains ignorant, the same obligation id is reactivated without duplication and can complete through the unchanged local transfer_knowledge_fact authority. Historical v0.59/v0.89/v0.90 capability IDs remain stable. Running normal materialization, source-loss cancellation, wrapper candidate pruning, no remote transfer, relearning reactivation and real contact transfer/completion with exact state restoration."
         )
-        _run_command(CmdSizaValidateV90, self.caller)
+        _run_command(CmdSizaValidateV91, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.90 changes deterministic pre-decision social obligation materialization only. The validator proves both no-new-obligation and stale-pending retirement cases against real persistent Knowledge/Facts/relationships, confirms the fact-driven wrapper prunes before npc_decision candidate selection, checks no transfer history is fabricated and restores all touched state. qwen, transfer_knowledge_fact, relationship resolution, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.91 changes only deterministic Fact-share obligation refresh state. The validator proves a pending obligation is cancelled rather than left active when the source loses its exact Fact, that no relationship candidate or transfer survives that loss, and that relearning reactivates the same obligation id before the existing decision/relationship/transfer path completes normally. qwen, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
