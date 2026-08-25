@@ -9,6 +9,7 @@ from services.state_effect_engine import apply_state_effects
 
 CONSEQUENCE_BUILD = "0.43.0-outcome-state-effects"
 NPC_KNOWLEDGE_FACT_CONSEQUENCE_BUILD = "0.63.0-npc-structured-knowledge-facts"
+SITE_NPC_RECIPIENT_BUILD = "0.88.0-site-local-npc-consequence-recipients"
 REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
@@ -181,7 +182,7 @@ def _npc_map():
     return output
 
 
-def _recipient_ids(rule, action):
+def _recipient_ids(rule, action, npcs=None):
     mode = str((rule or {}).get("recipient_mode") or "ACTION_RECIPIENTS").upper()
     if mode == "EXPLICIT":
         values = _plain_list((rule or {}).get("recipient_ids"))
@@ -191,6 +192,26 @@ def _recipient_ids(rule, action):
     elif mode == "TARGET":
         target_id = str((action or {}).get("target_npc_id") or "").strip()
         values = [target_id] if target_id else []
+    elif mode == "SITE_NPCS":
+        values = []
+        site_room_id = str((action or {}).get("site_room_id") or "").strip()
+        site_dbref = (action or {}).get("site_dbref")
+        candidates = npcs if isinstance(npcs, dict) else _npc_map()
+        if site_room_id or site_dbref not in {None, ""}:
+            for npc_id, npc in candidates.items():
+                location = getattr(npc, "location", None)
+                if not location:
+                    continue
+                matched = False
+                if site_dbref not in {None, ""}:
+                    try:
+                        matched = int(getattr(location, "id", 0) or 0) == int(site_dbref)
+                    except (TypeError, ValueError):
+                        matched = False
+                if not matched and site_room_id:
+                    matched = str(getattr(location.db, "room_id", "") or "").strip() == site_room_id
+                if matched:
+                    values.append(str(npc_id))
     else:
         values = _plain_list((action or {}).get("recipient_ids"))
     return [str(value) for value in values if value]
@@ -473,7 +494,7 @@ def emit_world_action(action):
         state_applied = any(bool(row.get("success")) for row in state_results)
 
         applied = []
-        for recipient_id in _recipient_ids(rule, packet):
+        for recipient_id in _recipient_ids(rule, packet, npcs=npcs):
             npc = npcs.get(recipient_id)
             if not npc:
                 applied.append({"npc_id": recipient_id, "status": "RECIPIENT_NOT_FOUND"})
