@@ -17,6 +17,13 @@ def _plain_list(value):
         return []
 
 
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
 def _record(value):
     try:
         return {str(key): item for key, item in value.items()}
@@ -34,6 +41,17 @@ def _npc_by_id(npc_id):
         if str(getattr(npc.db, "npc_id", "") or "").strip() == wanted:
             return npc
     return None
+
+
+def _completed_obligation_exists(npc, target_id, obligation_id):
+    relationships = _plain_dict(getattr(npc.db, "relationships", {})) if npc else {}
+    relation = _plain_dict(relationships.get(str(target_id), {}))
+    for raw in _plain_list(relation.get("obligations")):
+        item = _record(raw) or {}
+        if str(item.get("id") or "") != str(obligation_id):
+            continue
+        return not bool(item.get("active", False)) and str(item.get("status") or "").lower() == "completed"
+    return False
 
 
 def fact_share_rules(npc):
@@ -97,6 +115,11 @@ def refresh_fact_share_obligations(npc):
         target = _npc_by_id(target_id)
         if not target:
             skipped.append({"rule_id": rule_id, "reason": "TARGET_NOT_FOUND"})
+            continue
+
+        obligation_id = f"SHARE-FACT-{target_id}-{fact_id}"
+        if bool(rule.get("one_shot", True)) and _completed_obligation_exists(npc, target_id, obligation_id):
+            skipped.append({"rule_id": rule_id, "reason": "ALREADY_COMPLETED", "obligation_id": obligation_id})
             continue
 
         packet = create_fact_share_obligation(
