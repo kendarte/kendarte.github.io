@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v94_commands import CmdSizaValidateV94
+from commands.world_input_v95_commands import CmdSizaValidateV95
 
 
-QA_BUILD = "0.94.0-risk-based-one-command-qa"
+QA_BUILD = "0.95.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.93 is closed at 7/7 after proving FACTION Fact-share rules may filter current recipients by existing faction authority while preserving v0.92 all-member behavior when no threshold is authored. v0.94 closes the chain-of-command fanout gap: the same FACTION rule may optionally use selection=NEAREST with max_targets=N. Eligibility still comes from v0.92 membership plus v0.93 min_authority; only then are reachable recipients ranked by the existing passable Exit graph using find_path. Shorter path wins, then higher current faction authority, then npc_id for deterministic ties. Selection is reevaluated every refresh, so movement can prune an old pending branch and reactivate another normal SHARE_FACT obligation. Omitting selection preserves v0.93 behavior. Malformed selection/limits fail closed by cancelling pending branches from that rule."
+            "RISK PROFILE: v0.94 is closed at 9/9 after proving FACTION rules can select a deterministic nearest reachable subset after membership/authority filtering. v0.95 fixes the limited-slot ordering gap: under selection=NEAREST, recipients that already know the exact Fact or whose one-shot SHARE_FACT obligation is already completed are removed before max_targets slots are assigned. Existing v0.90 target-aware retirement remains authoritative for a pending branch whose target learns independently; v0.95 performs that retirement before ranking so the next ignorant reachable recipient can fill the same scarce slot in the same refresh. selection=ALL remains on the v0.93/v0.94 path unchanged. Running normal nearest baseline, additive build metadata, independent-target-learning fallback, completed-one-shot fallback after forgetting, ALL compatibility and no-recipient-needs-the-Fact behavior with exact state restoration."
         )
-        _run_command(CmdSizaValidateV94, self.caller)
+        _run_command(CmdSizaValidateV95, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.94 changes deterministic recipient subset selection only. The validator covers v0.93 no-selection compatibility, real one-hop vs two-hop nearest selection, holder-local selection metadata, dynamic branch switching when NPC locations change, authority tie-breaking at equal path length, max_targets=2, malformed selection fail-closed, same-id recovery and malformed max_targets fail-closed with exact state restoration. qwen, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding implementation and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.95 changes deterministic limited-recipient ordering only. The validator proves v0.94 nearest behavior is unchanged when all recipients need the Fact, that an already-known nearest target is retired before slot assignment and the farther ignorant target is selected immediately, that terminal one-shot recipients cannot consume slots after later forgetting, and that selection=ALL remains unchanged. qwen, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
