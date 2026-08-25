@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v851_commands import CmdSizaValidateV851
+from commands.world_input_v852_commands import CmdSizaValidateV852
 
 
-QA_BUILD = "0.85.1-risk-based-one-command-qa"
+QA_BUILD = "0.85.2-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.84 is closed at 14/14. v0.85 connects disclosure to existing persistent NPC state instead of inventing a second social-resolution system. New policies are holder-local under npc.fact_disclosure_policies[fact_id], so willingness to reveal a Fact never travels with the transferable Fact itself; legacy inline v0.84 min_familiarity remains readable for compatibility. The validator uses the real v0.54 CONFRONT action: blocked TALK, forced target win remains blocked, forced actor win flows through the existing consequence engine and sets v054_pressure_conceded, then the same live qwen-selected TALK target transfers and renders the now-authorized clean Fact. qwen never receives Fact text, holder policy or confrontation state."
+            "RISK PROFILE: v0.85.1 passed 11/12. All production-critical disclosure behavior passed: holder-local policy privacy, live qwen target selection, blocked TALK, real CONFRONT target-win remains blocked, real ACTOR_WIN consequence unlocks disclosure, and the clean Fact transfers/renders without the holder policy. The only failure used 'observo al Informante de Prueba C' as a PERCEPTION fixture, but v0.68 intentionally gives a strong authored OBJECT_ACTION match precedence before perception; that named phrase overlaps the actionable Informant object and its authored 'Presionar al informante' action. v0.85.2 changes no production code. It documents that preserved precedence and reruns the established generic perception fixture 'observo alrededor' plus Knowledge Query and movement routing with an exact read-only state check."
         )
-        _run_command(CmdSizaValidateV851, self.caller)
+        _run_command(CmdSizaValidateV852, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.85 changes conversation authority and consumes persistent state, so this targeted validator performs a live qwen target-selection roundtrip plus real CONFRONT failure/success resolution, exact state restoration, holder-policy privacy and clean-Fact transfer checks. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: validator-only follow-up. v0.85 production already passed its live qwen and real CONFRONT integration. If this precedence-aware targeted validator passes all assertions, v0.85 is closed without manual acceptance."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
