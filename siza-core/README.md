@@ -3,9 +3,11 @@
 Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 
 - `card-effects.js` defines and validates structured effect descriptors.
-- `card-schema.js` normalizes card data and preserves effect metadata across handoff.
+- `card-schema.js` normalizes card data and preserves effect metadata across handoff, including `equipCost`.
 - `cards.js` is the official shared card catalog.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
 
-Arena resolves supported `resolve`, `enter`, `attack-declared`, and `combat-damage` behavior from structured card data. This currently covers the stack/entry effects plus Contrabandista Carmesí and Ignimite combat triggers. Activated Manafestation abilities and continuous Equipment modifiers are migrated separately so each behavior retains its existing regression coverage.
+Arena now resolves the supported card behavior from structured card data for `resolve`, `enter`, `attack-declared`, `combat-damage`, `manifest-roll`, and `equipped` events. This covers the current stack/entry effects, Contrabandista Carmesí, Ignimite, Prisma de Enfoque, and Espada de Bajamar. Permanent regressions also exercise generated cards with unknown IDs to ensure these behaviors are driven by descriptors rather than catalog-specific conditionals.
+
+The current Equipment runtime intentionally supports `Equipar {1}` only. The schema rejects larger `equipCost` values until multi-crystal Equipment payment has its own explicit runtime contract and tests.
