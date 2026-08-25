@@ -1,0 +1,46 @@
+name: Siza Entry Mode Normalize Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-entry-normalize-migration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  normalize-entry-mode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Validate candidate and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),cp=require('child_process');
+          const {JSDOM,VirtualConsole}=require('jsdom');
+          const repo=process.env.GH_REPOSITORY,token=process.env.GH_TOKEN,api=`https://api.github.com/repos/${repo}`;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          async function get(path){const r=await fetch(`${api}/contents/${path}?ref=main`,{headers});if(!r.ok)throw new Error(`${path}: GET ${r.status}`);const f=await r.json();return{sha:f.sha,text:Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8')}}
+          function inlineCore(html,files){let out=html;for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js']){const tag=`<script src="../siza-core/${name}"></script>`;if(!out.includes(tag))throw new Error(`Missing ${name}`);out=out.replace(tag,`<script>${files[name]}</script>`)}return out}
+          function dom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error(`[JSDOM ${label}]`,e.message));const d=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});d.window.setTimeout=()=>0;return d}
+          (async()=>{
+            const current=await get('siza-mobile-test/index.html'),files={};for(const n of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js'])files[n]=(await get(`siza-core/${n}`)).text;
+            const reg=await get('.github/scripts/siza-entry-rules-regression.js');
+            const old="const p=makeDuelistV070(makeLibrary(),true),e=makeDuelistV070(makeLibrary(),false),entry=ENTRY_V070[mode]?mode:'prepare';";
+            const neu="const p=makeDuelistV070(makeLibrary(),true),e=makeDuelistV070(makeLibrary(),false),entry=SizaEntryRules.normalizeMode(mode);";
+            assert(current.text.includes(old),'createMatch entry normalization anchor changed');
+            const candidate=current.text.replace(old,neu),marker='window.SIZA={',probe=`window.__ENTRY_NORMALIZE__={createMatch};\n`;
+            const O=dom(inlineCore(current.text,files).replace(marker,probe+marker),'old'),N=dom(inlineCore(candidate,files).replace(marker,probe+marker),'new');
+            for(const mode of['prepare','immediate','oneCrystal','bogus','',null,undefined]){const a=O.window.__ENTRY_NORMALIZE__.createMatch(false,mode),b=N.window.__ENTRY_NORMALIZE__.createMatch(false,mode);assert(a.rules.entryMode===b.rules.entryMode,`mode mismatch ${String(mode)}`)}
+            const arena=N.window.SIZA.runArenaCriticalV071();assert(arena.passed===arena.total,`Arena ${arena.passed}/${arena.total}`);console.log(`PASS createMatch normalization 7/7; Arena ${arena.passed}/${arena.total}`);O.window.close();N.window.close();
+            fs.mkdirSync('siza-mobile-test',{recursive:true});fs.mkdirSync('siza-core',{recursive:true});fs.mkdirSync('.github/scripts',{recursive:true});fs.writeFileSync('siza-mobile-test/index.html',candidate);for(const[n,t]of Object.entries(files))fs.writeFileSync(`siza-core/${n}`,t);fs.writeFileSync('.github/scripts/siza-entry-rules-regression.js',reg.text);cp.execFileSync('node',['.github/scripts/siza-entry-rules-regression.js'],{stdio:'inherit'});
+            const put=await fetch(`${api}/contents/siza-mobile-test/index.html`,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Use shared entry mode normalization',content:Buffer.from(candidate).toString('base64'),sha:current.sha,branch:'main'})});if(!put.ok)throw new Error(`PUT ${put.status}: ${await put.text()}`);const result=await put.json();console.log('COMMIT '+result.commit.sha);
+          })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
+          NODE
