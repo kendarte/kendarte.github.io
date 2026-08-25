@@ -1,8 +1,10 @@
 from services.fact_share_rule_engine import _cancel_rule_obligations, fact_share_rules
 from services.faction_engine import faction_definition, membership_authority, npc_memberships
+from services.knowledge_context_engine import knowledge_facts
 
 
 FACTION_FACT_SHARE_POLICY_BUILD = "0.96.0-inherited-faction-fact-share-policies"
+FACTION_FACT_TYPE_POLICY_BUILD = "0.97.0-fact-type-inherited-faction-policies"
 POLICY_FIELD = "fact_share_policies"
 MANAGED_FIELD = "managed_by"
 RULE_SCOPE = "FACTION_INHERITED"
@@ -26,13 +28,48 @@ def _is_managed_rule(rule):
     return str((rule or {}).get(MANAGED_FIELD) or "") == FACTION_FACT_SHARE_POLICY_BUILD
 
 
-def _effective_rule_id(faction_id, policy_id):
-    return f"FACTION_POLICY:{str(faction_id)}:{str(policy_id)}"
+def _normalize_fact_type(value):
+    return str(value or "").strip().upper()
+
+
+def _effective_rule_id(faction_id, policy_id, fact_id=None, selector_mode="EXACT"):
+    base = f"FACTION_POLICY:{str(faction_id)}:{str(policy_id)}"
+    if str(selector_mode or "EXACT").upper() == "TYPE" and fact_id:
+        return f"{base}:FACT:{str(fact_id)}"
+    return base
+
+
+def _managed_rule(policy, membership, faction_id, policy_id, fact_id, selector_mode, authored_fact_type=None):
+    item = dict(policy)
+    item["id"] = _effective_rule_id(
+        faction_id,
+        policy_id,
+        fact_id=fact_id,
+        selector_mode=selector_mode,
+    )
+    item["fact_id"] = str(fact_id)
+    item["authored_rule_id"] = policy_id
+    item["inherited_from_faction_id"] = faction_id
+    item["rule_scope"] = RULE_SCOPE
+    item["fact_selector_mode"] = str(selector_mode).upper()
+    item["authored_fact_type"] = authored_fact_type
+    item[MANAGED_FIELD] = FACTION_FACT_SHARE_POLICY_BUILD
+    item["fact_type_policy_build"] = FACTION_FACT_TYPE_POLICY_BUILD
+    item.setdefault("target_mode", "FACTION")
+    if str(item.get("target_mode") or "").upper() == "FACTION" and not str(item.get("faction_id") or "").strip():
+        item["faction_id"] = faction_id
+    item["source_membership_authority"] = membership_authority(npc=membership.get("_npc"), faction_id=faction_id, active_only=True) if membership.get("_npc") else None
+    item.pop("_npc", None)
+    return item
 
 
 def _policy_candidates(npc):
     candidates = []
     skipped = []
+    stored_facts = sorted(
+        (dict(row) for row in knowledge_facts(npc)),
+        key=lambda row: str(row.get("id") or ""),
+    )
     memberships = sorted(
         npc_memberships(npc, active_only=True),
         key=lambda row: str(row.get("faction_id") or ""),
@@ -53,27 +90,70 @@ def _policy_candidates(npc):
             if policy is None or not bool(policy.get("enabled", False)):
                 continue
             policy_id = str(policy.get("id") or "").strip()
-            fact_id = str(policy.get("fact_id") or "").strip()
-            if not policy_id or not fact_id:
+            authored_fact_id = str(policy.get("fact_id") or "").strip()
+            authored_fact_type = _normalize_fact_type(policy.get("fact_type"))
+            if not policy_id:
                 skipped.append(
                     {
                         "faction_id": faction_id,
-                        "policy_id": policy_id or None,
+                        "policy_id": None,
                         "reason": "MALFORMED_FACTION_POLICY",
                     }
                 )
                 continue
-            item = dict(policy)
-            item["id"] = _effective_rule_id(faction_id, policy_id)
-            item["authored_rule_id"] = policy_id
-            item["inherited_from_faction_id"] = faction_id
-            item["rule_scope"] = RULE_SCOPE
-            item[MANAGED_FIELD] = FACTION_FACT_SHARE_POLICY_BUILD
-            item.setdefault("target_mode", "FACTION")
-            if str(item.get("target_mode") or "").upper() == "FACTION" and not str(item.get("faction_id") or "").strip():
-                item["faction_id"] = faction_id
-            item["source_membership_authority"] = membership_authority(npc, faction_id, active_only=True)
-            candidates.append(item)
+            if bool(authored_fact_id) == bool(authored_fact_type):
+                skipped.append(
+                    {
+                        "faction_id": faction_id,
+                        "policy_id": policy_id,
+                        "reason": "AMBIGUOUS_FACT_SELECTOR" if authored_fact_id and authored_fact_type else "MALFORMED_FACTION_POLICY",
+                    }
+                )
+                continue
+
+            membership_context = dict(membership)
+            membership_context["_npc"] = npc
+            if authored_fact_id:
+                candidates.append(
+                    _managed_rule(
+                        policy,
+                        membership_context,
+                        faction_id,
+                        policy_id,
+                        authored_fact_id,
+                        "EXACT",
+                    )
+                )
+                continue
+
+            matches = [
+                fact
+                for fact in stored_facts
+                if _normalize_fact_type(fact.get("fact_type")) == authored_fact_type
+                and str(fact.get("id") or "").strip()
+            ]
+            if not matches:
+                skipped.append(
+                    {
+                        "faction_id": faction_id,
+                        "policy_id": policy_id,
+                        "reason": "NO_FACTS_MATCH_TYPE",
+                        "fact_type": authored_fact_type,
+                    }
+                )
+                continue
+            for fact in matches:
+                candidates.append(
+                    _managed_rule(
+                        policy,
+                        membership_context,
+                        faction_id,
+                        policy_id,
+                        str(fact.get("id") or "").strip(),
+                        "TYPE",
+                        authored_fact_type=authored_fact_type,
+                    )
+                )
     return candidates, skipped
 
 
@@ -82,6 +162,7 @@ def sync_faction_fact_share_policies(npc):
         return {
             "status": "NO_NPC",
             "build": FACTION_FACT_SHARE_POLICY_BUILD,
+            "fact_type_policy_build": FACTION_FACT_TYPE_POLICY_BUILD,
             "inherited": [],
             "removed": [],
             "conflicts": [],
@@ -113,6 +194,8 @@ def sync_faction_fact_share_policies(npc):
                     "authored_rule_id": rule.get("authored_rule_id"),
                     "faction_id": rule.get("inherited_from_faction_id"),
                     "fact_id": fact_id,
+                    "fact_selector_mode": rule.get("fact_selector_mode"),
+                    "fact_type": rule.get("authored_fact_type"),
                     "reason": "LOCAL_RULE_OVERRIDE",
                 }
             )
@@ -133,6 +216,7 @@ def sync_faction_fact_share_policies(npc):
                     "reason": "MULTIPLE_INHERITED_POLICIES_FOR_FACT",
                     "rule_ids": sorted(str(row.get("id") or "") for row in rows),
                     "faction_ids": sorted(str(row.get("inherited_from_faction_id") or "") for row in rows),
+                    "selector_modes": sorted(str(row.get("fact_selector_mode") or "") for row in rows),
                 }
             )
             continue
@@ -155,6 +239,8 @@ def sync_faction_fact_share_policies(npc):
                 "authored_rule_id": old_rule.get("authored_rule_id"),
                 "faction_id": old_rule.get("inherited_from_faction_id"),
                 "fact_id": old_rule.get("fact_id"),
+                "fact_selector_mode": old_rule.get("fact_selector_mode"),
+                "fact_type": old_rule.get("authored_fact_type"),
                 "cancelled_obligations": cancelled,
             }
         )
@@ -167,12 +253,15 @@ def sync_faction_fact_share_policies(npc):
     return {
         "status": "SYNCED" if changed or removed else "NO_CHANGE",
         "build": FACTION_FACT_SHARE_POLICY_BUILD,
+        "fact_type_policy_build": FACTION_FACT_TYPE_POLICY_BUILD,
         "inherited": [
             {
                 "rule_id": row.get("id"),
                 "authored_rule_id": row.get("authored_rule_id"),
                 "faction_id": row.get("inherited_from_faction_id"),
                 "fact_id": row.get("fact_id"),
+                "fact_selector_mode": row.get("fact_selector_mode"),
+                "fact_type": row.get("authored_fact_type"),
                 "target_mode": row.get("target_mode"),
                 "target_faction_id": row.get("faction_id"),
             }
