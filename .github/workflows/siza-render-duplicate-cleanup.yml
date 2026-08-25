@@ -30,6 +30,14 @@ jobs:
             const f=await r.json();fs.mkdirSync('.github/scripts',{recursive:true});fs.writeFileSync(path,Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8'));console.log(`Fetched ${f.sha}`);
           }).catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
+      - name: Correct canonical removal fixture
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path='.github/scripts/siza-render-duplicate-cleanup.js';let s=fs.readFileSync(path,'utf8');
+          const old=`assert(ra.id==='servitor'&&ra.hand[0]==='servitor'&&ra.graveyard.length===0&&ra.battlefield[0]==='ignimite'&&ra.power[0]===2&&ra.exhausted[0]===0&&ra.equipment[0].target===0&&ra.ui.fieldFocus.index===0,'Canonical battlefield removal contract unexpected')`;
+          const next=`assert(ra.id==='servitor'&&ra.hand[0]==='servitor'&&ra.graveyard.length===0&&ra.battlefield[0]==='ignimite'&&ra.power[0]===2&&ra.exhausted[0]===0&&ra.equipment[0].target===0&&ra.ui.fieldFocus.index===1&&ra.ui.creature===0&&JSON.stringify(ra.ui.attackers)==='[0,1]','Canonical battlefield removal contract unexpected')`;
+          if(!s.includes(old))throw new Error('Removal fixture anchor missing');fs.writeFileSync(path,s.replace(old,next));
+          NODE
       - name: Run guarded duplicate cleanup
         env:
           GH_TOKEN: ${{ github.token }}
