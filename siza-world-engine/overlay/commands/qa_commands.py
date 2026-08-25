@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v911_commands import CmdSizaValidateV911
+from commands.world_input_v92_commands import CmdSizaValidateV92
 
 
-QA_BUILD = "0.91.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.92.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.91 previously passed its production path, then a work-in-progress v0.92 multi-target extension changed the SOURCE_DOES_NOT_KNOW_FACT refresh packet from one direct obligation_id to a cancelled_obligations list. Authoritative state remained correct: the obligation cancelled, no relationship candidate survived, relearning reactivated the same id and local transfer still completed. v0.91.1 restores backward-compatible EXPLICIT packet fields while retaining the additive multi-target metadata. Production social authority is otherwise unchanged. Running only the two packet/candidate regressions that failed plus same-id reactivation."
+            "RISK PROFILE: v0.91 is closed after the v0.91.1 compatibility follow-up restored the historical EXPLICIT source-loss packet at 3/3. v0.92 scales authored Fact propagation without changing local transfer authority: a fact_share_rule may now use target_mode=FACTION plus faction_id, resolving the current active faction members into independent normal SHARE_FACT obligations while excluding the source. Holder-local rule->obligation metadata lets membership churn cancel only branches whose targets no longer qualify; rejoining reactivates the same obligation id. Existing v0.90 target-aware pruning, v0.91 source-aware cancellation, relationship candidate resolution and transfer_knowledge_fact remain authoritative per target. The validator uses temporary faction memberships for Informant, Mara and Worker B, then restores all state."
         )
-        _run_command(CmdSizaValidateV911, self.caller)
+        _run_command(CmdSizaValidateV92, self.caller)
         self.caller.msg(
-            "QA POLICY: targeted compatibility follow-up. The earlier v0.91 run already re-proved cancellation, no movement/transfer while source-unaware, same-id recovery and final local transfer. This validator checks only the EXPLICIT refresh packet contract accidentally changed by work-in-progress v0.92 plus candidate pruning and reactivation. No manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.92 changes deterministic authored target expansion only. The validator covers faction fanout, source exclusion, independent obligation creation, relationship candidate integration, per-member cancellation/rejoin, one-recipient completion without affecting another pending recipient, multi-target source-loss cancellation, historical capability IDs and exact state restoration. qwen, pathfinding, npc_decision, relationship resolution and transfer_knowledge_fact are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
