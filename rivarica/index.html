@@ -3,46 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rivarica World Book</title>
+<title>Rivarica World Book v1.8</title>
 <style>
 body{margin:0;background:#0d1112;color:#eee;font:16px system-ui;display:grid;place-items:center;min-height:100vh}
-#load{padding:24px;text-align:center}
+#load{padding:24px;text-align:center;max-width:720px}
 a{color:#d4b16c}
 </style>
 </head>
 <body>
-<div id="load">Cargando Rivarica World Book…</div>
-<script src="chunks/wb-00.js"></script>
-<script src="chunks/wb-01.js"></script>
-<script src="chunks/wb-02.js"></script>
-<script src="chunks/wb-03.js"></script>
-<script src="chunks/wb-04.js"></script>
-<script src="chunks/wb-05.js"></script>
-<script src="chunks/pako-00.js"></script>
-<script src="chunks/pako-01.js"></script>
-<script src="chunks/pako-02.js"></script>
+<div id="load">Cargando Rivarica World Book v1.8…</div>
+<script src="chunks/pako-00.js?v=18fix2"></script>
+<script src="chunks/pako-01.js?v=18fix2"></script>
+<script src="chunks/pako-02.js?v=18fix2"></script>
 <script>
-try {
-  const pakoSource=(window.PAKO_SRC||[]).join('');
-  if(!pakoSource) throw new Error('No se cargó el descompresor local');
-  (0,eval)(pakoSource);
-  if(!window.pako) throw new Error('No se pudo iniciar el descompresor local');
+(async function(){
+  const load=document.getElementById('load');
+  try {
+    const pakoSource=(window.PAKO_SRC||[]).join('');
+    if(!pakoSource) throw new Error('No se cargó el descompresor local');
+    (0,eval)(pakoSource);
+    if(!window.pako) throw new Error('No se pudo iniciar el descompresor local');
 
-  const b64=(window.WB_CHUNKS||[]).join('');
-  if(!b64) throw new Error('No se cargó el contenido del World Book');
+    const files=Array.from({length:12},(_,i)=>`content/wb18-${String(i).padStart(2,'0')}.txt?v=18fix2`);
+    const parts=await Promise.all(files.map(async url=>{
+      const response=await fetch(url,{cache:'no-store'});
+      if(!response.ok) throw new Error(`No se pudo cargar ${url} (${response.status})`);
+      return (await response.text()).trim();
+    }));
 
-  const bin=Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
-  const text=window.pako.ungzip(bin,{to:'string'});
+    const b64=parts.join('');
+    if(!b64) throw new Error('El contenido del World Book está vacío');
 
-  document.open();
-  document.write(text);
-  document.close();
-} catch(e) {
-  document.getElementById('load').innerHTML =
-    'No se pudo abrir el World Book.<br>' +
-    String(e) +
-    '<br><br><a href="atlas/">Abrir Atlas de Caribia</a>';
-}
+    const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const text=window.pako.ungzip(bin,{to:'string'});
+    if(!text || !text.includes('Rivarica World Book')) throw new Error('El World Book reconstruido no es válido');
+
+    document.open();
+    document.write(text);
+    document.close();
+  } catch(e) {
+    load.innerHTML='No se pudo abrir el World Book v1.8.<br>'+String(e)+'<br><br><a href="atlas/">Abrir Atlas de Caribia</a>';
+  }
+})();
 </script>
 </body>
 </html>
