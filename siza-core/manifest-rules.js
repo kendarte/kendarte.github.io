@@ -15,7 +15,8 @@ function affinityInfo(card,mag){
 function dcFor(card,mag){
   const info=affinityInfo(card,mag);
   if(info.unsupported.length)return Infinity;
-  return card?.difficulty??(4+Math.ceil(((card?.cost)||0)+1)/2);
+  const cost=card?.cost||0;
+  return card?.difficulty??(4+Math.ceil((cost+1)/2));
 }
 
 function naturalChance(card,mag){
