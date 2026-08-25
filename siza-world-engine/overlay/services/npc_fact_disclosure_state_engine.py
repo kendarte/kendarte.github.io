@@ -8,7 +8,7 @@ from services.npc_fact_disclosure_engine import (
 )
 
 
-NPC_FACT_DISCLOSURE_STATE_BUILD = "0.85.0-authored-npc-state-fact-disclosure"
+NPC_FACT_DISCLOSURE_STATE_BUILD = "0.85.0-holder-local-npc-state-fact-disclosure"
 _ALLOWED_DISCLOSURE_KEYS = {"min_familiarity", "npc_state_requirements"}
 _STATE_OPERATORS = {"EQ", "NE", "GTE", "LTE", "EXISTS", "NOT_EXISTS"}
 
@@ -78,7 +78,18 @@ def _normalize_state_requirements(raw):
     return output, False
 
 
-def _malformed_gate(npc, actor):
+def _holder_policy(npc, fact):
+    """Prefer holder-local policy; keep inline disclosure only as v0.84 compatibility."""
+    fact_id = str((fact or {}).get("id") or "").strip()
+    policies = _plain_dict(getattr(npc.db, "fact_disclosure_policies", {})) if npc else {}
+    if fact_id and fact_id in policies:
+        return _record(policies.get(fact_id)), "NPC_LOCAL_POLICY"
+    if fact and "disclosure" in fact:
+        return _record(fact.get("disclosure")), "LEGACY_INLINE_FACT"
+    return None, None
+
+
+def _malformed_gate(npc, actor, policy_source=None):
     return {
         "status": "DISCLOSURE_MALFORMED_BLOCKED",
         "allowed": False,
@@ -87,13 +98,15 @@ def _malformed_gate(npc, actor):
         "required_familiarity": None,
         "state_checks": [],
         "blockers": [{"kind": "MALFORMED_DISCLOSURE"}],
+        "policy_source": policy_source,
         "build": NPC_FACT_DISCLOSURE_STATE_BUILD,
     }
 
 
 def evaluate_fact_disclosure_v85(npc, actor, fact):
-    """Evaluate familiarity and authored NPC-state gates without exposing Fact contents."""
-    if not fact or "disclosure" not in fact:
+    """Evaluate holder-local familiarity/state disclosure policy without exposing Fact contents."""
+    disclosure, policy_source = _holder_policy(npc, fact)
+    if disclosure is None and policy_source is None:
         return {
             "status": "DISCLOSURE_PUBLIC",
             "allowed": True,
@@ -102,31 +115,30 @@ def evaluate_fact_disclosure_v85(npc, actor, fact):
             "required_familiarity": 0,
             "state_checks": [],
             "blockers": [],
+            "policy_source": None,
             "build": NPC_FACT_DISCLOSURE_STATE_BUILD,
         }
 
-    raw = fact.get("disclosure")
-    disclosure = _record(raw)
     if disclosure is None or not disclosure or set(disclosure) - _ALLOWED_DISCLOSURE_KEYS:
-        return _malformed_gate(npc, actor)
+        return _malformed_gate(npc, actor, policy_source=policy_source)
 
     familiarity = _relationship_familiarity(npc, actor)
     has_familiarity = "min_familiarity" in disclosure
     has_state = "npc_state_requirements" in disclosure
     if not has_familiarity and not has_state:
-        return _malformed_gate(npc, actor)
+        return _malformed_gate(npc, actor, policy_source=policy_source)
 
     required_familiarity = 0
     if has_familiarity:
         raw_required = disclosure.get("min_familiarity")
         if isinstance(raw_required, bool):
-            return _malformed_gate(npc, actor)
+            return _malformed_gate(npc, actor, policy_source=policy_source)
         try:
             required_familiarity = int(raw_required)
         except (TypeError, ValueError):
-            return _malformed_gate(npc, actor)
+            return _malformed_gate(npc, actor, policy_source=policy_source)
         if required_familiarity < 0:
-            return _malformed_gate(npc, actor)
+            return _malformed_gate(npc, actor, policy_source=policy_source)
 
     state_requirements = []
     if has_state:
@@ -134,7 +146,7 @@ def evaluate_fact_disclosure_v85(npc, actor, fact):
             disclosure.get("npc_state_requirements")
         )
         if malformed:
-            return _malformed_gate(npc, actor)
+            return _malformed_gate(npc, actor, policy_source=policy_source)
 
     blockers = []
     if familiarity < required_familiarity:
@@ -187,6 +199,7 @@ def evaluate_fact_disclosure_v85(npc, actor, fact):
         "required_familiarity": required_familiarity,
         "state_checks": state_checks,
         "blockers": blockers,
+        "policy_source": policy_source,
         "build": NPC_FACT_DISCLOSURE_STATE_BUILD,
     }
 
