@@ -33,12 +33,12 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
-          const files=['siza-core/card-effects.js','siza-core/card-schema.js','siza-core/card-renderer.js','siza-core/card-renderer.css','siza-core/cards.js','siza-card-generator/index.html','siza-card-generator/app.js','siza-mobile-test/index.html'];
+          const files=['siza-core/card-effects.js','siza-core/card-schema.js','siza-core/card-renderer.js','siza-core/card-renderer.css','siza-core/cards.js','siza-core/manifest-rules.js','siza-card-generator/index.html','siza-card-generator/app.js','siza-mobile-test/index.html'];
           const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
           (async()=>{for(const path of files){const r=await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${sha}`,{headers});if(!r.ok)throw new Error(`${path}: GET ${r.status}`);const f=await r.json(),data=Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8');fs.mkdirSync(path.split('/').slice(0,-1).join('/'),{recursive:true});fs.writeFileSync(path,data);console.log(`Fetched ${path} ${f.sha}`)}})().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
 
-      - name: Run schema renderer catalog and effects contract
+      - name: Run schema renderer catalog effects and Manafestation contract
         run: |
           node <<'NODE'
           const fs=require('fs'),vm=require('vm');
@@ -47,7 +47,8 @@ jobs:
           vm.runInContext(fs.readFileSync('siza-core/card-schema.js','utf8'),context);
           vm.runInContext(fs.readFileSync('siza-core/card-renderer.js','utf8'),context);
           vm.runInContext(fs.readFileSync('siza-core/cards.js','utf8'),context);
-          const E=context.window.SizaCardEffects,S=context.window.SizaCardSchema,R=context.window.SizaCardRenderer,C=context.window.SizaCardCatalog;
+          vm.runInContext(fs.readFileSync('siza-core/manifest-rules.js','utf8'),context);
+          const E=context.window.SizaCardEffects,S=context.window.SizaCardSchema,R=context.window.SizaCardRenderer,C=context.window.SizaCardCatalog,M=context.window.SizaManifestRules;
           const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(e){results.push({name,pass:false,error:e.message})}};
           const queen={id:'memoria_reina_ahogada',name:'Memoria de la Reina Ahogada',cardType:'invocacion',subtype:'Avatar',affinity:'azul',difficulty:8,cost:5,crystals:['azul','azul','azul'],rules:'Roba dos cartas y luego descarta una.',flavor:'La corona sobrevivió.',force:5,resistance:5,artUrl:'../assets/cards/art/queen.webp',artTransform:{x:44,y:35,scale:1.2},effects:[{event:'enter',type:'draw',target:'self',amount:2},{event:'enter',type:'discard',target:'self',amount:1,choice:'owner'}]};
           test('Schema acepta invocacion + crystals[] de la spec',()=>{const c=S.normalizeCard(queen);return c.cardType==='Creature'&&c.pips.U===3&&c.crystals.length===3&&c.power===5&&c.toughness===5});
@@ -60,6 +61,7 @@ jobs:
           test('Superficie mobile mantiene clases runtime',()=>{const html=R.renderCard(queen,{variant:'mobile',risk:'6+'});return html.includes('sizaCard generatedCardV1')&&html.includes('cardRisk')&&html.includes('6+')&&html.includes('queen.webp')});
           test('Catálogo oficial contiene exactamente las 13 cartas actuales',()=>JSON.stringify(C.cards.map(c=>c.id))===JSON.stringify(['mist','spark','servitor','ignimite','counter','prism','watcher','smuggler','tideblade','leviathan','dock','cinder','queen']));
           test('Catálogo describe los seis efectos de resolución/entrada actuales',()=>C.get('mist').effects?.[0]?.type==='draw'&&C.get('spark').effects?.[0]?.type==='damage-character'&&C.get('counter').effects?.[0]?.type==='counter-stack-target'&&C.get('servitor').effects?.[0]?.type==='observe-top'&&C.get('leviathan').effects?.[0]?.type==='bounce-other-permanent'&&C.get('queen').effects?.length===2);
+          test('Manafestation compartida conserva afinidad dificultad chance y Burn',()=>{const mag={mf:2,aff:{U:2,R:1,G:0}},card={type:'Creature',cost:3,difficulty:7,pips:{U:2}};const info=M.affinityInfo(card,mag),req=M.manifestRequirement(card,mag);return info.penalty===0&&info.unsupported.length===0&&M.dcFor(card,mag)===7&&M.naturalChance(card,mag)===33&&req.die===5&&req.minBurn===0&&req.text==='5+'&&M.dcFor({type:'Creature',cost:3,pips:{}},mag)===6&&M.naturalChance({type:'Creature',cost:1,difficulty:7,pips:{G:1}},mag)===0});
           for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(x=>x.pass).length;console.log(`SIZA card core: ${passed}/${results.length}`);if(passed!==results.length)process.exit(1);
           NODE
 
@@ -81,11 +83,12 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('fs');const {JSDOM,VirtualConsole}=require('jsdom');
-          let html=fs.readFileSync('siza-mobile-test/index.html','utf8'),effects=fs.readFileSync('siza-core/card-effects.js','utf8'),schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8');
+          let html=fs.readFileSync('siza-mobile-test/index.html','utf8'),effects=fs.readFileSync('siza-core/card-effects.js','utf8'),schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8'),manifest=fs.readFileSync('siza-core/manifest-rules.js','utf8');
           if(!html.includes('<script src="../siza-core/card-schema.js"></script>')||!html.includes('<script src="../siza-core/card-renderer.js"></script>'))throw new Error('Mobile Test is not linked to shared card core');
           if(html.includes('<script src="../siza-core/card-effects.js"></script>'))html=html.replace('<script src="../siza-core/card-effects.js"></script>',`<script>${effects}</script>`);
           html=html.replace('<script src="../siza-core/card-schema.js"></script>',`<script>${schema}</script>`).replace('<script src="../siza-core/card-renderer.js"></script>',`<script>${renderer}</script>`);
           if(html.includes('<script src="../siza-core/cards.js"></script>'))html=html.replace('<script src="../siza-core/cards.js"></script>',`<script>${catalog}</script>`);
+          if(html.includes('<script src="../siza-core/manifest-rules.js"></script>'))html=html.replace('<script src="../siza-core/manifest-rules.js"></script>',`<script>${manifest}</script>`);
           const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');html=html.replace(marker,`window.__CARD_CORE_BRIDGE__={cardById,cardHtml,cardThumbHtmlV1,CARD_DB};\n`+marker);
           const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM bridge]',e.message));const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
           const H=dom.window.__CARD_CORE_BRIDGE__,mist=H.cardById('mist'),face=H.cardHtml(mist),thumb=H.cardThumbHtmlV1(mist),arena=dom.window.SIZA.runArenaCriticalV071();
