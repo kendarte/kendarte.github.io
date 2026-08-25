@@ -62,3 +62,5 @@ jobs:
             const put=await fetch(`${api}/contents/siza-mobile-test/index.html`,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Use shared crystal pool mutations',content:Buffer.from(candidate,'utf8').toString('base64'),sha:current.sha,branch:'main'})});if(!put.ok)throw new Error(`PUT index ${put.status}: ${await put.text()}`);const result=await put.json();console.log('COMMIT '+result.commit.sha);
           })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
+
+# trigger registration
