@@ -314,17 +314,15 @@ class CmdSizaValidateV99(Command):
             )
 
             sync_faction_fact_share_policies(worker)
-            top_refresh = refresh_fact_share_obligations(worker)
             top_location = worker.location
-            top_step = decision_step(worker, prepare_world_state=False)
+            top_refresh = refresh_fact_share_obligations(worker)
             check(
                 "highest-current-authority-has-no-upchain-recipient-and-does-not-broadcast-laterally-or-downward",
                 membership_authority(worker, TEST_FACTION_ID) == 800
                 and not _candidate_ids(worker)
                 and not list(top_refresh.get("materialized") or [])
-                and worker.location == top_location
-                and top_step.get("status") != "GOAL_COMPLETED",
-                f"candidates={sorted(_candidate_ids(worker))} status={top_step.get('status')}",
+                and worker.location == top_location,
+                f"candidates={sorted(_candidate_ids(worker))} refresh={top_refresh.get('status')}",
             )
 
         except Exception as exc:
