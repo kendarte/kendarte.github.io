@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v831_commands import CmdSizaValidateV831
+from commands.world_input_v84_commands import CmdSizaValidateV84
 
 
-QA_BUILD = "0.83.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.84.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.83 passed 10/11. Its deterministic routing, known/unknown filtering, real __nomatch output, read-only behavior, multi-Fact handling and older route regressions all passed. The only failure was a validator false positive: it searched the serialized packet for the substring 'source', which also appears in the legitimate public metadata keys topic_source and retrieval_query_source. Production v0.83 already returns only public topic/text Fact rows. v0.83.1 changes no production code; it validates the packet structurally with exact allowlisted keys and exact forbidden provenance keys."
+            "RISK PROFILE: v0.83 is closed after its structural privacy follow-up passed 4/4. v0.84 separates NPC knowledge from willingness to disclose it. A Fact may now carry an authored disclosure.min_familiarity gate. The gate is evaluated deterministically against the existing NPC->player familiarity counter before the closed TALK engine can render, record or transfer that Fact. Missing disclosure remains public; malformed disclosure fails closed. qwen still sees only the visible TALK target capability and raw player text, never Facts or disclosure state. Running public/default behavior, low-familiarity blocking with exact no-mutation proof, provider-boundary privacy, semantic and explicit TALK blocking, authored unlock into the existing transfer/render pipeline, malformed fail-closed behavior, one live qwen target-selection probe, INFORM/Knowledge-query separation, and PERCEPTION/OBJECT_ACTION/MOVEMENT regressions."
         )
-        _run_command(CmdSizaValidateV831, self.caller)
+        _run_command(CmdSizaValidateV84, self.caller)
         self.caller.msg(
-            "QA POLICY: validator-only follow-up. If all structural privacy assertions pass, v0.83 is closed without manual acceptance."
+            "QA POLICY: v0.84 changes conversation authority, so the validator includes one real qwen target-selection roundtrip plus deterministic blocked/unlocked state assertions and targeted older-route regressions. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
