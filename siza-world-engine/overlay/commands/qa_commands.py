@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v87_commands import CmdSizaValidateV87
+from commands.world_input_v88_commands import CmdSizaValidateV88
 
 
-QA_BUILD = "0.87.0-risk-based-one-command-qa"
+QA_BUILD = "0.88.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.86.1 is closed at 12/12 after proving one ranked fact_id owns disclosure, conversation memory and transfer even with an earlier public one-token decoy. v0.87 changes no input, qwen, transfer, consequence, Fact-goal or NPC decision engine. It adds authored pilot integration only: when the existing v0.86 Knowledge-gated Manifest action completes, a normal explicit consequence teaches Mara one structured Fact and Knowledge key. Mara's existing v0.59 Fact-goal engine then materializes a high-priority one-shot goal from that exact Fact, and the existing decision engine moves her from Pescaderia de Darsena to Calle de Servicio. Running install/idempotency, natural object action, exact NPC Fact/provenance, Fact-goal materialization, real NPC movement/completion and one-shot non-reactivation with exact state restoration."
+            "RISK PROFILE: v0.87 is closed at 10/10 after proving a player world action can teach a structured Fact to an NPC and drive an autonomous Fact-goal response. v0.88 fixes the next world-simulation authority gap: consequences previously had no recipient mode based on physical presence, so authored EXPLICIT rules could teach remote NPCs if used as witnesses. The shared Consequence Engine now adds one deterministic SITE_NPCS recipient mode while preserving EXPLICIT, ACTOR, TARGET and ACTION_RECIPIENTS unchanged. SITE_NPCS resolves current persistent NPC locations from the action's site_dbref/site_room_id and fails closed if the action has no site. The validator executes the real v0.86 Manifest action twice, swapping Mara and the Informant between Pescaderia and Calle de Servicio, and requires the learned witness Fact to follow actual location rather than NPC identity."
         )
-        _run_command(CmdSizaValidateV87, self.caller)
+        _run_command(CmdSizaValidateV88, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.87 is authored deterministic cross-system integration. It changes no qwen boundary and no shared engine implementation; all new risk is covered by the validator executing the real Object Action -> Consequence -> NPC Knowledge Fact -> Fact Goal -> decision_step path. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.88 changes shared consequence recipient resolution, so the validator covers legacy recipient modes, missing-site fail-closed behavior, dbref/room-id site resolution, two real Object Action -> Consequence executions with swapped NPC positions, exact recipient sets, witness Fact provenance, unique action processing, idempotent content install and restoration of every persistent NPC's Knowledge/Facts/location. qwen and narration are untouched. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
