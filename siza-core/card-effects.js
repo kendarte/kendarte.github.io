@@ -1,48 +1,16 @@
 (function(global){
 'use strict';
 
-const VERSION='1.0.0';
+const VERSION='1.0.1';
 const EVENTS=Object.freeze(['resolve','enter']);
-const TYPES=Object.freeze([
- 'draw',
- 'damage-character',
- 'counter-stack-target',
- 'observe-top',
- 'bounce-other-permanent',
- 'discard'
-]);
+const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard']);
 const TARGETS=Object.freeze(['self','opponent']);
 
 function text(value,fallback=''){return String(value??fallback);}
 function integer(value,fallback=0){const n=Number(value);return Number.isFinite(n)?Math.trunc(n):fallback;}
-
-function normalizeEffect(input={}){
- const type=TYPES.includes(input.type)?input.type:text(input.type,'');
- const event=EVENTS.includes(input.event)?input.event:'resolve';
- const effect={type,event};
- if(input.target!=null)effect.target=TARGETS.includes(input.target)?input.target:text(input.target);
- if(input.amount!=null)effect.amount=Math.max(0,integer(input.amount,0));
- if(input.choice!=null)effect.choice=text(input.choice);
- return effect;
-}
-
+function normalizeEffect(input={}){const type=TYPES.includes(input.type)?input.type:text(input.type,''),event=EVENTS.includes(input.event)?input.event:'resolve',effect={type,event};if(input.target!=null)effect.target=TARGETS.includes(input.target)?input.target:text(input.target);if(input.amount!=null)effect.amount=Math.max(0,integer(input.amount,0));if(input.choice!=null)effect.choice=text(input.choice);return effect;}
 function normalizeEffects(input=[]){return Array.isArray(input)?input.map(normalizeEffect):[];}
-
-function validateEffects(input=[]){
- const effects=normalizeEffects(input),errors=[],warnings=[];
- effects.forEach((effect,index)=>{
-  const p=`effects[${index}]`;
-  if(!TYPES.includes(effect.type))errors.push(`${p}: tipo de efecto inválido (${effect.type||'vacío'}).`);
-  if(!EVENTS.includes(effect.event))errors.push(`${p}: evento inválido (${effect.event||'vacío'}).`);
-  if(['draw','damage-character','discard'].includes(effect.type)&&(!Number.isInteger(effect.amount)||effect.amount<=0))errors.push(`${p}: ${effect.type} requiere amount > 0.`);
-  if(['draw','damage-character','discard'].includes(effect.type)&&effect.target&&!TARGETS.includes(effect.target))errors.push(`${p}: target inválido (${effect.target}).`);
-  if(effect.type==='damage-character'&&!effect.target)warnings.push(`${p}: damage-character sin target usa opponent por contrato runtime.`);
-  if(effect.type==='draw'&&!effect.target)warnings.push(`${p}: draw sin target usa self por contrato runtime.`);
- });
- return {valid:errors.length===0,errors,warnings,effects};
-}
-
+function validateEffects(input=[]){const effects=normalizeEffects(input),errors=[],warnings=[];effects.forEach((effect,index)=>{const p=`effects[${index}]`;if(!TYPES.includes(effect.type))errors.push(`${p}: tipo de efecto inválido (${effect.type||'vacío'}).`);if(!EVENTS.includes(effect.event))errors.push(`${p}: evento inválido (${effect.event||'vacío'}).`);if(['draw','damage-character','discard'].includes(effect.type)&&(!Number.isInteger(effect.amount)||effect.amount<=0))errors.push(`${p}: ${effect.type} requiere amount > 0.`);if(['draw','damage-character','discard'].includes(effect.type)&&effect.target&&!TARGETS.includes(effect.target))errors.push(`${p}: target inválido (${effect.target}).`);if(effect.type==='discard'&&effect.amount!==1)errors.push(`${p}: el runtime actual sólo admite discard amount=1.`);if(effect.type==='discard'&&effect.choice&&effect.choice!=='owner')errors.push(`${p}: discard sólo admite choice=owner.`);if(effect.type==='damage-character'&&!effect.target)warnings.push(`${p}: damage-character sin target usa opponent por contrato runtime.`);if(effect.type==='draw'&&!effect.target)warnings.push(`${p}: draw sin target usa self por contrato runtime.`);});return{valid:errors.length===0,errors,warnings,effects};}
 function forEvent(card,event){return normalizeEffects(card?.effects).filter(effect=>effect.event===event);}
-
 global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,normalizeEffect,normalizeEffects,validateEffects,forEvent});
 })(window);
