@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
@@ -54,4 +54,18 @@ jobs:
 
           dom.window.close();
           if (report.passed !== report.total) process.exit(1);
+          NODE
+
+      - name: Report duplicate function declarations
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
+          const matches = [...html.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)];
+          const counts = new Map();
+          for (const match of matches) counts.set(match[1], (counts.get(match[1]) || 0) + 1);
+          const duplicates = [...counts.entries()].filter(([, count]) => count > 1).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+          console.log(`Named function declarations: ${matches.length}`);
+          console.log(`Duplicate names: ${duplicates.length}`);
+          for (const [name, count] of duplicates) console.log(`${count}x ${name}`);
           NODE
