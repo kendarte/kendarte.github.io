@@ -1,0 +1,54 @@
+name: Siza Equipment Schema Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-equipment-schema-migration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-equipment-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Validate old/new and publish runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const {JSDOM,VirtualConsole}=require('jsdom');
+          const repo=process.env.GH_REPOSITORY,token=process.env.GH_TOKEN,api=`https://api.github.com/repos/${repo}`;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          async function get(path){const r=await fetch(`${api}/contents/${path}?ref=main`,{headers});if(!r.ok)throw new Error(`${path}: GET ${r.status}`);const f=await r.json();return{sha:f.sha,text:Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8')}}
+          function inline(html,files){let out=html;for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js','creature-rules.js']){const tag=`<script src="../siza-core/${name}"></script>`;if(!out.includes(tag))throw new Error(`Missing ${name}`);out=out.replace(tag,`<script>${files[name]}</script>`)}return out}
+          function dom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error(`[JSDOM ${label}]`,e.message));const d=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});d.window.setTimeout=()=>0;return d}
+          (async()=>{
+            const current=await get('siza-mobile-test/index.html'),files={};for(const n of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js','creature-rules.js'])files[n]=(await get(`siza-core/${n}`)).text;
+            const oldClass="function isEquipmentCardV1(c){return !!(c?.type==='Artifact'&&((c.equipCost||0)>0||SizaCardEffects.forEvent(c,'equipped').length))}";
+            const oldCost="function equipmentEquipCostV1(c){return Math.max(0,Number(c?.equipCost)||0)}";
+            assert(current.text.includes(oldClass)&&current.text.includes(oldCost),'Equipment helper anchors changed');
+            const candidate=current.text.replace(oldClass,'function isEquipmentCardV1(c){return SizaCardSchema.isEquipmentCard(c)}').replace(oldCost,'function equipmentEquipCostV1(c){return SizaCardSchema.equipmentCost(c)}');
+            const marker='window.SIZA={',probe=`window.__EQUIPMENT_SCHEMA_COMPARE__={isEquipmentCardV1,equipmentEquipCostV1};\n`;assert(current.text.includes(marker),'SIZA marker missing');
+            const O=dom(inline(current.text,files).replace(marker,probe+marker),'old'),N=dom(inline(candidate,files).replace(marker,probe+marker),'new'),o=O.window.__EQUIPMENT_SCHEMA_COMPARE__,n=N.window.__EQUIPMENT_SCHEMA_COMPARE__;
+            const cards=[
+              {type:'Artifact',equipCost:1,effects:[]},
+              {type:'Artifact',equipCost:0,effects:[{event:'equipped',type:'modify-power',amount:2}]},
+              {type:'Artifact',equipCost:0,effects:[]},
+              {type:'Creature',equipCost:1,effects:[{event:'equipped',type:'modify-power',amount:2}]},
+              {cardType:'artefacto',equipCost:'1',effects:[]},
+              {type:'Artifact',equipCost:-4,effects:[]},
+              {type:'Artifact',equipCost:'bad',effects:[]},
+              null
+            ];let comparisons=0;
+            for(const card of cards){const a=o.isEquipmentCardV1(card),b=n.isEquipmentCardV1(card);assert(a===b,`classification mismatch ${JSON.stringify(card)}`);comparisons++;const ac=o.equipmentEquipCostV1(card),bc=n.equipmentEquipCostV1(card);assert(ac===bc,`cost mismatch ${JSON.stringify(card)} ${ac}/${bc}`);comparisons++}
+            const arena=N.window.SIZA.runArenaCriticalV071();assert(arena.passed===arena.total,`Arena ${arena.passed}/${arena.total}`);console.log(`PASS Equipment schema old/new ${comparisons} comparisons; Arena ${arena.passed}/${arena.total}`);O.window.close();N.window.close();
+            const put=await fetch(`${api}/contents/siza-mobile-test/index.html`,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Use schema Equipment classification',content:Buffer.from(candidate).toString('base64'),sha:current.sha,branch:'main'})});if(!put.ok)throw new Error(`PUT ${put.status}: ${await put.text()}`);const result=await put.json();console.log('COMMIT '+result.commit.sha);
+          })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
+          NODE
