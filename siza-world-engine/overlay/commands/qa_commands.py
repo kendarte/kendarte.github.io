@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v83_commands import CmdSizaValidateV83
+from commands.world_input_v831_commands import CmdSizaValidateV831
 
 
-QA_BUILD = "0.83.0-risk-based-one-command-qa"
+QA_BUILD = "0.83.1-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.82.1 closed the NPC voice-quality gap with 6/6 enforced style-delivery checks. v0.83 changes input routing only for explicit first-person Knowledge inspection such as 'qué sé sobre X': those requests now bypass Ollama and read deterministically from the player's already-known structured Facts. Unknown Facts with matching text remain gated by Knowledge level; output exposes only authored topic/text, never Fact IDs, Knowledge keys or provenance. General world questions remain on the existing viewer-grounded AI_INQUIRY path. Running parser precision, route separation, known/unknown privacy, real __nomatch rendering, multi-Fact behavior, exact read-only state comparison and object/perception/movement regressions."
+            "RISK PROFILE: v0.83 passed 10/11. Its deterministic routing, known/unknown filtering, real __nomatch output, read-only behavior, multi-Fact handling and older route regressions all passed. The only failure was a validator false positive: it searched the serialized packet for the substring 'source', which also appears in the legitimate public metadata keys topic_source and retrieval_query_source. Production v0.83 already returns only public topic/text Fact rows. v0.83.1 changes no production code; it validates the packet structurally with exact allowlisted keys and exact forbidden provenance keys."
         )
-        _run_command(CmdSizaValidateV83, self.caller)
+        _run_command(CmdSizaValidateV831, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.83 is deterministic/read-only. The validator invokes the real __nomatch Knowledge-query path and compares all touched player state before/after; no live Ollama or separate manual acceptance is required if all assertions pass."
+            "QA POLICY: validator-only follow-up. If all structural privacy assertions pass, v0.83 is closed without manual acceptance."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
