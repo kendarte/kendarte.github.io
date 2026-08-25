@@ -7,13 +7,13 @@ on:
       - '.github/workflows/siza-arena-tests.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   arena-regression:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -21,6 +21,36 @@ jobs:
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
+
+      - name: Fetch Arena file at triggering commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const repo = process.env.GH_REPOSITORY;
+          const sha = process.env.GH_SHA;
+          const token = process.env.GH_TOKEN;
+          const url = `https://api.github.com/repos/${repo}/contents/siza-mobile-test/index.html?ref=${sha}`;
+          const headers = {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+          };
+          fetch(url, { headers }).then(async response => {
+            if (!response.ok) throw new Error(`GET ${response.status}: ${await response.text()}`);
+            const file = await response.json();
+            const html = Buffer.from(file.content.replace(/\n/g, ''), 'base64').toString('utf8');
+            fs.mkdirSync('siza-mobile-test', { recursive: true });
+            fs.writeFileSync('siza-mobile-test/index.html', html);
+            console.log(`Fetched Arena ${file.sha} from commit ${sha}`);
+          }).catch(error => {
+            console.error(error.stack || error.message);
+            process.exit(1);
+          });
+          NODE
 
       - name: Run Arena v0.7.1 contract
         run: |
