@@ -1,0 +1,107 @@
+name: Siza Arena Canonicalize Equipment
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-arena-canonicalize-equipment.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  canonicalize-equipment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install transformation dependencies
+        run: npm install --no-save acorn@8 jsdom@24
+
+      - name: Canonicalize and validate equipment runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const acorn = require('acorn');
+          const { JSDOM, VirtualConsole } = require('jsdom');
+
+          const repo=process.env.GH_REPOSITORY, token=process.env.GH_TOKEN;
+          const path='siza-mobile-test/index.html';
+          const api=`https://api.github.com/repos/${repo}/contents/${path}`;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          const targets=new Set(['effectivePower','beginEquip','equipPanelHtml','equipTo','equipmentTrayHtml']);
+
+          function parseFunctions(html){
+            const scriptOpen=html.lastIndexOf('<script>'),scriptClose=html.indexOf('</script>',scriptOpen);
+            if(scriptOpen<0||scriptClose<0)throw new Error('Main script block not found');
+            const codeStart=scriptOpen+'<script>'.length,code=html.slice(codeStart,scriptClose);
+            const ast=acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),declarations=[];
+            function walk(node){
+              if(!node||typeof node!=='object')return;
+              if(node.type==='FunctionDeclaration'&&node.id)declarations.push(node);
+              for(const [key,value] of Object.entries(node)){
+                if(key==='start'||key==='end'||key==='loc')continue;
+                if(Array.isArray(value))for(const child of value)walk(child);
+                else if(value&&typeof value==='object'&&typeof value.type==='string')walk(value);
+              }
+            }
+            walk(ast);return{codeStart,scriptClose,code,declarations};
+          }
+          function countsOf(declarations){const m=new Map();for(const n of declarations)m.set(n.id.name,(m.get(n.id.name)||0)+1);return m}
+          function makeDom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error(`[JSDOM ${label}]`,e.message));return new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/',virtualConsole:vc})}
+          function instrument(html,name,body){const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker not found');return html.replace(marker,`window.${name}=${body};\n`+marker)}
+          function report(results,label){for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`${label}: ${passed}/${results.length}`);if(passed!==results.length)throw new Error(`${label} failed ${passed}/${results.length}`)}
+          function testRunner(){const results=[];return{results,test:(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}}}}
+
+          function runCore(html){const dom=makeDom(html,'core'),runner=dom.window.SIZA?.runArenaCriticalV071;if(typeof runner!=='function')throw new Error('Core runner unavailable');const r=runner();console.log(`SIZA Arena contract ${r.version}: ${r.passed}/${r.total}`);for(const x of r.results)console.log(`${x.pass?'PASS':'FAIL'} ${x.name}${x.error?` :: ${x.error}`:''}`);dom.window.close();if(r.passed!==r.total)throw new Error(`Core failed ${r.passed}/${r.total}`)}
+
+          function runCombat(original){
+            const html=instrument(original,'__SIZA_COMBAT_TEST__',`{createMatch,setMatch:m=>state.match=m,addCreatureV070,assignAiBlockersV600,assignBlocker,resolveCombatV600,declarePlayerCombat}`);
+            const dom=makeDom(html,'combat');dom.window.setTimeout=()=>0;const H=dom.window.__SIZA_COMBAT_TEST__,T=testRunner();
+            const fresh=mode=>{const M=H.createMatch(false,mode);H.setMatch(M);return M};
+            T.test('IA excluye bloqueadores agotados en combate real',()=>{const M=fresh('immediate');H.addCreatureV070(M.player,'leviathan');H.addCreatureV070(M.enemy,'watcher');H.addCreatureV070(M.enemy,'servitor');M.enemy.exhausted=[0];M.combat={owner:'player',attackers:[{index:0,id:'leviathan'}],blockers:{}};H.assignAiBlockersV600();return M.combat.blockers['0']===1});
+            T.test('Jugador no puede asignar una agotada como bloqueador',()=>{const M=fresh('immediate');H.addCreatureV070(M.enemy,'leviathan');H.addCreatureV070(M.player,'watcher');H.addCreatureV070(M.player,'servitor');M.player.exhausted=[0];M.combat={owner:'enemy',attackers:[{index:0,id:'leviathan'}],blockers:{}};M.active='defense';H.assignBlocker(0,0);const rejected=M.combat.blockers['0']==null;H.assignBlocker(0,1);return rejected&&M.combat.blockers['0']===1});
+            T.test('Daño simultáneo destruye ambos 2/2 y los manda al Cementerio',()=>{const M=fresh('immediate');H.addCreatureV070(M.player,'servitor');H.addCreatureV070(M.enemy,'servitor');M.combat={owner:'player',attackers:[{index:0,id:'servitor'}],blockers:{'0':0}};M.active='enemy-defense';H.resolveCombatV600();return M.player.battlefield.length===0&&M.enemy.battlefield.length===0&&M.player.graveyard.includes('servitor')&&M.enemy.graveyard.includes('servitor')&&M.combat===null&&M.active==='player'});
+            T.test('Contrabandista aplica +1 al declarar y queda agotado con combate usado',()=>{const M=fresh('immediate');H.addCreatureV070(M.player,'smuggler');const before=M.enemy.life;H.declarePlayerCombat([0]);return M.enemy.life===before-1&&M.player.combatUsed===true&&M.player.exhausted.includes(0)&&M.combat?.owner==='player'&&M.combat.attackers.length===1});
+            report(T.results,'SIZA live combat regression');dom.window.close();
+          }
+
+          function runStack(original){
+            const html=instrument(original,'__SIZA_STACK_TEST__',`{createMatch,setMatch:m=>state.match=m,resolveTopStack,resolveStackAll}`);
+            const dom=makeDom(html,'stack');dom.window.setTimeout=()=>0;const H=dom.window.__SIZA_STACK_TEST__,T=testRunner();
+            const fresh=()=>{const M=H.createMatch(false,'prepare');H.setMatch(M);return M};
+            T.test('Chispa resuelve 2 daño y va al Cementerio',()=>{const M=fresh();M.player.graveyard=[];M.enemy.life=20;M.stack=[{id:'spark-test',cardId:'spark',owner:'player'}];H.resolveTopStack();return M.enemy.life===18&&M.stack.length===0&&M.player.graveyard.includes('spark')});
+            T.test('Niebla roba una carta y va al Cementerio',()=>{const M=fresh();M.player.hand=[];M.player.library=['spark'];M.player.graveyard=[];M.stack=[{id:'mist-test',cardId:'mist',owner:'player'}];H.resolveTopStack();return M.player.hand.length===1&&M.player.hand[0]==='spark'&&M.player.graveyard.includes('mist')});
+            T.test('Servidor entra con estado de criatura y abre Observar',()=>{const M=fresh();M.player.hand=[];M.player.library=['spark'];M.stack=[{id:'servitor-test',cardId:'servitor',owner:'player'}];H.resolveTopStack();return M.player.battlefield[0]==='servitor'&&M.player.powerCounters[0]===0&&M.player.summonedOn[0]===M.player.ownTurn&&M.pendingChoice?.type==='observe'&&M.pendingChoice.cardId==='spark'});
+            T.test('Negación retira el objetivo y ambas cartas van al Cementerio',()=>{const M=fresh();M.player.graveyard=[];M.enemy.graveyard=[];M.enemy.life=20;M.stack=[{id:'target',cardId:'spark',owner:'enemy'},{id:'counter-test',cardId:'counter',owner:'player',targetStackId:'target'}];H.resolveTopStack();return M.stack.length===0&&M.player.graveyard.includes('counter')&&M.enemy.graveyard.includes('spark')&&M.enemy.life===20});
+            T.test('resolveStackAll se detiene ante una elección pendiente',()=>{const M=fresh();M.player.hand=[];M.player.library=['spark'];M.enemy.life=20;M.stack=[{id:'lower',cardId:'spark',owner:'player'},{id:'top',cardId:'servitor',owner:'player'}];H.resolveStackAll();return M.pendingChoice?.type==='observe'&&M.stack.length===1&&M.stack[0].id==='lower'&&M.enemy.life===20});
+            report(T.results,'SIZA live stack regression');dom.window.close();
+          }
+
+          function runEquipment(original){
+            const html=instrument(original,'__SIZA_EQUIPMENT_TEST__',`{createMatch,setMatch:m=>state.match=m,addCreatureV070,beginEquip,chooseEquipCrystalV070,equipTo,effectivePower,equipmentTrayHtml,equipPanelHtml}`);
+            const dom=makeDom(html,'equipment');dom.window.setTimeout=()=>0;const H=dom.window.__SIZA_EQUIPMENT_TEST__,T=testRunner();
+            const fresh=()=>{const M=H.createMatch(false,'prepare');H.setMatch(M);H.addCreatureV070(M.player,'servitor');M.player.equipment=[{id:'tideblade',target:null}];M.player.crystals={U:2,R:1};return M};
+            T.test('Equipar abre elección sólo con Equipo, criatura y cristal',()=>{const M=fresh();H.beginEquip(0);return M.pendingEquip?.eqIndex===0&&M.pendingEquip.color===null});
+            T.test('Equipar se bloquea si no quedan cristales',()=>{const M=fresh();M.player.crystals={U:0,R:0};M.pendingEquip=null;H.beginEquip(0);return M.pendingEquip===null});
+            T.test('Color elegido se consume y Espada queda vinculada',()=>{const M=fresh();H.beginEquip(0);H.chooseEquipCrystalV070('R');const selected=M.pendingEquip?.color==='R';H.equipTo(0);return selected&&M.player.crystals.R===0&&M.player.crystals.U===2&&M.player.equipment[0].target===0&&M.pendingEquip===null&&H.effectivePower(M.player,0)===4});
+            T.test('Contador y Equipo se componen en poder efectivo',()=>{const M=fresh();M.player.powerCounters[0]=1;M.player.equipment[0].target=0;return H.effectivePower(M.player,0)===5});
+            T.test('Tray y panel exponen la interacción vigente',()=>{const M=fresh();const playerTray=H.equipmentTrayHtml(M.player,'player'),enemyTray=H.equipmentTrayHtml(M.player,'enemy');H.beginEquip(0);const before=H.equipPanelHtml();H.chooseEquipCrystalV070('U');const after=H.equipPanelHtml();return playerTray.includes('SIZA.beginEquip(0)')&&!enemyTray.includes('SIZA.beginEquip')&&before.includes('Elige el cristal')&&before.includes('disabled')&&after.includes('selected')&&!after.includes('disabled')});
+            report(T.results,'SIZA live equipment regression');dom.window.close();
+          }
+
+          async function main(){
+            const read=await fetch(`${api}?ref=main`,{headers});if(!read.ok)throw new Error(`GET ${read.status}: ${await read.text()}`);
+            const current=await read.json(),html=Buffer.from(current.content.replace(/\n/g,''),'base64').toString('utf8');console.log(`Current Arena blob ${current.sha}`);
+            const parsed=parseFunctions(html),byName=new Map([...targets].map(name=>[name,[]]));for(const node of parsed.declarations)if(targets.has(node.id.name))byName.get(node.id.name).push(node);
+            for(const [name,nodes] of byName)if(nodes.length!==2)throw new Error(`${name}: expected 2 declarations before cleanup, found ${nodes.length}`);
+            const removals=[];for(const [name,nodes] of byName){nodes.sort((a,b)=>a.start-b.start);const dead=nodes[0];let end=dead.end;while(end<parsed.code.length&&(parsed.code[end]==='\r'||parsed.code[end]==='\n'))end++;removals.push({name,start:dead.start,end})}removals.sort((a,b)=>b.start-a.start);
+            let nextCode=parsed.code;for(const r of removals){console.log(`REMOVE dead ${r.name} @ ${r.start}-${r.end}`);nextCode=nextCode.slice(0,r.start)+nextCode.slice(r.end)}
+            const nextHtml=html.slice(0,parsed.codeStart)+nextCode+html.slice(parsed.scriptClose),verified=parseFunctions(nextHtml),counts=countsOf(verified.declarations);
+            for(const name of targets){const count=counts.get(name)||0;console.log(`CANONICAL ${name}: ${count}`);if(count!==1)throw new Error(`${name}: expected 1 declaration after cleanup, found ${count}`)}
+            const duplicateNames=[...counts.values()].filter(count=>count>1).length;console.log(`Named function declarations after equipment cleanup: ${verified.declarations.length}`);console.log(`Duplicate names after equipment cleanup: ${duplicateNames}`);
+            if(verified.declarations.length!==175)throw new Error(`Expected 175 named declarations, found ${verified.declarations.length}`);if(duplicateNames!==20)throw new Error(`Expected 20 duplicate names, found ${duplicateNames}`);
+            runCore(nextHtml);runCombat(nextHtml);runStack(nextHtml);runEquipment(nextHtml);
+            const write=await fetch(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Canonicalize Arena equipment runtime',content:Buffer.from(nextHtml,'utf8').toString('base64'),sha:current.sha,branch:'main'})});if(!write.ok)throw new Error(`PUT ${write.status}: ${await write.text()}`);const result=await write.json();console.log(`COMMIT ${result.commit.sha}`);
+          }
+          main().catch(error=>{console.error(error.stack||error.message);process.exit(1)});
+          NODE
