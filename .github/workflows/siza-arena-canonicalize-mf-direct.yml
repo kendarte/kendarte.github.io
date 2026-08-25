@@ -1,0 +1,137 @@
+name: Siza Arena Canonicalize Manafestation Direct
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-arena-canonicalize-mf-direct.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  canonicalize-manafestation-direct:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install parser
+        run: npm install --no-save acorn@8
+
+      - name: Canonicalize current Arena file through GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const acorn = require('acorn');
+
+          const repo = process.env.GH_REPOSITORY;
+          const token = process.env.GH_TOKEN;
+          const path = 'siza-mobile-test/index.html';
+          const api = `https://api.github.com/repos/${repo}/contents/${path}`;
+          const headers = {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+          };
+
+          async function main() {
+            const read = await fetch(`${api}?ref=main`, { headers });
+            if (!read.ok) throw new Error(`GET ${read.status}: ${await read.text()}`);
+            const current = await read.json();
+            const html = Buffer.from(current.content.replace(/\n/g, ''), 'base64').toString('utf8');
+
+            const scriptOpen = html.lastIndexOf('<script>');
+            const scriptClose = html.indexOf('</script>', scriptOpen);
+            if (scriptOpen < 0 || scriptClose < 0) throw new Error('Main script block not found');
+            const codeStart = scriptOpen + '<script>'.length;
+            const code = html.slice(codeStart, scriptClose);
+            const ast = acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'script' });
+
+            const targets = new Set([
+              'playHand',
+              'openManifest',
+              'rollManifest',
+              'cancelManifest',
+              'selectBurn',
+              'commitManifest',
+              'failManifest',
+              'manifestInlineHtml',
+              'enemyResolveManifestRoll'
+            ]);
+            const found = new Map([...targets].map(name => [name, []]));
+
+            function walk(node) {
+              if (!node || typeof node !== 'object') return;
+              if (node.type === 'FunctionDeclaration' && node.id && targets.has(node.id.name)) {
+                found.get(node.id.name).push(node);
+              }
+              for (const [key, value] of Object.entries(node)) {
+                if (key === 'start' || key === 'end' || key === 'loc') continue;
+                if (Array.isArray(value)) for (const child of value) walk(child);
+                else if (value && typeof value === 'object' && typeof value.type === 'string') walk(value);
+              }
+            }
+            walk(ast);
+
+            for (const name of targets) {
+              const nodes = found.get(name);
+              if (nodes.length !== 2) throw new Error(`${name}: expected exactly 2 declarations, found ${nodes.length}`);
+            }
+
+            const removals = [];
+            for (const name of targets) {
+              const nodes = found.get(name).sort((a, b) => a.start - b.start);
+              const dead = nodes[0];
+              let end = dead.end;
+              while (end < code.length && (code[end] === '\r' || code[end] === '\n')) end++;
+              removals.push({ name, start: dead.start, end });
+            }
+            removals.sort((a, b) => b.start - a.start);
+
+            let next = code;
+            for (const r of removals) {
+              console.log(`REMOVE dead ${r.name} @ ${r.start}-${r.end}`);
+              next = next.slice(0, r.start) + next.slice(r.end);
+            }
+
+            const verifyAst = acorn.parse(next, { ecmaVersion: 'latest', sourceType: 'script' });
+            const verify = new Map([...targets].map(name => [name, 0]));
+            function verifyWalk(node) {
+              if (!node || typeof node !== 'object') return;
+              if (node.type === 'FunctionDeclaration' && node.id && verify.has(node.id.name)) {
+                verify.set(node.id.name, verify.get(node.id.name) + 1);
+              }
+              for (const [key, value] of Object.entries(node)) {
+                if (key === 'start' || key === 'end' || key === 'loc') continue;
+                if (Array.isArray(value)) for (const child of value) verifyWalk(child);
+                else if (value && typeof value === 'object' && typeof value.type === 'string') verifyWalk(value);
+              }
+            }
+            verifyWalk(verifyAst);
+            for (const [name, count] of verify) {
+              if (count !== 1) throw new Error(`${name}: expected 1 declaration after canonicalization, found ${count}`);
+            }
+
+            const nextHtml = html.slice(0, codeStart) + next + html.slice(scriptClose);
+            if (nextHtml === html) throw new Error('Canonicalization produced no diff');
+
+            const write = await fetch(api, {
+              method: 'PUT',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: 'Canonicalize Arena Manafestation runtime',
+                content: Buffer.from(nextHtml, 'utf8').toString('base64'),
+                sha: current.sha,
+                branch: 'main'
+              })
+            });
+            if (!write.ok) throw new Error(`PUT ${write.status}: ${await write.text()}`);
+            const result = await write.json();
+            console.log(`COMMIT ${result.commit.sha}`);
+            console.log(`Canonicalized ${targets.size} dead Manafestation declarations.`);
+          }
+
+          main().catch(error => {
+            console.error(error.stack || error.message);
+            process.exit(1);
+          });
+          NODE
