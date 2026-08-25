@@ -1,18 +1,34 @@
 (function(global){
 'use strict';
 
-const CARD_SCHEMA_VERSION='1.0.0';
+const CARD_SCHEMA_VERSION='1.0.1';
 const CARD_TYPES=['Instant','Creature','Artifact','Land'];
 const COLORS=['U','R','G','W','B'];
+const TYPE_ALIASES={instant:'Instant',instantaneo:'Instant','instantáneo':'Instant',creature:'Creature',invocacion:'Creature','invocación':'Creature',artifact:'Artifact',artefacto:'Artifact',land:'Land',reserva:'Land',tierra:'Land'};
+const COLOR_ALIASES={u:'U',azul:'U',blue:'U',r:'R',rojo:'R',red:'R',g:'G',verde:'G',green:'G',w:'W',blanco:'W',white:'W',b:'B',negro:'B',black:'B'};
 
 function clone(value){return JSON.parse(JSON.stringify(value));}
 function finiteNumber(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback;}
 function int(value,fallback=0){const n=finiteNumber(value,fallback);return Math.trunc(n);}
 function text(value,fallback=''){return String(value??fallback);}
+function normalizeType(value){if(CARD_TYPES.includes(value))return value;return TYPE_ALIASES[text(value).trim().toLowerCase()]||'Creature';}
+function normalizeColor(value){const raw=text(value).trim();if(COLORS.includes(raw))return raw;return COLOR_ALIASES[raw.toLowerCase()]||null;}
 
 function normalizePips(input={}){
  const out={};
- for(const k of COLORS){const n=Math.max(0,int(input?.[k],0));if(n)out[k]=n;}
+ if(Array.isArray(input)){
+  for(const value of input){const k=normalizeColor(value);if(k)out[k]=(out[k]||0)+1;}
+  return out;
+ }
+ for(const [raw,value] of Object.entries(input||{})){
+  const k=normalizeColor(raw);if(!k)continue;const n=Math.max(0,int(value,0));if(n)out[k]=(out[k]||0)+n;
+ }
+ return out;
+}
+
+function pipsToCrystalArray(input={}){
+ const pips=normalizePips(input),names={U:'azul',R:'rojo',G:'verde',W:'blanco',B:'negro'},out=[];
+ for(const k of COLORS)for(let i=0;i<(pips[k]||0);i++)out.push(names[k]);
  return out;
 }
 
@@ -25,9 +41,7 @@ function normalizeArtTransform(input={}){
 }
 
 function normalizeCard(input={}){
- const type=CARD_TYPES.includes(input.cardType)?input.cardType:(CARD_TYPES.includes(input.type)?input.type:'Creature');
- const power=input.force??input.power;
- const toughness=input.resistance??input.toughness;
+ const type=normalizeType(input.cardType??input.type),power=input.force??input.power,toughness=input.resistance??input.toughness,pips=normalizePips(input.pips??input.crystals);
  const card={
   schemaVersion:CARD_SCHEMA_VERSION,
   id:text(input.id,'card_'+Date.now()),
@@ -39,8 +53,8 @@ function normalizeCard(input={}){
   affinity:text(input.affinity,'multi'),
   difficulty:Math.max(0,int(input.difficulty,0)),
   cost:Math.max(0,int(input.cost,0)),
-  pips:normalizePips(input.pips||input.crystals),
-  crystals:normalizePips(input.crystals||input.pips),
+  pips,
+  crystals:pipsToCrystalArray(pips),
   artId:text(input.artId,''),
   artUrl:text(input.artUrl,''),
   artTransform:normalizeArtTransform(input.artTransform),
@@ -65,23 +79,17 @@ function validateCard(input={}){
  if(!card.name.trim())errors.push('La carta necesita un nombre.');
  if(!CARD_TYPES.includes(card.cardType))errors.push('Tipo de carta inválido.');
  if(card.cardType!=='Land'&&card.difficulty<=0)warnings.push('La dificultad es 0.');
- if(card.cardType==='Creature'){
-  if(card.power==null||card.toughness==null)errors.push('Una Creature necesita Fuerza y Resistencia.');
- }
+ if(card.cardType==='Creature'&&(card.power==null||card.toughness==null))errors.push('Una Creature necesita Fuerza y Resistencia.');
  if(card.cardType!=='Creature'&&(card.power!=null||card.toughness!=null))warnings.push('Las estadísticas P/T sólo se muestran en Creature.');
  if(!card.rules.trim()&&card.cardType!=='Land')warnings.push('La carta no tiene texto de reglas.');
  if(card.artUrl&&/cards-v\d+\//i.test(card.artUrl))warnings.push('artUrl parece apuntar a una carta completa legada, no a arte puro.');
- if(card.artTransform.scale<.25||card.artTransform.scale>4)errors.push('La escala de arte está fuera del rango permitido.');
  return {valid:errors.length===0,errors,warnings,card};
 }
 
 function cardFromMobileShape(input={}){return normalizeCard(input);}
 function cardToMobileShape(input={}){
- const c=normalizeCard(input);
- const out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform)};
- if(c.subtype)out.subtype=c.subtype;
- if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}
- return out;
+ const c=normalizeCard(input),out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform)};
+ if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}return out;
 }
 
 global.SizaCardSchema=Object.freeze({
@@ -93,6 +101,7 @@ global.SizaCardSchema=Object.freeze({
  cardFromMobileShape,
  cardToMobileShape,
  normalizeArtTransform,
- normalizePips
+ normalizePips,
+ pipsToCrystalArray
 });
 })(window);
