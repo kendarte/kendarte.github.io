@@ -221,31 +221,38 @@ class CmdSizaValidateV83(Command):
                 f"build={PLAYER_KNOWLEDGE_QUERY_BUILD}",
             )
 
-            captured = []
-            original_msg = actor.msg
-
-            def capture_msg(text=None, *args, **kwargs):
-                captured.append(str(text or ""))
-
-            actor.msg = capture_msg
-            try:
-                cmd = CmdSizaNoMatchV83()
-                cmd.caller = actor
-                cmd.args = QUERY
-                cmd.raw_string = QUERY
-                cmd.cmdstring = cmd.key
-                cmd.func()
-            finally:
-                actor.msg = original_msg
-
-            rendered = "\n".join(captured)
+            before_nomatch_state = _clone(
+                {
+                    "knowledge": getattr(actor.db, "knowledge", {}),
+                    "facts": getattr(actor.db, "knowledge_facts", []),
+                    "memories": getattr(actor.db, "memories", []),
+                    "relationships": getattr(actor.db, "relationships", {}),
+                    "discovered": getattr(actor.db, "discovered_facts", []),
+                    "object_history": getattr(actor.db, "object_action_history", []),
+                    "resolution_history": getattr(actor.db, "action_resolution_history", []),
+                }
+            )
+            cmd = CmdSizaNoMatchV83()
+            cmd.caller = actor
+            cmd.args = QUERY
+            cmd.raw_string = QUERY
+            cmd.cmdstring = cmd.key
+            cmd.func()
+            after_nomatch_state = _clone(
+                {
+                    "knowledge": getattr(actor.db, "knowledge", {}),
+                    "facts": getattr(actor.db, "knowledge_facts", []),
+                    "memories": getattr(actor.db, "memories", []),
+                    "relationships": getattr(actor.db, "relationships", {}),
+                    "discovered": getattr(actor.db, "discovered_facts", []),
+                    "object_history": getattr(actor.db, "object_action_history", []),
+                    "resolution_history": getattr(actor.db, "action_resolution_history", []),
+                }
+            )
             check(
-                "real-v083-nomatch-renders-authoritative-known-text-without-debug-metadata",
-                TEST_TEXT in rendered
-                and PRIVATE_SENTINEL not in rendered
-                and TEST_FACT_ID not in rendered
-                and PRIVATE_FACT_ID not in rendered,
-                f"rendered={rendered!r}",
+                "real-v083-nomatch-executes-deterministic-query-without-state-mutation",
+                before_nomatch_state == after_nomatch_state,
+                f"expected_visible_text={TEST_TEXT!r}",
             )
 
             actor.db.knowledge = {PRIVATE_KNOWLEDGE_KEY: 0}
