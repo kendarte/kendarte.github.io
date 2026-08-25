@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v97_commands import CmdSizaValidateV97
+from commands.world_input_v98_commands import CmdSizaValidateV98
 
 
-QA_BUILD = "0.97.0-risk-based-one-command-qa"
+QA_BUILD = "0.98.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.96 is closed after its fact-specific lifecycle follow-up passed 3/3. v0.97 closes the next institutional authoring scale gap without changing Knowledge or SHARE_FACT authority: a faction fact_share_policy may keep the historical exact fact_id selector or may author one fact_type. A fact_type policy is deterministically projected into one managed rule per stored matching Fact, each carrying one exact fact_id before the existing v0.89-v0.95 source-awareness, target selection, travel/contact and transfer pipeline runs. Exact v0.96 policy rule IDs remain unchanged. Removing or re-adding one matching Fact removes/reactivates only its derived rule and normal obligation identity. Local overrides and inherited-policy conflicts continue to resolve per concrete fact_id. Policies with both fact_id and fact_type fail closed instead of silently choosing one selector."
+            "RISK PROFILE: v0.97 is closed at 9/9 after proving one faction fact_type policy may expand into exact managed rules for multiple stored matching Facts while existing source-Knowledge and SHARE_FACT authority remain exact per fact_id. v0.98 adds optional non-negative severity filtering to fact_type policies only: Facts may carry severity, and policies may author min_severity/max_severity. Disjoint severity ranges can therefore route incidents of the same fact_type to different existing authority thresholds without implicit precedence. A Fact changing severity dynamically removes the old derived rule, cancels its old pending intent and projects the appropriate new range using normal obligation identities. Missing/invalid Fact severity fails closed for filtered policies, overlapping ranges remain a concrete-fact conflict, malformed policy ranges fail closed, and exact v0.96 fact_id policies remain unchanged."
         )
-        _run_command(CmdSizaValidateV97, self.caller)
+        _run_command(CmdSizaValidateV98, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.97 changes deterministic faction-policy projection only. The validator covers v0.96 exact-selector compatibility, one typed policy expanding to multiple concrete stored Facts, source Knowledge gating per derived exact Fact, later Knowledge activation, per-Fact removal/recovery with same identities, concrete local override, multi-faction conflicts and ambiguous-selector fail-closed behavior with exact state restoration. qwen, knowledge persistence, fact_share_rule selection, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.98 changes deterministic typed faction-policy projection only. The validator covers v0.97 unfiltered compatibility, disjoint severity-range projection, existing authority/nearest routing, dynamic escalation and de-escalation, overlapping-range conflict fail-closed behavior, malformed severity filters, and exact v0.96 compatibility. qwen, Knowledge persistence, faction_engine, fact_share_rule selection, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
