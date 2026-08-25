@@ -489,17 +489,6 @@ function resetDeck(){state.deck=starterDeck();save();render();toast('Deck restau
 function makeLibrary(){const arr=[];for(const [id,n] of Object.entries(state.deck.counts))for(let i=0;i<n;i++)arr.push(id);return shuffle(arr)}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function d6(){return 1+Math.floor(Math.random()*6)}
-function createMatch(adventure=false){
- const l1=makeLibrary(),l2=makeLibrary();
- const player={life:20,hand:l1.splice(0,7),library:l1,battlefield:[],artifacts:[],equipment:[],graveyard:[],exile:[],exhausted:[],landPlayed:false,proactiveOpen:true,manifestActions:2,combatUsed:false,successful:false,mf:state.player.mag.mf,prow:state.player.mag.prow,eva:state.player.mag.eva,aff:{...state.player.mag.aff},manifestSuccesses:0,physicalUsed:false};
- const enemy={life:20,hand:l2.splice(0,7),library:l2,battlefield:[],artifacts:[],equipment:[],graveyard:[],exile:[],exhausted:[],landPlayed:false,proactiveOpen:true,manifestActions:2,combatUsed:false,successful:false,mf:2,prow:2,eva:2,aff:{U:2,R:1,G:0},manifestSuccesses:0};
- function forceCard(side,id){if(side.hand.includes(id))return;const li=side.library.indexOf(id);if(li<0)return;let hi=side.hand.findIndex(x=>cardById(x)?.type!=='Land');if(hi<0)hi=side.hand.length-1;const old=side.hand[hi];side.hand[hi]=id;side.library[li]=old}
- function ensureLands(side,count,protectedId){let have=side.hand.filter(id=>cardById(id)?.type==='Land').length;while(have<count){const li=side.library.findIndex(id=>cardById(id)?.type==='Land');const hi=side.hand.findIndex(id=>cardById(id)?.type!=='Land'&&id!==protectedId);if(li<0||hi<0)break;const old=side.hand[hi];side.hand[hi]=side.library[li];side.library[li]=old;have++}}
- if(!adventure){forceCard(player,'counter');ensureLands(player,4,'counter');forceCard(enemy,'spark');ensureLands(enemy,3,'spark')}
- return {id:'match_'+Date.now(),turn:1,phase:'Main',active:'player',player,enemy,stack:[],log:[{t:'Match',m:adventure?'Adventure duel started.':'Practice match started. Tienes dos acciones de Manafestation; la dificultad impresa es el objetivo real.'}],pending:null,pendingEquip:null,combat:null,responseWindow:null,enemyStage:null,ui:{hand:-1,creature:-1,attackMode:false,attackers:[],fieldFocus:null},adventure,over:false,winner:null}
-}
-function startPractice(){if(totalDeck()!==60){state.route='deck';render();return toast('Completa primero un deck de 60 cartas.','bad')}state.match=createMatch(false);state.route='match';save();render()}
-function startAdventureDuel(){if(totalDeck()!==60){toast('El Adventure Encounter usará el deck inicial restaurado para la demo.','gold');state.deck=starterDeck()}state.match=createMatch(true);state.match.enemy.life=12;state.match.log.unshift({t:'Story',m:'El Contrabandista Carmesí abre su baraja.'});state.route='match';save();render()}
 function equipmentFor(P,idx){return (P.equipment||[]).filter(e=>e.target===idx)}
 function matchCardMini(id,owner,idx){
  const M=state.match,P=M?.[owner],c=cardById(id),isPlayer=owner==='player',sel=isPlayer&&M?.ui?.creature===idx,attackSelected=isPlayer&&M?.ui?.attackMode&&M.ui.attackers?.includes(idx),exhausted=(P?.exhausted||[]).includes(idx),eq=equipmentFor(P,idx);
