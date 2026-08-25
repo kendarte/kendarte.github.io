@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v861_validation_commands import CmdSizaValidateV861
+from commands.world_input_v87_commands import CmdSizaValidateV87
 
 
-QA_BUILD = "0.86.1-risk-based-one-command-qa"
+QA_BUILD = "0.87.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.86 exposed a real multi-Fact selection problem rather than a Knowledge/action failure. The old TALK matcher accepted any one-token overlap and returned the first known matching Fact, so an earlier public Fact could satisfy a specific query like 'sello blanco de auditoria' before the intended restricted Fact. v0.86.1 adds one ranked Fact authority used by both disclosure and transfer: the raw player topic deterministically selects one exact known fact_id by authored topic/alias specificity; that same fact_id is then evaluated by holder-local disclosure, recorded in conversation memory and passed to the existing authoritative transfer engine. The old interaction engine, transfer engine, v0.54 CONFRONT, Knowledge requirements, Object Action and Consequence engines remain unchanged. The validator deliberately places a public one-token 'sello' decoy before the restricted audit Fact and reruns the full blocked->CONFRONT->acquire->Knowledge unlock->world consequence loop."
+            "RISK PROFILE: v0.86.1 is closed at 12/12 after proving one ranked fact_id owns disclosure, conversation memory and transfer even with an earlier public one-token decoy. v0.87 changes no input, qwen, transfer, consequence, Fact-goal or NPC decision engine. It adds authored pilot integration only: when the existing v0.86 Knowledge-gated Manifest action completes, a normal explicit consequence teaches Mara one structured Fact and Knowledge key. Mara's existing v0.59 Fact-goal engine then materializes a high-priority one-shot goal from that exact Fact, and the existing decision engine moves her from Pescaderia de Darsena to Calle de Servicio. Running install/idempotency, natural object action, exact NPC Fact/provenance, Fact-goal materialization, real NPC movement/completion and one-shot non-reactivation with exact state restoration."
         )
-        _run_command(CmdSizaValidateV861, self.caller)
+        _run_command(CmdSizaValidateV87, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.86.1 changes TALK fact-selection authority, so the validator covers explicit and semantic TALK wiring, a deliberate earlier public collision, disclosure before/after real CONFRONT, exact transfer identity, Knowledge unlock, natural Object Action execution, consequence/presentation and exact state restoration. qwen target-selection metadata is unchanged from v0.85 and no new factual data is exposed to the model. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.87 is authored deterministic cross-system integration. It changes no qwen boundary and no shared engine implementation; all new risk is covered by the validator executing the real Object Action -> Consequence -> NPC Knowledge Fact -> Fact Goal -> decision_step path. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
