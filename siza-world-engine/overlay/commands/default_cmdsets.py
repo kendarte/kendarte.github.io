@@ -102,7 +102,7 @@ from commands.world_action_v42_commands import CmdSizaActionsV42, CmdSizaValidat
 from commands.world_action_v43_commands import CmdSizaValidateV43
 from commands.world_action_v44_commands import CmdSizaValidateV44
 from commands.world_action_v46_commands import CmdSizaValidateV46
-from commands.world_input_v83_commands import CmdSizaNoMatchV83
+from commands.world_input_v84_commands import CmdSizaNoMatchV84
 from commands.world_object_v47_commands import CmdSizaValidateV47
 from commands.world_object_v48_commands import CmdSizaValidateV48
 from commands.world_object_v49_commands import CmdSizaValidateV49
@@ -134,6 +134,7 @@ from commands.world_object_v59_commands import (
 from commands.world_object_v60_commands import (
     CmdSizaFactCompletionsV60,
     CmdSizaResetV60,
+    CmdSizaFactCompletionsV60,
     CmdSizaValidateV60,
 )
 from commands.world_object_v61_commands import CmdSizaResetV61, CmdSizaValidateV61
@@ -274,7 +275,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaTimeRate())
         self.add(CmdSizaTimeAdvance())
         self.add(CmdSizaRollV55())
-        self.add(CmdSizaNoMatchV83())
+        self.add(CmdSizaNoMatchV84())
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
