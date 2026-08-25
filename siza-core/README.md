@@ -8,7 +8,7 @@ Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
 - `manifest-rules.js` owns the pure affinity, difficulty, natural-chance, and Manafestation requirement calculations. Mobile keeps only thin state-aware adapters that pass the active Magistocrat data into this shared module.
-- `crystal-rules.js` owns the pure printed-pip requirement, spell crystal cost, and direct-payment planning rules. Mobile keeps thin adapters; Ofrenda remains in Arena because it depends on battlefield state and `cardById`.
+- `crystal-rules.js` owns printed-pip requirements, spell crystal cost, direct-payment planning, and the pure Ofrenda/payment planner. Arena injects `cardById` into the planner so generated/test cards remain resolvable; actual crystal spending and state mutation remain local to Arena.
 
 Arena now resolves the supported card behavior from structured card data for `resolve`, `enter`, `attack-declared`, `combat-damage`, `manifest-roll`, and `equipped` events. This covers the current stack/entry effects, Contrabandista Carmesí, Ignimite, Prisma de Enfoque, and Espada de Bajamar. Permanent regressions also exercise generated cards with unknown IDs to ensure these behaviors are driven by descriptors rather than catalog-specific conditionals.
 
