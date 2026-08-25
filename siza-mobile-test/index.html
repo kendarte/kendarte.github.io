@@ -546,8 +546,8 @@ function startPractice(mode){if(!mode){state.match=null;state.pendingAdventureDu
 function startAdventureDuel(mode){if(!mode){state.match=null;state.pendingAdventureDuel=true;state.route='match';save();return render()}if(totalDeck()!==60)state.deck=starterDeck();state.match=createMatch(true,mode);state.match.enemy.life=12;state.match.log.push({t:'Historia',m:'El Contrabandista Carmesí abre su baraja.'});state.pendingAdventureDuel=false;state.route='match';save();render()}
 function startConfiguredV070(mode){return state.pendingAdventureDuel?startAdventureDuel(mode):startPractice(mode)}
 function counterV070(P,i){return SizaCreatureRules.counter(P,i)}
-function isEquipmentCardV1(c){return !!(c?.type==='Artifact'&&((c.equipCost||0)>0||SizaCardEffects.forEvent(c,'equipped').length))}
-function equipmentEquipCostV1(c){return Math.max(0,Number(c?.equipCost)||0)}
+function isEquipmentCardV1(c){return SizaCardSchema.isEquipmentCard(c)}
+function equipmentEquipCostV1(c){return SizaCardSchema.equipmentCost(c)}
 function equipmentPowerBonusV1(P,i){return SizaCreatureRules.equipmentPowerBonus(P,i,cardById,SizaCardEffects.forEvent)}
 function effectivePower(P,i){return SizaCreatureRules.effectivePower(P,i,cardById,SizaCardEffects.forEvent)}
 function toughV070(P,i){return SizaCreatureRules.toughness(P,i,cardById)}
