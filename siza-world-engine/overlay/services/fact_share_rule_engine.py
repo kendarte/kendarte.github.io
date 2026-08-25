@@ -15,6 +15,7 @@ FACT_SHARE_SOURCE_AWARENESS_BUILD = "0.91.0-source-aware-fact-share-cancellation
 FACT_SHARE_TARGET_MODE_BUILD = "0.92.0-faction-targeted-fact-share-rules"
 FACT_SHARE_AUTHORITY_FILTER_BUILD = "0.93.0-faction-authority-filtered-fact-share-rules"
 FACT_SHARE_RECIPIENT_SELECTION_BUILD = "0.94.0-nearest-limited-faction-fact-share-selection"
+FACT_SHARE_NEED_AWARE_SELECTION_BUILD = "0.95.0-need-aware-nearest-fact-share-selection"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -119,25 +120,11 @@ def _update_obligation_state(npc, target_id, obligation_id, status, reason, reas
 
 
 def _retire_pending_fact_share_obligation(npc, target_id, obligation_id):
-    return _update_obligation_state(
-        npc,
-        target_id,
-        obligation_id,
-        "completed",
-        "TARGET_ALREADY_KNOWS_FACT",
-        "completion_reason",
-    )
+    return _update_obligation_state(npc, target_id, obligation_id, "completed", "TARGET_ALREADY_KNOWS_FACT", "completion_reason")
 
 
 def _cancel_pending_fact_share_obligation(npc, target_id, obligation_id, reason="SOURCE_NO_LONGER_KNOWS_FACT"):
-    return _update_obligation_state(
-        npc,
-        target_id,
-        obligation_id,
-        "cancelled",
-        reason,
-        "cancellation_reason",
-    )
+    return _update_obligation_state(npc, target_id, obligation_id, "cancelled", reason, "cancellation_reason")
 
 
 def _obligation_sources(npc):
@@ -161,6 +148,7 @@ def _remember_obligation_source(npc, obligation_id, rule, target_id):
         "build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
+        "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
     }
     npc.db.fact_share_obligation_sources = rows
 
@@ -228,7 +216,6 @@ def _resolve_rule_targets(npc, rule):
             return mode, [], "TARGET_NOT_CONFIGURED"
         target = _npc_by_id(target_id)
         return mode, [target] if target else [], None if target else "TARGET_NOT_FOUND"
-
     if mode == "FACTION":
         faction_id = str((rule or {}).get("faction_id") or "").strip()
         if not faction_id:
@@ -246,53 +233,65 @@ def _resolve_rule_targets(npc, rule):
                     continue
             targets.append(candidate)
         return mode, targets, None
-
     return mode, [], "UNSUPPORTED_TARGET_MODE"
 
 
-def _select_rule_targets(npc, rule, mode, targets):
+def _select_rule_targets(npc, rule, mode, targets, fact_id=None):
+    empty_meta = {"selection": None, "max_targets": None, "reachable": {}, "already_known": {}, "already_completed": []}
     if mode != "FACTION":
-        return list(targets or []), {"selection": None, "max_targets": None, "reachable": {}}, None
-
+        return list(targets or []), empty_meta, None
     selection, selection_error = _parse_selection(rule)
     if selection_error:
-        return [], {"selection": None, "max_targets": None, "reachable": {}}, selection_error
-
+        return [], empty_meta, selection_error
     max_targets, max_error = _parse_max_targets(rule, selection)
     if max_error:
-        return [], {"selection": selection, "max_targets": None, "reachable": {}}, max_error
-
+        meta = dict(empty_meta)
+        meta["selection"] = selection
+        return [], meta, max_error
     if selection == "ALL":
-        return list(targets or []), {"selection": "ALL", "max_targets": None, "reachable": {}}, None
+        return list(targets or []), {"selection": "ALL", "max_targets": None, "reachable": {}, "already_known": {}, "already_completed": []}, None
+
+    one_shot = bool(rule.get("one_shot", True))
+    need_targets = []
+    already_known = {}
+    already_completed = []
+    for target in list(targets or []):
+        target_id = _npc_id(target)
+        if not target_id:
+            continue
+        obligation_id = f"SHARE-FACT-{target_id}-{fact_id}" if fact_id else ""
+        if fact_id and one_shot and obligation_id and _completed_obligation_exists(npc, target_id, obligation_id):
+            already_completed.append(target_id)
+            continue
+        if fact_id and _target_knows_fact(target, fact_id):
+            retired = _retire_pending_fact_share_obligation(npc, target_id, obligation_id) if obligation_id else False
+            already_known[target_id] = {"retired_pending": bool(retired)}
+            continue
+        need_targets.append(target)
 
     faction_id = str((rule or {}).get("faction_id") or "").strip()
     ranked = []
     reachable = {}
-    for target in list(targets or []):
+    for target in need_targets:
         target_id = _npc_id(target)
         if not target_id or not npc.location or not target.location:
             continue
-        if npc.location == target.location:
-            path = []
-        else:
-            path = find_path(npc.location, target.location)
+        path = [] if npc.location == target.location else find_path(npc.location, target.location)
         if path is None:
             continue
         authority = membership_authority(target, faction_id, active_only=True)
         authority_value = int(authority) if authority is not None else -1
         path_length = len(path)
-        reachable[target_id] = {
-            "path_length": path_length,
-            "authority": authority_value,
-        }
+        reachable[target_id] = {"path_length": path_length, "authority": authority_value}
         ranked.append((path_length, -authority_value, target_id, target))
-
     ranked.sort(key=lambda item: (item[0], item[1], item[2]))
     selected = [item[3] for item in ranked[: int(max_targets or 1)]]
     return selected, {
         "selection": "NEAREST",
         "max_targets": int(max_targets or 1),
         "reachable": reachable,
+        "already_known": already_known,
+        "already_completed": already_completed,
     }, None
 
 
@@ -335,6 +334,7 @@ def upsert_fact_share_rule(npc, rule):
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
+        "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
     }
 
 
@@ -353,13 +353,13 @@ def refresh_fact_share_obligations(npc):
     """Materialize useful SHARE_FACT obligations while source knows, target qualifies and target remains ignorant."""
     if not npc:
         return {
-            "status": "NO_NPC",
-            "build": FACT_SHARE_RULE_BUILD,
+            "status": "NO_NPC", "build": FACT_SHARE_RULE_BUILD,
             "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
             "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
             "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
             "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
             "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
+            "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
             "materialized": [],
         }
 
@@ -376,175 +376,108 @@ def refresh_fact_share_obligations(npc):
 
         fact = find_knowledge_fact(npc, fact_id)
         if not fact or not bool(fact_knowledge_state(npc, fact).get("known")):
-            cancelled = _cancel_rule_obligations(
-                npc,
-                rule_id,
-                reason="SOURCE_NO_LONGER_KNOWS_FACT",
-            )
+            cancelled = _cancel_rule_obligations(npc, rule_id, reason="SOURCE_NO_LONGER_KNOWS_FACT")
             mode = str(rule.get("target_mode") or "EXPLICIT").upper()
             explicit_target = str(rule.get("target_npc_id") or "").strip() if mode == "EXPLICIT" else ""
             explicit_obligation = f"SHARE-FACT-{explicit_target}-{fact_id}" if explicit_target else ""
-            legacy_cancelled = False
-            if explicit_target and explicit_obligation:
-                legacy_cancelled = _cancel_pending_fact_share_obligation(
-                    npc,
-                    explicit_target,
-                    explicit_obligation,
-                )
-            compatibility_obligation_id = explicit_obligation or (
-                str(cancelled[0].get("obligation_id") or "") if len(cancelled) == 1 else ""
-            )
-            skipped.append(
-                {
-                    "rule_id": rule_id,
-                    "reason": "SOURCE_DOES_NOT_KNOW_FACT",
-                    "obligation_id": compatibility_obligation_id or None,
-                    "cancelled_pending": bool(cancelled or legacy_cancelled),
-                    "cancelled_obligations": cancelled,
-                    "target_mode": mode,
-                }
-            )
+            legacy_cancelled = _cancel_pending_fact_share_obligation(npc, explicit_target, explicit_obligation) if explicit_target and explicit_obligation else False
+            compatibility_obligation_id = explicit_obligation or (str(cancelled[0].get("obligation_id") or "") if len(cancelled) == 1 else "")
+            skipped.append({
+                "rule_id": rule_id, "reason": "SOURCE_DOES_NOT_KNOW_FACT",
+                "obligation_id": compatibility_obligation_id or None,
+                "cancelled_pending": bool(cancelled or legacy_cancelled),
+                "cancelled_obligations": cancelled, "target_mode": mode,
+            })
             continue
 
         mode, eligible_targets, target_error = _resolve_rule_targets(npc, rule)
-        selection_meta = {"selection": None, "max_targets": None, "reachable": {}}
+        selection_meta = {"selection": None, "max_targets": None, "reachable": {}, "already_known": {}, "already_completed": []}
         if not target_error:
-            targets, selection_meta, target_error = _select_rule_targets(
-                npc,
-                rule,
-                mode,
-                eligible_targets,
-            )
+            targets, selection_meta, target_error = _select_rule_targets(npc, rule, mode, eligible_targets, fact_id=fact_id)
         else:
             targets = []
 
         if target_error:
             invalid_cancelled = []
             if target_error in {"BAD_MIN_AUTHORITY", "BAD_SELECTION", "BAD_MAX_TARGETS"}:
-                invalid_cancelled = _cancel_rule_obligations(
-                    npc,
-                    rule_id,
-                    reason=target_error,
-                )
-            skipped.append(
-                {
-                    "rule_id": rule_id,
-                    "reason": target_error,
-                    "target_mode": mode,
-                    "selection": selection_meta.get("selection"),
-                    "max_targets": selection_meta.get("max_targets"),
-                    "cancelled_obligations": invalid_cancelled,
-                }
-            )
+                invalid_cancelled = _cancel_rule_obligations(npc, rule_id, reason=target_error)
+            skipped.append({
+                "rule_id": rule_id, "reason": target_error, "target_mode": mode,
+                "selection": selection_meta.get("selection"), "max_targets": selection_meta.get("max_targets"),
+                "cancelled_obligations": invalid_cancelled,
+            })
             continue
 
+        for target_id, known_meta in dict(selection_meta.get("already_known") or {}).items():
+            skipped.append({
+                "rule_id": rule_id, "reason": "TARGET_ALREADY_KNOWS_FACT",
+                "obligation_id": f"SHARE-FACT-{target_id}-{fact_id}", "target_npc_id": target_id,
+                "target_mode": mode, "selection": selection_meta.get("selection"),
+                "retired_pending": bool((known_meta or {}).get("retired_pending")), "preselection_pruned": True,
+            })
+        for target_id in list(selection_meta.get("already_completed") or []):
+            skipped.append({
+                "rule_id": rule_id, "reason": "ALREADY_COMPLETED",
+                "obligation_id": f"SHARE-FACT-{target_id}-{fact_id}", "target_npc_id": target_id,
+                "target_mode": mode, "selection": selection_meta.get("selection"), "preselection_pruned": True,
+            })
+
         current_target_ids = {_npc_id(target) for target in targets if _npc_id(target)}
+        current_target_ids.update(str(value) for value in dict(selection_meta.get("already_known") or {}).keys())
+        current_target_ids.update(str(value) for value in list(selection_meta.get("already_completed") or []))
         stale_targets = [
-            target_id
-            for _obligation_id, target_id, _row in _mapped_rule_obligations(npc, rule_id)
+            target_id for _obligation_id, target_id, _row in _mapped_rule_obligations(npc, rule_id)
             if target_id not in current_target_ids
         ]
-        stale_cancelled = _cancel_rule_obligations(
-            npc,
-            rule_id,
-            reason="TARGET_NO_LONGER_MATCHES_RULE",
-            only_targets=stale_targets,
-        )
+        stale_cancelled = _cancel_rule_obligations(npc, rule_id, reason="TARGET_NO_LONGER_MATCHES_RULE", only_targets=stale_targets)
         for row in stale_cancelled:
-            skipped.append(
-                {
-                    "rule_id": rule_id,
-                    "reason": "TARGET_NO_LONGER_MATCHES_RULE",
-                    "target_mode": mode,
-                    "selection": selection_meta.get("selection"),
-                    **row,
-                }
-            )
+            skipped.append({
+                "rule_id": rule_id, "reason": "TARGET_NO_LONGER_MATCHES_RULE",
+                "target_mode": mode, "selection": selection_meta.get("selection"), **row,
+            })
 
         if not targets:
-            skipped.append(
-                {
-                    "rule_id": rule_id,
-                    "reason": "NO_ELIGIBLE_TARGETS",
-                    "target_mode": mode,
-                    "selection": selection_meta.get("selection"),
-                    "max_targets": selection_meta.get("max_targets"),
-                }
-            )
+            skipped.append({
+                "rule_id": rule_id, "reason": "NO_ELIGIBLE_TARGETS", "target_mode": mode,
+                "selection": selection_meta.get("selection"), "max_targets": selection_meta.get("max_targets"),
+            })
             continue
 
         for target in targets:
             target_id = _npc_id(target)
             obligation_id = f"SHARE-FACT-{target_id}-{fact_id}"
-
             if bool(rule.get("one_shot", True)) and _completed_obligation_exists(npc, target_id, obligation_id):
-                skipped.append(
-                    {
-                        "rule_id": rule_id,
-                        "reason": "ALREADY_COMPLETED",
-                        "obligation_id": obligation_id,
-                        "target_npc_id": target_id,
-                        "target_mode": mode,
-                    }
-                )
+                skipped.append({"rule_id": rule_id, "reason": "ALREADY_COMPLETED", "obligation_id": obligation_id, "target_npc_id": target_id, "target_mode": mode})
                 continue
-
             if _target_knows_fact(target, fact_id):
                 retired = _retire_pending_fact_share_obligation(npc, target_id, obligation_id)
-                skipped.append(
-                    {
-                        "rule_id": rule_id,
-                        "reason": "TARGET_ALREADY_KNOWS_FACT",
-                        "obligation_id": obligation_id,
-                        "target_npc_id": target_id,
-                        "target_mode": mode,
-                        "retired_pending": bool(retired),
-                    }
-                )
+                skipped.append({
+                    "rule_id": rule_id, "reason": "TARGET_ALREADY_KNOWS_FACT", "obligation_id": obligation_id,
+                    "target_npc_id": target_id, "target_mode": mode, "retired_pending": bool(retired),
+                })
                 continue
-
-            packet = create_fact_share_obligation(
-                npc,
-                target,
-                fact_id,
-                priority=rule.get("priority", 50),
-            )
+            packet = create_fact_share_obligation(npc, target, fact_id, priority=rule.get("priority", 50))
             if packet.get("success"):
                 _remember_obligation_source(npc, packet.get("obligation_id"), rule, target_id)
                 reachable_meta = dict(selection_meta.get("reachable") or {}).get(target_id) or {}
-                materialized.append(
-                    {
-                        "rule_id": rule_id,
-                        "obligation_id": packet.get("obligation_id"),
-                        "fact_id": fact_id,
-                        "target_npc_id": target_id,
-                        "target_mode": mode,
-                        "faction_id": str(rule.get("faction_id") or "") if mode == "FACTION" else None,
-                        "min_authority": rule.get("min_authority") if mode == "FACTION" else None,
-                        "selection": selection_meta.get("selection"),
-                        "max_targets": selection_meta.get("max_targets"),
-                        "path_length": reachable_meta.get("path_length"),
-                        "created": bool(packet.get("created")),
-                    }
-                )
+                materialized.append({
+                    "rule_id": rule_id, "obligation_id": packet.get("obligation_id"), "fact_id": fact_id,
+                    "target_npc_id": target_id, "target_mode": mode,
+                    "faction_id": str(rule.get("faction_id") or "") if mode == "FACTION" else None,
+                    "min_authority": rule.get("min_authority") if mode == "FACTION" else None,
+                    "selection": selection_meta.get("selection"), "max_targets": selection_meta.get("max_targets"),
+                    "path_length": reachable_meta.get("path_length"), "created": bool(packet.get("created")),
+                })
             else:
-                skipped.append(
-                    {
-                        "rule_id": rule_id,
-                        "reason": packet.get("reason") or "CREATE_FAILED",
-                        "target_npc_id": target_id,
-                        "target_mode": mode,
-                    }
-                )
+                skipped.append({"rule_id": rule_id, "reason": packet.get("reason") or "CREATE_FAILED", "target_npc_id": target_id, "target_mode": mode})
 
     return {
         "status": "MATERIALIZED" if materialized else "NO_CHANGE",
-        "materialized": materialized,
-        "skipped": skipped,
-        "build": FACT_SHARE_RULE_BUILD,
+        "materialized": materialized, "skipped": skipped, "build": FACT_SHARE_RULE_BUILD,
         "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
         "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
+        "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
     }
