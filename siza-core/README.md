@@ -8,4 +8,4 @@ Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
 
-Arena currently resolves the supported `resolve` and `enter` effects from card data. Combat-triggered and continuous card abilities are migrated separately so each behavior can retain its existing regression coverage.
+Arena resolves supported `resolve`, `enter`, `attack-declared`, and `combat-damage` behavior from structured card data. This currently covers the stack/entry effects plus Contrabandista Carmesí and Ignimite combat triggers. Activated Manafestation abilities and continuous Equipment modifiers are migrated separately so each behavior retains its existing regression coverage.
