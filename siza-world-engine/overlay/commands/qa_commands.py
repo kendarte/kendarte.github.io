@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v92_commands import CmdSizaValidateV92
+from commands.world_input_v93_commands import CmdSizaValidateV93
 
 
-QA_BUILD = "0.92.0-risk-based-one-command-qa"
+QA_BUILD = "0.93.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.91 is closed after the v0.91.1 compatibility follow-up restored the historical EXPLICIT source-loss packet at 3/3. v0.92 scales authored Fact propagation without changing local transfer authority: a fact_share_rule may now use target_mode=FACTION plus faction_id, resolving the current active faction members into independent normal SHARE_FACT obligations while excluding the source. Holder-local rule->obligation metadata lets membership churn cancel only branches whose targets no longer qualify; rejoining reactivates the same obligation id. Existing v0.90 target-aware pruning, v0.91 source-aware cancellation, relationship candidate resolution and transfer_knowledge_fact remain authoritative per target. The validator uses temporary faction memberships for Informant, Mara and Worker B, then restores all state."
+            "RISK PROFILE: v0.92 is closed at 8/8 after proving one authored FACTION Fact-share rule expands into independent SHARE_FACT branches for current active members while preserving per-target transfer authority. v0.93 adds an optional deterministic min_authority filter to that same FACTION target mode, using the existing faction membership_authority value rather than a new hierarchy system. Omitting min_authority preserves v0.92 behavior exactly. Rank/authority changes dynamically remove or reactivate only affected pending branches; malformed authority thresholds fail closed by cancelling already-pending branches from that rule until configuration is corrected. Historical v0.89-v0.92 capability IDs remain stable. The validator uses temporary authority-bearing memberships for Informant, Mara and Worker B and restores all touched state."
         )
-        _run_command(CmdSizaValidateV92, self.caller)
+        _run_command(CmdSizaValidateV93, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.92 changes deterministic authored target expansion only. The validator covers faction fanout, source exclusion, independent obligation creation, relationship candidate integration, per-member cancellation/rejoin, one-recipient completion without affecting another pending recipient, multi-target source-loss cancellation, historical capability IDs and exact state restoration. qwen, pathfinding, npc_decision, relationship resolution and transfer_knowledge_fact are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.93 changes deterministic faction-recipient filtering only. The validator covers threshold selection, holder-local rule provenance, v0.92 no-filter compatibility, below-threshold branch pruning, promotion-driven same-id reactivation, malformed-filter fail-closed cancellation and correction-driven recovery with exact state restoration. qwen, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
