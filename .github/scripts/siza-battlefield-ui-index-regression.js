@@ -1,7 +1,7 @@
 const fs=require('fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 
-function inlineCore(html){let out=html;for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js']){const tag=`<script src="../siza-core/${name}"></script>`;if(!out.includes(tag))throw new Error(`Missing shared core tag ${name}`);out=out.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`)}return out}
+function inlineCore(html){let out=html;for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js']){const tag=`<script src="../siza-core/${name}"></script>`;if(!out.includes(tag))throw new Error(`Missing shared core tag ${name}`);out=out.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`)}return out}
 const original=inlineCore(fs.readFileSync('siza-mobile-test/index.html','utf8')),marker='window.SIZA={';if(!original.includes(marker))throw new Error('SIZA export marker not found');
 const probe=`window.__UI_INDEX_REGRESSION__={createMatch,setMatch:m=>state.match=m,removeBattlefieldAt};\n`,vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM ui-index]',e.message));const dom=new JSDOM(original.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;const H=dom.window.__UI_INDEX_REGRESSION__;if(!H)throw new Error('UI index hooks unavailable');
 const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
