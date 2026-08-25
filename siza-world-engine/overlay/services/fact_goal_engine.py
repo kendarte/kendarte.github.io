@@ -1,7 +1,11 @@
-from services.knowledge_context_engine import fact_knowledge_state, knowledge_facts
+from datetime import datetime, timezone
+
+from services.knowledge_context_engine import FACT_LIFECYCLE_BUILD, fact_knowledge_state, knowledge_facts
 
 
 FACT_GOAL_BUILD = "0.59.0-fact-driven-npc-goals"
+FACT_GOAL_LIFECYCLE_BUILD = "1.01.0-lifecycle-aware-fact-goals"
+LIFECYCLE_CANCELLATION_REASON = "SOURCE_FACT_NO_LONGER_ACTIVE"
 
 
 def _plain_list(value):
@@ -50,6 +54,7 @@ def upsert_fact_goal_rule(npc, rule):
     return {
         "status": "UPDATED" if replaced else "CREATED",
         "build": FACT_GOAL_BUILD,
+        "fact_goal_lifecycle_build": FACT_GOAL_LIFECYCLE_BUILD,
         "rule_id": rule_id,
     }
 
@@ -71,13 +76,62 @@ def _decision_goals(npc):
     return output
 
 
+def _refresh_existing_fact_goal_lifecycle(goals, known_fact_ids):
+    cancelled = []
+    reactivated = []
+    changed = False
+    now = datetime.now(timezone.utc).isoformat()
+
+    for goal in goals:
+        source_fact_id = str(goal.get("source_fact_id") or "").strip()
+        if not source_fact_id:
+            continue
+        goal_id = str(goal.get("id") or "").strip()
+        active = bool(goal.get("active", False))
+        status = str(goal.get("status") or "").strip().lower()
+        cancellation_reason = str(goal.get("cancellation_reason") or "").strip()
+
+        if active and source_fact_id not in known_fact_ids:
+            goal["active"] = False
+            goal["status"] = "cancelled"
+            goal["cancelled_at"] = now
+            goal["cancellation_reason"] = LIFECYCLE_CANCELLATION_REASON
+            cancelled.append(goal_id)
+            changed = True
+            continue
+
+        if (
+            not active
+            and status == "cancelled"
+            and cancellation_reason == LIFECYCLE_CANCELLATION_REASON
+            and source_fact_id in known_fact_ids
+        ):
+            goal["active"] = True
+            goal["status"] = "pending"
+            goal.pop("cancelled_at", None)
+            goal.pop("cancellation_reason", None)
+            reactivated.append(goal_id)
+            changed = True
+
+    return changed, cancelled, reactivated
+
+
 def refresh_fact_driven_goals(npc):
-    """Materialize a fact-authored goal once when its required Fact is actually known."""
+    """Materialize and lifecycle-gate Fact-authored goals while preserving one-shot completion."""
     if not npc:
-        return {"status": "NO_NPC", "build": FACT_GOAL_BUILD, "materialized": []}
+        return {
+            "status": "NO_NPC",
+            "build": FACT_GOAL_BUILD,
+            "fact_lifecycle_build": FACT_LIFECYCLE_BUILD,
+            "fact_goal_lifecycle_build": FACT_GOAL_LIFECYCLE_BUILD,
+            "materialized": [],
+            "cancelled": [],
+            "reactivated": [],
+        }
 
     known = _known_fact_ids(npc)
     goals = _decision_goals(npc)
+    lifecycle_changed, cancelled, reactivated = _refresh_existing_fact_goal_lifecycle(goals, known)
     existing_ids = {str(goal.get("id") or "") for goal in goals}
     materialized = []
 
@@ -90,7 +144,8 @@ def refresh_fact_driven_goals(npc):
         if not fact_id or not goal_id or fact_id not in known:
             continue
 
-        # Existing goals are never reactivated here. This preserves one-shot completion.
+        # Existing goals are never recreated here. Lifecycle-only cancellations
+        # are reactivated above; completed/other terminal goals stay one-shot.
         if goal_id in existing_ids:
             continue
 
@@ -103,14 +158,18 @@ def refresh_fact_driven_goals(npc):
         existing_ids.add(goal_id)
         materialized.append(goal_id)
 
-    if materialized:
+    if materialized or lifecycle_changed:
         npc.db.decision_goals = goals
 
     return {
         "status": "MATERIALIZED" if materialized else "NO_CHANGE",
         "build": FACT_GOAL_BUILD,
+        "fact_lifecycle_build": FACT_LIFECYCLE_BUILD,
+        "fact_goal_lifecycle_build": FACT_GOAL_LIFECYCLE_BUILD,
         "known_fact_ids": sorted(known),
         "materialized": materialized,
+        "cancelled": cancelled,
+        "reactivated": reactivated,
     }
 
 
