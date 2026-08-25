@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.3.0';
+const VERSION='1.4.0';
 const legacyFullCardImages=Object.freeze({
  mist:'cards-v0514/niebla_de_sal.webp?v=0514',
  spark:'cards-v0514/chispa_del_estuario.webp?v=0612',
@@ -27,7 +27,7 @@ const cards=Object.freeze([
  Object.freeze({id:'prism',legacyFullCardImage:legacyFullCardImages.prism,name:'Prisma de Enfoque',type:'Artifact',cost:2,difficulty:6,pips:{},text:'Agota: +1 a una Manafestation Azul.',flavor:'El cristal no crea poder. Lo convence de tomar forma.',role:'ramp',art:'multi',glyph:'◇',effects:Object.freeze([Object.freeze({event:'manifest-roll',type:'manifest-bonus',amount:1,requiresPip:'U',exhaustSource:true})])}),
  Object.freeze({id:'watcher',legacyFullCardImage:legacyFullCardImages.watcher,name:'Vigía de la Marea',type:'Creature',subtype:'Soldado',cost:3,difficulty:7,pips:{U:2},power:2,toughness:4,text:'Defensor de las rutas sumergidas.',flavor:'La costa nunca duerme; sólo cambia de guardia.',role:'threat',art:'blue',glyph:'♜'}),
  Object.freeze({id:'smuggler',legacyFullCardImage:legacyFullCardImages.smuggler,name:'Contrabandista Carmesí',type:'Creature',subtype:'Humano',cost:3,difficulty:7,pips:{R:2},power:3,toughness:2,text:'Siempre que ataque, inflige 1 de daño adicional al Personaje defensor.',flavor:'No existe puerto sin una segunda aduana.',role:'threat',art:'red',glyph:'⚔',effects:Object.freeze([Object.freeze({event:'attack-declared',type:'damage-character',target:'opponent',amount:1})])}),
- Object.freeze({id:'tideblade',legacyFullCardImage:legacyFullCardImages.tideblade,name:'Espada de Bajamar',type:'Artifact',cost:3,difficulty:6,pips:{U:1},text:'La criatura equipada obtiene +2/+0. Equipar {1}.',flavor:'Forjada donde el agua revela lo que la marea quiso ocultar.',role:'utility',art:'blue',glyph:'†'}),
+ Object.freeze({id:'tideblade',legacyFullCardImage:legacyFullCardImages.tideblade,name:'Espada de Bajamar',type:'Artifact',cost:3,difficulty:6,pips:{U:1},equipCost:1,text:'La criatura equipada obtiene +2/+0. Equipar {1}.',flavor:'Forjada donde el agua revela lo que la marea quiso ocultar.',role:'utility',art:'blue',glyph:'†',effects:Object.freeze([Object.freeze({event:'equipped',type:'modify-power',amount:2})])}),
  Object.freeze({id:'leviathan',legacyFullCardImage:legacyFullCardImages.leviathan,name:'Leviatán de la Campana',type:'Creature',subtype:'Leviatán',cost:7,difficulty:8,pips:{U:3},power:7,toughness:7,text:'Al entrar, devuelve otro permanente a la mano de su dueño.',flavor:'La campana no lo llama. Le recuerda que alguna vez estuvo despierto.',role:'finisher',art:'blue',glyph:'Ω',effects:Object.freeze([Object.freeze({event:'enter',type:'bounce-other-permanent'})])}),
  Object.freeze({id:'dock',legacyFullCardImage:legacyFullCardImages.dock,name:'Muelle Sumergido',type:'Land',cost:0,pips:{},text:'Las Lands no se juegan al Battlefield. Permanecen en la mano y sólo se consumen como Mana Burn para aumentar una tirada de Manafestation fallida.',flavor:'Cada tabla guarda el peso de quienes nunca regresaron.',role:'land',art:'land',glyph:'⌁'}),
  Object.freeze({id:'cinder',legacyFullCardImage:legacyFullCardImages.cinder,name:'Erial de Ceniza',type:'Land',cost:0,pips:{},text:'Las Lands no se juegan al Battlefield. Permanecen en la mano y sólo se consumen como Mana Burn para aumentar una tirada de Manafestation fallida.',flavor:'El fuego también deja territorio.',role:'land',art:'land',glyph:'△'}),
