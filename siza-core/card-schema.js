@@ -14,6 +14,12 @@ function text(value,fallback=''){return String(value??fallback);}
 function normalizeType(value){if(CARD_TYPES.includes(value))return value;return TYPE_ALIASES[text(value).trim().toLowerCase()]||'Creature';}
 function normalizeColor(value){const raw=text(value).trim();if(COLORS.includes(raw))return raw;return COLOR_ALIASES[raw.toLowerCase()]||null;}
 function normalizeEffects(input=[]){if(global.SizaCardEffects?.normalizeEffects)return global.SizaCardEffects.normalizeEffects(input);return Array.isArray(input)?clone(input):[];}
+function equipmentCost(input={}){return Math.max(0,int(input?.equipCost,0));}
+function isEquipmentCard(input={}){
+ const type=normalizeType(input.cardType??input.type),effects=normalizeEffects(input.effects);
+ const hasEquipped=global.SizaCardEffects?.forEvent?global.SizaCardEffects.forEvent({...input,effects},'equipped').length>0:effects.some(effect=>effect?.event==='equipped');
+ return type==='Artifact'&&(equipmentCost(input)>0||hasEquipped);
+}
 
 function normalizePips(input={}){
  const out={};
@@ -54,7 +60,7 @@ function normalizeCard(input={}){
   affinity:text(input.affinity,'multi'),
   difficulty:Math.max(0,int(input.difficulty,0)),
   cost:Math.max(0,int(input.cost,0)),
-  equipCost:Math.max(0,int(input.equipCost,0)),
+  equipCost:equipmentCost(input),
   pips,
   crystals:pipsToCrystalArray(pips),
   artId:text(input.artId,''),
@@ -111,6 +117,8 @@ global.SizaCardSchema=Object.freeze({
  normalizeArtTransform,
  normalizePips,
  pipsToCrystalArray,
- normalizeEffects
+ normalizeEffects,
+ equipmentCost,
+ isEquipmentCard
 });
 })(window);
