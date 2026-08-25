@@ -12,9 +12,9 @@ a{color:#d4b16c}
 </head>
 <body>
 <div id="load">Cargando Rivarica World Book v1.8…</div>
-<script src="chunks/pako-00.js?v=18fix2"></script>
-<script src="chunks/pako-01.js?v=18fix2"></script>
-<script src="chunks/pako-02.js?v=18fix2"></script>
+<script src="chunks/pako-00.js?v=18fix3"></script>
+<script src="chunks/pako-01.js?v=18fix3"></script>
+<script src="chunks/pako-02.js?v=18fix3"></script>
 <script>
 (async function(){
   const load=document.getElementById('load');
@@ -24,19 +24,26 @@ a{color:#d4b16c}
     (0,eval)(pakoSource);
     if(!window.pako) throw new Error('No se pudo iniciar el descompresor local');
 
-    const files=Array.from({length:12},(_,i)=>`content/wb18-${String(i).padStart(2,'0')}.txt?v=18fix2`);
-    const parts=await Promise.all(files.map(async url=>{
+    const files=[
+      'content/wb18-00.txt','content/wb18-01.txt','content/wb18-02.txt','content/wb18-03.txt','content/wb18-04.txt',
+      'content/wb18-05a.txt','content/wb18-05b.txt','content/wb18-05c.txt','content/wb18-05d.txt',
+      'content/wb18-06.txt','content/wb18-07.txt','content/wb18-08.txt','content/wb18-09.txt','content/wb18-10.txt',
+      'content/wb18-11a.txt','content/wb18-11b.txt','content/wb18-11c.txt','content/wb18-11d.txt','content/wb18-11e.txt','content/wb18-11f.txt'
+    ];
+
+    const parts=await Promise.all(files.map(async path=>{
+      const url=path+'?v=18fix3';
       const response=await fetch(url,{cache:'no-store'});
-      if(!response.ok) throw new Error(`No se pudo cargar ${url} (${response.status})`);
+      if(!response.ok) throw new Error(`No se pudo cargar ${path} (${response.status})`);
       return (await response.text()).trim();
     }));
 
     const b64=parts.join('');
-    if(!b64) throw new Error('El contenido del World Book está vacío');
+    if(b64.length!==136904) throw new Error(`Payload incompleto: ${b64.length}/136904`);
 
     const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
     const text=window.pako.ungzip(bin,{to:'string'});
-    if(!text || !text.includes('Rivarica World Book')) throw new Error('El World Book reconstruido no es válido');
+    if(!text || !text.includes('Rivarica World Book v1.8')) throw new Error('El World Book reconstruido no es válido');
 
     document.open();
     document.write(text);
