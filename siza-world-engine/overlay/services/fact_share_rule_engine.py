@@ -329,11 +329,19 @@ def refresh_fact_share_obligations(npc):
 
         mode, targets, target_error = _resolve_rule_targets(npc, rule)
         if target_error:
+            invalid_cancelled = []
+            if target_error == "BAD_MIN_AUTHORITY":
+                invalid_cancelled = _cancel_rule_obligations(
+                    npc,
+                    rule_id,
+                    reason="BAD_MIN_AUTHORITY",
+                )
             skipped.append(
                 {
                     "rule_id": rule_id,
                     "reason": target_error,
                     "target_mode": mode,
+                    "cancelled_obligations": invalid_cancelled,
                 }
             )
             continue
