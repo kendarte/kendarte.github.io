@@ -14,7 +14,7 @@
  <main class="editor">
   <div class="eyebrow">Siza · Shared Tooling</div>
   <h1 class="title">Card Generator</h1>
-  <p class="sub">La carta es datos + arte. El preview usa el mismo renderer compartido que podrá consumir Collection, Deck Builder y Arena.</p>
+  <p class="sub">La carta es datos + arte. El preview usa el mismo renderer compartido que Collection, Deck Builder y Arena.</p>
   <form id="cardForm" autocomplete="off">
    <div class="grid">
     <div class="field"><label for="id">ID</label><input id="id" name="id"></div>
@@ -64,7 +64,7 @@
     <button class="btn primary" type="button" id="saveDraft">Guardar borrador</button>
     <button class="btn ghost" type="button" id="loadExample">Cargar ejemplo</button>
     <button class="btn ghost" type="button" id="resetDraft">Limpiar</button>
-    <button class="btn" type="button" id="testMobile">Preparar handoff</button>
+    <button class="btn" type="button" id="testMobile">Probar en Mobile Test</button>
    </div>
    <textarea class="json" id="jsonOutput" aria-label="JSON de carta" readonly></textarea>
   </form>
@@ -73,10 +73,11 @@
   <div class="previewHead"><div><div class="eyebrow">CARD_STANDARD_V1</div><h2>Preview vivo</h2></div><span id="schemaVersion"></span></div>
   <div class="cardStage" id="cardPreview"></div>
   <div class="status" id="validationStatus"></div>
-  <div class="handoff" id="handoffStatus">Handoff todavía no enviado. El Generator ya puede preparar el objeto; el Mobile Test se conectará en el siguiente delta.</div>
+  <div class="handoff" id="handoffStatus">Probar en Mobile Test guarda esta versión como carta temporal y abre Collection. El catálogo oficial no se modifica.</div>
  </aside>
 </div>
 <script src="../siza-core/card-schema.js"></script>
+<script src="../siza-core/cards.js"></script>
 <script src="../siza-core/card-renderer.js"></script>
 <script src="./app.js"></script>
 </body>
