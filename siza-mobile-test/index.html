@@ -532,12 +532,12 @@ function checkWin(){const M=state.match;if(M.player.life<=0||M.enemy.life<=0){M.
 const ENTRY_V070=SizaEntryRules.MODES;
 function crystalReqV070(c){return SizaCrystalRules.crystalReq(c)}
 function spellCostV070(c){return SizaCrystalRules.spellCost(c)}
-function resetCrystalsV070(P){P.crystals={};for(const[k,n]of Object.entries(P.aff||{}))if(n>0)P.crystals[k]=n;P.offeringUsed=false;P.artifactExhausted=[]}
+function resetCrystalsV070(P){return SizaCrystalRules.resetPool(P)}
 function crystalHtmlV070(P){const a=[];for(const k of['U','R','G','W','B'])for(let i=0;i<(P.aff?.[k]||0);i++)a.push(`<span class="crystalV070 ${k.toLowerCase()} ${i>=(P.crystals?.[k]||0)?'spent':''}">${k}</span>`);return `<div class="crystalPoolV070">${a.join('')}</div>`}
 function directPlanV070(P,c){return SizaCrystalRules.directPlan(P,c)}
 function offeringPlanV070(P,c){return SizaCrystalRules.offeringPlan(P,c,cardById)}
 function paymentV070(P,c){return SizaCrystalRules.paymentPlan(P,c,cardById)}
-function spendV070(P,spent){for(const[k,n]of Object.entries(spent||{}))if((P.crystals?.[k]||0)<n)return false;for(const[k,n]of Object.entries(spent||{}))P.crystals[k]-=n;return true}
+function spendV070(P,spent){return SizaCrystalRules.spend(P,spent)}
 function spendTextV070(s){return Object.entries(s||{}).flatMap(([k,n])=>Array(n).fill(COLORS[k])).join(' + ')||'ninguno'}
 function makeDuelistV070(lib,human){const aff=human?{...state.player.mag.aff}:{U:2,R:1,G:0},P={life:20,hand:lib.splice(0,7),library:lib,battlefield:[],powerCounters:[],summonedOn:[],artifacts:[],artifactExhausted:[],equipment:[],graveyard:[],exile:[],exhausted:[],combatUsed:false,mf:human?state.player.mag.mf:2,prow:human?state.player.mag.prow:2,eva:human?state.player.mag.eva:2,aff,crystals:{},ownTurn:human?1:0,offeringUsed:false};resetCrystalsV070(P);return P}
 function createMatch(adventure=false,mode='prepare'){const p=makeDuelistV070(makeLibrary(),true),e=makeDuelistV070(makeLibrary(),false),entry=ENTRY_V070[mode]?mode:'prepare';return{id:'match_'+Date.now(),rulesVersion:RULES_VERSION,rules:{entryMode:entry,offering:true},turn:1,phase:'Main',active:'player',player:p,enemy:e,stack:[],log:[{t:'Reglas',m:`Arena v${RULES_VERSION}. Cristales U/U/R. ${ENTRY_V070[entry].short} está EN PRUEBA.`},{t:'Mano',m:'Cada lado toma siete cartas aleatorias; el primer jugador no roba.'}],pendingEquip:null,pendingChoice:null,combat:null,responseWindow:null,stackReturnOwner:null,enemyStage:null,ui:{hand:-1,creature:-1,attackMode:false,attackers:[],fieldFocus:null},adventure,over:false,winner:null}}
