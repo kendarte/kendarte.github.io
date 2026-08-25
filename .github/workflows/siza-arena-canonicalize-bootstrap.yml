@@ -1,0 +1,43 @@
+name: Siza Arena Canonicalize Match Bootstrap
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-arena-canonicalize-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  canonicalize-bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install transformation dependencies
+        run: npm install --no-save acorn@8 jsdom@24
+
+      - name: Canonicalize and validate match bootstrap
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const acorn=require('acorn');
+          const {JSDOM,VirtualConsole}=require('jsdom');
+          const repo=process.env.GH_REPOSITORY,token=process.env.GH_TOKEN,path='siza-mobile-test/index.html';
+          const api=`https://api.github.com/repos/${repo}/contents/${path}`;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          const targets=new Set(['createMatch','startPractice','startAdventureDuel']);
+          function parse(html){const so=html.lastIndexOf('<script>'),sc=html.indexOf('</script>',so);if(so<0||sc<0)throw new Error('Main script not found');const cs=so+'<script>'.length,code=html.slice(cs,sc),ast=acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),ds=[];function walk(n){if(!n||typeof n!=='object')return;if(n.type==='FunctionDeclaration'&&n.id)ds.push(n);for(const[k,v]of Object.entries(n)){if(k==='start'||k==='end'||k==='loc')continue;if(Array.isArray(v))for(const c of v)walk(c);else if(v&&typeof v==='object'&&typeof v.type==='string')walk(v)}}walk(ast);return{codeStart:cs,scriptClose:sc,code,declarations:ds}}
+          function counts(ds){const m=new Map();for(const n of ds)m.set(n.id.name,(m.get(n.id.name)||0)+1);return m}
+          function domFor(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error(`[JSDOM ${label}]`,e.message));return new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/',virtualConsole:vc})}
+          function runCore(html){const dom=domFor(html,'core'),fn=dom.window.SIZA?.runArenaCriticalV071;if(typeof fn!=='function')throw new Error('Core runner unavailable');const r=fn();console.log(`SIZA Arena contract ${r.version}: ${r.passed}/${r.total}`);for(const x of r.results)console.log(`${x.pass?'PASS':'FAIL'} ${x.name}${x.error?` :: ${x.error}`:''}`);dom.window.close();if(r.passed!==r.total)throw new Error(`Core failed ${r.passed}/${r.total}`)}
+          function runBootstrap(html){const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker not found');const probe=`window.__BOOT__={createMatch,startPractice,startAdventureDuel,resetState:()=>{state=defaultState();},getState:()=>state};\n`;const dom=domFor(html.replace(marker,probe+marker),'bootstrap');dom.window.setTimeout=()=>0;const H=dom.window.__BOOT__,results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
+            test('createMatch fija contrato v0.7 y recursos iniciales',()=>{H.resetState();const M=H.createMatch(false,'oneCrystal');return M.rulesVersion==='0.7.0'&&M.rules.entryMode==='oneCrystal'&&M.player.hand.length===7&&M.enemy.hand.length===7&&M.player.crystals.U===2&&M.player.crystals.R===1&&M.enemy.crystals.U===2&&M.enemy.crystals.R===1&&M.player.ownTurn===1&&M.enemy.ownTurn===0});
+            test('startPractice sin modo abre configuración sin crear match',()=>{H.resetState();H.startPractice();const s=H.getState();return s.route==='match'&&s.match===null&&s.pendingAdventureDuel===false});
+            test('startPractice con modo crea práctica con ese T-001',()=>{H.resetState();H.startPractice('immediate');const s=H.getState();return s.route==='match'&&s.match?.adventure===false&&s.match?.rules.entryMode==='immediate'&&s.pendingAdventureDuel===false});
+            test('startAdventureDuel sin modo deja configuración pendiente',()=>{H.resetState();H.startAdventureDuel();const s=H.getState();return s.route==='match'&&s.match===null&&s.pendingAdventureDuel===true});
+            test('startAdventureDuel crea duelo narrativo a 12 vidas',()=>{H.resetState();H.startAdventureDuel('prepare');const s=H.getState();return s.route==='match'&&s.match?.adventure===true&&s.match?.enemy.life===12&&s.match?.rules.entryMode==='prepare'&&s.pendingAdventureDuel===false});
+            for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`SIZA bootstrap regression: ${passed}/${results.length}`);dom.window.close();if(passed!==results.length)throw new Error(`Bootstrap failed ${passed}/${results.length}`)}
+          async function main(){const read=await fetch(`${api}?ref=main`,{headers});if(!read.ok)throw new Error(`GET ${read.status}: ${await read.text()}`);const current=await read.json(),html=Buffer.from(current.content.replace(/\n/g,''),'base64').toString('utf8');console.log(`Current Arena blob ${current.sha}`);const p=parse(html),by=new Map([...targets].map(n=>[n,[]]));for(const d of p.declarations)if(targets.has(d.id.name))by.get(d.id.name).push(d);for(const[n,ds]of by)if(ds.length!==2)throw new Error(`${n}: expected 2 declarations, found ${ds.length}`);const removals=[];for(const[n,ds]of by){ds.sort((a,b)=>a.start-b.start);const dead=ds[0];let end=dead.end;while(end<p.code.length&&(p.code[end]==='\r'||p.code[end]==='\n'))end++;removals.push({n,start:dead.start,end})}removals.sort((a,b)=>b.start-a.start);let nextCode=p.code;for(const r of removals){console.log(`REMOVE dead ${r.n} @ ${r.start}-${r.end}`);nextCode=nextCode.slice(0,r.start)+nextCode.slice(r.end)}const nextHtml=html.slice(0,p.codeStart)+nextCode+html.slice(p.scriptClose),v=parse(nextHtml),c=counts(v.declarations);for(const n of targets){const k=c.get(n)||0;console.log(`CANONICAL ${n}: ${k}`);if(k!==1)throw new Error(`${n}: expected 1 after cleanup, found ${k}`)}const dup=[...c.values()].filter(k=>k>1).length;console.log(`Named function declarations after bootstrap cleanup: ${v.declarations.length}`);console.log(`Duplicate names after bootstrap cleanup: ${dup}`);if(v.declarations.length!==167)throw new Error(`Expected 167 declarations, found ${v.declarations.length}`);if(dup!==12)throw new Error(`Expected 12 duplicate names, found ${dup}`);runCore(nextHtml);runBootstrap(nextHtml);const write=await fetch(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Canonicalize Arena match bootstrap runtime',content:Buffer.from(nextHtml,'utf8').toString('base64'),sha:current.sha,branch:'main'})});if(!write.ok)throw new Error(`PUT ${write.status}: ${await write.text()}`);const result=await write.json();console.log(`COMMIT ${result.commit.sha}`)}
+          main().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
+          NODE
