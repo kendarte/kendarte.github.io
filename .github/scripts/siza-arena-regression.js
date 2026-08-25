@@ -3,7 +3,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 
 function inlineCore(html){
   let out=html;
-  for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js']){
+  for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js']){
     const tag=`<script src="../siza-core/${name}"></script>`;
     if(!out.includes(tag))throw new Error(`Missing shared core tag ${name}`);
     const source=fs.readFileSync(`siza-core/${name}`,'utf8');

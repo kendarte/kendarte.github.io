@@ -392,6 +392,7 @@ body{min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}
 <script src="../siza-core/card-schema.js"></script>
 <script src="../siza-core/cards.js"></script>
 <script src="../siza-core/card-renderer.js"></script>
+<script src="../siza-core/manifest-rules.js"></script>
 <script>
 const NEREIDA_IMG='portraits/nereida_voss.webp?v=0514';
 (function(){
@@ -445,10 +446,10 @@ function toast(msg,kind=''){const id=Date.now()+Math.random();state.toasts=[{id,
 function renderToasts(){document.querySelectorAll('.toast').forEach(x=>x.remove());for(const t of state.toasts){const d=document.createElement('div');d.className='toast '+t.kind;d.textContent=t.msg;document.body.appendChild(d)}}
 function totalDeck(){return Object.values(state.deck.counts).reduce((a,b)=>a+b,0)}
 function landCount(){return Object.entries(state.deck.counts).reduce((n,[id,c])=>n+(cardById(id)?.type==='Land'?c:0),0)}
-function affinityInfo(c,m=state.player.mag){let penalty=0,unsupported=[];for(const [k,v] of Object.entries(c.pips||{})){if(v<=0)continue;const a=m.aff[k]||0;if(a===0)unsupported.push(k);else if(v>a)penalty+=v-a}return {penalty,unsupported}}
-function dcFor(c,m=state.player.mag){const ai=affinityInfo(c,m);if(ai.unsupported.length)return Infinity;return c.difficulty??(4+Math.ceil((c.cost+1)/2))}
-function naturalChance(c,m=state.player.mag){if(c.type==='Land')return 100;const dc=dcFor(c,m);if(!isFinite(dc))return 0;const need=dc-m.mf;if(need<=1)return 100;if(need>6)return 0;return Math.round((7-need)/6*100)}
-function manifestRequirement(c,m=state.player.mag){const dc=dcFor(c,m);if(!isFinite(dc))return {unsupported:true,text:'SIN AFINIDAD',die:0,minBurn:0};const raw=dc-m.mf,minBurn=Math.max(0,raw-6),die=Math.max(1,Math.min(6,raw));return {unsupported:false,die,minBurn,text:minBurn?`${die}+ · Burn mínimo ${minBurn}`:`${die}+`}}
+function affinityInfo(c,m=state.player.mag){return SizaManifestRules.affinityInfo(c,m)}
+function dcFor(c,m=state.player.mag){return SizaManifestRules.dcFor(c,m)}
+function naturalChance(c,m=state.player.mag){return SizaManifestRules.naturalChance(c,m)}
+function manifestRequirement(c,m=state.player.mag){return SizaManifestRules.manifestRequirement(c,m)}
 /* zero-reference manaHtml removed */
 /* dead finalRulesFixV510 removed: catalog text is authoritative */
 /* zero-reference cardArtMarkupV1 removed */
