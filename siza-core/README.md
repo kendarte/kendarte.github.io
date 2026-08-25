@@ -3,7 +3,7 @@
 Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 
 - `card-effects.js` defines and validates structured effect descriptors.
-- `card-schema.js` normalizes card data and preserves effect metadata across handoff, including `equipCost`.
+- `card-schema.js` normalizes card data and preserves effect metadata across handoff, including `equipCost`; it also owns the runtime-equivalent Equipment classification and Equipment-cost queries used by Arena.
 - `cards.js` is the official shared card catalog.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
