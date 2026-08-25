@@ -1,4 +1,13 @@
 KNOWLEDGE_CONTEXT_BUILD = "0.28.0-knowledge-aware-decisions"
+FACT_LIFECYCLE_BUILD = "1.01.0-holder-local-fact-lifecycle-authority"
+FACT_STATUS_ACTIVE = "ACTIVE"
+FACT_STATUS_RETRACTED = "RETRACTED"
+FACT_STATUS_SUPERSEDED = "SUPERSEDED"
+_ALLOWED_FACT_STATUSES = {
+    FACT_STATUS_ACTIVE,
+    FACT_STATUS_RETRACTED,
+    FACT_STATUS_SUPERSEDED,
+}
 
 
 def _plain_list(value):
@@ -74,6 +83,23 @@ def _effects(fact):
     return output
 
 
+def fact_lifecycle_state(fact):
+    raw_status = str((fact or {}).get("fact_status") or FACT_STATUS_ACTIVE).strip().upper()
+    valid_status = raw_status in _ALLOWED_FACT_STATUSES
+    status = raw_status if valid_status else "INVALID"
+    active = bool(valid_status and status == FACT_STATUS_ACTIVE)
+    return {
+        "fact_status": status,
+        "fact_status_raw": raw_status,
+        "fact_status_valid": bool(valid_status),
+        "fact_active": active,
+        "fact_status_reason": (fact or {}).get("fact_status_reason"),
+        "fact_status_changed_at": (fact or {}).get("fact_status_changed_at"),
+        "superseded_by_fact_id": (fact or {}).get("superseded_by_fact_id"),
+        "fact_lifecycle_build": FACT_LIFECYCLE_BUILD,
+    }
+
+
 def fact_knowledge_state(npc, fact):
     knowledge_key = str((fact or {}).get("knowledge_key") or "").strip()
     try:
@@ -81,16 +107,20 @@ def fact_knowledge_state(npc, fact):
     except (TypeError, ValueError):
         required = 1
     level = int(knowledge_levels(npc).get(knowledge_key, 0) or 0) if knowledge_key else 0
+    level_known = bool(knowledge_key and level >= required)
+    lifecycle = fact_lifecycle_state(fact)
     return {
         "knowledge_key": knowledge_key or None,
         "level": level,
         "required_level": required,
-        "known": bool(knowledge_key and level >= required),
+        "level_known": level_known,
+        "known": bool(level_known and lifecycle.get("fact_active")),
+        **lifecycle,
     }
 
 
 def knowledge_decision_modifiers(npc, goal):
-    """Apply only explicit effects carried by facts the NPC currently knows."""
+    """Apply only explicit effects carried by currently active Facts the NPC knows."""
     output = []
     if not npc:
         return output
@@ -132,6 +162,7 @@ def inspect_knowledge_context(npc):
     if not npc:
         return {
             "build": KNOWLEDGE_CONTEXT_BUILD,
+            "fact_lifecycle_build": FACT_LIFECYCLE_BUILD,
             "npc": None,
             "npc_id": None,
             "levels": {},
@@ -147,7 +178,11 @@ def inspect_knowledge_context(npc):
                 "knowledge_key": state.get("knowledge_key"),
                 "knowledge_level": state.get("level"),
                 "required_level": state.get("required_level"),
+                "level_known": state.get("level_known"),
                 "known": state.get("known"),
+                "fact_status": state.get("fact_status"),
+                "fact_active": state.get("fact_active"),
+                "superseded_by_fact_id": state.get("superseded_by_fact_id"),
                 "decision_effects": _effects(fact),
                 "canon_status": fact.get("canon_status") or fact.get("status") or "prototype",
             }
@@ -155,6 +190,7 @@ def inspect_knowledge_context(npc):
 
     return {
         "build": KNOWLEDGE_CONTEXT_BUILD,
+        "fact_lifecycle_build": FACT_LIFECYCLE_BUILD,
         "npc": npc.key,
         "npc_id": str(getattr(npc.db, "npc_id", "") or ""),
         "levels": knowledge_levels(npc),
