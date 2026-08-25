@@ -13,7 +13,6 @@ from services.fact_share_rule_engine import (
 from services.faction_engine import set_membership_active, upsert_membership
 from services.knowledge_fact_engine import find_knowledge_fact
 from services.relationship_engine import collect_relationship_candidates, resolve_relationship_goal
-from world.upgrade_pilot_v03 import WORKER_B_NPC_ID
 from world.upgrade_pilot_v88 import FACT_ID
 from world.upgrade_pilot_v89 import ensure_v89_pilot_content
 
@@ -21,6 +20,7 @@ from world.upgrade_pilot_v89 import ensure_v89_pilot_content
 V092_VALIDATION_BUILD = "0.92.0-faction-targeted-fact-share-rules"
 TEST_FACTION_ID = "TEST-V092-DARSENA-REPORT-NET"
 TEST_RULE_ID = "FACT-SHARE-V092-FACTION-001"
+WORKER_B_NPC_ID = "TEST-NPC-KAL-DAR-WORKER-B"
 
 
 def _npc_by_id(npc_id):
@@ -242,6 +242,15 @@ class CmdSizaValidateV92(Command):
             _remove_fact_knowledge(informant)
             source_lost = refresh_fact_share_obligations(informant)
             worker_cancelled = _find_obligation(informant, worker_id)
+            source_lost_row = next(
+                (
+                    row
+                    for row in list(source_lost.get("skipped") or [])
+                    if str((row or {}).get("rule_id") or "") == TEST_RULE_ID
+                    and (row or {}).get("reason") == "SOURCE_DOES_NOT_KNOW_FACT"
+                ),
+                {},
+            )
             check(
                 "source-loss-cancels-all-still-pending-obligations-owned-by-the-faction-rule",
                 worker_cancelled is not None
@@ -250,7 +259,7 @@ class CmdSizaValidateV92(Command):
                 and worker_cancelled.get("cancellation_reason") == "SOURCE_NO_LONGER_KNOWS_FACT"
                 and any(
                     str(row.get("target_npc_id") or "") == worker_id
-                    for row in list((source_lost.get("skipped") or [{}])[0].get("cancelled_obligations") or [])
+                    for row in list(source_lost_row.get("cancelled_obligations") or [])
                 ),
                 f"worker_status={None if worker_cancelled is None else worker_cancelled.get('status')}",
             )
