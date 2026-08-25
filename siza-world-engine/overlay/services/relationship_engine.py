@@ -9,7 +9,7 @@ from services.information_engine import (
 )
 
 
-RELATIONSHIP_BUILD = "0.35.0-social-information-action"
+RELATIONSHIP_BUILD = "0.89.0-social-fact-share-obligation"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -85,6 +85,19 @@ def _information_obligation_ready(npc, obligation):
     return bool(event_knowledge_route(npc, event).get("known")), site, event
 
 
+def _fact_share_obligation_ready(npc, obligation):
+    fact_id = str((obligation or {}).get("fact_id") or "").strip()
+    if not npc or not fact_id:
+        return False, None
+    from services.knowledge_context_engine import fact_knowledge_state
+    from services.knowledge_fact_engine import find_knowledge_fact
+
+    fact = find_knowledge_fact(npc, fact_id)
+    if not fact:
+        return False, None
+    return bool(fact_knowledge_state(npc, fact).get("known")), fact
+
+
 def collect_relationship_candidates(npc, default_priority=50):
     """Derive persistent social goals that dynamically follow another NPC."""
     if not npc or not bool(npc.db.decision_enabled):
@@ -110,6 +123,10 @@ def collect_relationship_candidates(npc, default_priority=50):
             kind = str(obligation.get("kind") or "OBLIGATION").upper()
             if kind == "INFORM":
                 ready, _site, _event = _information_obligation_ready(npc, obligation)
+                if not ready:
+                    continue
+            elif kind == "SHARE_FACT":
+                ready, _fact = _fact_share_obligation_ready(npc, obligation)
                 if not ready:
                     continue
             try:
@@ -140,6 +157,8 @@ def collect_relationship_candidates(npc, default_priority=50):
                         "information_occurrence": obligation.get("occurrence"),
                     }
                 )
+            elif kind == "SHARE_FACT":
+                candidate["fact_id"] = obligation.get("fact_id")
             output.append(candidate)
 
     return output
@@ -221,6 +240,79 @@ def create_information_obligation(source, target, event_id, occurrence, priority
     }
 
 
+def create_fact_share_obligation(source, target, fact_id, priority=50):
+    """Create or reactivate a social intent to share one exact Fact with a target NPC."""
+    if not source or not target:
+        return {"success": False, "reason": "BAD_NPC"}
+    source_id = str(getattr(source.db, "npc_id", "") or "").strip()
+    target_id = str(getattr(target.db, "npc_id", "") or "").strip()
+    wanted_fact_id = str(fact_id or "").strip()
+    if not source_id or not target_id or source_id == target_id or not wanted_fact_id:
+        return {"success": False, "reason": "BAD_NPC_OR_FACT"}
+    try:
+        priority = int(priority)
+    except (TypeError, ValueError):
+        return {"success": False, "reason": "BAD_NUMBER"}
+
+    ready, fact = _fact_share_obligation_ready(source, {"fact_id": wanted_fact_id})
+    if not fact:
+        return {"success": False, "reason": "SOURCE_FACT_NOT_FOUND", "fact_id": wanted_fact_id}
+    if not ready:
+        return {"success": False, "reason": "SOURCE_DOES_NOT_KNOW_FACT", "fact_id": wanted_fact_id}
+
+    relationships = _relationships(source)
+    relation = _relation_record(relationships.get(target_id))
+    obligations = _obligations(relation)
+    obligation_id = f"SHARE-FACT-{target_id}-{wanted_fact_id}"
+    now = datetime.now(timezone.utc).isoformat()
+    payload = {
+        "id": obligation_id,
+        "kind": "SHARE_FACT",
+        "active": True,
+        "status": "pending",
+        "priority": priority,
+        "one_shot": True,
+        "fact_id": wanted_fact_id,
+        "activity": f"buscando a {target.key} para compartir un dato conocido",
+        "activated_at": now,
+        "canon_status": "prototype",
+    }
+
+    created = True
+    for index, existing in enumerate(obligations):
+        if str(existing.get("id") or "") != obligation_id:
+            continue
+        payload["created_at"] = existing.get("created_at") or now
+        obligations[index] = payload
+        created = False
+        break
+    if created:
+        payload["created_at"] = now
+        obligations.append(payload)
+
+    relation["obligations"] = obligations
+    relation["target_type"] = "NPC"
+    relation["target_npc_id"] = target_id
+    relation["target_dbref"] = int(target.id)
+    relation["target_name"] = target.key
+    relationships[target_id] = relation
+    source.db.relationships = relationships
+
+    return {
+        "success": True,
+        "created": created,
+        "obligation_id": obligation_id,
+        "source_npc_id": source_id,
+        "source_name": source.key,
+        "target_npc_id": target_id,
+        "target_name": target.key,
+        "fact_id": wanted_fact_id,
+        "fact_topic": fact.get("topic"),
+        "priority": priority,
+        "build": RELATIONSHIP_BUILD,
+    }
+
+
 def resolve_relationship_goal(npc, obligation_id, target_npc_id):
     """Resolve one social obligation only when actor and target NPC physically coincide."""
     if not npc:
@@ -246,6 +338,7 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
     changed = False
     now = datetime.now(timezone.utc).isoformat()
     information_result = None
+    fact_transfer_result = None
     relationship_kind = None
 
     for index, obligation in enumerate(obligations):
@@ -290,6 +383,33 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
                 "hops": information_result.get("hops"),
                 "heard_count": information_result.get("heard_count"),
             }
+        elif relationship_kind == "SHARE_FACT":
+            from services.knowledge_fact_transfer_engine import transfer_knowledge_fact
+
+            fact_transfer_result = transfer_knowledge_fact(
+                npc,
+                target,
+                obligation.get("fact_id"),
+            )
+            if not fact_transfer_result.get("success"):
+                return {
+                    "completed": False,
+                    "resolved": False,
+                    "reason": fact_transfer_result.get("reason") or "FACT_TRANSFER_FAILED",
+                    "obligation_id": wanted,
+                    "target_npc_id": target_id,
+                    "target_name": target.key,
+                    "relationship_kind": relationship_kind,
+                    "fact_shared": False,
+                    "fact_transfer_result": fact_transfer_result,
+                }
+            obligation["fact_transfer_result"] = {
+                "fact_id": fact_transfer_result.get("fact_id"),
+                "transfer_id": fact_transfer_result.get("transfer_id"),
+                "created": fact_transfer_result.get("created"),
+                "reason": fact_transfer_result.get("reason"),
+                "knowledge_after": fact_transfer_result.get("knowledge_after"),
+            }
 
         obligation["active"] = False
         obligation["status"] = "completed"
@@ -330,6 +450,8 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
         "relationship_kind": relationship_kind,
         "information_shared": bool(information_result and information_result.get("success")),
         "information_result": information_result,
+        "fact_shared": bool(fact_transfer_result and fact_transfer_result.get("success")),
+        "fact_transfer_result": fact_transfer_result,
     }
 
 
