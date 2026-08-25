@@ -1,0 +1,187 @@
+from services.fact_share_rule_engine import _cancel_rule_obligations, fact_share_rules
+from services.faction_engine import faction_definition, membership_authority, npc_memberships
+
+
+FACTION_FACT_SHARE_POLICY_BUILD = "0.96.0-inherited-faction-fact-share-policies"
+POLICY_FIELD = "fact_share_policies"
+MANAGED_FIELD = "managed_by"
+RULE_SCOPE = "FACTION_INHERITED"
+
+
+def _plain_list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
+
+
+def _record(value):
+    try:
+        return {str(key): item for key, item in value.items()}
+    except Exception:
+        return None
+
+
+def _is_managed_rule(rule):
+    return str((rule or {}).get(MANAGED_FIELD) or "") == FACTION_FACT_SHARE_POLICY_BUILD
+
+
+def _effective_rule_id(faction_id, policy_id):
+    return f"FACTION_POLICY:{str(faction_id)}:{str(policy_id)}"
+
+
+def _policy_candidates(npc):
+    candidates = []
+    skipped = []
+    memberships = sorted(
+        npc_memberships(npc, active_only=True),
+        key=lambda row: str(row.get("faction_id") or ""),
+    )
+    for membership in memberships:
+        faction_id = str(membership.get("faction_id") or "").strip()
+        if not faction_id:
+            continue
+        faction = faction_definition(faction_id) or {}
+        if faction and not bool(faction.get("active", True)):
+            skipped.append({"faction_id": faction_id, "reason": "FACTION_INACTIVE"})
+            continue
+        policies = sorted(
+            (_record(raw) for raw in _plain_list(faction.get(POLICY_FIELD))),
+            key=lambda row: str((row or {}).get("id") or ""),
+        )
+        for policy in policies:
+            if policy is None or not bool(policy.get("enabled", False)):
+                continue
+            policy_id = str(policy.get("id") or "").strip()
+            fact_id = str(policy.get("fact_id") or "").strip()
+            if not policy_id or not fact_id:
+                skipped.append(
+                    {
+                        "faction_id": faction_id,
+                        "policy_id": policy_id or None,
+                        "reason": "MALFORMED_FACTION_POLICY",
+                    }
+                )
+                continue
+            item = dict(policy)
+            item["id"] = _effective_rule_id(faction_id, policy_id)
+            item["authored_rule_id"] = policy_id
+            item["inherited_from_faction_id"] = faction_id
+            item["rule_scope"] = RULE_SCOPE
+            item[MANAGED_FIELD] = FACTION_FACT_SHARE_POLICY_BUILD
+            item.setdefault("target_mode", "FACTION")
+            if str(item.get("target_mode") or "").upper() == "FACTION" and not str(item.get("faction_id") or "").strip():
+                item["faction_id"] = faction_id
+            item["source_membership_authority"] = membership_authority(npc, faction_id, active_only=True)
+            candidates.append(item)
+    return candidates, skipped
+
+
+def sync_faction_fact_share_policies(npc):
+    if not npc:
+        return {
+            "status": "NO_NPC",
+            "build": FACTION_FACT_SHARE_POLICY_BUILD,
+            "inherited": [],
+            "removed": [],
+            "conflicts": [],
+            "suppressed_by_local": [],
+        }
+
+    current = fact_share_rules(npc)
+    local_rules = [dict(row) for row in current if not _is_managed_rule(row)]
+    current_managed = {
+        str(row.get("id") or ""): dict(row)
+        for row in current
+        if _is_managed_rule(row) and str(row.get("id") or "")
+    }
+    local_fact_ids = {
+        str(row.get("fact_id") or "").strip()
+        for row in local_rules
+        if str(row.get("fact_id") or "").strip()
+    }
+
+    candidates, skipped = _policy_candidates(npc)
+    suppressed = []
+    eligible = []
+    for rule in candidates:
+        fact_id = str(rule.get("fact_id") or "").strip()
+        if fact_id in local_fact_ids:
+            suppressed.append(
+                {
+                    "rule_id": rule.get("id"),
+                    "authored_rule_id": rule.get("authored_rule_id"),
+                    "faction_id": rule.get("inherited_from_faction_id"),
+                    "fact_id": fact_id,
+                    "reason": "LOCAL_RULE_OVERRIDE",
+                }
+            )
+            continue
+        eligible.append(rule)
+
+    by_fact = {}
+    for rule in eligible:
+        by_fact.setdefault(str(rule.get("fact_id") or ""), []).append(rule)
+
+    conflicts = []
+    desired = []
+    for fact_id, rows in sorted(by_fact.items()):
+        if len(rows) > 1:
+            conflicts.append(
+                {
+                    "fact_id": fact_id,
+                    "reason": "MULTIPLE_INHERITED_POLICIES_FOR_FACT",
+                    "rule_ids": sorted(str(row.get("id") or "") for row in rows),
+                    "faction_ids": sorted(str(row.get("inherited_from_faction_id") or "") for row in rows),
+                }
+            )
+            continue
+        desired.append(dict(rows[0]))
+
+    desired.sort(key=lambda row: str(row.get("id") or ""))
+    desired_ids = {str(row.get("id") or "") for row in desired}
+    removed = []
+    for rule_id, old_rule in sorted(current_managed.items()):
+        if rule_id in desired_ids:
+            continue
+        cancelled = _cancel_rule_obligations(
+            npc,
+            rule_id,
+            reason="FACTION_POLICY_NO_LONGER_INHERITED",
+        )
+        removed.append(
+            {
+                "rule_id": rule_id,
+                "authored_rule_id": old_rule.get("authored_rule_id"),
+                "faction_id": old_rule.get("inherited_from_faction_id"),
+                "fact_id": old_rule.get("fact_id"),
+                "cancelled_obligations": cancelled,
+            }
+        )
+
+    new_rules = local_rules + desired
+    changed = new_rules != current
+    if changed:
+        npc.db.fact_share_rules = new_rules
+
+    return {
+        "status": "SYNCED" if changed or removed else "NO_CHANGE",
+        "build": FACTION_FACT_SHARE_POLICY_BUILD,
+        "inherited": [
+            {
+                "rule_id": row.get("id"),
+                "authored_rule_id": row.get("authored_rule_id"),
+                "faction_id": row.get("inherited_from_faction_id"),
+                "fact_id": row.get("fact_id"),
+                "target_mode": row.get("target_mode"),
+                "target_faction_id": row.get("faction_id"),
+            }
+            for row in desired
+        ],
+        "removed": removed,
+        "conflicts": conflicts,
+        "suppressed_by_local": suppressed,
+        "skipped": skipped,
+        "local_rule_count": len(local_rules),
+        "managed_rule_count": len(desired),
+    }
