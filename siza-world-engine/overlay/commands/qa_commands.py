@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v101_commands import CmdSizaValidateV101
+from commands.world_input_v1011_commands import CmdSizaValidateV1011
 
 
-QA_BUILD = "1.01.0-risk-based-one-command-qa"
+QA_BUILD = "1.01.1-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v1.00 is closed at 9/9 after proving social policies can distinguish current-holder acquisition without rewriting original Fact provenance. v1.01 introduces holder-local Fact lifecycle as shared Knowledge authority. Facts default ACTIVE for backward compatibility; RETRACTED and SUPERSEDED remain stored with Knowledge level/provenance/history but central fact_knowledge_state reports them non-usable. Retrieval/LLM grounding, disclosure, decision effects, Fact-goals, SHARE_FACT and transfer already converge on that authority. Existing Fact-derived goals are additionally cancelled while their source Fact is inactive and only lifecycle-cancelled goals may reactivate if the same Fact becomes ACTIVE again; normally completed one-shot goals remain terminal. Lifecycle changes do not magically mutate Fact copies already transferred to other holders."
+            "RISK PROFILE: v1.01 production passed 9/10. RETRACTED/SUPERSEDED lifecycle authority, retrieval/disclosure/decision-effect exclusion, Fact-goal cancellation, SHARE_FACT cancellation, transfer blocking, same-identity reactivation, holder-local copy isolation and replacement semantics all passed. The sole failure was validator setup: its baseline required a relationship candidate but did not control npc.db.decision_enabled, while collect_relationship_candidates intentionally returns [] for a decision-disabled NPC. The goal and SHARE_FACT obligation were visibly active in the failed assertion. v1.01.1 changes no production code and reruns only the active-Fact baseline with decision_enabled explicitly enabled and restored."
         )
-        _run_command(CmdSizaValidateV101, self.caller)
+        _run_command(CmdSizaValidateV1011, self.caller)
         self.caller.msg(
-            "QA POLICY: v1.01 changes shared/core Knowledge authority, so the validator is broad: legacy ACTIVE compatibility, derived goal/share baseline, retraction persistence, retrieval/disclosure/decision-effect exclusion, persistent Fact-goal cancellation, social cancellation, transfer blocking, same-identity reactivation, holder-local copy isolation and SUPERSEDED replacement semantics. Because fact_knowledge_state is shared/core, one minimal manual gameplay acceptance remains after a full pass: verify a retract/reactivate query through the normal player-facing Knowledge path. qwen provider, faction policy projection, pathfinding, relationship resolution and transfer implementation are unchanged."
+            "QA POLICY: targeted validator-only follow-up. If all three assertions pass, the automated v1.01 lifecycle suite is closed. Because v1.01 changed shared/core fact_knowledge_state authority, one minimal player-facing retract/reactivate acceptance remains before freezing the engine."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
