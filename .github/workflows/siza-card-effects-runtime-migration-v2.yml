@@ -33,16 +33,20 @@ jobs:
             console.log(`Fetched migration script ${f.sha}`);
           }).catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
-      - name: Scope hardcoding guard to resolver
+      - name: Patch migration test harness
         run: |
           node <<'NODE'
           const fs=require('fs');
           const path='.github/scripts/siza-card-effects-runtime-migration.js';
           let s=fs.readFileSync(path,'utf8');
-          const old=`assert(!html.includes("if(c.id==='servitor'")&&!html.includes("if(c.id==='leviathan'")&&!html.includes("if(c.id==='queen'")&&!html.includes("if(c.id==='spark'")&&!html.includes("else if(c.id==='mist'"),'Old stack card ID branches remain');`;
-          const next=`{const p=mainScript(html),n=p.decl.find(x=>x.id.name==='resolveTopStack');assert(n,'resolveTopStack missing after transform');const src=p.code.slice(n.start,n.end);assert(!src.includes("c.id==='servitor'")&&!src.includes("c.id==='leviathan'")&&!src.includes("c.id==='queen'")&&!src.includes("c.id==='spark'")&&!src.includes("c.id==='mist'"),'Old stack card ID branches remain inside resolver');}`;
-          if(!s.includes(old))throw new Error('Guard patch anchor not found');
-          fs.writeFileSync(path,s.replace(old,next));
+          const oldGuard=`assert(!html.includes("if(c.id==='servitor'")&&!html.includes("if(c.id==='leviathan'")&&!html.includes("if(c.id==='queen'")&&!html.includes("if(c.id==='spark'")&&!html.includes("else if(c.id==='mist'"),'Old stack card ID branches remain');`;
+          const newGuard=`{const p=mainScript(html),n=p.decl.find(x=>x.id.name==='resolveTopStack');assert(n,'resolveTopStack missing after transform');const src=p.code.slice(n.start,n.end);assert(!src.includes("c.id==='servitor'")&&!src.includes("c.id==='leviathan'")&&!src.includes("c.id==='queen'")&&!src.includes("c.id==='spark'")&&!src.includes("c.id==='mist'"),'Old stack card ID branches remain inside resolver');}`;
+          if(!s.includes(oldGuard))throw new Error('Guard patch anchor not found');
+          s=s.replace(oldGuard,newGuard);
+          const oldFixture=`H.setMatch(M);setup(H,M);H.resolveTopStack();`;
+          const newFixture=`H.setMatch(M);for(const P of [M.player,M.enemy]){P.hand=[];P.library=[];P.graveyard=[];P.battlefield=[];P.artifacts=[];P.equipment=[];P.powerCounters=[];P.summonedOn=[];P.exhausted=[]}setup(H,M);H.resolveTopStack();`;
+          if(!s.includes(oldFixture))throw new Error('Fixture patch anchor not found');
+          fs.writeFileSync(path,s.replace(oldFixture,newFixture));
           NODE
       - name: Run guarded effects migration
         env:
