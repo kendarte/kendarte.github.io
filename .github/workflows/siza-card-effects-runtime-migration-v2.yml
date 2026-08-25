@@ -33,10 +33,19 @@ jobs:
             console.log(`Fetched migration script ${f.sha}`);
           }).catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
+      - name: Scope hardcoding guard to resolver
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='.github/scripts/siza-card-effects-runtime-migration.js';
+          let s=fs.readFileSync(path,'utf8');
+          const old=`assert(!html.includes("if(c.id==='servitor'")&&!html.includes("if(c.id==='leviathan'")&&!html.includes("if(c.id==='queen'")&&!html.includes("if(c.id==='spark'")&&!html.includes("else if(c.id==='mist'"),'Old stack card ID branches remain');`;
+          const next=`{const p=mainScript(html),n=p.decl.find(x=>x.id.name==='resolveTopStack');assert(n,'resolveTopStack missing after transform');const src=p.code.slice(n.start,n.end);assert(!src.includes("c.id==='servitor'")&&!src.includes("c.id==='leviathan'")&&!src.includes("c.id==='queen'")&&!src.includes("c.id==='spark'")&&!src.includes("c.id==='mist'"),'Old stack card ID branches remain inside resolver');}`;
+          if(!s.includes(old))throw new Error('Guard patch anchor not found');
+          fs.writeFileSync(path,s.replace(old,next));
+          NODE
       - name: Run guarded effects migration
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/siza-card-effects-runtime-migration.js
-
-# retry after exact-script fetch was added
