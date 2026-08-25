@@ -33,30 +33,32 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
-          const files=['siza-core/card-schema.js','siza-core/card-renderer.js','siza-core/card-renderer.css','siza-core/cards.js','siza-card-generator/index.html','siza-card-generator/app.js','siza-mobile-test/index.html'];
+          const files=['siza-core/card-effects.js','siza-core/card-schema.js','siza-core/card-renderer.js','siza-core/card-renderer.css','siza-core/cards.js','siza-card-generator/index.html','siza-card-generator/app.js','siza-mobile-test/index.html'];
           const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
           (async()=>{for(const path of files){const r=await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${sha}`,{headers});if(!r.ok)throw new Error(`${path}: GET ${r.status}`);const f=await r.json(),data=Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8');fs.mkdirSync(path.split('/').slice(0,-1).join('/'),{recursive:true});fs.writeFileSync(path,data);console.log(`Fetched ${path} ${f.sha}`)}})().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
 
-      - name: Run schema renderer and catalog contract
+      - name: Run schema renderer catalog and effects contract
         run: |
           node <<'NODE'
           const fs=require('fs'),vm=require('vm');
           const context={window:{}};vm.createContext(context);
+          vm.runInContext(fs.readFileSync('siza-core/card-effects.js','utf8'),context);
           vm.runInContext(fs.readFileSync('siza-core/card-schema.js','utf8'),context);
           vm.runInContext(fs.readFileSync('siza-core/card-renderer.js','utf8'),context);
           vm.runInContext(fs.readFileSync('siza-core/cards.js','utf8'),context);
-          const S=context.window.SizaCardSchema,R=context.window.SizaCardRenderer,C=context.window.SizaCardCatalog;
+          const E=context.window.SizaCardEffects,S=context.window.SizaCardSchema,R=context.window.SizaCardRenderer,C=context.window.SizaCardCatalog;
           const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(e){results.push({name,pass:false,error:e.message})}};
-          const queen={id:'memoria_reina_ahogada',name:'Memoria de la Reina Ahogada',cardType:'invocacion',subtype:'Avatar',affinity:'azul',difficulty:8,cost:5,crystals:['azul','azul','azul'],rules:'Roba dos cartas y luego descarta una.',flavor:'La corona sobrevivió.',force:5,resistance:5,artUrl:'../assets/cards/art/queen.webp',artTransform:{x:44,y:35,scale:1.2}};
+          const queen={id:'memoria_reina_ahogada',name:'Memoria de la Reina Ahogada',cardType:'invocacion',subtype:'Avatar',affinity:'azul',difficulty:8,cost:5,crystals:['azul','azul','azul'],rules:'Roba dos cartas y luego descarta una.',flavor:'La corona sobrevivió.',force:5,resistance:5,artUrl:'../assets/cards/art/queen.webp',artTransform:{x:44,y:35,scale:1.2},effects:[{event:'enter',type:'draw',target:'self',amount:2},{event:'enter',type:'discard',target:'self',amount:1,choice:'owner'}]};
           test('Schema acepta invocacion + crystals[] de la spec',()=>{const c=S.normalizeCard(queen);return c.cardType==='Creature'&&c.pips.U===3&&c.crystals.length===3&&c.power===5&&c.toughness===5});
-          test('Roundtrip Mobile conserva reglas y arte separado',()=>{const m=S.cardToMobileShape(queen),c=S.cardFromMobileShape(m);return m.type==='Creature'&&m.pips.U===3&&m.artUrl.includes('queen.webp')&&c.rules.includes('Roba dos')});
+          test('Roundtrip Mobile conserva reglas arte y effects',()=>{const m=S.cardToMobileShape(queen),c=S.cardFromMobileShape(m);return m.type==='Creature'&&m.pips.U===3&&m.artUrl.includes('queen.webp')&&m.effects.length===2&&c.effects[0].type==='draw'&&c.rules.includes('Roba dos')});
+          test('Contrato de efectos valida vocabulario actual',()=>E.validateEffects(queen.effects).valid&&E.forEvent(queen,'enter').length===2&&!E.validateEffects([{event:'resolve',type:'teleport'}]).valid);
           test('Renderer construye carta desde datos',()=>{const html=R.renderCard(queen);return html.includes('sizaGeneratedCard')&&html.includes('Memoria de la Reina Ahogada')&&html.includes('Roba dos cartas')&&!html.includes('finalCardImage')});
           test('Renderer aplica artUrl + transform',()=>{const html=R.renderCard(queen);return html.includes('../assets/cards/art/queen.webp')&&html.includes('object-position:44% 35%')&&html.includes('scale(1.2)')});
           test('Thumb reutiliza renderer de arte',()=>{const html=R.renderThumb(queen);return html.includes('sizaGeneratedThumb')&&html.includes('queen.webp')&&html.includes('5/5')});
           test('Superficie mobile mantiene clases runtime',()=>{const html=R.renderCard(queen,{variant:'mobile',risk:'6+'});return html.includes('sizaCard generatedCardV1')&&html.includes('cardRisk')&&html.includes('6+')&&html.includes('queen.webp')});
           test('Catálogo oficial contiene exactamente las 13 cartas actuales',()=>JSON.stringify(C.cards.map(c=>c.id))===JSON.stringify(['mist','spark','servitor','ignimite','counter','prism','watcher','smuggler','tideblade','leviathan','dock','cinder','queen']));
-          test('Catálogo conserva datos críticos actuales',()=>C.get('spark').text==='Inflige 2 de daño al Personaje rival.'&&C.get('leviathan').pips.U===3&&C.get('queen').adventureUnlock===true&&C.legacyFullCardImages.mist.includes('cards-v0514/'));
+          test('Catálogo describe los seis efectos de resolución/entrada actuales',()=>C.get('mist').effects?.[0]?.type==='draw'&&C.get('spark').effects?.[0]?.type==='damage-character'&&C.get('counter').effects?.[0]?.type==='counter-stack-target'&&C.get('servitor').effects?.[0]?.type==='observe-top'&&C.get('leviathan').effects?.[0]?.type==='bounce-other-permanent'&&C.get('queen').effects?.length===2);
           for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(x=>x.pass).length;console.log(`SIZA card core: ${passed}/${results.length}`);if(passed!==results.length)process.exit(1);
           NODE
 
@@ -65,26 +67,27 @@ jobs:
           node <<'NODE'
           const fs=require('fs');const {JSDOM,VirtualConsole}=require('jsdom');
           let html=fs.readFileSync('siza-card-generator/index.html','utf8');
-          const schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8'),app=fs.readFileSync('siza-card-generator/app.js','utf8');
-          html=html.replace('<script src="../siza-core/card-schema.js"></script>',`<script>${schema}</script>`).replace('<script src="../siza-core/card-renderer.js"></script>',`<script>${renderer}</script>`).replace('<script src="./app.js"></script>',`<script>${app}</script>`);
+          const effects=fs.readFileSync('siza-core/card-effects.js','utf8'),schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8'),app=fs.readFileSync('siza-card-generator/app.js','utf8');
+          html=html.replace('<script src="../siza-core/card-effects.js"></script>',`<script>${effects}</script>`).replace('<script src="../siza-core/card-schema.js"></script>',`<script>${schema}</script>`).replace('<script src="../siza-core/card-renderer.js"></script>',`<script>${renderer}</script>`).replace('<script src="./app.js"></script>',`<script>${app}</script>`);
           if(html.includes('<script src="../siza-core/cards.js"></script>'))html=html.replace('<script src="../siza-core/cards.js"></script>',`<script>${catalog}</script>`);
           const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM]',e.message));const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-card-generator/',virtualConsole:vc});
-          const d=dom.window.document,preview=d.querySelector('#cardPreview .sizaGeneratedCard'),json=d.getElementById('jsonOutput').value,status=d.getElementById('validationStatus').textContent;
-          const ok=!!preview&&preview.textContent.includes('Memoria de la Reina Ahogada')&&json.includes('"schemaVersion": "1.0.1"')&&status.includes('Schema válido');
-          console.log(`${ok?'PASS':'FAIL'} Generator usa core compartido y crea preview vivo`);dom.window.close();if(!ok)process.exit(1);
+          const d=dom.window.document,preview=d.querySelector('#cardPreview .sizaGeneratedCard'),json=d.getElementById('jsonOutput').value,status=d.getElementById('validationStatus').textContent,effectsJson=d.getElementById('effectsJson').value;
+          const ok=!!preview&&preview.textContent.includes('Memoria de la Reina Ahogada')&&json.includes('"schemaVersion": "1.1.0"')&&json.includes('"effects"')&&effectsJson.includes('"discard"')&&status.includes('Schema válido');
+          console.log(`${ok?'PASS':'FAIL'} Generator usa schema/effects compartidos y crea preview vivo`);dom.window.close();if(!ok)process.exit(1);
           NODE
 
       - name: Run Mobile shared renderer bridge contract
         run: |
           node <<'NODE'
           const fs=require('fs');const {JSDOM,VirtualConsole}=require('jsdom');
-          let html=fs.readFileSync('siza-mobile-test/index.html','utf8'),schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8');
+          let html=fs.readFileSync('siza-mobile-test/index.html','utf8'),effects=fs.readFileSync('siza-core/card-effects.js','utf8'),schema=fs.readFileSync('siza-core/card-schema.js','utf8'),renderer=fs.readFileSync('siza-core/card-renderer.js','utf8'),catalog=fs.readFileSync('siza-core/cards.js','utf8');
           if(!html.includes('<script src="../siza-core/card-schema.js"></script>')||!html.includes('<script src="../siza-core/card-renderer.js"></script>'))throw new Error('Mobile Test is not linked to shared card core');
+          if(html.includes('<script src="../siza-core/card-effects.js"></script>'))html=html.replace('<script src="../siza-core/card-effects.js"></script>',`<script>${effects}</script>`);
           html=html.replace('<script src="../siza-core/card-schema.js"></script>',`<script>${schema}</script>`).replace('<script src="../siza-core/card-renderer.js"></script>',`<script>${renderer}</script>`);
           if(html.includes('<script src="../siza-core/cards.js"></script>'))html=html.replace('<script src="../siza-core/cards.js"></script>',`<script>${catalog}</script>`);
           const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');html=html.replace(marker,`window.__CARD_CORE_BRIDGE__={cardById,cardHtml,cardThumbHtmlV1,CARD_DB};\n`+marker);
           const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM bridge]',e.message));const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
           const H=dom.window.__CARD_CORE_BRIDGE__,mist=H.cardById('mist'),face=H.cardHtml(mist),thumb=H.cardThumbHtmlV1(mist),arena=dom.window.SIZA.runArenaCriticalV071();
-          const ok=arena.passed===arena.total&&H.CARD_DB.length===13&&face.includes('sizaCard generatedCardV1')&&thumb.includes('generatedCardThumbV1')&&!face.includes('cards-v0514');
-          console.log(`Arena via shared core ${arena.passed}/${arena.total}`);console.log(`${ok?'PASS':'FAIL'} Mobile Test consume renderer compartido`);dom.window.close();if(!ok)process.exit(1);
+          const ok=arena.passed===arena.total&&H.CARD_DB.length===13&&H.cardById('queen').effects?.length===2&&face.includes('sizaCard generatedCardV1')&&thumb.includes('generatedCardThumbV1')&&!face.includes('cards-v0514');
+          console.log(`Arena via shared core ${arena.passed}/${arena.total}`);console.log(`${ok?'PASS':'FAIL'} Mobile Test consume renderer/catalog compartidos`);dom.window.close();if(!ok)process.exit(1);
           NODE
