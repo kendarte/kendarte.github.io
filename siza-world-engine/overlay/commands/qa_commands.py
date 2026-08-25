@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v84_commands import CmdSizaValidateV84
+from commands.world_input_v851_commands import CmdSizaValidateV851
 
 
-QA_BUILD = "0.84.0-risk-based-one-command-qa"
+QA_BUILD = "0.85.1-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.83 is closed after its structural privacy follow-up passed 4/4. v0.84 separates NPC knowledge from willingness to disclose it. A Fact may now carry an authored disclosure.min_familiarity gate. The gate is evaluated deterministically against the existing NPC->player familiarity counter before the closed TALK engine can render, record or transfer that Fact. Missing disclosure remains public; malformed disclosure fails closed. qwen still sees only the visible TALK target capability and raw player text, never Facts or disclosure state. Running public/default behavior, low-familiarity blocking with exact no-mutation proof, provider-boundary privacy, semantic and explicit TALK blocking, authored unlock into the existing transfer/render pipeline, malformed fail-closed behavior, one live qwen target-selection probe, INFORM/Knowledge-query separation, and PERCEPTION/OBJECT_ACTION/MOVEMENT regressions."
+            "RISK PROFILE: v0.84 is closed at 14/14. v0.85 connects disclosure to existing persistent NPC state instead of inventing a second social-resolution system. New policies are holder-local under npc.fact_disclosure_policies[fact_id], so willingness to reveal a Fact never travels with the transferable Fact itself; legacy inline v0.84 min_familiarity remains readable for compatibility. The validator uses the real v0.54 CONFRONT action: blocked TALK, forced target win remains blocked, forced actor win flows through the existing consequence engine and sets v054_pressure_conceded, then the same live qwen-selected TALK target transfers and renders the now-authorized clean Fact. qwen never receives Fact text, holder policy or confrontation state."
         )
-        _run_command(CmdSizaValidateV84, self.caller)
+        _run_command(CmdSizaValidateV851, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.84 changes conversation authority, so the validator includes one real qwen target-selection roundtrip plus deterministic blocked/unlocked state assertions and targeted older-route regressions. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.85 changes conversation authority and consumes persistent state, so this targeted validator performs a live qwen target-selection roundtrip plus real CONFRONT failure/success resolution, exact state restoration, holder-policy privacy and clean-Fact transfer checks. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
