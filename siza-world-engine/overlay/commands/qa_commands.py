@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v96_commands import CmdSizaValidateV96
+from commands.world_input_v961_commands import CmdSizaValidateV961
 
 
-QA_BUILD = "0.96.0-risk-based-one-command-qa"
+QA_BUILD = "0.96.1-targeted-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.95 is closed at 6/6 after proving limited NEAREST Fact sharing assigns scarce slots only to recipients that still need the exact Fact. v0.96 closes the institutional-authoring scale gap without changing faction or SHARE_FACT authority: an active faction definition may carry fact_share_policies, and a deterministic pre-decision sync projects those policies into managed namespaced NPC rules for current members. Existing v0.89-v0.95 refresh then owns target filtering, nearest selection, stale pruning and local transfer as before. Leaving the source faction or removing the faction policy removes the managed rule and cancels its pending intent; rejoining reuses the same normal obligation identity. A local NPC rule for the same fact overrides the inherited policy. Multiple active faction policies for the same fact fail closed instead of silently picking one. Running inheritance, normal nearest/authority materialization, wrapper ordering, membership churn, policy removal/recovery, local override and cross-faction conflict with exact registry/NPC state restoration."
+            "RISK PROFILE: v0.96 passed 6/9. Inheritance, existing v0.89-v0.95 materialization, wrapper ordering, local override, cross-faction conflict fail-closed behavior and additive build contracts all passed. The three failures were validator-only: world_input_v96 imported the v0.89 _find_obligation helper, whose obligation id is hard-coded to the v0.88 witness Fact, while v0.96 uses FACT-V096-INSTITUTIONAL-REPORT-001. The v0.96 sync packets already reported the correct institutional obligation being cancelled. v0.96.1 changes no production code and reruns only membership-leave cancellation, same-id reactivation after rejoin, and policy-removal cancellation using the exact v0.96 fact-specific obligation id."
         )
-        _run_command(CmdSizaValidateV96, self.caller)
+        _run_command(CmdSizaValidateV961, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.96 adds deterministic faction-policy projection plus one pre-social-refresh wrapper call. The validator proves inherited policies reuse the existing v0.89-v0.95 SHARE_FACT authority, that managed intent follows source membership/policy state, that local rules override rather than duplicate institutional authority, and that conflicting inherited policies fail closed. qwen, faction_engine implementation, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: validator-only follow-up. Production v0.96 already proved inheritance, normal SHARE_FACT materialization, pre-decision sync ordering, local-rule override and multi-faction conflict behavior. This targeted validator only corrects the obligation identity used to inspect the three lifecycle assertions. No manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
