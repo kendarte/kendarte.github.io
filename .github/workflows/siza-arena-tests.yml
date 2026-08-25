@@ -184,6 +184,111 @@ jobs:
           if (passed !== results.length) process.exit(1);
           NODE
 
+      - name: Run live stack regression
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { JSDOM, VirtualConsole } = require('jsdom');
+
+          const original = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
+          const marker = 'window.SIZA={';
+          if (!original.includes(marker)) throw new Error('SIZA export marker not found');
+          const probe = `window.__SIZA_STACK_TEST__={
+            createMatch,
+            setMatch:m=>state.match=m,
+            resolveTopStack,
+            resolveStackAll
+          };\n`;
+          const html = original.replace(marker, probe + marker);
+          const virtualConsole = new VirtualConsole();
+          virtualConsole.on('jsdomError', error => console.error('[JSDOM stack]', error.message));
+          const dom = new JSDOM(html, {
+            runScripts: 'dangerously',
+            url: 'https://siza.local/',
+            virtualConsole
+          });
+          dom.window.setTimeout = () => 0;
+          const H = dom.window.__SIZA_STACK_TEST__;
+          if (!H) throw new Error('Stack test hooks were not exposed');
+
+          const results = [];
+          const test = (name, fn) => {
+            try { results.push({ name, pass: !!fn() }); }
+            catch (error) { results.push({ name, pass: false, error: error.message }); }
+          };
+          const fresh = () => {
+            const M = H.createMatch(false, 'prepare');
+            H.setMatch(M);
+            return M;
+          };
+
+          test('Chispa resuelve 2 daño y va al Cementerio', () => {
+            const M = fresh();
+            M.player.graveyard = [];
+            M.enemy.life = 20;
+            M.stack = [{ id:'spark-test', cardId:'spark', owner:'player' }];
+            H.resolveTopStack();
+            return M.enemy.life === 18 && M.stack.length === 0 && M.player.graveyard.includes('spark');
+          });
+
+          test('Niebla roba una carta y va al Cementerio', () => {
+            const M = fresh();
+            M.player.hand = [];
+            M.player.library = ['spark'];
+            M.player.graveyard = [];
+            M.stack = [{ id:'mist-test', cardId:'mist', owner:'player' }];
+            H.resolveTopStack();
+            return M.player.hand.length === 1 && M.player.hand[0] === 'spark' && M.player.graveyard.includes('mist');
+          });
+
+          test('Servidor entra con estado de criatura y abre Observar', () => {
+            const M = fresh();
+            M.player.hand = [];
+            M.player.library = ['spark'];
+            M.stack = [{ id:'servitor-test', cardId:'servitor', owner:'player' }];
+            H.resolveTopStack();
+            return M.player.battlefield[0] === 'servitor' && M.player.powerCounters[0] === 0 &&
+              M.player.summonedOn[0] === M.player.ownTurn && M.pendingChoice?.type === 'observe' &&
+              M.pendingChoice.cardId === 'spark';
+          });
+
+          test('Negación retira el objetivo y ambas cartas van al Cementerio', () => {
+            const M = fresh();
+            M.player.graveyard = [];
+            M.enemy.graveyard = [];
+            M.enemy.life = 20;
+            M.stack = [
+              { id:'target', cardId:'spark', owner:'enemy' },
+              { id:'counter-test', cardId:'counter', owner:'player', targetStackId:'target' }
+            ];
+            H.resolveTopStack();
+            return M.stack.length === 0 && M.player.graveyard.includes('counter') &&
+              M.enemy.graveyard.includes('spark') && M.enemy.life === 20;
+          });
+
+          test('resolveStackAll se detiene ante una elección pendiente', () => {
+            const M = fresh();
+            M.player.hand = [];
+            M.player.library = ['spark'];
+            M.enemy.life = 20;
+            M.stack = [
+              { id:'lower', cardId:'spark', owner:'player' },
+              { id:'top', cardId:'servitor', owner:'player' }
+            ];
+            H.resolveStackAll();
+            return M.pendingChoice?.type === 'observe' && M.stack.length === 1 &&
+              M.stack[0].id === 'lower' && M.enemy.life === 20;
+          });
+
+          for (const result of results) {
+            console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
+          }
+          const passed = results.filter(result => result.pass).length;
+          console.log(`SIZA live stack regression: ${passed}/${results.length}`);
+          dom.window.close();
+          if (passed !== results.length) process.exit(1);
+          NODE
+
       - name: Report duplicate function declarations
         run: |
           node <<'NODE'
