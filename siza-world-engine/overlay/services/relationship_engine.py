@@ -9,7 +9,8 @@ from services.information_engine import (
 )
 
 
-RELATIONSHIP_BUILD = "0.89.0-social-fact-share-obligation"
+RELATIONSHIP_BUILD = "0.35.0-social-information-action"
+FACT_SHARE_RELATIONSHIP_BUILD = "0.89.0-social-fact-share-obligation"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -309,7 +310,7 @@ def create_fact_share_obligation(source, target, fact_id, priority=50):
         "fact_id": wanted_fact_id,
         "fact_topic": fact.get("topic"),
         "priority": priority,
-        "build": RELATIONSHIP_BUILD,
+        "build": FACT_SHARE_RELATIONSHIP_BUILD,
     }
 
 
