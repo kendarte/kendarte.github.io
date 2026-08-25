@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from evennia import search_tag
 
 from services.knowledge_context_engine import fact_knowledge_state
@@ -6,6 +8,7 @@ from services.relationship_engine import create_fact_share_obligation
 
 
 FACT_SHARE_RULE_BUILD = "0.89.0-fact-driven-social-share-rules"
+FACT_SHARE_TARGET_AWARENESS_BUILD = "0.90.0-target-aware-fact-share-pruning"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -54,6 +57,47 @@ def _completed_obligation_exists(npc, target_id, obligation_id):
     return False
 
 
+def _target_knows_fact(target, fact_id):
+    fact = find_knowledge_fact(target, fact_id) if target else None
+    if not fact:
+        return False
+    return bool(fact_knowledge_state(target, fact).get("known"))
+
+
+def _retire_pending_fact_share_obligation(npc, target_id, obligation_id):
+    """Retire one now-redundant SHARE_FACT obligation before it can produce a travel goal."""
+    if not npc:
+        return False
+    relationships = _plain_dict(getattr(npc.db, "relationships", {}))
+    relation = _plain_dict(relationships.get(str(target_id), {}))
+    obligations = []
+    changed = False
+    now = datetime.now(timezone.utc).isoformat()
+
+    for raw in _plain_list(relation.get("obligations")):
+        item = _record(raw)
+        if item is None:
+            continue
+        if (
+            str(item.get("id") or "") == str(obligation_id)
+            and str(item.get("kind") or "").upper() == "SHARE_FACT"
+            and bool(item.get("active", False))
+        ):
+            item["active"] = False
+            item["status"] = "completed"
+            item["completed_at"] = now
+            item["completion_reason"] = "TARGET_ALREADY_KNOWS_FACT"
+            item["completed_without_contact"] = True
+            changed = True
+        obligations.append(item)
+
+    if changed:
+        relation["obligations"] = obligations
+        relationships[str(target_id)] = relation
+        npc.db.relationships = relationships
+    return changed
+
+
 def fact_share_rules(npc):
     if not npc:
         return []
@@ -87,13 +131,19 @@ def upsert_fact_share_rule(npc, rule):
         "status": "UPDATED" if replaced else "CREATED",
         "rule_id": rule_id,
         "build": FACT_SHARE_RULE_BUILD,
+        "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
     }
 
 
 def refresh_fact_share_obligations(npc):
-    """Materialize authored SHARE_FACT obligations only from Facts this NPC actually knows."""
+    """Materialize useful SHARE_FACT obligations only when source knows and target does not already know the Fact."""
     if not npc:
-        return {"status": "NO_NPC", "build": FACT_SHARE_RULE_BUILD, "materialized": []}
+        return {
+            "status": "NO_NPC",
+            "build": FACT_SHARE_RULE_BUILD,
+            "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
+            "materialized": [],
+        }
 
     materialized = []
     skipped = []
@@ -122,6 +172,18 @@ def refresh_fact_share_obligations(npc):
             skipped.append({"rule_id": rule_id, "reason": "ALREADY_COMPLETED", "obligation_id": obligation_id})
             continue
 
+        if _target_knows_fact(target, fact_id):
+            retired = _retire_pending_fact_share_obligation(npc, target_id, obligation_id)
+            skipped.append(
+                {
+                    "rule_id": rule_id,
+                    "reason": "TARGET_ALREADY_KNOWS_FACT",
+                    "obligation_id": obligation_id,
+                    "retired_pending": bool(retired),
+                }
+            )
+            continue
+
         packet = create_fact_share_obligation(
             npc,
             target,
@@ -146,4 +208,5 @@ def refresh_fact_share_obligations(npc):
         "materialized": materialized,
         "skipped": skipped,
         "build": FACT_SHARE_RULE_BUILD,
+        "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
     }
