@@ -4,6 +4,7 @@ from services.interaction_engine import (
     _find_npc,
     _plain_list,
 )
+from services.interaction_proposal_execution_bridge import extract_player_authored_topic
 from services.knowledge_context_engine import fact_knowledge_state
 from services.conversation_fact_acquisition_engine import resolve_interaction_with_fact_acquisition
 
@@ -163,7 +164,7 @@ def preflight_talk_disclosure(actor, raw, *, expected_target_dbref=None):
             "build": NPC_FACT_DISCLOSURE_BUILD,
         }
 
-    topic = str(_extract_topic(raw, npc=npc) or "").strip()
+    topic = str(extract_player_authored_topic(raw) or _extract_topic(raw, npc=npc) or "").strip()
     if not topic:
         return {
             "status": "DISCLOSURE_NO_TOPIC",
