@@ -2,14 +2,17 @@ const fs=require('fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 
 let html=fs.readFileSync('siza-mobile-test/index.html','utf8');
-for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js']){
+for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js']){
   const tag=`<script src="../siza-core/${name}"></script>`;
   if(!html.includes(tag))throw new Error(`Missing shared core tag ${name}`);
   html=html.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
 }
+const entryTag='<script src="../siza-core/entry-rules.js"></script>';
+if(html.includes(entryTag))html=html.replace(entryTag,`<script>${fs.readFileSync('siza-core/entry-rules.js','utf8')}</script>`);
+else if(!html.includes('SizaEntryRules'))throw new Error('Entry rules unavailable');
 const creature=fs.readFileSync('siza-core/creature-rules.js','utf8'),creatureTag='<script src="../siza-core/creature-rules.js"></script>';
 if(html.includes(creatureTag))html=html.replace(creatureTag,`<script>${creature}</script>`);
-else html=html.replace('<script>\nconst NEREIDA_IMG=',`<script>${creature}</script>\n<script>\nconst NEREIDA_IMG=`);
+else if(!html.includes('SizaCreatureRules'))html=html.replace('<script>\nconst NEREIDA_IMG=',`<script>${creature}</script>\n<script>\nconst NEREIDA_IMG=`);
 const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');
 const probe=`window.__CREATURE_STATS_REGRESSION__={cardById,TEST_CARD_DB_V1,counterV070,equipmentFor,equipmentPowerBonusV1,effectivePower,toughV070};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM creature-stats]',e.message));
