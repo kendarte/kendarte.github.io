@@ -36,7 +36,7 @@ jobs:
             const anchor='const core=dom.window.SIZA.runArenaCriticalV071();';
             if((code.split(anchor).length-1)!==1)throw new Error('Core validation anchor mismatch');
             code=code.replace(anchor,"dom.window.SIZA.reset();\n            const core=dom.window.SIZA.runArenaCriticalV071();");
-            fs.writeFileSync('/tmp/siza-card-migrate.js',code,'utf8');
-            execFileSync('node',['/tmp/siza-card-migrate.js'],{stdio:'inherit',env:process.env});
+            fs.writeFileSync('siza-card-migrate.js',code,'utf8');
+            execFileSync('node',['siza-card-migrate.js'],{stdio:'inherit',env:process.env});
           })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
