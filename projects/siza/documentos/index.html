@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Siza — Documentos de diseño</title>
-  <meta name="description" content="Documentación pública de diseño y sistemas de Siza: MUD persistente, mapas, Caribia, Player/NPC, facciones y conocimientos.">
+  <meta name="description" content="Documentación pública de diseño y sistemas de Siza: World Engine, simulation framework, MUD persistente, mapas, Caribia, Player/NPC, facciones y conocimientos.">
   <link rel="canonical" href="https://kendarte.github.io/projects/siza/documentos/">
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -19,7 +19,12 @@
   <a class="header-cta" href="/projects/siza/">Volver a Siza</a>
 </header>
 <main class="docs-shell">
-  <section class="docs-hero"><a class="back-siza" href="/projects/siza/">← Siza</a><p class="eyebrow"><span></span> SIZA · DOCUMENTACIÓN DE SISTEMAS</p><h1>Documentos</h1><p>El World Book conserva el canon. Aquí se documenta cómo ese canon se convierte en sistemas y espacio MUD persistente.</p></section>
+  <section class="docs-hero"><a class="back-siza" href="/projects/siza/">← Siza</a><p class="eyebrow"><span></span> SIZA · DOCUMENTACIÓN DE SISTEMAS</p><h1>Documentos</h1><p>El World Book conserva el canon. Aquí se documenta cómo ese canon se convierte en World Engine, simulación persistente, espacio MUD y sistemas de juego.</p></section>
+
+  <section class="docs-section"><h2>World Engine</h2><p>Referencia maestra del motor actual y roadmap deliberadamente cerrado de la versión de simulation framework avanzada.</p><div class="docs-grid">
+    <a class="doc-card" href="?doc=world-engine"><small>15</small><h3>World Engine — Documentación Maestra v1.01</h3><p>Arquitectura completa: estado persistente, acciones, resolución, objetos, input natural, percepción, Knowledge/Facts, lifecycle, diálogo, NPC autonomy, relaciones, facciones, políticas institucionales, QA, piloto y frontera con TCG.</p><strong>Abrir →</strong></a>
+    <a class="doc-card" href="?doc=simulation-roadmap"><small>16</small><h3>Simulation Framework — Roadmap cerrado</h3><p>Los 11–12 bloques que faltarían para llevar el engine a un framework narrativo extremadamente robusto: confidence, contradicciones, corroboración, secreto, trust, rumores, temporalidad, jurisdicción, workflows, causal trace, escala y tooling; incluye el contrato futuro del Combat Bridge con el TCG.</p><strong>Abrir →</strong></a>
+  </div></section>
 
   <section class="docs-section"><h2>Sistemas base</h2><p>Documentos generales del juego.</p><div class="docs-grid">
     <a class="doc-card" href="?doc=mundo"><small>01</small><h3>Mundo persistente MUD</h3><p>Asentamientos, estructuras, Rooms, Jobs, NPC, economía, eventos y persistencia.</p><strong>Abrir →</strong></a>
@@ -47,6 +52,8 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 const docs={
+  'world-engine':{title:'SIZA World Engine — Documentación Maestra v1.01',files:['15_SIZA_World_Engine_Documentacion_Maestra_v1.01.md']},
+  'simulation-roadmap':{title:'SIZA Simulation Framework — Roadmap cerrado y TCG Bridge',files:['16_SIZA_Simulation_Framework_Roadmap_y_TCG_Bridge.md']},
   mundo:{title:'Mundo persistente MUD',files:['mundo-00.md','mundo-01.md','mundo-02.md','mundo-03.md']},
   mapas:{title:'Espacio físico y mapas persistentes',files:['mapas-00.md','mapas-01.md','mapas-02.md','mapas-03.md']},
   personas:{title:'Player, NPC y simulación',files:['personas-00.md','personas-01.md','personas-02.md']},
