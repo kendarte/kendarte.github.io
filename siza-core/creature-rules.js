@@ -1,18 +1,18 @@
 (function(global){
 'use strict';
 
-function counter(player,index){
+function counterValue(player,index){
   return player?.powerCounters?.[index]||0;
 }
 
-function equipmentFor(player,index){
+function equipmentForIndex(player,index){
   return (player?.equipment||[]).filter(entry=>entry.target===index);
 }
 
-function equipmentPowerBonus(player,index,resolveCard,effectsForEvent){
+function equipmentPowerBonusValue(player,index,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
-  return equipmentFor(player,index).reduce((sum,entry)=>{
+  return equipmentForIndex(player,index).reduce((sum,entry)=>{
     const card=cardResolver(entry.id);
     return sum+effectResolver(card,'equipped')
       .filter(effect=>effect.type==='modify-power')
@@ -20,17 +20,23 @@ function equipmentPowerBonus(player,index,resolveCard,effectsForEvent){
   },0);
 }
 
-function effectivePower(player,index,resolveCard,effectsForEvent){
+function effectivePowerValue(player,index,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const card=cardResolver(player?.battlefield?.[index]);
-  return (card?.power||0)+counter(player,index)+equipmentPowerBonus(player,index,cardResolver,effectsForEvent);
+  return (card?.power||0)+counterValue(player,index)+equipmentPowerBonusValue(player,index,cardResolver,effectsForEvent);
 }
 
-function toughness(player,index,resolveCard){
+function toughnessValue(player,index,resolveCard){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const card=cardResolver(player?.battlefield?.[index]);
-  return (card?.toughness||0)+counter(player,index);
+  return (card?.toughness||0)+counterValue(player,index);
 }
 
-global.SizaCreatureRules=Object.freeze({counter,equipmentFor,equipmentPowerBonus,effectivePower,toughness});
+global.SizaCreatureRules=Object.freeze({
+  counter:counterValue,
+  equipmentFor:equipmentForIndex,
+  equipmentPowerBonus:equipmentPowerBonusValue,
+  effectivePower:effectivePowerValue,
+  toughness:toughnessValue
+});
 })(window);
