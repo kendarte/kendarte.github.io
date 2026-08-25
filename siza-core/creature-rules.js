@@ -32,11 +32,34 @@ function toughnessValue(player,index,resolveCard){
   return (card?.toughness||0)+counterValue(player,index);
 }
 
+function addBattlefieldCreature(player,id){
+  player.battlefield.push(id);
+  player.powerCounters.push(0);
+  player.summonedOn.push(player.ownTurn);
+  return player.battlefield.length-1;
+}
+
+function removeBattlefieldCreature(player,index,dest='graveyard'){
+  if(index<0||index>=player.battlefield.length)return null;
+  const id=player.battlefield.splice(index,1)[0];
+  player[dest].push(id);
+  player.powerCounters.splice(index,1);
+  player.summonedOn.splice(index,1);
+  player.exhausted=(player.exhausted||[]).filter(value=>value!==index).map(value=>value>index?value-1:value);
+  for(const equipment of player.equipment||[]){
+    if(equipment.target===index)equipment.target=null;
+    else if(equipment.target>index)equipment.target--;
+  }
+  return id;
+}
+
 global.SizaCreatureRules=Object.freeze({
   counter:counterValue,
   equipmentFor:equipmentForIndex,
   equipmentPowerBonus:equipmentPowerBonusValue,
   effectivePower:effectivePowerValue,
-  toughness:toughnessValue
+  toughness:toughnessValue,
+  addCreature:addBattlefieldCreature,
+  removeAt:removeBattlefieldCreature
 });
 })(window);
