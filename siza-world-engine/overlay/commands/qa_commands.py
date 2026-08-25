@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v821_commands import CmdSizaValidateV821
+from commands.world_input_v83_commands import CmdSizaValidateV83
 
 
-QA_BUILD = "0.82.1-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.83.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.82 passed 12/12 for style sanitization, privacy, authoritative Fact transfer, grounded read-only rendering and older action regressions, but its manual voice comparison failed because FORMAL/RESERVED/TERSE and CASUAL/WARM/NORMAL produced nearly identical surface text. v0.82.1 changes only the presentation renderer: closed enums now map to closed high-signal delivery directives, a style-adherence guard rejects neutral output that ignores important voice cues, and a deterministic styled fallback preserves the exact Fact when qwen is safe but stylistically noncompliant. Running directive construction, style mismatch fallback, compliant acceptance, profile opposition, two live grounded renders and exact read-only state comparison."
+            "RISK PROFILE: v0.82.1 closed the NPC voice-quality gap with 6/6 enforced style-delivery checks. v0.83 changes input routing only for explicit first-person Knowledge inspection such as 'qué sé sobre X': those requests now bypass Ollama and read deterministically from the player's already-known structured Facts. Unknown Facts with matching text remain gated by Knowledge level; output exposes only authored topic/text, never Fact IDs, Knowledge keys or provenance. General world questions remain on the existing viewer-grounded AI_INQUIRY path. Running parser precision, route separation, known/unknown privacy, real __nomatch rendering, multi-Fact behavior, exact read-only state comparison and object/perception/movement regressions."
         )
-        _run_command(CmdSizaValidateV821, self.caller)
+        _run_command(CmdSizaValidateV83, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.82.1 is presentation-only. The existing v0.81 factual grounding guard remains authoritative; the new style guard may only reject prose or select a deterministic non-factual delivery wrapper around the same Fact. If all targeted assertions pass, the previous v0.82 voice-quality gap is closed without a separate manual action."
+            "QA POLICY: v0.83 is deterministic/read-only. The validator invokes the real __nomatch Knowledge-query path and compares all touched player state before/after; no live Ollama or separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
