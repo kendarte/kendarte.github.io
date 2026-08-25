@@ -1,0 +1,47 @@
+name: Siza Ofrenda Core Validate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-offering-core-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offering-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate shared Ofrenda planner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          node <<'NODE'
+          const vm=require('vm');
+          const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const r=await fetch(`https://api.github.com/repos/${repo}/contents/siza-core/crystal-rules.js?ref=${sha}`,{headers});
+            if(!r.ok)throw new Error(`GET crystal-rules ${r.status}`);
+            const f=await r.json(),source=Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8');
+            const context={window:{}};vm.createContext(context);vm.runInContext(source,context);const X=context.window.SizaCrystalRules;
+            const cards={blue:{id:'blue',pips:{U:1}},red:{id:'red',pips:{R:1}}},resolve=id=>cards[id];
+            const target={type:'Creature',pips:{U:2}},base={crystals:{U:1,R:1},battlefield:['blue'],summonedOn:[0],ownTurn:1,exhausted:[],offeringUsed:false};
+            const plan=X.offeringPlan(base,target,resolve);
+            assert(plan?.kind==='offering','Ofrenda should be available');
+            assert(plan.missing==='U','Missing color should be U');
+            assert(JSON.stringify(plan.spent)==='{"U":1,"R":1}','Ofrenda spend should substitute R');
+            assert(plan.candidates.length===1&&plan.candidates[0].id==='blue','Blue permanent should be candidate');
+            assert(X.offeringPlan({...base,summonedOn:[1]},target,resolve)===null,'Fresh permanent must not be candidate');
+            assert(X.offeringPlan({...base,exhausted:[0]},target,resolve)===null,'Exhausted permanent must not be candidate');
+            assert(X.offeringPlan({...base,offeringUsed:true},target,resolve)===null,'Ofrenda cannot be reused');
+            const directPlayer={...base,crystals:{U:2,R:1}};
+            const direct=X.paymentPlan(directPlayer,target,resolve);
+            assert(direct?.kind==='direct'&&direct.spent.U===2,'Direct payment must win over Ofrenda');
+            console.log('PASS shared Ofrenda planner 5/5');
+          })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
+          NODE
