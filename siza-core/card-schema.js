@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const CARD_SCHEMA_VERSION='1.0.1';
+const CARD_SCHEMA_VERSION='1.1.0';
 const CARD_TYPES=['Instant','Creature','Artifact','Land'];
 const COLORS=['U','R','G','W','B'];
 const TYPE_ALIASES={instant:'Instant',instantaneo:'Instant','instantáneo':'Instant',creature:'Creature',invocacion:'Creature','invocación':'Creature',artifact:'Artifact',artefacto:'Artifact',land:'Land',reserva:'Land',tierra:'Land'};
@@ -13,6 +13,7 @@ function int(value,fallback=0){const n=finiteNumber(value,fallback);return Math.
 function text(value,fallback=''){return String(value??fallback);}
 function normalizeType(value){if(CARD_TYPES.includes(value))return value;return TYPE_ALIASES[text(value).trim().toLowerCase()]||'Creature';}
 function normalizeColor(value){const raw=text(value).trim();if(COLORS.includes(raw))return raw;return COLOR_ALIASES[raw.toLowerCase()]||null;}
+function normalizeEffects(input=[]){if(global.SizaCardEffects?.normalizeEffects)return global.SizaCardEffects.normalizeEffects(input);return Array.isArray(input)?clone(input):[];}
 
 function normalizePips(input={}){
  const out={};
@@ -68,7 +69,10 @@ function normalizeCard(input={}){
   setCode:text(input.setCode,'SZA'),
   cardNumber:text(input.cardNumber,'000'),
   glyph:text(input.glyph,'✦'),
-  art:text(input.art,input.affinity||'multi')
+  art:text(input.art,input.affinity||'multi'),
+  role:text(input.role,''),
+  adventureUnlock:!!input.adventureUnlock,
+  effects:normalizeEffects(input.effects)
  };
  return card;
 }
@@ -83,13 +87,14 @@ function validateCard(input={}){
  if(card.cardType!=='Creature'&&(card.power!=null||card.toughness!=null))warnings.push('Las estadísticas P/T sólo se muestran en Creature.');
  if(!card.rules.trim()&&card.cardType!=='Land')warnings.push('La carta no tiene texto de reglas.');
  if(card.artUrl&&/cards-v\d+\//i.test(card.artUrl))warnings.push('artUrl parece apuntar a una carta completa legada, no a arte puro.');
+ if(global.SizaCardEffects?.validateEffects){const e=global.SizaCardEffects.validateEffects(card.effects);errors.push(...e.errors);warnings.push(...e.warnings);card.effects=e.effects;}
  return {valid:errors.length===0,errors,warnings,card};
 }
 
 function cardFromMobileShape(input={}){return normalizeCard(input);}
 function cardToMobileShape(input={}){
- const c=normalizeCard(input),out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform)};
- if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}return out;
+ const c=normalizeCard(input),out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),effects:clone(c.effects)};
+ if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
 }
 
 global.SizaCardSchema=Object.freeze({
@@ -102,6 +107,7 @@ global.SizaCardSchema=Object.freeze({
  cardToMobileShape,
  normalizeArtTransform,
  normalizePips,
- pipsToCrystalArray
+ pipsToCrystalArray,
+ normalizeEffects
 });
 })(window);
