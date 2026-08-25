@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v852_commands import CmdSizaValidateV852
+from commands.world_input_v86_commands import CmdSizaValidateV86
 
 
-QA_BUILD = "0.85.2-targeted-risk-based-one-command-qa"
+QA_BUILD = "0.86.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.85.1 passed 11/12. All production-critical disclosure behavior passed: holder-local policy privacy, live qwen target selection, blocked TALK, real CONFRONT target-win remains blocked, real ACTOR_WIN consequence unlocks disclosure, and the clean Fact transfers/renders without the holder policy. The only failure used 'observo al Informante de Prueba C' as a PERCEPTION fixture, but v0.68 intentionally gives a strong authored OBJECT_ACTION match precedence before perception; that named phrase overlaps the actionable Informant object and its authored 'Presionar al informante' action. v0.85.2 changes no production code. It documents that preserved precedence and reruns the established generic perception fixture 'observo alrededor' plus Knowledge Query and movement routing with an exact read-only state check."
+            "RISK PROFILE: v0.85 is closed after its precedence-aware targeted follow-up passed 4/4. v0.86 closes the next cross-system gameplay loop without changing qwen or core engines: a clean persistent Fact known by the Informant is protected by the existing holder-local v0.85 disclosure policy, real v0.54 CONFRONT state unlocks disclosure, existing transfer_knowledge_fact raises the player's Knowledge level, and that exact Knowledge key is consumed by the existing v0.44 action requirement engine to unlock a new authored Manifest action. The action then flows through the unchanged Object Action and Consequence engines into persistent object/room state and presentation. Running install/idempotency, pre-acquisition Knowledge blocker, disclosure block, real failed/successful CONFRONT, authoritative Fact acquisition, exact Knowledge unlock, natural action execution, consequence/presentation and self-locking completion."
         )
-        _run_command(CmdSizaValidateV852, self.caller)
+        _run_command(CmdSizaValidateV86, self.caller)
         self.caller.msg(
-            "QA POLICY: validator-only follow-up. v0.85 production already passed its live qwen and real CONFRONT integration. If this precedence-aware targeted validator passes all assertions, v0.85 is closed without manual acceptance."
+            "QA POLICY: v0.86 adds authored pilot content and a deterministic cross-system integration only. qwen boundaries were not changed and were already live-tested in v0.85, so no new Ollama roundtrip or manual acceptance is required if all v0.86 assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
