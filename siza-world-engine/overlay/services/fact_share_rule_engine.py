@@ -5,6 +5,7 @@ from evennia import search_tag
 from services.faction_engine import has_active_membership, membership_authority
 from services.knowledge_context_engine import fact_knowledge_state
 from services.knowledge_fact_engine import find_knowledge_fact
+from services.npc_simulation import find_path
 from services.relationship_engine import create_fact_share_obligation
 
 
@@ -13,6 +14,7 @@ FACT_SHARE_TARGET_AWARENESS_BUILD = "0.90.0-target-aware-fact-share-pruning"
 FACT_SHARE_SOURCE_AWARENESS_BUILD = "0.91.0-source-aware-fact-share-cancellation"
 FACT_SHARE_TARGET_MODE_BUILD = "0.92.0-faction-targeted-fact-share-rules"
 FACT_SHARE_AUTHORITY_FILTER_BUILD = "0.93.0-faction-authority-filtered-fact-share-rules"
+FACT_SHARE_RECIPIENT_SELECTION_BUILD = "0.94.0-nearest-limited-faction-fact-share-selection"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -154,8 +156,11 @@ def _remember_obligation_source(npc, obligation_id, rule, target_id):
         "target_mode": mode,
         "faction_id": str((rule or {}).get("faction_id") or "") if mode == "FACTION" else "",
         "min_authority": (rule or {}).get("min_authority") if mode == "FACTION" else None,
+        "selection": str((rule or {}).get("selection") or "ALL").upper() if mode == "FACTION" else None,
+        "max_targets": (rule or {}).get("max_targets") if mode == "FACTION" else None,
         "build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
+        "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
     }
     npc.db.fact_share_obligation_sources = rows
 
@@ -188,6 +193,32 @@ def _parse_min_authority(rule):
     return value, None
 
 
+def _parse_selection(rule):
+    value = str((rule or {}).get("selection") or "ALL").strip().upper()
+    if value not in {"ALL", "NEAREST"}:
+        return None, "BAD_SELECTION"
+    return value, None
+
+
+def _parse_max_targets(rule, selection):
+    raw = (rule or {}).get("max_targets")
+    if selection == "ALL":
+        if raw is None:
+            return None, None
+        return None, "BAD_MAX_TARGETS"
+    if raw is None:
+        return 1, None
+    if isinstance(raw, bool):
+        return None, "BAD_MAX_TARGETS"
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None, "BAD_MAX_TARGETS"
+    if value < 1 or value > 100:
+        return None, "BAD_MAX_TARGETS"
+    return value, None
+
+
 def _resolve_rule_targets(npc, rule):
     mode = str((rule or {}).get("target_mode") or "EXPLICIT").upper()
     source_id = _npc_id(npc)
@@ -217,6 +248,52 @@ def _resolve_rule_targets(npc, rule):
         return mode, targets, None
 
     return mode, [], "UNSUPPORTED_TARGET_MODE"
+
+
+def _select_rule_targets(npc, rule, mode, targets):
+    if mode != "FACTION":
+        return list(targets or []), {"selection": None, "max_targets": None, "reachable": {}}, None
+
+    selection, selection_error = _parse_selection(rule)
+    if selection_error:
+        return [], {"selection": None, "max_targets": None, "reachable": {}}, selection_error
+
+    max_targets, max_error = _parse_max_targets(rule, selection)
+    if max_error:
+        return [], {"selection": selection, "max_targets": None, "reachable": {}}, max_error
+
+    if selection == "ALL":
+        return list(targets or []), {"selection": "ALL", "max_targets": None, "reachable": {}}, None
+
+    faction_id = str((rule or {}).get("faction_id") or "").strip()
+    ranked = []
+    reachable = {}
+    for target in list(targets or []):
+        target_id = _npc_id(target)
+        if not target_id or not npc.location or not target.location:
+            continue
+        if npc.location == target.location:
+            path = []
+        else:
+            path = find_path(npc.location, target.location)
+        if path is None:
+            continue
+        authority = membership_authority(target, faction_id, active_only=True)
+        authority_value = int(authority) if authority is not None else -1
+        path_length = len(path)
+        reachable[target_id] = {
+            "path_length": path_length,
+            "authority": authority_value,
+        }
+        ranked.append((path_length, -authority_value, target_id, target))
+
+    ranked.sort(key=lambda item: (item[0], item[1], item[2]))
+    selected = [item[3] for item in ranked[: int(max_targets or 1)]]
+    return selected, {
+        "selection": "NEAREST",
+        "max_targets": int(max_targets or 1),
+        "reachable": reachable,
+    }, None
 
 
 def fact_share_rules(npc):
@@ -257,6 +334,7 @@ def upsert_fact_share_rule(npc, rule):
         "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
+        "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
     }
 
 
@@ -281,6 +359,7 @@ def refresh_fact_share_obligations(npc):
             "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
             "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
             "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
+            "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
             "materialized": [],
         }
 
@@ -327,20 +406,33 @@ def refresh_fact_share_obligations(npc):
             )
             continue
 
-        mode, targets, target_error = _resolve_rule_targets(npc, rule)
+        mode, eligible_targets, target_error = _resolve_rule_targets(npc, rule)
+        selection_meta = {"selection": None, "max_targets": None, "reachable": {}}
+        if not target_error:
+            targets, selection_meta, target_error = _select_rule_targets(
+                npc,
+                rule,
+                mode,
+                eligible_targets,
+            )
+        else:
+            targets = []
+
         if target_error:
             invalid_cancelled = []
-            if target_error == "BAD_MIN_AUTHORITY":
+            if target_error in {"BAD_MIN_AUTHORITY", "BAD_SELECTION", "BAD_MAX_TARGETS"}:
                 invalid_cancelled = _cancel_rule_obligations(
                     npc,
                     rule_id,
-                    reason="BAD_MIN_AUTHORITY",
+                    reason=target_error,
                 )
             skipped.append(
                 {
                     "rule_id": rule_id,
                     "reason": target_error,
                     "target_mode": mode,
+                    "selection": selection_meta.get("selection"),
+                    "max_targets": selection_meta.get("max_targets"),
                     "cancelled_obligations": invalid_cancelled,
                 }
             )
@@ -364,6 +456,7 @@ def refresh_fact_share_obligations(npc):
                     "rule_id": rule_id,
                     "reason": "TARGET_NO_LONGER_MATCHES_RULE",
                     "target_mode": mode,
+                    "selection": selection_meta.get("selection"),
                     **row,
                 }
             )
@@ -374,6 +467,8 @@ def refresh_fact_share_obligations(npc):
                     "rule_id": rule_id,
                     "reason": "NO_ELIGIBLE_TARGETS",
                     "target_mode": mode,
+                    "selection": selection_meta.get("selection"),
+                    "max_targets": selection_meta.get("max_targets"),
                 }
             )
             continue
@@ -416,6 +511,7 @@ def refresh_fact_share_obligations(npc):
             )
             if packet.get("success"):
                 _remember_obligation_source(npc, packet.get("obligation_id"), rule, target_id)
+                reachable_meta = dict(selection_meta.get("reachable") or {}).get(target_id) or {}
                 materialized.append(
                     {
                         "rule_id": rule_id,
@@ -425,6 +521,9 @@ def refresh_fact_share_obligations(npc):
                         "target_mode": mode,
                         "faction_id": str(rule.get("faction_id") or "") if mode == "FACTION" else None,
                         "min_authority": rule.get("min_authority") if mode == "FACTION" else None,
+                        "selection": selection_meta.get("selection"),
+                        "max_targets": selection_meta.get("max_targets"),
+                        "path_length": reachable_meta.get("path_length"),
                         "created": bool(packet.get("created")),
                     }
                 )
@@ -447,4 +546,5 @@ def refresh_fact_share_obligations(npc):
         "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
+        "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
     }
