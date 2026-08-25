@@ -450,11 +450,7 @@ function dcFor(c,m=state.player.mag){const ai=affinityInfo(c,m);if(ai.unsupporte
 function naturalChance(c,m=state.player.mag){if(c.type==='Land')return 100;const dc=dcFor(c,m);if(!isFinite(dc))return 0;const need=dc-m.mf;if(need<=1)return 100;if(need>6)return 0;return Math.round((7-need)/6*100)}
 function manifestRequirement(c,m=state.player.mag){const dc=dcFor(c,m);if(!isFinite(dc))return {unsupported:true,text:'SIN AFINIDAD',die:0,minBurn:0};const raw=dc-m.mf,minBurn=Math.max(0,raw-6),die=Math.max(1,Math.min(6,raw));return {unsupported:false,die,minBurn,text:minBurn?`${die}+ · Burn mínimo ${minBurn}`:`${die}+`}}
 function manaHtml(c){let out='';const generic=Math.max(0,c.cost-Object.values(c.pips||{}).reduce((a,b)=>a+b,0));if(generic)out+=`<span class="mana c">${generic}</span>`;for(const [k,v] of Object.entries(c.pips||{}))for(let i=0;i<v;i++)out+=`<span class="mana ${k.toLowerCase()}">${k}</span>`;return out||'<span class="mana c">0</span>'}
-function finalRulesFixV510(c,mini=false){
- if(c.id==='spark') return `<div class="finalRulesFixV510 sparkFixV510 ${mini?'mini':''}">Inflige 2 de daño al Personaje rival.</div>`;
- if(c.id==='smuggler') return `<div class="finalRulesFixV510 smugglerFixV510 ${mini?'mini':''}">Siempre que ataque, inflige 1 de daño adicional al Personaje defensor.</div>`;
- return '';
-}
+/* dead finalRulesFixV510 removed: catalog text is authoritative */
 function cardArtMarkupV1(c){return SizaCardRenderer.artHtml(SizaCardSchema.cardFromMobileShape(c),{variant:'mobile'})}
 function cardThumbHtmlV1(c,opts={}){return SizaCardRenderer.renderThumb(SizaCardSchema.cardFromMobileShape(c),{variant:'mobile',stats:opts.stats||{}})}
 function cardHtml(c,opts={}){const coreCard=SizaCardSchema.cardFromMobileShape(c),req=manifestRequirement(c),stats=opts.stats||{};let out=SizaCardRenderer.renderCard(coreCard,{variant:'mobile',risk:req.text,stats});const extra=(opts.actions?`<div class="cardFooterActions">${opts.actions}</div>`:'')+(opts.locked?`<div class="lockedOverlay"><div><b>Memoria no manifestada</b>Completa el Final Event del Muelle Viejo.</div></div>`:'');return extra?out.replace('</article>',extra+'</article>'):out}
