@@ -1,4 +1,4 @@
-name: Siza Arena Canonicalize Manafestation Direct
+name: Siza Arena Validate Canonical Manafestation
 
 on:
   push:
@@ -6,27 +6,28 @@ on:
       - '.github/workflows/siza-arena-canonicalize-mf-direct.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  canonicalize-manafestation-direct:
+  validate-canonical-manafestation:
     runs-on: ubuntu-latest
     steps:
-      - name: Install parser
-        run: npm install --no-save acorn@8
+      - name: Install validation dependencies
+        run: npm install --no-save acorn@8 jsdom@24
 
-      - name: Canonicalize current Arena file through GitHub API
+      - name: Validate current Arena through GitHub API
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
         run: |
           node <<'NODE'
           const acorn = require('acorn');
+          const { JSDOM, VirtualConsole } = require('jsdom');
 
           const repo = process.env.GH_REPOSITORY;
           const token = process.env.GH_TOKEN;
           const path = 'siza-mobile-test/index.html';
-          const api = `https://api.github.com/repos/${repo}/contents/${path}`;
+          const api = `https://api.github.com/repos/${repo}/contents/${path}?ref=main`;
           const headers = {
             'Accept': 'application/vnd.github+json',
             'Authorization': `Bearer ${token}`,
@@ -34,36 +35,22 @@ jobs:
           };
 
           async function main() {
-            const read = await fetch(`${api}?ref=main`, { headers });
+            const read = await fetch(api, { headers });
             if (!read.ok) throw new Error(`GET ${read.status}: ${await read.text()}`);
             const current = await read.json();
             const html = Buffer.from(current.content.replace(/\n/g, ''), 'base64').toString('utf8');
+            console.log(`Arena blob ${current.sha}`);
 
             const scriptOpen = html.lastIndexOf('<script>');
             const scriptClose = html.indexOf('</script>', scriptOpen);
             if (scriptOpen < 0 || scriptClose < 0) throw new Error('Main script block not found');
-            const codeStart = scriptOpen + '<script>'.length;
-            const code = html.slice(codeStart, scriptClose);
+            const code = html.slice(scriptOpen + '<script>'.length, scriptClose);
             const ast = acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'script' });
 
-            const targets = new Set([
-              'playHand',
-              'openManifest',
-              'rollManifest',
-              'cancelManifest',
-              'selectBurn',
-              'commitManifest',
-              'failManifest',
-              'manifestInlineHtml',
-              'enemyResolveManifestRoll'
-            ]);
-            const found = new Map([...targets].map(name => [name, []]));
-
+            const declarations = [];
             function walk(node) {
               if (!node || typeof node !== 'object') return;
-              if (node.type === 'FunctionDeclaration' && node.id && targets.has(node.id.name)) {
-                found.get(node.id.name).push(node);
-              }
+              if (node.type === 'FunctionDeclaration' && node.id) declarations.push(node.id.name);
               for (const [key, value] of Object.entries(node)) {
                 if (key === 'start' || key === 'end' || key === 'loc') continue;
                 if (Array.isArray(value)) for (const child of value) walk(child);
@@ -72,62 +59,39 @@ jobs:
             }
             walk(ast);
 
+            const counts = new Map();
+            for (const name of declarations) counts.set(name, (counts.get(name) || 0) + 1);
+            const duplicates = [...counts.entries()].filter(([, count]) => count > 1).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+            console.log(`Named function declarations: ${declarations.length}`);
+            console.log(`Duplicate names: ${duplicates.length}`);
+            for (const [name, count] of duplicates) console.log(`${count}x ${name}`);
+
+            const targets = [
+              'playHand','openManifest','rollManifest','cancelManifest','selectBurn',
+              'commitManifest','failManifest','manifestInlineHtml','enemyResolveManifestRoll'
+            ];
             for (const name of targets) {
-              const nodes = found.get(name);
-              if (nodes.length !== 2) throw new Error(`${name}: expected exactly 2 declarations, found ${nodes.length}`);
+              const count = counts.get(name) || 0;
+              console.log(`CANONICAL ${name}: ${count}`);
+              if (count !== 1) throw new Error(`${name}: expected exactly 1 active declaration, found ${count}`);
             }
 
-            const removals = [];
-            for (const name of targets) {
-              const nodes = found.get(name).sort((a, b) => a.start - b.start);
-              const dead = nodes[0];
-              let end = dead.end;
-              while (end < code.length && (code[end] === '\r' || code[end] === '\n')) end++;
-              removals.push({ name, start: dead.start, end });
-            }
-            removals.sort((a, b) => b.start - a.start);
-
-            let next = code;
-            for (const r of removals) {
-              console.log(`REMOVE dead ${r.name} @ ${r.start}-${r.end}`);
-              next = next.slice(0, r.start) + next.slice(r.end);
-            }
-
-            const verifyAst = acorn.parse(next, { ecmaVersion: 'latest', sourceType: 'script' });
-            const verify = new Map([...targets].map(name => [name, 0]));
-            function verifyWalk(node) {
-              if (!node || typeof node !== 'object') return;
-              if (node.type === 'FunctionDeclaration' && node.id && verify.has(node.id.name)) {
-                verify.set(node.id.name, verify.get(node.id.name) + 1);
-              }
-              for (const [key, value] of Object.entries(node)) {
-                if (key === 'start' || key === 'end' || key === 'loc') continue;
-                if (Array.isArray(value)) for (const child of value) verifyWalk(child);
-                else if (value && typeof value === 'object' && typeof value.type === 'string') verifyWalk(value);
-              }
-            }
-            verifyWalk(verifyAst);
-            for (const [name, count] of verify) {
-              if (count !== 1) throw new Error(`${name}: expected 1 declaration after canonicalization, found ${count}`);
-            }
-
-            const nextHtml = html.slice(0, codeStart) + next + html.slice(scriptClose);
-            if (nextHtml === html) throw new Error('Canonicalization produced no diff');
-
-            const write = await fetch(api, {
-              method: 'PUT',
-              headers: { ...headers, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                message: 'Canonicalize Arena Manafestation runtime',
-                content: Buffer.from(nextHtml, 'utf8').toString('base64'),
-                sha: current.sha,
-                branch: 'main'
-              })
+            const virtualConsole = new VirtualConsole();
+            virtualConsole.on('jsdomError', error => console.error('[JSDOM]', error.message));
+            const dom = new JSDOM(html, {
+              runScripts: 'dangerously',
+              url: 'https://siza.local/',
+              virtualConsole
             });
-            if (!write.ok) throw new Error(`PUT ${write.status}: ${await write.text()}`);
-            const result = await write.json();
-            console.log(`COMMIT ${result.commit.sha}`);
-            console.log(`Canonicalized ${targets.size} dead Manafestation declarations.`);
+            const runner = dom.window.SIZA?.runArenaCriticalV071;
+            if (typeof runner !== 'function') throw new Error('SIZA.runArenaCriticalV071 is not available');
+            const report = runner();
+            console.log(`SIZA Arena contract ${report.version}: ${report.passed}/${report.total}`);
+            for (const result of report.results) {
+              console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
+            }
+            dom.window.close();
+            if (report.passed !== report.total) throw new Error(`Arena contract failed: ${report.passed}/${report.total}`);
           }
 
           main().catch(error => {
