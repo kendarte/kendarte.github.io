@@ -393,6 +393,7 @@ body{min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}
 <script src="../siza-core/cards.js"></script>
 <script src="../siza-core/card-renderer.js"></script>
 <script src="../siza-core/manifest-rules.js"></script>
+<script src="../siza-core/crystal-rules.js"></script>
 <script>
 const NEREIDA_IMG='portraits/nereida_voss.webp?v=0514';
 (function(){
@@ -528,11 +529,11 @@ function resolveDefense(){const M=state.match;if(!M?.combat||M.combat.owner!=='e
 function checkWin(){const M=state.match;if(M.player.life<=0||M.enemy.life<=0){M.over=true;M.winner=M.player.life>0?'player':'enemy';addLog('Match',`${M.winner==='player'?'Victoria':'Derrota'}.`);if(M.adventure&&M.winner==='player'){state.adventure.flags.smugglersResolved=true;state.adventure.advance=Math.min(5,state.adventure.advance+2);journal('Siza Encounter','Derrotaste al Magistócrata contrabandista. La escalera inferior quedó abierta.');state.adventure.currentEvent=null;chooseAdventureEvent()}}}
 /* Arena v0.7.0: implementación del contrato REGLAS_ARENA_V070.md. */
 const ENTRY_V070={immediate:{short:'ENTRADA INMEDIATA',text:'Todas pueden atacar al entrar.'},prepare:{short:'PREPARACIÓN UNIVERSAL',text:'Esperan hasta el próximo turno propio.'},oneCrystal:{short:'IMPULSO DE 1 CRISTAL',text:'Las de un cristal atacan al entrar.'}};
-function crystalReqV070(c){const r={};for(const[k,n]of Object.entries(c?.pips||{}))if(n>0)r[k]=n;return r}
-function spellCostV070(c){return c?.type==='Land'?0:Math.max(1,Object.values(crystalReqV070(c)).reduce((a,b)=>a+b,0))}
+function crystalReqV070(c){return SizaCrystalRules.crystalReq(c)}
+function spellCostV070(c){return SizaCrystalRules.spellCost(c)}
 function resetCrystalsV070(P){P.crystals={};for(const[k,n]of Object.entries(P.aff||{}))if(n>0)P.crystals[k]=n;P.offeringUsed=false;P.artifactExhausted=[]}
 function crystalHtmlV070(P){const a=[];for(const k of['U','R','G','W','B'])for(let i=0;i<(P.aff?.[k]||0);i++)a.push(`<span class="crystalV070 ${k.toLowerCase()} ${i>=(P.crystals?.[k]||0)?'spent':''}">${k}</span>`);return `<div class="crystalPoolV070">${a.join('')}</div>`}
-function directPlanV070(P,c){const req=crystalReqV070(c),spent={};for(const[k,n]of Object.entries(req)){if((P.crystals?.[k]||0)<n)return null;spent[k]=n}if(!Object.keys(req).length){const opts=['U','R','G','W','B'].filter(k=>(P.crystals?.[k]||0)>0);return opts.length?{kind:'flex',options:opts}:null}return{kind:'direct',spent}}
+function directPlanV070(P,c){return SizaCrystalRules.directPlan(P,c)}
 function offeringPlanV070(P,c){const req=crystalReqV070(c),spent={},missing=[];let need=0;for(const[k,n]of Object.entries(req)){need+=n;const have=P.crystals?.[k]||0;spent[k]=Math.min(have,n);for(let i=have;i<n;i++)missing.push(k)}if(missing.length!==1||Object.values(P.crystals||{}).reduce((a,b)=>a+b,0)<need||P.offeringUsed)return null;const miss=missing[0],sub=['U','R','G','W','B'].find(k=>k!==miss&&(P.crystals?.[k]||0)>(spent[k]||0));if(!sub)return null;spent[sub]=(spent[sub]||0)+1;const candidates=P.battlefield.map((id,index)=>({id,index,c:cardById(id)})).filter(x=>(x.c?.pips?.[miss]||0)>0&&(P.summonedOn?.[x.index]??P.ownTurn)<P.ownTurn&&!(P.exhausted||[]).includes(x.index));return candidates.length?{kind:'offering',spent,missing:miss,candidates}:null}
 function paymentV070(P,c){return directPlanV070(P,c)||offeringPlanV070(P,c)}
 function spendV070(P,spent){for(const[k,n]of Object.entries(spent||{}))if((P.crystals?.[k]||0)<n)return false;for(const[k,n]of Object.entries(spent||{}))P.crystals[k]-=n;return true}
