@@ -30,7 +30,7 @@ jobs:
             const f=await r.json();fs.mkdirSync('.github/scripts',{recursive:true});fs.writeFileSync(path,Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8'));console.log(`Fetched ${f.sha}`);
           }).catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
-      - name: Repair temporary syntax guard
+      - name: Repair temporary guard and enable diagnostics
         run: |
           node <<'NODE'
           const fs=require('fs'),path='.github/scripts/siza-prism-effect-migration.js';
@@ -38,7 +38,11 @@ jobs:
           const bad=`assert(!src.includes("id==='prism'")&&!src.includes("id==='prism'"),name+' still hardcodes prism ID')`;
           const good=`assert(!src.includes("id==='prism'")&&!src.includes('id==="prism"'),name+' still hardcodes prism ID')`;
           if(!s.includes(bad))throw new Error('Temporary syntax repair anchor missing');
-          fs.writeFileSync(path,s.replace(bad,good));
+          s=s.replace(bad,good);
+          const old=`const core=newDom.window.SIZA.runArenaCriticalV071();assert(core.passed===core.total,'Arena '+core.passed+'/'+core.total);console.log('PASS Arena '+core.passed+'/'+core.total);`;
+          const next=`const core=newDom.window.SIZA.runArenaCriticalV071();for(const r of core.results)console.log((r.pass?'PASS':'FAIL')+' '+r.name+(r.error?' :: '+r.error:''));assert(core.passed===core.total,'Arena '+core.passed+'/'+core.total);console.log('PASS Arena '+core.passed+'/'+core.total);`;
+          if(!s.includes(old))throw new Error('Arena diagnostic anchor missing');
+          fs.writeFileSync(path,s.replace(old,next));
           NODE
       - name: Run guarded Prism migration
         env:
