@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'siza-mobile-test/index.html'
+      - 'siza-core/**'
+      - '.github/scripts/siza-arena-regression.js'
       - '.github/workflows/siza-arena-tests.yml'
   workflow_dispatch:
 
@@ -22,283 +24,28 @@ jobs:
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
 
-      - name: Fetch Arena file at triggering commit
+      - name: Fetch exact Arena regression inputs
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
           GH_SHA: ${{ github.sha }}
         run: |
           node <<'NODE'
-          const fs = require('fs');
-          const repo = process.env.GH_REPOSITORY;
-          const sha = process.env.GH_SHA;
-          const token = process.env.GH_TOKEN;
-          const url = `https://api.github.com/repos/${repo}/contents/siza-mobile-test/index.html?ref=${sha}`;
-          const headers = {
-            'Accept': 'application/vnd.github+json',
-            'Authorization': `Bearer ${token}`,
-            'X-GitHub-Api-Version': '2022-11-28'
-          };
-          fetch(url, { headers }).then(async response => {
-            if (!response.ok) throw new Error(`GET ${response.status}: ${await response.text()}`);
-            const file = await response.json();
-            const html = Buffer.from(file.content.replace(/\n/g, ''), 'base64').toString('utf8');
-            fs.mkdirSync('siza-mobile-test', { recursive: true });
-            fs.writeFileSync('siza-mobile-test/index.html', html);
-            console.log(`Fetched Arena ${file.sha} from commit ${sha}`);
-          }).catch(error => {
-            console.error(error.stack || error.message);
-            process.exit(1);
-          });
+          const fs=require('fs');
+          const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
+          const files=['siza-mobile-test/index.html','siza-core/card-effects.js','siza-core/card-schema.js','siza-core/cards.js','siza-core/card-renderer.js','.github/scripts/siza-arena-regression.js'];
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+          (async()=>{
+            for(const path of files){
+              const r=await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${sha}`,{headers});
+              if(!r.ok)throw new Error(`${path}: GET ${r.status}`);
+              const f=await r.json(),text=Buffer.from(f.content.replace(/\n/g,''),'base64').toString('utf8');
+              const dir=path.split('/').slice(0,-1).join('/');if(dir)fs.mkdirSync(dir,{recursive:true});
+              fs.writeFileSync(path,text);
+              console.log(`Fetched ${path} ${f.sha}`);
+            }
+          })().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
           NODE
 
-      - name: Run Arena v0.7.1 contract
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const { JSDOM, VirtualConsole } = require('jsdom');
-
-          const html = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
-          const virtualConsole = new VirtualConsole();
-          virtualConsole.on('jsdomError', error => {
-            console.error('[JSDOM]', error.message);
-          });
-
-          const dom = new JSDOM(html, {
-            runScripts: 'dangerously',
-            url: 'https://siza.local/',
-            virtualConsole
-          });
-
-          const runner = dom.window.SIZA?.runArenaCriticalV071;
-          if (typeof runner !== 'function') {
-            console.error('FAIL: SIZA.runArenaCriticalV071 is not available.');
-            process.exit(1);
-          }
-
-          const report = runner();
-          console.log(`SIZA Arena contract ${report.version}: ${report.passed}/${report.total}`);
-          for (const result of report.results) {
-            console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
-          }
-
-          dom.window.close();
-          if (report.passed !== report.total) process.exit(1);
-          NODE
-
-      - name: Run live combat regression
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const { JSDOM, VirtualConsole } = require('jsdom');
-
-          const original = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
-          const marker = 'window.SIZA={';
-          if (!original.includes(marker)) throw new Error('SIZA export marker not found');
-          const probe = `window.__SIZA_COMBAT_TEST__={
-            createMatch,
-            setMatch:m=>state.match=m,
-            getMatch:()=>state.match,
-            addCreatureV070,
-            assignAiBlockersV600,
-            assignBlocker,
-            resolveCombatV600,
-            declarePlayerCombat
-          };\n`;
-          const html = original.replace(marker, probe + marker);
-          const virtualConsole = new VirtualConsole();
-          virtualConsole.on('jsdomError', error => console.error('[JSDOM]', error.message));
-          const dom = new JSDOM(html, {
-            runScripts: 'dangerously',
-            url: 'https://siza.local/',
-            virtualConsole
-          });
-          dom.window.setTimeout = () => 0;
-          const H = dom.window.__SIZA_COMBAT_TEST__;
-          if (!H) throw new Error('Combat test hooks were not exposed');
-
-          const results = [];
-          const test = (name, fn) => {
-            try { results.push({ name, pass: !!fn() }); }
-            catch (error) { results.push({ name, pass: false, error: error.message }); }
-          };
-          const fresh = mode => {
-            const M = H.createMatch(false, mode);
-            H.setMatch(M);
-            return M;
-          };
-
-          test('IA excluye bloqueadores agotados en combate real', () => {
-            const M = fresh('immediate');
-            H.addCreatureV070(M.player, 'leviathan');
-            H.addCreatureV070(M.enemy, 'watcher');
-            H.addCreatureV070(M.enemy, 'servitor');
-            M.enemy.exhausted = [0];
-            M.combat = { owner:'player', attackers:[{ index:0, id:'leviathan' }], blockers:{} };
-            H.assignAiBlockersV600();
-            return M.combat.blockers['0'] === 1;
-          });
-
-          test('Jugador no puede asignar una agotada como bloqueador', () => {
-            const M = fresh('immediate');
-            H.addCreatureV070(M.enemy, 'leviathan');
-            H.addCreatureV070(M.player, 'watcher');
-            H.addCreatureV070(M.player, 'servitor');
-            M.player.exhausted = [0];
-            M.combat = { owner:'enemy', attackers:[{ index:0, id:'leviathan' }], blockers:{} };
-            M.active = 'defense';
-            H.assignBlocker(0, 0);
-            const rejected = M.combat.blockers['0'] == null;
-            H.assignBlocker(0, 1);
-            return rejected && M.combat.blockers['0'] === 1;
-          });
-
-          test('Daño simultáneo destruye ambos 2/2 y los manda al Cementerio', () => {
-            const M = fresh('immediate');
-            H.addCreatureV070(M.player, 'servitor');
-            H.addCreatureV070(M.enemy, 'servitor');
-            M.combat = { owner:'player', attackers:[{ index:0, id:'servitor' }], blockers:{'0':0} };
-            M.active = 'enemy-defense';
-            H.resolveCombatV600();
-            return M.player.battlefield.length === 0 && M.enemy.battlefield.length === 0 &&
-              M.player.graveyard.includes('servitor') && M.enemy.graveyard.includes('servitor') &&
-              M.combat === null && M.active === 'player';
-          });
-
-          test('Contrabandista aplica +1 al declarar y queda agotado con combate usado', () => {
-            const M = fresh('immediate');
-            H.addCreatureV070(M.player, 'smuggler');
-            const before = M.enemy.life;
-            H.declarePlayerCombat([0]);
-            return M.enemy.life === before - 1 && M.player.combatUsed === true &&
-              M.player.exhausted.includes(0) && M.combat?.owner === 'player' &&
-              M.combat.attackers.length === 1;
-          });
-
-          for (const result of results) {
-            console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
-          }
-          const passed = results.filter(result => result.pass).length;
-          console.log(`SIZA live combat regression: ${passed}/${results.length}`);
-          dom.window.close();
-          if (passed !== results.length) process.exit(1);
-          NODE
-
-      - name: Run live stack regression
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const { JSDOM, VirtualConsole } = require('jsdom');
-
-          const original = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
-          const marker = 'window.SIZA={';
-          if (!original.includes(marker)) throw new Error('SIZA export marker not found');
-          const probe = `window.__SIZA_STACK_TEST__={
-            createMatch,
-            setMatch:m=>state.match=m,
-            resolveTopStack,
-            resolveStackAll
-          };\n`;
-          const html = original.replace(marker, probe + marker);
-          const virtualConsole = new VirtualConsole();
-          virtualConsole.on('jsdomError', error => console.error('[JSDOM stack]', error.message));
-          const dom = new JSDOM(html, {
-            runScripts: 'dangerously',
-            url: 'https://siza.local/',
-            virtualConsole
-          });
-          dom.window.setTimeout = () => 0;
-          const H = dom.window.__SIZA_STACK_TEST__;
-          if (!H) throw new Error('Stack test hooks were not exposed');
-
-          const results = [];
-          const test = (name, fn) => {
-            try { results.push({ name, pass: !!fn() }); }
-            catch (error) { results.push({ name, pass: false, error: error.message }); }
-          };
-          const fresh = () => {
-            const M = H.createMatch(false, 'prepare');
-            H.setMatch(M);
-            return M;
-          };
-
-          test('Chispa resuelve 2 daño y va al Cementerio', () => {
-            const M = fresh();
-            M.player.graveyard = [];
-            M.enemy.life = 20;
-            M.stack = [{ id:'spark-test', cardId:'spark', owner:'player' }];
-            H.resolveTopStack();
-            return M.enemy.life === 18 && M.stack.length === 0 && M.player.graveyard.includes('spark');
-          });
-
-          test('Niebla roba una carta y va al Cementerio', () => {
-            const M = fresh();
-            M.player.hand = [];
-            M.player.library = ['spark'];
-            M.player.graveyard = [];
-            M.stack = [{ id:'mist-test', cardId:'mist', owner:'player' }];
-            H.resolveTopStack();
-            return M.player.hand.length === 1 && M.player.hand[0] === 'spark' && M.player.graveyard.includes('mist');
-          });
-
-          test('Servidor entra con estado de criatura y abre Observar', () => {
-            const M = fresh();
-            M.player.hand = [];
-            M.player.library = ['spark'];
-            M.stack = [{ id:'servitor-test', cardId:'servitor', owner:'player' }];
-            H.resolveTopStack();
-            return M.player.battlefield[0] === 'servitor' && M.player.powerCounters[0] === 0 &&
-              M.player.summonedOn[0] === M.player.ownTurn && M.pendingChoice?.type === 'observe' &&
-              M.pendingChoice.cardId === 'spark';
-          });
-
-          test('Negación retira el objetivo y ambas cartas van al Cementerio', () => {
-            const M = fresh();
-            M.player.graveyard = [];
-            M.enemy.graveyard = [];
-            M.enemy.life = 20;
-            M.stack = [
-              { id:'target', cardId:'spark', owner:'enemy' },
-              { id:'counter-test', cardId:'counter', owner:'player', targetStackId:'target' }
-            ];
-            H.resolveTopStack();
-            return M.stack.length === 0 && M.player.graveyard.includes('counter') &&
-              M.enemy.graveyard.includes('spark') && M.enemy.life === 20;
-          });
-
-          test('resolveStackAll se detiene ante una elección pendiente', () => {
-            const M = fresh();
-            M.player.hand = [];
-            M.player.library = ['spark'];
-            M.enemy.life = 20;
-            M.stack = [
-              { id:'lower', cardId:'spark', owner:'player' },
-              { id:'top', cardId:'servitor', owner:'player' }
-            ];
-            H.resolveStackAll();
-            return M.pendingChoice?.type === 'observe' && M.stack.length === 1 &&
-              M.stack[0].id === 'lower' && M.enemy.life === 20;
-          });
-
-          for (const result of results) {
-            console.log(`${result.pass ? 'PASS' : 'FAIL'} ${result.name}${result.error ? ` :: ${result.error}` : ''}`);
-          }
-          const passed = results.filter(result => result.pass).length;
-          console.log(`SIZA live stack regression: ${passed}/${results.length}`);
-          dom.window.close();
-          if (passed !== results.length) process.exit(1);
-          NODE
-
-      - name: Report duplicate function declarations
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const html = fs.readFileSync('siza-mobile-test/index.html', 'utf8');
-          const matches = [...html.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)];
-          const counts = new Map();
-          for (const match of matches) counts.set(match[1], (counts.get(match[1]) || 0) + 1);
-          const duplicates = [...counts.entries()].filter(([, count]) => count > 1).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-          console.log(`Named function declarations: ${matches.length}`);
-          console.log(`Duplicate names: ${duplicates.length}`);
-          for (const [name, count] of duplicates) console.log(`${count}x ${name}`);
-          NODE
+      - name: Run Arena regression suite
+        run: node .github/scripts/siza-arena-regression.js
