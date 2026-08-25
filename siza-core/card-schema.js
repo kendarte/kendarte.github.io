@@ -42,8 +42,8 @@ function normalizeArtTransform(input={}){
  return {
   x:Math.max(0,Math.min(100,finiteNumber(input?.x,50))),
   y:Math.max(0,Math.min(100,finiteNumber(input?.y,50))),
-  scale:Math.max(.25,Math.min(4,finiteNumber(input?.scale,1))
- )};
+  scale:Math.max(.25,Math.min(4,finiteNumber(input?.scale,1)))
+ };
 }
 
 function normalizeCard(input={}){
