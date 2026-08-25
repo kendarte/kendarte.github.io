@@ -36,6 +36,8 @@ def _normalize_fact_type(value):
 def _severity_value(value):
     if value is None or isinstance(value, bool):
         return None
+    if isinstance(value, float) and not value.is_integer():
+        return None
     try:
         result = int(value)
     except (TypeError, ValueError):
@@ -332,6 +334,14 @@ def sync_faction_fact_share_policies(npc):
     desired = []
     for fact_id, rows in sorted(by_fact.items()):
         if len(rows) > 1:
+            severity_ranges = [
+                (
+                    row.get("authored_min_severity"),
+                    row.get("authored_max_severity"),
+                )
+                for row in rows
+            ]
+            severity_ranges.sort(key=lambda item: (str(item[0]), str(item[1])))
             conflicts.append(
                 {
                     "fact_id": fact_id,
@@ -339,13 +349,7 @@ def sync_faction_fact_share_policies(npc):
                     "rule_ids": sorted(str(row.get("id") or "") for row in rows),
                     "faction_ids": sorted(str(row.get("inherited_from_faction_id") or "") for row in rows),
                     "selector_modes": sorted(str(row.get("fact_selector_mode") or "") for row in rows),
-                    "severity_ranges": sorted(
-                        (
-                            row.get("authored_min_severity"),
-                            row.get("authored_max_severity"),
-                        )
-                        for row in rows
-                    ),
+                    "severity_ranges": severity_ranges,
                 }
             )
             continue
