@@ -16,6 +16,7 @@ FACT_SHARE_TARGET_MODE_BUILD = "0.92.0-faction-targeted-fact-share-rules"
 FACT_SHARE_AUTHORITY_FILTER_BUILD = "0.93.0-faction-authority-filtered-fact-share-rules"
 FACT_SHARE_RECIPIENT_SELECTION_BUILD = "0.94.0-nearest-limited-faction-fact-share-selection"
 FACT_SHARE_NEED_AWARE_SELECTION_BUILD = "0.95.0-need-aware-nearest-fact-share-selection"
+FACT_SHARE_AUTHORITY_RELATION_BUILD = "0.99.0-upchain-authority-relative-fact-sharing"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -143,12 +144,14 @@ def _remember_obligation_source(npc, obligation_id, rule, target_id):
         "target_mode": mode,
         "faction_id": str((rule or {}).get("faction_id") or "") if mode == "FACTION" else "",
         "min_authority": (rule or {}).get("min_authority") if mode == "FACTION" else None,
+        "authority_relation": str((rule or {}).get("authority_relation") or "ANY").upper() if mode == "FACTION" else None,
         "selection": str((rule or {}).get("selection") or "ALL").upper() if mode == "FACTION" else None,
         "max_targets": (rule or {}).get("max_targets") if mode == "FACTION" else None,
         "build": FACT_SHARE_TARGET_MODE_BUILD,
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
         "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
+        "authority_relation_build": FACT_SHARE_AUTHORITY_RELATION_BUILD,
     }
     npc.db.fact_share_obligation_sources = rows
 
@@ -178,6 +181,13 @@ def _parse_min_authority(rule):
         return None, "BAD_MIN_AUTHORITY"
     if value < 0 or value > 1000:
         return None, "BAD_MIN_AUTHORITY"
+    return value, None
+
+
+def _parse_authority_relation(rule):
+    value = str((rule or {}).get("authority_relation") or "ANY").strip().upper()
+    if value not in {"ANY", "HIGHER_THAN_SOURCE"}:
+        return None, "BAD_AUTHORITY_RELATION"
     return value, None
 
 
@@ -223,14 +233,29 @@ def _resolve_rule_targets(npc, rule):
         min_authority, authority_error = _parse_min_authority(rule)
         if authority_error:
             return mode, [], authority_error
+        authority_relation, relation_error = _parse_authority_relation(rule)
+        if relation_error:
+            return mode, [], relation_error
+        source_authority = None
+        if authority_relation == "HIGHER_THAN_SOURCE":
+            source_authority = membership_authority(npc, faction_id, active_only=True)
+            if source_authority is None:
+                return mode, [], "SOURCE_AUTHORITY_UNAVAILABLE"
+            source_authority = int(source_authority)
         targets = []
         for candidate in _all_npcs():
             if _npc_id(candidate) == source_id or not has_active_membership(candidate, faction_id):
                 continue
-            if min_authority is not None:
+            authority = None
+            if min_authority is not None or authority_relation == "HIGHER_THAN_SOURCE":
                 authority = membership_authority(candidate, faction_id, active_only=True)
-                if authority is None or int(authority) < min_authority:
+                if authority is None:
                     continue
+                authority = int(authority)
+            if min_authority is not None and authority < min_authority:
+                continue
+            if authority_relation == "HIGHER_THAN_SOURCE" and authority <= source_authority:
+                continue
             targets.append(candidate)
         return mode, targets, None
     return mode, [], "UNSUPPORTED_TARGET_MODE"
@@ -335,6 +360,7 @@ def upsert_fact_share_rule(npc, rule):
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
         "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
+        "authority_relation_build": FACT_SHARE_AUTHORITY_RELATION_BUILD,
     }
 
 
@@ -360,6 +386,7 @@ def refresh_fact_share_obligations(npc):
             "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
             "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
             "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
+            "authority_relation_build": FACT_SHARE_AUTHORITY_RELATION_BUILD,
             "materialized": [],
         }
 
@@ -399,7 +426,7 @@ def refresh_fact_share_obligations(npc):
 
         if target_error:
             invalid_cancelled = []
-            if target_error in {"BAD_MIN_AUTHORITY", "BAD_SELECTION", "BAD_MAX_TARGETS"}:
+            if target_error in {"BAD_MIN_AUTHORITY", "BAD_AUTHORITY_RELATION", "SOURCE_AUTHORITY_UNAVAILABLE", "BAD_SELECTION", "BAD_MAX_TARGETS"}:
                 invalid_cancelled = _cancel_rule_obligations(npc, rule_id, reason=target_error)
             skipped.append({
                 "rule_id": rule_id, "reason": target_error, "target_mode": mode,
@@ -465,6 +492,7 @@ def refresh_fact_share_obligations(npc):
                     "target_npc_id": target_id, "target_mode": mode,
                     "faction_id": str(rule.get("faction_id") or "") if mode == "FACTION" else None,
                     "min_authority": rule.get("min_authority") if mode == "FACTION" else None,
+                    "authority_relation": str(rule.get("authority_relation") or "ANY").upper() if mode == "FACTION" else None,
                     "selection": selection_meta.get("selection"), "max_targets": selection_meta.get("max_targets"),
                     "path_length": reachable_meta.get("path_length"), "created": bool(packet.get("created")),
                 })
@@ -480,4 +508,5 @@ def refresh_fact_share_obligations(npc):
         "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
         "recipient_selection_build": FACT_SHARE_RECIPIENT_SELECTION_BUILD,
         "need_aware_selection_build": FACT_SHARE_NEED_AWARE_SELECTION_BUILD,
+        "authority_relation_build": FACT_SHARE_AUTHORITY_RELATION_BUILD,
     }
