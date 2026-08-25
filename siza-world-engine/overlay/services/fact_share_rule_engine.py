@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from evennia import search_tag
 
-from services.faction_engine import has_active_membership
+from services.faction_engine import has_active_membership, membership_authority
 from services.knowledge_context_engine import fact_knowledge_state
 from services.knowledge_fact_engine import find_knowledge_fact
 from services.relationship_engine import create_fact_share_obligation
@@ -12,6 +12,7 @@ FACT_SHARE_RULE_BUILD = "0.89.0-fact-driven-social-share-rules"
 FACT_SHARE_TARGET_AWARENESS_BUILD = "0.90.0-target-aware-fact-share-pruning"
 FACT_SHARE_SOURCE_AWARENESS_BUILD = "0.91.0-source-aware-fact-share-cancellation"
 FACT_SHARE_TARGET_MODE_BUILD = "0.92.0-faction-targeted-fact-share-rules"
+FACT_SHARE_AUTHORITY_FILTER_BUILD = "0.93.0-faction-authority-filtered-fact-share-rules"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -152,7 +153,9 @@ def _remember_obligation_source(npc, obligation_id, rule, target_id):
         "target_npc_id": str(target_id or ""),
         "target_mode": mode,
         "faction_id": str((rule or {}).get("faction_id") or "") if mode == "FACTION" else "",
+        "min_authority": (rule or {}).get("min_authority") if mode == "FACTION" else None,
         "build": FACT_SHARE_TARGET_MODE_BUILD,
+        "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
     }
     npc.db.fact_share_obligation_sources = rows
 
@@ -170,6 +173,21 @@ def _mapped_rule_obligations(npc, rule_id):
     return output
 
 
+def _parse_min_authority(rule):
+    raw = (rule or {}).get("min_authority")
+    if raw is None:
+        return None, None
+    if isinstance(raw, bool):
+        return None, "BAD_MIN_AUTHORITY"
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None, "BAD_MIN_AUTHORITY"
+    if value < 0 or value > 1000:
+        return None, "BAD_MIN_AUTHORITY"
+    return value, None
+
+
 def _resolve_rule_targets(npc, rule):
     mode = str((rule or {}).get("target_mode") or "EXPLICIT").upper()
     source_id = _npc_id(npc)
@@ -184,11 +202,18 @@ def _resolve_rule_targets(npc, rule):
         faction_id = str((rule or {}).get("faction_id") or "").strip()
         if not faction_id:
             return mode, [], "FACTION_NOT_CONFIGURED"
-        targets = [
-            candidate
-            for candidate in _all_npcs()
-            if _npc_id(candidate) != source_id and has_active_membership(candidate, faction_id)
-        ]
+        min_authority, authority_error = _parse_min_authority(rule)
+        if authority_error:
+            return mode, [], authority_error
+        targets = []
+        for candidate in _all_npcs():
+            if _npc_id(candidate) == source_id or not has_active_membership(candidate, faction_id):
+                continue
+            if min_authority is not None:
+                authority = membership_authority(candidate, faction_id, active_only=True)
+                if authority is None or int(authority) < min_authority:
+                    continue
+            targets.append(candidate)
         return mode, targets, None
 
     return mode, [], "UNSUPPORTED_TARGET_MODE"
@@ -231,6 +256,7 @@ def upsert_fact_share_rule(npc, rule):
         "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
         "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
+        "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
     }
 
 
@@ -254,6 +280,7 @@ def refresh_fact_share_obligations(npc):
             "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
             "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
             "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
+            "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
             "materialized": [],
         }
 
@@ -389,6 +416,7 @@ def refresh_fact_share_obligations(npc):
                         "target_npc_id": target_id,
                         "target_mode": mode,
                         "faction_id": str(rule.get("faction_id") or "") if mode == "FACTION" else None,
+                        "min_authority": rule.get("min_authority") if mode == "FACTION" else None,
                         "created": bool(packet.get("created")),
                     }
                 )
@@ -410,4 +438,5 @@ def refresh_fact_share_obligations(npc):
         "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
         "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
         "target_mode_build": FACT_SHARE_TARGET_MODE_BUILD,
+        "authority_filter_build": FACT_SHARE_AUTHORITY_FILTER_BUILD,
     }
