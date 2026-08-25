@@ -1,5 +1,5 @@
 from services.consequence_engine import consequence_rules, upsert_consequence_rule
-from services.knowledge_context_engine import set_knowledge_level
+from services.knowledge_context_engine import knowledge_levels, set_knowledge_level
 from services.knowledge_fact_engine import find_knowledge_fact, upsert_knowledge_fact
 from services.npc_simulation import find_npc
 from world.upgrade_pilot_v51 import MANIFEST_ID
@@ -93,6 +93,7 @@ def ensure_v86_pilot_content():
     if informant.location != site:
         informant.move_to(site, quiet=True)
 
+    existing_fact = find_knowledge_fact(informant, FACT_ID)
     fact = {
         "id": FACT_ID,
         "topic": FACT_TOPIC,
@@ -111,8 +112,14 @@ def ensure_v86_pilot_content():
             "mode": "PREEXISTING_NPC_KNOWLEDGE",
         },
     }
+    if existing_fact:
+        if existing_fact.get("transfer_history") is not None:
+            fact["transfer_history"] = _plain_list(existing_fact.get("transfer_history"))
+        if existing_fact.get("origin_learned_at") is not None:
+            fact["origin_learned_at"] = existing_fact.get("origin_learned_at")
     upsert_knowledge_fact(informant, fact)
-    set_knowledge_level(informant, KNOWLEDGE_KEY, 1)
+    current_level = int(knowledge_levels(informant).get(KNOWLEDGE_KEY, 0) or 0)
+    set_knowledge_level(informant, KNOWLEDGE_KEY, max(current_level, 1))
 
     policies = _plain_dict(getattr(informant.db, "fact_disclosure_policies", {}))
     policies[FACT_ID] = {
