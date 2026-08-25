@@ -53,6 +53,7 @@ jobs:
           test('Schema acepta invocacion + crystals[] de la spec',()=>{const c=S.normalizeCard(queen);return c.cardType==='Creature'&&c.pips.U===3&&c.crystals.length===3&&c.power===5&&c.toughness===5});
           test('Roundtrip Mobile conserva reglas arte y effects',()=>{const m=S.cardToMobileShape(queen),c=S.cardFromMobileShape(m);return m.type==='Creature'&&m.pips.U===3&&m.artUrl.includes('queen.webp')&&m.effects.length===2&&c.effects[0].type==='draw'&&c.rules.includes('Roba dos')});
           test('Contrato de efectos valida vocabulario actual',()=>E.validateEffects(queen.effects).valid&&E.forEvent(queen,'enter').length===2&&!E.validateEffects([{event:'resolve',type:'teleport'}]).valid);
+          test('Schema conserva Equipar y modificador de Equipo',()=>{const m=S.cardToMobileShape(C.get('tideblade')),c=S.cardFromMobileShape(m);return m.equipCost===1&&m.effects?.[0]?.event==='equipped'&&m.effects[0].type==='modify-power'&&c.equipCost===1&&S.validateCard(m).valid});
           test('Renderer construye carta desde datos',()=>{const html=R.renderCard(queen);return html.includes('sizaGeneratedCard')&&html.includes('Memoria de la Reina Ahogada')&&html.includes('Roba dos cartas')&&!html.includes('finalCardImage')});
           test('Renderer aplica artUrl + transform',()=>{const html=R.renderCard(queen);return html.includes('../assets/cards/art/queen.webp')&&html.includes('object-position:44% 35%')&&html.includes('scale(1.2)')});
           test('Thumb reutiliza renderer de arte',()=>{const html=R.renderThumb(queen);return html.includes('sizaGeneratedThumb')&&html.includes('queen.webp')&&html.includes('5/5')});
@@ -71,8 +72,8 @@ jobs:
           html=html.replace('<script src="../siza-core/card-effects.js"></script>',`<script>${effects}</script>`).replace('<script src="../siza-core/card-schema.js"></script>',`<script>${schema}</script>`).replace('<script src="../siza-core/card-renderer.js"></script>',`<script>${renderer}</script>`).replace('<script src="./app.js"></script>',`<script>${app}</script>`);
           if(html.includes('<script src="../siza-core/cards.js"></script>'))html=html.replace('<script src="../siza-core/cards.js"></script>',`<script>${catalog}</script>`);
           const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM]',e.message));const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/siza-card-generator/',virtualConsole:vc});
-          const d=dom.window.document,preview=d.querySelector('#cardPreview .sizaGeneratedCard'),json=d.getElementById('jsonOutput').value,status=d.getElementById('validationStatus').textContent,effectsJson=d.getElementById('effectsJson').value;
-          const ok=!!preview&&preview.textContent.includes('Memoria de la Reina Ahogada')&&json.includes('"schemaVersion": "1.1.0"')&&json.includes('"effects"')&&effectsJson.includes('"discard"')&&status.includes('Schema válido');
+          const d=dom.window.document,preview=d.querySelector('#cardPreview .sizaGeneratedCard'),json=d.getElementById('jsonOutput').value,status=d.getElementById('validationStatus').textContent,effectsJson=d.getElementById('effectsJson').value,schemaVersion=dom.window.SizaCardSchema.VERSION;
+          const ok=!!preview&&preview.textContent.includes('Memoria de la Reina Ahogada')&&json.includes('"schemaVersion": "'+schemaVersion+'"')&&json.includes('"effects"')&&effectsJson.includes('"discard"')&&status.includes('Schema válido');
           console.log(`${ok?'PASS':'FAIL'} Generator usa schema/effects compartidos y crea preview vivo`);dom.window.close();if(!ok)process.exit(1);
           NODE
 
