@@ -9,6 +9,7 @@ from services.relationship_engine import create_fact_share_obligation
 
 FACT_SHARE_RULE_BUILD = "0.89.0-fact-driven-social-share-rules"
 FACT_SHARE_TARGET_AWARENESS_BUILD = "0.90.0-target-aware-fact-share-pruning"
+FACT_SHARE_SOURCE_AWARENESS_BUILD = "0.91.0-source-aware-fact-share-cancellation"
 ENTITY_TAG = "kalnaj_pilot_v03_entities"
 ENTITY_CATEGORY = "siza_entity"
 
@@ -98,6 +99,39 @@ def _retire_pending_fact_share_obligation(npc, target_id, obligation_id):
     return changed
 
 
+def _cancel_pending_fact_share_obligation(npc, target_id, obligation_id):
+    """Cancel one pending SHARE_FACT whose source no longer knows the Fact; later relearning may reactivate it."""
+    if not npc:
+        return False
+    relationships = _plain_dict(getattr(npc.db, "relationships", {}))
+    relation = _plain_dict(relationships.get(str(target_id), {}))
+    obligations = []
+    changed = False
+    now = datetime.now(timezone.utc).isoformat()
+
+    for raw in _plain_list(relation.get("obligations")):
+        item = _record(raw)
+        if item is None:
+            continue
+        if (
+            str(item.get("id") or "") == str(obligation_id)
+            and str(item.get("kind") or "").upper() == "SHARE_FACT"
+            and bool(item.get("active", False))
+        ):
+            item["active"] = False
+            item["status"] = "cancelled"
+            item["cancelled_at"] = now
+            item["cancellation_reason"] = "SOURCE_NO_LONGER_KNOWS_FACT"
+            changed = True
+        obligations.append(item)
+
+    if changed:
+        relation["obligations"] = obligations
+        relationships[str(target_id)] = relation
+        npc.db.relationships = relationships
+    return changed
+
+
 def fact_share_rules(npc):
     if not npc:
         return []
@@ -132,16 +166,18 @@ def upsert_fact_share_rule(npc, rule):
         "rule_id": rule_id,
         "build": FACT_SHARE_RULE_BUILD,
         "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
+        "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
     }
 
 
 def refresh_fact_share_obligations(npc):
-    """Materialize useful SHARE_FACT obligations only when source knows and target does not already know the Fact."""
+    """Materialize useful SHARE_FACT obligations only while source knows and target does not know the Fact."""
     if not npc:
         return {
             "status": "NO_NPC",
             "build": FACT_SHARE_RULE_BUILD,
             "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
+            "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
             "materialized": [],
         }
 
@@ -157,9 +193,18 @@ def refresh_fact_share_obligations(npc):
             skipped.append({"rule_id": rule_id, "reason": "MALFORMED_RULE"})
             continue
 
+        obligation_id = f"SHARE-FACT-{target_id}-{fact_id}"
         fact = find_knowledge_fact(npc, fact_id)
         if not fact or not bool(fact_knowledge_state(npc, fact).get("known")):
-            skipped.append({"rule_id": rule_id, "reason": "SOURCE_DOES_NOT_KNOW_FACT"})
+            cancelled = _cancel_pending_fact_share_obligation(npc, target_id, obligation_id)
+            skipped.append(
+                {
+                    "rule_id": rule_id,
+                    "reason": "SOURCE_DOES_NOT_KNOW_FACT",
+                    "obligation_id": obligation_id,
+                    "cancelled_pending": bool(cancelled),
+                }
+            )
             continue
 
         target = _npc_by_id(target_id)
@@ -167,7 +212,6 @@ def refresh_fact_share_obligations(npc):
             skipped.append({"rule_id": rule_id, "reason": "TARGET_NOT_FOUND"})
             continue
 
-        obligation_id = f"SHARE-FACT-{target_id}-{fact_id}"
         if bool(rule.get("one_shot", True)) and _completed_obligation_exists(npc, target_id, obligation_id):
             skipped.append({"rule_id": rule_id, "reason": "ALREADY_COMPLETED", "obligation_id": obligation_id})
             continue
@@ -209,4 +253,5 @@ def refresh_fact_share_obligations(npc):
         "skipped": skipped,
         "build": FACT_SHARE_RULE_BUILD,
         "target_awareness_build": FACT_SHARE_TARGET_AWARENESS_BUILD,
+        "source_awareness_build": FACT_SHARE_SOURCE_AWARENESS_BUILD,
     }
