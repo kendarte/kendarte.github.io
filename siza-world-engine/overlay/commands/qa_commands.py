@@ -1,9 +1,9 @@
 from evennia import Command
 
-from commands.world_input_v95_commands import CmdSizaValidateV95
+from commands.world_input_v96_commands import CmdSizaValidateV96
 
 
-QA_BUILD = "0.95.0-risk-based-one-command-qa"
+QA_BUILD = "0.96.0-risk-based-one-command-qa"
 
 
 def _run_command(command_cls, caller, args=""):
@@ -35,10 +35,10 @@ class CmdSizaQALatest(Command):
     def func(self):
         self.caller.msg(f"=== SIZA QA LATEST | {QA_BUILD} ===")
         self.caller.msg(
-            "RISK PROFILE: v0.94 is closed at 9/9 after proving FACTION rules can select a deterministic nearest reachable subset after membership/authority filtering. v0.95 fixes the limited-slot ordering gap: under selection=NEAREST, recipients that already know the exact Fact or whose one-shot SHARE_FACT obligation is already completed are removed before max_targets slots are assigned. Existing v0.90 target-aware retirement remains authoritative for a pending branch whose target learns independently; v0.95 performs that retirement before ranking so the next ignorant reachable recipient can fill the same scarce slot in the same refresh. selection=ALL remains on the v0.93/v0.94 path unchanged. Running normal nearest baseline, additive build metadata, independent-target-learning fallback, completed-one-shot fallback after forgetting, ALL compatibility and no-recipient-needs-the-Fact behavior with exact state restoration."
+            "RISK PROFILE: v0.95 is closed at 6/6 after proving limited NEAREST Fact sharing assigns scarce slots only to recipients that still need the exact Fact. v0.96 closes the institutional-authoring scale gap without changing faction or SHARE_FACT authority: an active faction definition may carry fact_share_policies, and a deterministic pre-decision sync projects those policies into managed namespaced NPC rules for current members. Existing v0.89-v0.95 refresh then owns target filtering, nearest selection, stale pruning and local transfer as before. Leaving the source faction or removing the faction policy removes the managed rule and cancels its pending intent; rejoining reuses the same normal obligation identity. A local NPC rule for the same fact overrides the inherited policy. Multiple active faction policies for the same fact fail closed instead of silently picking one. Running inheritance, normal nearest/authority materialization, wrapper ordering, membership churn, policy removal/recovery, local override and cross-faction conflict with exact registry/NPC state restoration."
         )
-        _run_command(CmdSizaValidateV95, self.caller)
+        _run_command(CmdSizaValidateV96, self.caller)
         self.caller.msg(
-            "QA POLICY: v0.95 changes deterministic limited-recipient ordering only. The validator proves v0.94 nearest behavior is unchanged when all recipients need the Fact, that an already-known nearest target is retired before slot assignment and the farther ignorant target is selected immediately, that terminal one-shot recipients cannot consume slots after later forgetting, and that selection=ALL remains unchanged. qwen, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
+            "QA POLICY: v0.96 adds deterministic faction-policy projection plus one pre-social-refresh wrapper call. The validator proves inherited policies reuse the existing v0.89-v0.95 SHARE_FACT authority, that managed intent follows source membership/policy state, that local rules override rather than duplicate institutional authority, and that conflicting inherited policies fail closed. qwen, faction_engine implementation, npc_decision, relationship resolution, transfer_knowledge_fact, pathfinding and consequence engines are unchanged. No separate manual acceptance is required if all assertions pass."
         )
         self.caller.msg("=== SIZA QA LATEST COMPLETE ===")
