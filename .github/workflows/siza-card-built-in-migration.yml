@@ -1,0 +1,152 @@
+name: Siza Built-in Card Renderer Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-card-built-in-migration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-card-renderer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install transformation dependencies
+        run: npm install --no-save acorn@8 jsdom@24
+
+      - name: Migrate full-card PNG runtime to built-in renderer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const acorn=require('acorn');
+          const {JSDOM,VirtualConsole}=require('jsdom');
+          const repo=process.env.GH_REPOSITORY,token=process.env.GH_TOKEN,path='siza-mobile-test/index.html';
+          const api=`https://api.github.com/repos/${repo}/contents/${path}`;
+          const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
+
+          function parseMain(html){
+            const so=html.lastIndexOf('<script>'),sc=html.indexOf('</script>',so);
+            if(so<0||sc<0)throw new Error('Main script block not found');
+            const cs=so+'<script>'.length,code=html.slice(cs,sc);
+            const ast=acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),decl=[];
+            function walk(n){if(!n||typeof n!=='object')return;if(n.type==='FunctionDeclaration'&&n.id)decl.push(n);for(const[k,v]of Object.entries(n)){if(k==='start'||k==='end'||k==='loc')continue;if(Array.isArray(v))for(const c of v)walk(c);else if(v&&typeof v==='object'&&typeof v.type==='string')walk(v)}}
+            walk(ast);return{codeStart:cs,scriptClose:sc,code,declarations:decl};
+          }
+          function replaceLastFunction(html,name,replacement){
+            const p=parseMain(html),nodes=p.declarations.filter(n=>n.id.name===name).sort((a,b)=>a.start-b.start);
+            if(!nodes.length)throw new Error(`${name}: declaration not found`);
+            const n=nodes[nodes.length-1];
+            const next=p.code.slice(0,n.start)+replacement+p.code.slice(n.end);
+            return html.slice(0,p.codeStart)+next+html.slice(p.scriptClose);
+          }
+          function makeDom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error(`[JSDOM ${label}]`,e.message));return new JSDOM(html,{runScripts:'dangerously',url:'https://siza.local/',virtualConsole:vc})}
+          function assert(cond,msg){if(!cond)throw new Error(msg)}
+
+          const css=`
+          /* CARD BUILT-IN V1: data-driven card faces; legacy full-card images are not rendered. */
+          .generatedCardV1 .cardArt{overflow:hidden}
+          .generatedArtImageV1{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center;display:block}
+          .generatedCardThumbV1{position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#e9dfc8;color:#101820;border:1px solid rgba(44,39,29,.72);box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
+          .generatedCardThumbV1.blue{border-color:#366e95}.generatedCardThumbV1.red{border-color:#954a42}.generatedCardThumbV1.land{border-color:#776f61}.generatedCardThumbV1.multi{border-color:#8b7440}
+          .generatedThumbNameV1{height:22%;padding:4px 5px 2px;font:700 8px/1.05 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .generatedThumbArtV1{position:relative;height:52%;margin:0 4px;overflow:hidden;border:1px solid rgba(38,45,49,.58);background:linear-gradient(145deg,#224e70,#0d263a 55%,#1e1417)}
+          .generatedCardThumbV1.red .generatedThumbArtV1{background:radial-gradient(circle at 50% 40%,#dd835c,#5b2623 52%,#1d1010)}
+          .generatedCardThumbV1.blue .generatedThumbArtV1{background:radial-gradient(circle at 50% 45%,#63b5df,#17496a 55%,#0c2232)}
+          .generatedCardThumbV1.land .generatedThumbArtV1{background:linear-gradient(180deg,#405d69,#182e3d 58%,#0c161d)}
+          .generatedCardThumbV1.multi .generatedThumbArtV1{background:linear-gradient(135deg,#345b76,#542a2c)}
+          .generatedThumbArtV1 .artGlyph{font-size:34px}.generatedThumbArtV1 .artLabel{font-size:6px}
+          .generatedThumbTypeV1{padding:3px 5px;font:600 6px/1.1 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .generatedThumbPtV1{position:absolute;right:4px;bottom:3px;padding:2px 4px;border:1px solid #756d5c;border-radius:5px;background:#dfd5bf;font:800 8px/1 sans-serif}
+          .generatedFaceSlotV1{width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;border-radius:inherit}
+          .pendingTargetV070 .generatedFaceSlotV1,.blockerChoiceV600 .generatedFaceSlotV1,.equipChoiceV600 .generatedFaceSlotV1,.offeringChoiceV070 .generatedFaceSlotV1,.burnChoiceV600 .generatedFaceSlotV1{pointer-events:none}
+          .fieldCardFocusV610>.generatedCardV1{width:min(300px,46%);min-height:360px;flex:0 0 auto}
+          `;
+
+          const helpers=`function cardArtMarkupV1(c){
+            const t=c?.artTransform||{},x=Number.isFinite(Number(t.x))?Number(t.x):50,y=Number.isFinite(Number(t.y))?Number(t.y):50,scale=Math.max(.25,Math.min(4,Number.isFinite(Number(t.scale))?Number(t.scale):1));
+            if(c?.artUrl)return \`<img class="generatedArtImageV1" src="\${esc(c.artUrl)}" alt="" draggable="false" style="object-position:\${x}% \${y}%;transform:scale(\${scale})">\`;
+            return \`<span class="artGlyph">\${c?.glyph||'✦'}</span><span class="artLabel">\${esc(c?.subtype||c?.type||'Carta')}</span>\`;
+          }
+          function cardThumbHtmlV1(c,opts={}){
+            if(!c)return'';const stats=opts.stats||{},power=stats.power??c.power,toughness=stats.toughness??c.toughness;
+            return \`<div class="generatedFaceSlotV1"><div class="generatedCardThumbV1 \${c.art||''}"><div class="generatedThumbNameV1">\${esc(c.name)}</div><div class="generatedThumbArtV1">\${cardArtMarkupV1(c)}</div><div class="generatedThumbTypeV1">\${esc(c.subtype||c.type)}</div>\${power!=null?\`<div class="generatedThumbPtV1">\${power}/\${toughness}</div>\`:''}</div></div>\`;
+          }
+          `;
+
+          const cardHtml=`function cardHtml(c,opts={}){
+            const locked=opts.locked,req=manifestRequirement(c),risk=req.text,stats=opts.stats||{},power=stats.power??c.power,toughness=stats.toughness??c.toughness;
+            return \`<article class="sizaCard generatedCardV1 \${c.art||''}"><div class="cardRisk">\${risk}</div><div class="cardInner"><div class="cardName"><span>\${esc(c.name)}</span><span class="manaCost">\${manaHtml(c)}</span></div><div class="cardArt \${c.art||''}">\${cardArtMarkupV1(c)}</div><div class="typeLine">\${esc(c.type)}\${c.subtype?' — '+esc(c.subtype):''}</div><div class="rulesBox">\${esc(c.text)}<div class="flavor">\${esc(c.flavor||'')}</div></div>\${power!=null?\`<div class="pt">\${power}/\${toughness}</div>\`:''}</div>\${opts.actions?\`<div class="cardFooterActions">\${opts.actions}</div>\`:''}\${locked?\`<div class="lockedOverlay"><div><b>Memoria no manifestada</b>Completa el Final Event del Muelle Viejo.</div></div>\`:''}</article>\`;
+          }`;
+
+          const matchCardMini=`function matchCardMini(id,owner,i){const M=state.match,P=M[owner],c=cardById(id),ex=(P.exhausted||[]).includes(i),prep=preparingV070(P,i),sel=owner==='player'&&M.ui.creature===i,cnt=counterV070(P,i),eq=equipmentFor(P,i);return \`<div class="arenaMiniCard generatedArenaMiniV1 creature \${sel?'selected':''} \${ex?'exhaustedV610':''} \${prep?'preparingV070':''}" role="button" onclick="SIZA.tapFieldCard('\${owner}',\${i})">\${cardThumbHtmlV1(c,{stats:{power:effectivePower(P,i),toughness:toughV070(P,i)}})}\${eq.length?\`<div class="equipmentBadgeV600">⚔ +\${eq.length*2}/+0</div>\`:''}\${cnt?\`<div class="counterBadgeV070">+\${cnt}/+\${cnt}</div>\`:''}\${ex?'<div class="cardStateRuneV610">◷</div>':''}</div>\`}`;
+
+          const fieldFocus=`function fieldCardFocusHtml(){const M=state.match,F=M?.ui?.fieldFocus,P=F&&M[F.owner],c=cardById(P?.battlefield?.[F.index]);if(!c)return'';const st=\`\${(P.exhausted||[]).includes(F.index)?' · AGOTADA':''}\${preparingV070(P,F.index)?' · PREPARANDO':''}\`;return \`<div class="fieldFocusScrimV610" onclick="SIZA.closeFieldFocus()"></div><section class="fieldCardFocusV610" ondblclick="SIZA.closeFieldFocus()">\${cardHtml(c,{stats:{power:effectivePower(P,F.index),toughness:toughV070(P,F.index)}})}<div class="fieldFocusMetaV610"><div><b>\${esc(c.name)}</b><span>\${esc(c.text)}\${st}</span></div><div class="fieldFocusStatsV610">\${effectivePower(P,F.index)}/\${toughV070(P,F.index)}</div></div><div class="fieldFocusHintV610">DOBLE TOQUE O TOCA FUERA PARA CERRAR</div></section>\`}`;
+
+          const manifestInline=`function manifestInlineHtml(){
+            const m=state.modal,M=state.match;if(!m)return'';const P=M[m.owner],c=cardById(m.cardId),face=m.ai?'':cardThumbHtmlV1(c);
+            if(m.stage==='flex')return \`<div class="manifestInlineV5 manifestStageV600"><div class="committedCardV5">\${face}</div><div class="manifestEquationV600"><div class="equationPartsV600">COSTE FLEXIBLE {1}</div><div class="paymentRowV070">\${m.payment.options.map(k=>\`<button class="paymentChoiceV070" onclick="SIZA.choosePaymentV070('\${k}')">\${COLORS[k]}</button>\`).join('')}</div></div></div>\`;
+            if(m.stage==='offering')return \`<div class="manifestInlineV5 manifestStageV600"><div class="committedCardV5">\${face}</div><div class="manifestEquationV600"><div class="equationPartsV600">OFRENDA · EN PRUEBA</div><div class="equationTotalV600">Falta <span>\${COLORS[m.payment.missing]}</span></div><div class="paymentRowV070">\${m.payment.candidates.map(x=>\`<button class="offeringChoiceV070" onclick="SIZA.chooseOfferingV070(\${x.index})">\${cardThumbHtmlV1(x.c)}</button>\`).join('')}</div></div></div>\`;
+            const rolled=m.roll!=null,lands=P.hand.map((id,i)=>cardById(id)?.type==='Land'&&i!==m.idx?i:-1).filter(i=>i>=0),total=rolled?P.mf+m.roll+m.prismBonus+m.burnSelected.length:0,remain=rolled?Math.max(0,m.dc-total):0,prism=rolled&&!m.prismBonus&&(c.pips?.U>0)&&(P.artifacts||[]).some((id,i)=>id==='prism'&&!(P.artifactExhausted||[]).includes(i)),canFinish=rolled&&remain===0;
+            const action=canFinish?\`<button class="collapseSpellV600" onclick="SIZA.commitManifest()">CONTINUAR · ÉXITO</button>\`:rolled&&m.aiFailure?\`<button class="collapseSpellV600" onclick="SIZA.failManifest()">CONTINUAR · FALLO</button>\`:rolled&&!m.ai?\`<button class="collapseSpellV600" onclick="SIZA.failManifest()">ACEPTAR FALLO</button>\`:'';
+            return \`<div class="manifestInlineV5 manifestStageV600"><div class="committedCardV5">\${face}</div><div class="mfSourceV600"><div><span>MF</span><b>+\${P.mf}</b></div></div><div class="manifestDieV5 \${rolled?'':'rolling'}">\${rolled?m.roll:'?'}</div><div class="manifestEquationV600"><div class="equationPartsV600">\${rolled?\`MF \${P.mf} + dado \${m.roll}\${m.prismBonus?' + Prisma 1':''}\${m.burnSelected.length?\` + Burn \${m.burnSelected.length}\`:''}\`: \`Objetivo D\${m.dc}\`}</div><div class="equationTotalV600">\${rolled?\`\${total} <span>/ D\${m.dc}</span>\`:\`D\${m.dc}\`}</div>\${rolled&&remain?\`<div class="equationStatusV600 \${lands.length+(prism?1:0)>=remain?'wait':'bad'}">FALTAN \${remain}</div>\${prism?'<button class="paymentChoiceV070" onclick="SIZA.usePrismV070()">AGOTAR PRISMA +1</button>':''}\${!m.ai?\`<div class="burnChoicesV600">\${lands.map(i=>\`<button class="burnChoiceV600 \${m.burnSelected.includes(i)?'selected':''}" onclick="SIZA.selectBurn(\${i})">\${cardThumbHtmlV1(cardById(P.hand[i]))}</button>\`).join('')}</div>\`:''}\`:rolled?'<div class="equationStatusV600 good">ÉXITO</div>':''}\${action}</div></div>\`;
+          }`;
+
+          const pendingChoice=`function pendingChoiceHtmlV070(){const M=state.match,Q=M?.pendingChoice;if(!Q)return'';if(Q.type==='observe'){const c=cardById(Q.cardId);return \`<section class="pendingChoiceV070"><h3>Servidor Ahogado · Observar</h3><div class="pendingTargetsV070"><div class="pendingTargetV070">\${cardThumbHtmlV1(c)}<b>\${esc(c.name)}</b></div></div><button class="btn" onclick="SIZA.continueChoiceV070()">CONTINUAR</button></section>\`}if(Q.type==='discard')return \`<section class="pendingChoiceV070"><h3>Reina Ahogada · Descarta una</h3><div class="pendingTargetsV070">\${M.player.hand.map((id,i)=>{const c=cardById(id);return \`<button class="pendingTargetV070" onclick="SIZA.discardChoiceV070(\${i})">\${cardThumbHtmlV1(c)}<b>\${esc(c.name)}</b></button>\`}).join('')}</div></section>\`;return \`<section class="pendingChoiceV070"><h3>Leviatán · Devuelve otro permanente</h3><div class="pendingTargetsV070">\${Q.targets.map((x,i)=>{const c=cardById(x.id);return \`<button class="pendingTargetV070" onclick="SIZA.bounceChoiceV070(\${i})">\${cardThumbHtmlV1(c)}<b>\${esc(c.name)}</b></button>\`}).join('')}</div></section>\`}`;
+
+          const defense=`function defensePanelHtml(){const M=state.match,C=M?.combat;if(!C)return'';const A=M[C.owner],D=C.owner==='player'?M.enemy:M.player,interactive=C.owner==='enemy',legal=new Set(legalBlockersV070(D)),used=Object.values(C.blockers);return \`<div class="defensePanelV600"><h3>\${interactive?'Tu Defensa':'Defensa rival'}</h3><p>Las Invocaciones agotadas no pueden bloquear.</p>\${C.attackers.map((a,s)=>{const ac=cardById(A.battlefield[a.index]),bi=C.blockers[String(s)],bc=bi==null?null:cardById(D.battlefield[bi]);return \`<div class="defenseRowV600"><div class="defenseAttackerV600">\${cardThumbHtmlV1(ac,{stats:{power:effectivePower(A,a.index),toughness:toughV070(A,a.index)}})}<b>\${ac.name} · \${effectivePower(A,a.index)}/\${toughV070(A,a.index)}</b></div><div class="blockerChoicesV600">\${interactive?D.battlefield.map((id,i)=>{const c=cardById(id),ok=legal.has(i);return \`<button class="blockerChoiceV600 \${bi===i?'selected':''} \${used.includes(i)&&bi!==i?'used':''} \${ok?'':'illegalV070'}" \${ok?'':'disabled'} onclick="SIZA.assignBlocker(\${s},\${i})">\${cardThumbHtmlV1(c,{stats:{power:effectivePower(D,i),toughness:toughV070(D,i)}})}</button>\`}).join(''):bc?\`<button class="blockerChoiceV600 selected" disabled>\${cardThumbHtmlV1(bc,{stats:{power:effectivePower(D,bi),toughness:toughV070(D,bi)}})}</button>\`:'Sin bloqueo'}</div></div>\`}).join('')}\${interactive?'<button class="resolveCombatV600" onclick="SIZA.resolveDefense()">RESOLVER DAÑO</button>':''}</div>\`}`;
+
+          const equipPanel=`function equipPanelHtml(){const M=state.match,Q=M?.pendingEquip;if(!Q)return'';const P=M.player,eq=P.equipment[Q.eqIndex],c=cardById(eq.id),colors=['U','R','G','W','B'].filter(k=>(P.crystals?.[k]||0)>0);return \`<div class="equipPanelV600"><h3>Equipar \${c.name} · {1}</h3><p>Elige el cristal; la Arena no decide el color ocultamente.</p><div class="paymentRowV070">\${colors.map(k=>\`<button class="paymentChoiceV070 \${Q.color===k?'selected':''}" onclick="SIZA.chooseEquipCrystalV070('\${k}')">\${COLORS[k]}</button>\`).join('')}</div><div class="equipChoicesV600">\${P.battlefield.map((id,i)=>{const x=cardById(id);return \`<button class="equipChoiceV600" \${Q.color?'':'disabled'} onclick="SIZA.equipTo(\${i})">\${cardThumbHtmlV1(x,{stats:{power:effectivePower(P,i),toughness:toughV070(P,i)}})}<span>\${x.name}</span></button>\`}).join('')}</div></div>\`}`;
+
+          async function main(){
+            const read=await fetch(`${api}?ref=main`,{headers});if(!read.ok)throw new Error(`GET ${read.status}: ${await read.text()}`);
+            const current=await read.json();let html=Buffer.from(current.content.replace(/\n/g,''),'base64').toString('utf8');
+            console.log(`Current Arena blob ${current.sha}`);
+            assert((html.match(/finalCardImage:FINAL_CARD_IMAGES\./g)||[]).length===13,'Expected exactly 13 current full-card bindings');
+            assert(html.includes('const FINAL_CARD_IMAGES={'),'FINAL_CARD_IMAGES declaration not found');
+            assert(!html.includes('function cardThumbHtmlV1('),'Built-in V1 helper already exists');
+
+            html=html.replace('const FINAL_CARD_IMAGES={','const LEGACY_FULL_CARD_IMAGES={');
+            html=html.replace(/finalCardImage:FINAL_CARD_IMAGES\./g,'legacyFullCardImage:LEGACY_FULL_CARD_IMAGES.');
+            assert((html.match(/legacyFullCardImage:LEGACY_FULL_CARD_IMAGES\./g)||[]).length===13,'Legacy binding migration count mismatch');
+            html=html.replace('</style>',css+'\n</style>',1);
+            const anchor='function cardHtml(c,opts={}){';
+            assert(html.includes(anchor),'cardHtml anchor not found');
+            html=html.replace(anchor,helpers+anchor,1);
+            html=replaceLastFunction(html,'cardHtml',cardHtml);
+            html=replaceLastFunction(html,'matchCardMini',matchCardMini);
+            html=replaceLastFunction(html,'fieldCardFocusHtml',fieldFocus);
+            html=replaceLastFunction(html,'manifestInlineHtml',manifestInline);
+            html=replaceLastFunction(html,'pendingChoiceHtmlV070',pendingChoice);
+            html=replaceLastFunction(html,'defensePanelHtml',defense);
+            html=replaceLastFunction(html,'equipPanelHtml',equipPanel);
+
+            const marker='window.SIZA={';
+            assert(html.includes(marker),'SIZA export marker not found');
+            const probe=`window.__CARD_BUILTIN_TEST__={cardById,cardHtml,cardThumbHtmlV1,createMatch,setMatch:m=>state.match=m,matchCardMini,fieldCardFocusHtml,renderCollection,renderMatchV600,openManifest,manifestInlineHtml,addCreatureV070,pendingChoiceHtmlV070,defensePanelHtml,equipPanelHtml};\n`;
+            const testHtml=html.replace(marker,probe+marker);
+            const dom=makeDom(testHtml,'renderer');dom.window.setTimeout=()=>0;
+            const H=dom.window.__CARD_BUILTIN_TEST__;assert(H,'Renderer hooks unavailable');
+            const mist=H.cardById('mist');
+            assert(!('finalCardImage' in mist),'CARD_DB still exposes finalCardImage');
+            assert(!!mist.legacyFullCardImage,'Legacy reference missing');
+            let out=H.cardHtml(mist);
+            assert(out.includes('generatedCardV1'),'Full card is not generated by built-in renderer');
+            assert(out.includes('Niebla de Sal')&&out.includes('Roba una carta.'),'Built-in full card lost live data');
+            assert(!out.includes('cards-v0514'),'Full card still renders legacy full-card asset');
+            out=H.cardThumbHtmlV1(mist);
+            assert(out.includes('generatedCardThumbV1')&&!out.includes('cards-v0514'),'Thumbnail is not data-driven');
+            const M=H.createMatch(false,'immediate');H.setMatch(M);H.addCreatureV070(M.player,'servitor');
+            out=H.matchCardMini('servitor','player',0);assert(out.includes('generatedCardThumbV1')&&!out.includes('cards-v0514'),'Battlefield still uses full-card image');
+            M.ui.fieldFocus={owner:'player',index:0};out=H.fieldCardFocusHtml();assert(out.includes('generatedCardV1')&&!out.includes('cards-v0514'),'Field focus still uses full-card image');
+            M.player.hand=['spark','dock'];M.player.crystals={U:2,R:1};H.openManifest(0,H.cardById('spark'),'player',false);out=H.manifestInlineHtml();assert(out.includes('generatedCardThumbV1')&&!out.includes('cards-v0514'),'Manafestation still uses full-card image');
+            const core=dom.window.SIZA.runArenaCriticalV071();console.log(`Core contract ${core.passed}/${core.total}`);for(const r of core.results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}`);assert(core.passed===core.total,'Core contract failed after renderer migration');
+            dom.window.close();
+
+            const write=await fetch(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Restore data-driven built-in Siza card renderer',content:Buffer.from(html,'utf8').toString('base64'),sha:current.sha,branch:'main'})});
+            if(!write.ok)throw new Error(`PUT ${write.status}: ${await write.text()}`);const result=await write.json();console.log(`COMMIT ${result.commit.sha}`);
+          }
+          main().catch(e=>{console.error(e.stack||e.message);process.exit(1)});
+          NODE
