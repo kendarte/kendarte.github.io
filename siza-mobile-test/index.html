@@ -395,6 +395,7 @@ body{min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}
 <script src="../siza-core/manifest-rules.js"></script>
 <script src="../siza-core/crystal-rules.js"></script>
 <script src="../siza-core/entry-rules.js"></script>
+<script src="../siza-core/creature-rules.js"></script>
 <script>
 const NEREIDA_IMG='portraits/nereida_voss.webp?v=0514';
 (function(){
@@ -488,7 +489,7 @@ function resetDeck(){state.deck=starterDeck();save();render();toast('Deck restau
 function makeLibrary(){const arr=[];for(const [id,n] of Object.entries(state.deck.counts))for(let i=0;i<n;i++)arr.push(id);return shuffle(arr)}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function d6(){return 1+Math.floor(Math.random()*6)}
-function equipmentFor(P,idx){return (P.equipment||[]).filter(e=>e.target===idx)}
+function equipmentFor(P,idx){return SizaCreatureRules.equipmentFor(P,idx)}
 /* canonicalized matchCardMini: earlier declaration removed */
 function handCardHtml(id,idx){const c=cardById(id),sel=state.match?.ui?.hand===idx;const angle=(idx-(state.match.player.hand.length-1)/2)*1.8;return `<div class="handCardV5 ${sel?'selected':''}" style="transform:rotate(${angle}deg);z-index:${sel?35:idx+2}">${cardHtml(c)}<button class="handCardButton" title="${esc(c.name)}" onclick="SIZA.tapHand(${idx})"></button></div>`}
 /* canonicalized matchCardFocus: earlier declaration removed */
@@ -544,12 +545,12 @@ function createMatch(adventure=false,mode='prepare'){const p=makeDuelistV070(mak
 function startPractice(mode){if(!mode){state.match=null;state.pendingAdventureDuel=false;state.route='match';save();return render()}if(totalDeck()!==60){state.route='deck';render();return toast('Completa primero un deck de 60 cartas.','bad')}state.match=createMatch(false,mode);state.route='match';save();render()}
 function startAdventureDuel(mode){if(!mode){state.match=null;state.pendingAdventureDuel=true;state.route='match';save();return render()}if(totalDeck()!==60)state.deck=starterDeck();state.match=createMatch(true,mode);state.match.enemy.life=12;state.match.log.push({t:'Historia',m:'El Contrabandista Carmesí abre su baraja.'});state.pendingAdventureDuel=false;state.route='match';save();render()}
 function startConfiguredV070(mode){return state.pendingAdventureDuel?startAdventureDuel(mode):startPractice(mode)}
-function counterV070(P,i){return P.powerCounters?.[i]||0}
+function counterV070(P,i){return SizaCreatureRules.counter(P,i)}
 function isEquipmentCardV1(c){return !!(c?.type==='Artifact'&&((c.equipCost||0)>0||SizaCardEffects.forEvent(c,'equipped').length))}
 function equipmentEquipCostV1(c){return Math.max(0,Number(c?.equipCost)||0)}
-function equipmentPowerBonusV1(P,i){return equipmentFor(P,i).reduce((sum,e)=>{const c=cardById(e.id);return sum+SizaCardEffects.forEvent(c,'equipped').filter(x=>x.type==='modify-power').reduce((n,x)=>n+(x.amount||0),0)},0)}
-function effectivePower(P,i){const c=cardById(P.battlefield[i]);return(c?.power||0)+counterV070(P,i)+equipmentPowerBonusV1(P,i)}
-function toughV070(P,i){return(cardById(P.battlefield[i])?.toughness||0)+counterV070(P,i)}
+function equipmentPowerBonusV1(P,i){return SizaCreatureRules.equipmentPowerBonus(P,i,cardById,SizaCardEffects.forEvent)}
+function effectivePower(P,i){return SizaCreatureRules.effectivePower(P,i,cardById,SizaCardEffects.forEvent)}
+function toughV070(P,i){return SizaCreatureRules.toughness(P,i,cardById)}
 function preparingV070(P,i){const mode=state.match?.rules?.entryMode||'prepare';return SizaEntryRules.isPreparing(P,i,mode,cardById,spellCostV070)}
 function canAttackV070(P,i){const mode=state.match?.rules?.entryMode||'prepare';return SizaEntryRules.canAttack(P,i,mode,cardById,spellCostV070)}
 function availableAttackersV610(){const P=state.match?.player,mode=state.match?.rules?.entryMode||'prepare';return P?SizaEntryRules.availableAttackers(P,mode,cardById,spellCostV070):[]}
