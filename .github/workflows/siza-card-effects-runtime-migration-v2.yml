@@ -38,3 +38,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/siza-card-effects-runtime-migration.js
+
+# retry after exact-script fetch was added
