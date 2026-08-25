@@ -2,7 +2,7 @@ const fs=require('fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 
 let html=fs.readFileSync('siza-mobile-test/index.html','utf8');
-for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js']){
+for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js']){
   const tag=`<script src="../siza-core/${name}"></script>`;
   if(!html.includes(tag))throw new Error(`Missing shared core tag ${name}`);
   html=html.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
