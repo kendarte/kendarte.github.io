@@ -3,6 +3,7 @@
 
 {% block guilib_import %}
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_shell_v02.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_interaction_v03.css' %}">
 <style id="siza-compact-header-inline-v04">
 /* Served inline on purpose: this must win even when static CSS is stale/cached. */
 .sizaBookClient {
@@ -73,7 +74,6 @@
     width: 5px !important;
     height: 5px !important;
 }
-/* The location already lives in the center header. Never duplicate it on the scene. */
 .sizaSceneTopPlaque {
     display: none !important;
 }
@@ -91,6 +91,7 @@
 <script src="{% static 'webclient/js/siza_book_client.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_book_shell_v02.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_world_tcg_transport_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_book_interaction_v03.js' %}" type="text/javascript" charset="utf-8"></script>
 {% endblock %}
 
 {% block client %}
