@@ -2,8 +2,11 @@ import copy
 import time
 import uuid
 
+from services.consequence_engine import emit_world_action
+from services.player_recipient_consequence_engine import apply_player_actor_consequences
 
-WORLD_COMBAT_HANDOFF_BUILD = "0.1.0-world-tcg-handoff"
+
+WORLD_COMBAT_HANDOFF_BUILD = "0.2.0-world-tcg-consequences"
 ENCOUNTER_TYPE = "COMBAT_CONFRONTATION"
 PENDING_STATUS = "PENDING"
 RESOLVED_STATUS = "RESOLVED"
@@ -250,24 +253,133 @@ def validate_world_combat_result(actor, result):
     }
 
 
+
+def _combat_result_participant(result, entity_id):
+    wanted = _text(entity_id)
+    for row in _plain_list((result or {}).get("participants")):
+        item = _plain_dict(row)
+        if _text(item.get("entity_id")) == wanted:
+            return item
+    return {}
+
+
+def build_world_combat_action(encounter, result):
+    """Translate one validated TCG result into the normal World consequence action contract."""
+    encounter = _plain_dict(encounter)
+    result = _plain_dict(result)
+    encounter_id = _text(encounter.get("encounter_id"))
+    result_id = _text(result.get("result_id")) or f"{encounter_id}:RESULT"
+    initiator = _plain_dict(encounter.get("initiator"))
+    opponents = [_plain_dict(row) for row in _plain_list(encounter.get("opponents")) if isinstance(row, dict)]
+    opponent = opponents[0] if opponents else {}
+    site = _plain_dict(encounter.get("site"))
+    initiator_id = _text(initiator.get("entity_id"))
+    opponent_id = _text(opponent.get("entity_id"))
+    player_result = _combat_result_participant(result, initiator_id)
+    opponent_result = _combat_result_participant(result, opponent_id)
+    winner_ids = [_text(value) for value in _plain_list(result.get("winner_ids")) if _text(value)]
+    defeated_ids = [_text(value) for value in _plain_list(result.get("defeated_ids")) if _text(value)]
+
+    return {
+        "action_id": f"TCG_COMBAT_RESOLVED:{result_id}",
+        "action_type": "TCG_COMBAT_RESOLVED",
+        "source": "TCG_COMBAT",
+        "encounter_id": encounter_id,
+        "result_id": result_id,
+        "encounter_type": _text(encounter.get("encounter_type")) or ENCOUNTER_TYPE,
+        "source_action_id": _text(encounter.get("source_action_id")),
+        "outcome": _text(result.get("outcome")),
+        "issuer_id": initiator_id,
+        "issuer_name": _text(initiator.get("name")),
+        "actor_player_id": initiator_id,
+        "actor_name": _text(initiator.get("name")),
+        "actor_npc_id": "",
+        "target_npc_id": opponent_id,
+        "target_name": _text(opponent.get("name")),
+        "winner_ids": winner_ids,
+        "defeated_ids": defeated_ids,
+        "winner_id": winner_ids[0] if winner_ids else "",
+        "defeated_id": defeated_ids[0] if defeated_ids else "",
+        "actor_result_state": _text(player_result.get("result_state")),
+        "actor_life_remaining": player_result.get("life_remaining"),
+        "actor_damage": player_result.get("damage"),
+        "target_result_state": _text(opponent_result.get("result_state")),
+        "target_life_remaining": opponent_result.get("life_remaining"),
+        "target_damage": opponent_result.get("damage"),
+        "site_dbref": site.get("dbref"),
+        "site_room_id": _text(site.get("room_id")),
+        "site_name": _text(site.get("name")),
+        "recipient_ids": [opponent_id] if opponent_id else [],
+        "stakes": _clone(_plain_dict(encounter.get("stakes"))),
+        "world_context_tags": [
+            _text(value)
+            for value in _plain_list(encounter.get("world_context_tags"))
+            if _text(value)
+        ],
+        "participants": _clone(_plain_list(result.get("participants"))),
+        "tcg_build": _text(result.get("tcg_build")),
+        "tcg_bridge_build": _text(result.get("bridge_build")),
+    }
+
+
+def _consequence_engine_applied(packet):
+    if _text((packet or {}).get("status")) != "PROCESSED":
+        return False
+    return any(_text(row.get("status")) == "APPLIED" for row in _plain_list((packet or {}).get("results")))
+
+
+def apply_world_combat_consequences(actor, encounter, result):
+    """Route one accepted combat fact through existing consequence authorities without hardcoded world mutation."""
+    action = build_world_combat_action(encounter, result)
+    if not _text(action.get("encounter_id")) or not _text(action.get("result_id")):
+        return {
+            "status": "INVALID_COMBAT_ACTION",
+            "accepted": False,
+            "world_consequences_applied": False,
+            "build": WORLD_COMBAT_HANDOFF_BUILD,
+        }
+
+    actor_npc_id = _text(getattr(actor.db, "npc_id", "")) if actor else ""
+    if actor_npc_id:
+        action["actor_npc_id"] = actor_npc_id
+
+    core = emit_world_action(action)
+    player = apply_player_actor_consequences(actor, action)
+    applied = _consequence_engine_applied(core) or _text(player.get("status")) == "APPLIED"
+    return {
+        "status": "CONSEQUENCES_APPLIED" if applied else "CONSEQUENCES_NOOP",
+        "accepted": True,
+        "world_consequences_applied": applied,
+        "action": _clone(action),
+        "core_consequence": _clone(core),
+        "player_consequence": _clone(player),
+        "build": WORLD_COMBAT_HANDOFF_BUILD,
+    }
+
 def accept_world_combat_result(actor, result):
-    """Accept transport result and record it. This intentionally applies no world consequences yet."""
+    """Accept a validated TCG result, persist transport history and route its fact through World consequences."""
     validation = validate_world_combat_result(actor, result)
     if not validation.get("accepted"):
         return validation
 
+    encounter = _plain_dict(validation.get("encounter"))
+    consequence = apply_world_combat_consequences(actor, encounter, result)
+
     pending = _plain_dict(getattr(actor.db, "pending_tcg_encounter", {}))
     pending["status"] = RESOLVED_STATUS
     pending["result"] = _clone(result)
+    pending["world_consequence"] = _clone(consequence)
     pending["resolved_at"] = int(time.time())
     actor.db.pending_tcg_encounter = pending
     actor.db.last_tcg_combat_result = _clone(result)
+    actor.db.last_tcg_combat_consequence = _clone(consequence)
 
     history = _plain_list(getattr(actor.db, "tcg_combat_history", []))
     history.append(
         {
-            "encounter": _clone(validation.get("encounter")),
+            "encounter": _clone(encounter),
             "result": _clone(result),
+            "world_consequence": _clone(consequence),
             "accepted_at": int(time.time()),
             "build": WORLD_COMBAT_HANDOFF_BUILD,
         }
@@ -278,7 +390,9 @@ def accept_world_combat_result(actor, result):
         "accepted": True,
         "encounter_id": _text(result.get("encounter_id")),
         "outcome": _text(result.get("outcome")),
-        "world_consequences_applied": False,
+        "world_consequences_applied": bool(consequence.get("world_consequences_applied")),
+        "consequence_status": consequence.get("status"),
+        "world_consequence": _clone(consequence),
         "build": WORLD_COMBAT_HANDOFF_BUILD,
     }
 
