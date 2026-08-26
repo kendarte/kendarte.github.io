@@ -5,6 +5,8 @@
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-book-battlefield-v03";
     var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0320";
+    var DOCK_STYLE_ID = "siza-book-zone-docks-v01";
+    var DOCK_STYLE_HREF = "/static/webclient/css/siza_tcg_zone_docks_v01.css?v=0100";
     var SNAPSHOT_ID = "siza-book-zone-snapshot-v01";
     var SNAPSHOT_SRC = "/static/webclient/tcg/siza-mobile-test/book-zone-snapshot-v01.js?v=0100";
     var childObserver = null;
@@ -31,6 +33,19 @@
         } catch (error) {
             return null;
         }
+    }
+
+    function ensureLink(doc, id, href) {
+        var link = doc.getElementById(id);
+        if (!link) {
+            link = doc.createElement("link");
+            link.id = id;
+            link.rel = "stylesheet";
+            link.type = "text/css";
+        }
+        if (link.getAttribute("href") !== href) link.href = href;
+        if (doc.head.lastElementChild !== link) doc.head.appendChild(link);
+        return link;
     }
 
     function ensureSnapshotApi() {
@@ -120,16 +135,8 @@
         var obsolete = doc.getElementById("siza-book-battlefield-v02");
         if (obsolete) obsolete.remove();
 
-        var link = doc.getElementById(STYLE_ID);
-        if (!link) {
-            link = doc.createElement("link");
-            link.id = STYLE_ID;
-            link.rel = "stylesheet";
-            link.type = "text/css";
-        }
-        if (link.getAttribute("href") !== STYLE_HREF) link.href = STYLE_HREF;
-        if (doc.head.lastElementChild !== link) doc.head.appendChild(link);
-
+        ensureLink(doc, STYLE_ID, STYLE_HREF);
+        ensureLink(doc, DOCK_STYLE_ID, DOCK_STYLE_HREF);
         ensureSnapshotApi();
         ensureZoneDocks();
         return true;
@@ -180,6 +187,7 @@
     window.SizaTcgBattlefieldV03 = Object.freeze({
         BUILD: BUILD,
         STYLE_HREF: STYLE_HREF,
+        DOCK_STYLE_HREF: DOCK_STYLE_HREF,
         SNAPSHOT_SRC: SNAPSHOT_SRC,
         apply: ensureStyle,
         attach: attachFrame
