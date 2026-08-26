@@ -1,0 +1,297 @@
+/* Adventure Book Shell v0.2: visual scene, portraits and dormant TCG mount. */
+
+.sizaBookScene {
+    grid-template-rows: auto minmax(220px, 1.15fr) auto minmax(72px, .42fr);
+}
+
+.sizaBookSceneVisual {
+    position: relative;
+    z-index: 2;
+    min-height: 220px;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(183, 150, 95, .24);
+    background: #111516;
+}
+
+.sizaBookSceneVisualMedia {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.sizaBookSceneVisualMedia::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(4, 5, 5, .08), rgba(4, 5, 5, .02) 48%, rgba(4, 5, 5, .64)),
+        radial-gradient(circle at 50% 42%, transparent 30%, rgba(5, 7, 7, .34) 100%);
+}
+
+.sizaBookSceneVisual[data-has-image="false"] .sizaBookSceneVisualMedia {
+    background:
+        radial-gradient(circle at 50% 24%, rgba(76, 94, 94, .28), transparent 38%),
+        linear-gradient(180deg, #1a2021, #0c0f10);
+}
+
+.sizaSceneVisualLabel {
+    position: absolute;
+    z-index: 4;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 54%;
+    padding: 5px 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid rgba(181, 143, 83, .22);
+    color: #d2c29f;
+    background: rgba(12, 10, 8, .54);
+    font: 700 9px/1.2 system-ui, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.sizaPortraitSlot {
+    position: absolute;
+    z-index: 5;
+    bottom: 0;
+    width: clamp(118px, 16vw, 184px);
+    height: min(90%, 270px);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.sizaPortraitSlot[data-side="left"] {
+    left: 16px;
+}
+
+.sizaPortraitSlot[data-side="right"] {
+    right: 16px;
+}
+
+.sizaPortraitSlot[data-empty="true"] {
+    opacity: 0;
+    transform: translateY(12px);
+}
+
+.sizaPortraitFrame {
+    position: relative;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(181, 143, 83, .52);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    background:
+        radial-gradient(circle at 50% 36%, rgba(115, 134, 138, .25), transparent 36%),
+        linear-gradient(155deg, rgba(33, 48, 57, .92), rgba(9, 13, 16, .98));
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .42), inset 0 0 0 2px rgba(0, 0, 0, .28);
+}
+
+.sizaPortraitInitial {
+    color: rgba(229, 203, 147, .74);
+    font: 700 clamp(44px, 6vw, 76px)/1 Georgia, "Times New Roman", serif;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, .42);
+}
+
+.sizaPortraitFrame::after {
+    content: "PORTRAIT";
+    position: absolute;
+    right: 8px;
+    bottom: 7px;
+    color: rgba(208, 187, 145, .42);
+    font: 700 7px/1 system-ui, sans-serif;
+    letter-spacing: .13em;
+}
+
+.sizaPortraitCaption {
+    min-width: 0;
+    padding: 8px 9px 7px;
+    border: 1px solid rgba(181, 143, 83, .58);
+    color: #e8d9bb;
+    background: linear-gradient(180deg, rgba(49, 34, 24, .98), rgba(26, 18, 14, .98));
+    text-align: center;
+}
+
+.sizaPortraitCaption small,
+.sizaPortraitCaption strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sizaPortraitCaption small {
+    margin-bottom: 3px;
+    color: #ae9367;
+    font: 700 7px/1.1 system-ui, sans-serif;
+    letter-spacing: .12em;
+}
+
+.sizaPortraitCaption strong {
+    font: 600 12px/1.25 Georgia, "Times New Roman", serif;
+}
+
+.sizaSceneCast {
+    position: absolute;
+    z-index: 6;
+    right: 18px;
+    top: 48px;
+    max-width: 48%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.sizaSceneCastChip {
+    padding: 5px 8px;
+    border: 1px solid rgba(181, 143, 83, .28);
+    border-radius: 999px;
+    color: #c8b896;
+    background: rgba(13, 13, 12, .62);
+    font: 8px/1.15 system-ui, sans-serif;
+}
+
+/* Room information belongs below the visual stage; portraits now own character presence. */
+.sizaBookSceneState {
+    padding-top: 13px;
+    padding-bottom: 11px;
+}
+
+.sizaBookSceneDescription {
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.48;
+}
+
+.sizaBookFacts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Reserved integration mount. It is deliberately dormant outside COMBAT. */
+.sizaTcgTray {
+    display: none;
+    min-height: 132px;
+    margin: 0 12px;
+    border: 1px solid #795a37;
+    border-bottom: 0;
+    color: #e2d4b5;
+    background: linear-gradient(180deg, #181411, #0d0c0b);
+    grid-template-columns: minmax(110px, .65fr) minmax(0, 2.6fr) minmax(110px, .65fr);
+    grid-template-areas: "resources hand status";
+    gap: 10px;
+    padding: 10px;
+}
+
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray {
+    display: grid;
+}
+
+.sizaTcgResources {
+    grid-area: resources;
+}
+
+.sizaTcgHand {
+    grid-area: hand;
+}
+
+.sizaTcgStatus {
+    grid-area: status;
+}
+
+.sizaTcgMount {
+    min-height: 86px;
+    border: 1px dashed rgba(181, 143, 83, .27);
+    display: grid;
+    place-items: center;
+    color: #8f7a58;
+    background: rgba(255, 255, 255, .018);
+    font: 700 8px/1.25 system-ui, sans-serif;
+    letter-spacing: .09em;
+    text-align: center;
+}
+
+.sizaTcgStatus .sizaTcgMount {
+    color: #bca77f;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaPortraitSlot {
+    width: clamp(142px, 19vw, 220px);
+    height: min(96%, 310px);
+}
+
+.sizaBookClient[data-mode="COMBAT"] .sizaPortraitSlot {
+    width: clamp(105px, 13vw, 152px);
+    height: min(76%, 220px);
+}
+
+@media (max-width: 760px) {
+    .sizaBookScene {
+        grid-template-rows: auto minmax(180px, .95fr) auto minmax(68px, .35fr);
+    }
+
+    .sizaBookSceneVisual {
+        min-height: 180px;
+    }
+
+    .sizaPortraitSlot {
+        width: 94px;
+        height: 148px;
+    }
+
+    .sizaPortraitSlot[data-side="left"] {
+        left: 7px;
+    }
+
+    .sizaPortraitSlot[data-side="right"] {
+        right: 7px;
+    }
+
+    .sizaPortraitCaption {
+        padding: 5px 5px 4px;
+    }
+
+    .sizaPortraitCaption strong {
+        font-size: 9px;
+    }
+
+    .sizaPortraitFrame::after {
+        display: none;
+    }
+
+    .sizaSceneVisualLabel {
+        top: 7px;
+        max-width: 50%;
+        font-size: 7px;
+    }
+
+    .sizaSceneCast {
+        top: 34px;
+        right: 7px;
+        max-width: 46%;
+    }
+
+    .sizaSceneCastChip {
+        padding: 3px 5px;
+        font-size: 7px;
+    }
+
+    .sizaBookFacts {
+        grid-template-columns: 1fr;
+    }
+
+    .sizaTcgTray {
+        margin: 0;
+        grid-template-columns: 1fr;
+        grid-template-areas: "hand" "resources" "status";
+    }
+}
