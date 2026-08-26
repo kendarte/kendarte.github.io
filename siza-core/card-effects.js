@@ -27,9 +27,8 @@ function otherPermanentTargets(match,sourceOwner,entryIndex=null){
   return targets;
 }
 function stackTargetIndex(stack,targetStackId){
-  const list=Array.isArray(stack)?stack:[];
-  const index=list.findIndex(entry=>entry?.id===targetStackId);
-  return index>=0?index:list.length-1;
+  const index=stack.findIndex(entry=>entry.id===targetStackId);
+  return index>=0?index:stack.length-1;
 }
 global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,stackTargetIndex});
 })(window);
