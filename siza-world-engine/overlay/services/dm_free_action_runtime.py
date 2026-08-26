@@ -14,9 +14,10 @@ from services.dm_free_action_interpreter import (
 )
 from services.narration_queue import run_serialized
 from services.ollama_narration_provider import DEFAULT_OLLAMA_ENDPOINT, DEFAULT_OLLAMA_MODEL
+from services.player_language_contract import get_actor_turn_language
 
 
-DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1-async-free-action-interpretation"
+DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1.1-async-bilingual-free-action-interpretation"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
@@ -98,6 +99,7 @@ def dispatch_dm_free_action_async(
         raw_player_input,
         dm_plan,
         world_snapshot,
+        player_language=get_actor_turn_language(actor),
     )
     provider = provider_callable or call_prebuilt_dm_free_action
     deferred = run_serialized(
