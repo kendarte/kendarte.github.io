@@ -2,7 +2,17 @@
 const fs=require('fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 
-const html=fs.readFileSync('siza-mobile-test/index.html','utf8');
+function inlineRemainingCore(source){
+  let out=source;
+  for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js']){
+    const tag=`<script src="../siza-core/${name}"></script>`;
+    if(!out.includes(tag))throw new Error(`Missing shared core tag ${name}`);
+    out=out.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
+  }
+  return out;
+}
+
+const html=inlineRemainingCore(fs.readFileSync('siza-mobile-test/index.html','utf8'));
 const marker='window.SIZA={';
 if(!html.includes(marker))throw new Error('SIZA export marker not found');
 const probe=`window.__SIZA_WORLD_BRIDGE_TEST__={getState:()=>state,getMatch:()=>state.match,checkWin,createMatch};\n`;
