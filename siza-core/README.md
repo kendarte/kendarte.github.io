@@ -3,7 +3,7 @@
 Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 
 - `card-effects.js` defines and validates structured effect descriptors and owns generic effect-presence, amount-aggregation, self/opponent side resolution, `bounce-other-permanent` target enumeration, preferred-owner target selection, pure bounce planning, and counter-stack target-index selection used by Arena. The core resolves eligible/query/plan results; Arena still owns choices, Stack mutation, graveyards, logs, zone mutation, battlefield/UI rebasing, and presentation.
-- `card-schema.js` normalizes card data and preserves effect metadata across handoff, including `equipCost`; it also owns the runtime-equivalent Equipment classification and Equipment-cost queries used by Arena.
+- `card-schema.js` normalizes card data and preserves effect metadata across handoff, including `equipCost`; it also owns the runtime-equivalent Equipment classification, Equipment-cost queries, and pure Stack resolution classification (`creature`, `artifact`, `equipment`, `spell`). Arena still owns the actual zone insertion, effect execution, logs, and graveyard mutation.
 - `cards.js` is the official shared card catalog.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
