@@ -14,7 +14,7 @@ function inlineCore(html){
 const original=inlineCore(fs.readFileSync('siza-mobile-test/index.html','utf8'));
 const marker='window.SIZA={';
 if(!original.includes(marker))throw new Error('SIZA export marker not found');
-const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,usePrismV070,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
+const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,usePrismV070,selectBurn,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
 const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',error=>console.error('[JSDOM prism]',error.message));
 const dom=new JSDOM(original.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole});
@@ -47,6 +47,12 @@ function setupAi({cardId='counter',hand=['counter','dock'],artifacts=['prism'],r
   if(aiFailure)modal.aiFailure=true;
   H.setModal(modal);
   return{M,modal};
+}
+
+function setupBurn({hand=['counter','dock','cinder'],roll=2,dc=6,mf=3,idx=0,selected=[],ai=false}={}){
+  const M=H.createMatch(false,'prepare');H.setMatch(M);M.player.hand=[...hand];M.player.mf=mf;
+  const modal={type:'manifest',owner:'player',cardId:M.player.hand[idx],idx,roll,burnSelected:[...selected],prismBonus:0,dc,ai,stage:'roll',payment:{spent:{}}};
+  H.setModal(modal);return{M,modal};
 }
 
 test('Prisma oficial descubre bonus +1 desde effects',()=>{
@@ -112,6 +118,27 @@ test('IA conserva aiFailure histórico aunque luego el total alcance D',()=>{
   const {modal}=setupAi({artifacts:[],hand:['counter'],roll:3,dc:5,mf:2,aiFailure:true,burnSelected:[9]});
   H.enemyResolveManifestRoll();
   return modal.aiFailure===true&&modal.burnSelected.length===0;
+});
+
+test('burnSelectionPlan agrega y quita la misma Reserva',()=>{
+  const modal={dc:6,roll:2,prismBonus:0,burnSelected:[],idx:0,ai:false},P={mf:3};
+  const a=R.burnSelectionPlan(modal,P,1,true);modal.burnSelected=a;const b=R.burnSelectionPlan(modal,P,1,true);
+  return JSON.stringify(a)==='[1]'&&JSON.stringify(b)==='[]';
+});
+
+test('burnSelectionPlan respeta el máximo dictado por déficit',()=>{
+  const modal={dc:6,roll:2,prismBonus:0,burnSelected:[1],idx:0,ai:false};
+  return JSON.stringify(R.burnSelectionPlan(modal,{mf:3},2,true))==='[1]';
+});
+
+test('burnSelectionPlan rechaza no-Land carta fuente y modo IA',()=>{
+  const base={dc:7,roll:2,prismBonus:0,burnSelected:[],idx:0,ai:false};
+  return R.burnSelectionPlan(base,{mf:3},1,false)===null&&R.burnSelectionPlan(base,{mf:3},0,true)===null&&R.burnSelectionPlan({...base,ai:true},{mf:3},1,true)===null;
+});
+
+test('selectBurn runtime usa el plan compartido',()=>{
+  const {modal}=setupBurn({dc:7,mf:3});H.selectBurn(1);H.selectBurn(2);H.selectBurn(1);
+  return JSON.stringify(modal.burnSelected)===JSON.stringify([2]);
 });
 
 for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.error?` :: ${result.error}`:''}`);
