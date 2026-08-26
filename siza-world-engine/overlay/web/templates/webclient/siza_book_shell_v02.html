@@ -1,0 +1,110 @@
+<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false">
+  <header class="sizaBookHeader">
+    <section class="sizaBookIdentity" aria-label="Personaje">
+      <div class="sizaBookIdentityMark" aria-hidden="true">S</div>
+      <div class="sizaBookIdentityText">
+        <small>PERSONAJE</small>
+        <strong id="siza-player-name">Sesión del World Engine</strong>
+        <span id="siza-player-state">Estado persistente</span>
+      </div>
+    </section>
+
+    <section class="sizaBookChapter" aria-label="Contexto de aventura">
+      <small id="siza-mode-label">EXPLORACIÓN</small>
+      <strong id="siza-location-label">SIZA WORLD ENGINE</strong>
+      <span id="siza-context-label">Mundo persistente · Acción y consecuencia</span>
+    </section>
+
+    <section class="sizaBookConnection" aria-label="Conexión">
+      <small>CONEXIÓN</small>
+      <strong id="siza-connection-label">Conectando…</strong>
+      <span id="siza-prompt-label">World Engine</span>
+    </section>
+  </header>
+
+  <main class="sizaBookBody">
+    <section class="sizaBookScene" aria-label="Escena">
+      <div class="sizaBookSceneHeader">
+        <span id="siza-scene-kicker">ESCENA ACTUAL</span>
+        <strong id="siza-scene-title">Esperando estado del mundo</strong>
+      </div>
+
+      <div id="siza-scene-visual" class="sizaBookSceneVisual" data-has-image="false" aria-label="Ventana visual de escena">
+        <div id="siza-scene-visual-media" class="sizaBookSceneVisualMedia" aria-hidden="true"></div>
+        <div id="siza-scene-visual-label" class="sizaSceneVisualLabel">SIZA WORLD ENGINE</div>
+
+        <aside id="siza-player-portrait" class="sizaPortraitSlot" data-side="left" data-empty="false" aria-label="Portrait del jugador">
+          <div class="sizaPortraitFrame" aria-hidden="true">
+            <span id="siza-player-portrait-initial" class="sizaPortraitInitial">S</span>
+          </div>
+          <div class="sizaPortraitCaption">
+            <small data-portrait-role>JUGADOR</small>
+            <strong id="siza-player-portrait-name">Sesión del World Engine</strong>
+          </div>
+        </aside>
+
+        <aside id="siza-focus-portrait" class="sizaPortraitSlot" data-side="right" data-empty="true" aria-label="Portrait del personaje en foco" aria-hidden="true">
+          <div class="sizaPortraitFrame" aria-hidden="true">
+            <span id="siza-focus-portrait-initial" class="sizaPortraitInitial">?</span>
+          </div>
+          <div class="sizaPortraitCaption">
+            <small data-portrait-role>EN ESCENA</small>
+            <strong id="siza-focus-portrait-name">Sin personaje</strong>
+          </div>
+        </aside>
+
+        <div id="siza-scene-cast" class="sizaSceneCast" aria-label="Otros personajes presentes" hidden></div>
+      </div>
+
+      <div class="sizaBookSceneState">
+        <p id="siza-scene-description" class="sizaBookSceneDescription">La escena aparecerá aquí cuando el World Engine devuelva el estado de la habitación.</p>
+
+        <div class="sizaBookFacts" aria-label="Elementos de escena">
+          <section id="siza-exits-card" class="sizaBookFact" hidden>
+            <small>SALIDAS</small>
+            <span id="siza-exits">—</span>
+          </section>
+          <section id="siza-characters-card" class="sizaBookFact" hidden>
+            <small>PERSONAS</small>
+            <span id="siza-characters">—</span>
+          </section>
+          <section id="siza-visible-card" class="sizaBookFact" hidden>
+            <small>A LA VISTA</small>
+            <span id="siza-visible">—</span>
+          </section>
+        </div>
+
+        <details id="siza-knowledge-panel" class="sizaKnowledgePanel" hidden>
+          <summary><span>CONOCIMIENTO</span><strong id="siza-knowledge-summary">0 datos recordados</strong></summary>
+          <div id="siza-knowledge-list" class="sizaKnowledgeList"></div>
+        </details>
+      </div>
+
+      <div class="sizaBookNarrativeFeed" aria-label="Sucesos recientes">
+        <div class="sizaBookNarrativeLabel">ÚLTIMO SUCESO</div>
+        <div id="siza-messagewindow" class="sizaBookOutput" role="log" aria-live="polite" aria-relevant="additions"></div>
+      </div>
+    </section>
+
+    <section id="siza-tcg-tray" class="sizaTcgTray" data-active="false" aria-label="Montaje de SIZA TCG">
+      <div class="sizaTcgResources">
+        <div id="siza-tcg-resource-mount" class="sizaTcgMount">RECURSOS</div>
+      </div>
+      <div class="sizaTcgHand">
+        <div id="siza-tcg-hand-mount" class="sizaTcgMount">MANO / CARTAS</div>
+      </div>
+      <div class="sizaTcgStatus">
+        <div id="siza-tcg-status" class="sizaTcgMount">PREPARADO</div>
+      </div>
+    </section>
+
+    <section class="sizaBookNarrative" aria-label="Narración e input">
+      <div id="siza-current-prompt" class="sizaBookPrompt">¿Qué haces?</div>
+      <div class="sizaBookInputRow">
+        <textarea id="siza-inputfield" rows="2" autocomplete="off" autocapitalize="sentences" spellcheck="true" placeholder="Escribe lo que haces…"></textarea>
+        <button id="siza-inputsend" type="button">ENVIAR</button>
+      </div>
+      <div class="sizaBookInputHint">Enter para enviar · Shift+Enter para nueva línea · ↑/↓ historial</div>
+    </section>
+  </main>
+</div>
