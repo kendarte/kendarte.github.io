@@ -1,16 +1,242 @@
-/* Adventure Book Shell v0.2: visual scene, portraits and dormant TCG mount. */
+/* SIZA Adventure Book Shell v0.2 — approved exploration composition. */
+
+.sizaBookClient {
+    width: min(1180px, calc(100vw - 12px));
+    height: min(820px, calc(100dvh - 12px));
+    margin: 6px auto;
+    grid-template-rows: 108px minmax(0, 1fr);
+    border-radius: 8px;
+    border: 1px solid #76542d;
+    background: #0e0b09;
+    box-shadow: 0 24px 70px rgba(0,0,0,.62), inset 0 0 0 3px rgba(160,117,61,.08);
+}
+
+/* Header: player card / chapter page / focus character card. */
+.sizaBookHeader {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(270px, 1fr) minmax(310px, .92fr) minmax(270px, 1fr);
+    min-width: 0;
+    border-bottom: 3px solid #2a1c12;
+    background: #24170f;
+    box-shadow: inset 0 -1px 0 #8a6338;
+}
+
+.sizaHeaderCharacter {
+    min-width: 0;
+    position: relative;
+    display: grid;
+    align-items: stretch;
+    color: #eadcc0;
+    background:
+        linear-gradient(180deg, rgba(72,43,26,.94), rgba(31,20,15,.98)),
+        #281a12;
+    box-shadow: inset 0 0 0 1px rgba(169,124,67,.3);
+}
+
+.sizaHeaderCharacterPlayer {
+    grid-template-columns: 88px minmax(0,1fr);
+    padding: 8px 12px 8px 9px;
+}
+
+.sizaHeaderCharacterFocus {
+    grid-template-columns: minmax(0,1fr) 88px;
+    padding: 8px 9px 8px 12px;
+}
+
+.sizaHeaderCharacterCopy {
+    min-width: 0;
+    align-self: center;
+    padding: 2px 10px;
+}
+
+.sizaHeaderCharacterCopyRight {
+    text-align: right;
+}
+
+.sizaHeaderCharacterCopy small,
+.sizaBookChapter small {
+    display: block;
+    margin-bottom: 4px;
+    color: #b99258;
+    font: 700 8px/1.1 system-ui, sans-serif;
+    letter-spacing: .14em;
+}
+
+.sizaHeaderCharacterCopy strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #f0dfbf;
+    font: 600 20px/1.08 Georgia, "Times New Roman", serif;
+}
+
+.sizaHeaderCharacterCopy > span {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #c9b493;
+    font: 11px/1.2 Georgia, "Times New Roman", serif;
+}
+
+.sizaHeaderCharacterMeta {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(181,143,83,.28);
+}
+
+.sizaHeaderCharacterMeta span {
+    color: #9f825d;
+    font: 700 7px/1 system-ui, sans-serif;
+    letter-spacing: .13em;
+}
+
+.sizaPortraitSlot {
+    position: relative;
+    width: 78px;
+    height: 88px;
+    align-self: center;
+    display: block;
+    pointer-events: none;
+    opacity: 1;
+    transform: none;
+}
+
+.sizaPortraitSlot[data-empty="true"] {
+    opacity: .38;
+    transform: none;
+}
+
+.sizaPortraitFrame {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 2px solid #9b7440;
+    border-radius: 5px;
+    background:
+        radial-gradient(circle at 50% 34%, rgba(107,132,143,.25), transparent 36%),
+        linear-gradient(155deg,#183047,#0a1118 72%);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.38), 0 5px 12px rgba(0,0,0,.35);
+}
+
+.sizaHeaderCharacterFocus .sizaPortraitFrame {
+    background:
+        radial-gradient(circle at 50% 34%, rgba(123,103,82,.25), transparent 36%),
+        linear-gradient(155deg,#473126,#15100d 72%);
+}
+
+.sizaPortraitInitial {
+    color: #e3c487;
+    font: 700 34px/1 Georgia, serif;
+}
+
+.sizaPortraitFrame::after,
+.sizaPortraitCaption,
+.sizaPortraitMirror,
+.sizaPortraitRoleMirror {
+    display: none !important;
+}
+
+.sizaBookChapter {
+    min-width: 0;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    padding: 10px 18px;
+    color: #382719;
+    border-left: 3px solid #49311d;
+    border-right: 3px solid #49311d;
+    background:
+        linear-gradient(90deg,rgba(83,53,27,.08),transparent 14%,transparent 86%,rgba(83,53,27,.08)),
+        linear-gradient(180deg,#eadab8,#cdb489);
+    box-shadow: inset 0 0 28px rgba(83,56,28,.18), inset 0 0 0 1px rgba(255,255,255,.26);
+}
+
+.sizaBookChapter small {
+    margin-bottom: 5px;
+    color: #76542e;
+}
+
+.sizaBookChapter strong {
+    display: block;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #332317;
+    font: 700 21px/1.08 Georgia, serif;
+}
+
+.sizaBookChapter span {
+    display: block;
+    margin-top: 5px;
+    color: #604a35;
+    font: 11px/1.2 Georgia, serif;
+}
+
+.sizaConnectionBadge {
+    position: absolute;
+    z-index: 12;
+    right: 8px;
+    bottom: -18px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid rgba(156,116,64,.55);
+    border-radius: 999px;
+    color: #bfa77e;
+    background: rgba(22,15,11,.9);
+    font: 700 7px/1 system-ui, sans-serif;
+    letter-spacing: .08em;
+}
+
+.sizaConnectionDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #90734f;
+}
+
+.sizaBookClient[data-connection="open"] .sizaConnectionDot { background: #8ebc83; }
+.sizaBookClient[data-connection="error"] .sizaConnectionDot,
+.sizaBookClient[data-connection="closed"] .sizaConnectionDot { background: #c46f69; }
+
+/* Main page: clean scene window over one parchment story panel. */
+.sizaBookBody {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0,1fr) auto;
+    background: #0c0907;
+}
 
 .sizaBookScene {
-    grid-template-rows: auto minmax(220px, 1.15fr) auto minmax(72px, .42fr);
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(265px,1fr) auto;
+    overflow: hidden;
+    margin: 8px 8px 0;
+    border: 3px solid #3c291b;
+    border-bottom: 0;
+    border-radius: 5px 5px 0 0;
+    background: #101010;
+    box-shadow: inset 0 0 0 1px #8c653a, 0 8px 24px rgba(0,0,0,.35);
+}
+
+.sizaBookScene::before {
+    display: none;
 }
 
 .sizaBookSceneVisual {
     position: relative;
-    z-index: 2;
-    min-height: 220px;
+    min-height: 265px;
     overflow: hidden;
-    border-bottom: 1px solid rgba(183, 150, 95, .24);
-    background: #111516;
+    background: #111718;
 }
 
 .sizaBookSceneVisualMedia {
@@ -26,272 +252,348 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-        linear-gradient(180deg, rgba(4, 5, 5, .08), rgba(4, 5, 5, .02) 48%, rgba(4, 5, 5, .64)),
-        radial-gradient(circle at 50% 42%, transparent 30%, rgba(5, 7, 7, .34) 100%);
+    background: linear-gradient(180deg,rgba(0,0,0,.03),rgba(0,0,0,.02) 72%,rgba(0,0,0,.3));
 }
 
 .sizaBookSceneVisual[data-has-image="false"] .sizaBookSceneVisualMedia {
     background:
-        radial-gradient(circle at 50% 24%, rgba(76, 94, 94, .28), transparent 38%),
-        linear-gradient(180deg, #1a2021, #0c0f10);
+        radial-gradient(circle at 50% 35%, rgba(59,87,92,.35), transparent 42%),
+        linear-gradient(180deg,#21363b,#10191b 62%,#0a0d0e);
 }
 
-.sizaSceneVisualLabel {
-    position: absolute;
-    z-index: 4;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 54%;
-    padding: 5px 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    border: 1px solid rgba(181, 143, 83, .22);
-    color: #d2c29f;
-    background: rgba(12, 10, 8, .54);
-    font: 700 9px/1.2 system-ui, sans-serif;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-}
-
-.sizaPortraitSlot {
+.sizaSceneTopPlaque {
     position: absolute;
     z-index: 5;
-    bottom: 0;
-    width: clamp(118px, 16vw, 184px);
-    height: min(90%, 270px);
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    pointer-events: none;
-    transition: opacity .18s ease, transform .18s ease;
-}
-
-.sizaPortraitSlot[data-side="left"] {
-    left: 16px;
-}
-
-.sizaPortraitSlot[data-side="right"] {
-    right: 16px;
-}
-
-.sizaPortraitSlot[data-empty="true"] {
-    opacity: 0;
-    transform: translateY(12px);
-}
-
-.sizaPortraitFrame {
-    position: relative;
-    min-height: 0;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid rgba(181, 143, 83, .52);
-    border-bottom: 0;
-    border-radius: 10px 10px 0 0;
-    background:
-        radial-gradient(circle at 50% 36%, rgba(115, 134, 138, .25), transparent 36%),
-        linear-gradient(155deg, rgba(33, 48, 57, .92), rgba(9, 13, 16, .98));
-    box-shadow: 0 12px 28px rgba(0, 0, 0, .42), inset 0 0 0 2px rgba(0, 0, 0, .28);
-}
-
-.sizaPortraitInitial {
-    color: rgba(229, 203, 147, .74);
-    font: 700 clamp(44px, 6vw, 76px)/1 Georgia, "Times New Roman", serif;
-    text-shadow: 0 4px 18px rgba(0, 0, 0, .42);
-}
-
-.sizaPortraitFrame::after {
-    content: "PORTRAIT";
-    position: absolute;
-    right: 8px;
-    bottom: 7px;
-    color: rgba(208, 187, 145, .42);
-    font: 700 7px/1 system-ui, sans-serif;
-    letter-spacing: .13em;
-}
-
-.sizaPortraitCaption {
-    min-width: 0;
-    padding: 8px 9px 7px;
-    border: 1px solid rgba(181, 143, 83, .58);
-    color: #e8d9bb;
-    background: linear-gradient(180deg, rgba(49, 34, 24, .98), rgba(26, 18, 14, .98));
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 52%;
+    min-width: 180px;
+    padding: 5px 14px 6px;
     text-align: center;
+    border: 1px solid rgba(127,91,48,.7);
+    border-top: 0;
+    border-radius: 0 0 5px 5px;
+    color: #ddc89d;
+    background: rgba(31,20,14,.84);
 }
 
-.sizaPortraitCaption small,
-.sizaPortraitCaption strong {
+.sizaSceneTopPlaque span,
+.sizaSceneTopPlaque strong {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.sizaPortraitCaption small {
-    margin-bottom: 3px;
-    color: #ae9367;
-    font: 700 7px/1.1 system-ui, sans-serif;
+.sizaSceneTopPlaque span {
+    color: #a98c62;
+    font: 700 7px/1 system-ui,sans-serif;
     letter-spacing: .12em;
 }
 
-.sizaPortraitCaption strong {
-    font: 600 12px/1.25 Georgia, "Times New Roman", serif;
+.sizaSceneTopPlaque strong {
+    margin-top: 2px;
+    font: 600 11px/1.1 Georgia,serif;
+}
+
+.sizaSceneVisualLabel {
+    display: none;
 }
 
 .sizaSceneCast {
     position: absolute;
     z-index: 6;
-    right: 18px;
-    top: 48px;
-    max-width: 48%;
+    right: 12px;
+    bottom: 10px;
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 5px;
+    max-width: 55%;
 }
 
 .sizaSceneCastChip {
-    padding: 5px 8px;
-    border: 1px solid rgba(181, 143, 83, .28);
+    padding: 4px 7px;
+    border: 1px solid rgba(186,145,85,.46);
     border-radius: 999px;
-    color: #c8b896;
-    background: rgba(13, 13, 12, .62);
-    font: 8px/1.15 system-ui, sans-serif;
+    color: #ddcaa5;
+    background: rgba(24,16,11,.72);
+    font: 8px/1 system-ui,sans-serif;
 }
 
-/* Room information belongs below the visual stage; portraits now own character presence. */
-.sizaBookSceneState {
-    padding-top: 13px;
-    padding-bottom: 11px;
+.sizaStoryPage {
+    position: relative;
+    min-height: 180px;
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-rows: auto auto;
+    padding: 15px 72px 12px 24px;
+    color: #302217;
+    border-top: 3px solid #3b281a;
+    background:
+        linear-gradient(90deg,rgba(92,59,31,.06),transparent 10%,transparent 90%,rgba(92,59,31,.06)),
+        linear-gradient(180deg,#e3d2ae,#cfb98f);
+    box-shadow: inset 0 0 28px rgba(89,61,32,.12);
+}
+
+.sizaStoryCopy {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
 }
 
 .sizaBookSceneDescription {
-    margin-bottom: 10px;
-    font-size: 14px;
-    line-height: 1.48;
+    margin: 0 0 6px;
+    color: #342519;
+    font: 600 15px/1.42 Georgia,"Times New Roman",serif;
+}
+
+.sizaBookOutput {
+    min-height: 0;
+    max-height: 74px;
+    overflow-y: auto;
+    padding: 0;
+    color: #382a1e;
+    scrollbar-width: thin;
+    scrollbar-color: #8c6d46 transparent;
+}
+
+.sizaBookLine {
+    max-width: none;
+    margin: 0 0 4px;
+    color: #382a1e;
+    font: 14px/1.42 Georgia,"Times New Roman",serif;
+}
+
+.sizaBookSystem {
+    padding: 4px 7px;
+    border-left: 2px solid #8e6a3d;
+    color: #765b3d;
+    background: rgba(109,81,48,.06);
+    font: 9px/1.35 system-ui,sans-serif;
+}
+
+/* Book icon / context drawer mirrors the reference UI without cluttering the page. */
+.sizaContextDrawer {
+    position: absolute;
+    z-index: 8;
+    top: 15px;
+    right: 16px;
+}
+
+.sizaContextDrawer > summary {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    list-style: none;
+    cursor: pointer;
+    border: 2px solid #5a4027;
+    border-radius: 50%;
+    color: #2e2118;
+    background: #c5a66f;
+    box-shadow: inset 0 0 0 3px #8d6a3d, 0 4px 9px rgba(0,0,0,.25);
+    font: 700 23px/1 Georgia,serif;
+}
+
+.sizaContextDrawer > summary::-webkit-details-marker { display:none; }
+
+.sizaContextDrawer[open] .sizaBookSceneState {
+    display: block;
+}
+
+.sizaBookSceneState {
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: 54px;
+    width: min(470px, calc(100vw - 48px));
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid #705333;
+    border-radius: 5px;
+    color: #ddd0b5;
+    background: rgba(29,20,15,.98);
+    box-shadow: 0 12px 28px rgba(0,0,0,.42);
 }
 
 .sizaBookFacts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
 }
 
-/* Reserved integration mount. It is deliberately dormant outside COMBAT. */
+.sizaBookFact {
+    min-width: 0;
+    padding: 7px 8px;
+    border: 1px solid rgba(181,143,83,.28);
+    background: rgba(255,255,255,.025);
+}
+
+.sizaBookFact small {
+    display:block;
+    margin-bottom:3px;
+    color:#b69361;
+    font:700 7px/1 system-ui,sans-serif;
+    letter-spacing:.1em;
+}
+
+.sizaBookFact span {
+    display:block;
+    color:#d4c5aa;
+    font:10px/1.35 system-ui,sans-serif;
+}
+
+.sizaKnowledgePanel {
+    margin-top:8px;
+    border-top:1px solid rgba(181,143,83,.25);
+    padding-top:7px;
+    color:#d2c09f;
+}
+
+.sizaKnowledgePanel summary {
+    cursor:pointer;
+    font:8px/1.3 system-ui,sans-serif;
+}
+
+.sizaKnowledgePanel summary span { color:#b69361; font-weight:700; letter-spacing:.1em; }
+.sizaKnowledgePanel summary strong { margin-left:8px; font-weight:500; }
+.sizaKnowledgeList { margin-top:7px; display:grid; gap:5px; }
+.sizaKnowledgeItem { font:10px/1.4 system-ui,sans-serif; color:#d7c9af; }
+
+/* Free action remains, but visually belongs to the same parchment instead of a separate admin panel. */
+.sizaBookNarrative {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 8px 0 0;
+    padding: 8px 0 0;
+    border: 0;
+    border-top: 1px solid rgba(92,62,36,.26);
+    border-radius: 0;
+    color: #302217;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sizaBookPrompt {
+    min-height: 18px;
+    margin: 0 0 5px;
+    color: #55402c;
+    font: 700 13px/1.3 Georgia,serif;
+}
+
+.sizaBookInputRow {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 78px;
+    gap: 7px;
+}
+
+#siza-inputfield {
+    width:100%;
+    min-height:34px;
+    max-height:74px;
+    resize:vertical;
+    padding:7px 9px;
+    border:1px solid rgba(91,65,39,.48);
+    border-radius:2px;
+    outline:none;
+    color:#2c2118;
+    background:rgba(255,255,255,.18);
+    font:13px/1.35 Georgia,serif;
+    box-shadow: inset 0 1px 5px rgba(63,42,23,.08);
+}
+
+#siza-inputfield:focus {
+    border-color:#5c432d;
+    background:rgba(255,255,255,.3);
+}
+
+#siza-inputsend {
+    border:1px solid #523923;
+    border-radius:2px;
+    color:#eadcc0;
+    background:linear-gradient(180deg,#4b3423,#281b13);
+    font:700 9px/1 system-ui,sans-serif;
+    letter-spacing:.08em;
+}
+
+.sizaBookInputHint {
+    margin-top:4px;
+    color:#755f44;
+    font:7px/1.2 system-ui,sans-serif;
+}
+
+/* TCG stays dormant in exploration and occupies the same lower book region in combat. */
 .sizaTcgTray {
-    display: none;
-    min-height: 132px;
-    margin: 0 12px;
-    border: 1px solid #795a37;
-    border-bottom: 0;
-    color: #e2d4b5;
-    background: linear-gradient(180deg, #181411, #0d0c0b);
-    grid-template-columns: minmax(110px, .65fr) minmax(0, 2.6fr) minmax(110px, .65fr);
-    grid-template-areas: "resources hand status";
-    gap: 10px;
-    padding: 10px;
+    display:none;
+    min-height:132px;
+    margin:0 8px 8px;
+    border:2px solid #3c291b;
+    border-top:0;
+    color:#e2d4b5;
+    background:linear-gradient(180deg,#181411,#0d0c0b);
+    grid-template-columns:minmax(110px,.65fr) minmax(0,2.6fr) minmax(110px,.65fr);
+    grid-template-areas:"resources hand status";
+    gap:10px;
+    padding:10px;
 }
 
-.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray {
-    display: grid;
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray { display:grid; }
+.sizaTcgResources{grid-area:resources}.sizaTcgHand{grid-area:hand}.sizaTcgStatus{grid-area:status}
+.sizaTcgMount{min-height:86px;border:1px dashed rgba(181,143,83,.27);display:grid;place-items:center;color:#8f7a58;background:rgba(255,255,255,.018);font:700 8px/1.25 system-ui,sans-serif;letter-spacing:.09em;text-align:center}
+
+/* Dialogue keeps the same book, only magnifies character emphasis later. */
+.sizaBookClient[data-mode="DIALOGUE"] .sizaHeaderCharacter {
+    box-shadow: inset 0 0 0 2px rgba(180,135,73,.42);
 }
 
-.sizaTcgResources {
-    grid-area: resources;
+.sizaBookClient[data-mode="COMBAT"] .sizaSceneTopPlaque {
+    background:rgba(59,27,18,.9);
 }
 
-.sizaTcgHand {
-    grid-area: hand;
-}
-
-.sizaTcgStatus {
-    grid-area: status;
-}
-
-.sizaTcgMount {
-    min-height: 86px;
-    border: 1px dashed rgba(181, 143, 83, .27);
-    display: grid;
-    place-items: center;
-    color: #8f7a58;
-    background: rgba(255, 255, 255, .018);
-    font: 700 8px/1.25 system-ui, sans-serif;
-    letter-spacing: .09em;
-    text-align: center;
-}
-
-.sizaTcgStatus .sizaTcgMount {
-    color: #bca77f;
-}
-
-.sizaBookClient[data-mode="DIALOGUE"] .sizaPortraitSlot {
-    width: clamp(142px, 19vw, 220px);
-    height: min(96%, 310px);
-}
-
-.sizaBookClient[data-mode="COMBAT"] .sizaPortraitSlot {
-    width: clamp(105px, 13vw, 152px);
-    height: min(76%, 220px);
-}
-
-@media (max-width: 760px) {
-    .sizaBookScene {
-        grid-template-rows: auto minmax(180px, .95fr) auto minmax(68px, .35fr);
+@media (max-width:760px) {
+    .sizaBookClient {
+        width:100%;
+        height:100dvh;
+        min-height:620px;
+        margin:0;
+        border:0;
+        border-radius:0;
+        grid-template-rows:82px minmax(0,1fr);
     }
 
-    .sizaBookSceneVisual {
-        min-height: 180px;
+    .sizaBookHeader {
+        grid-template-columns:1fr 1.15fr 1fr;
     }
 
-    .sizaPortraitSlot {
-        width: 94px;
-        height: 148px;
-    }
+    .sizaHeaderCharacterPlayer { grid-template-columns:54px minmax(0,1fr); padding:5px; }
+    .sizaHeaderCharacterFocus { grid-template-columns:minmax(0,1fr) 54px; padding:5px; }
+    .sizaPortraitSlot { width:50px; height:64px; }
+    .sizaPortraitInitial { font-size:23px; }
+    .sizaHeaderCharacterCopy { padding:2px 4px; }
+    .sizaHeaderCharacterCopy small { font-size:6px; }
+    .sizaHeaderCharacterCopy strong { font-size:12px; }
+    .sizaHeaderCharacterCopy > span { font-size:8px; }
+    .sizaHeaderCharacterMeta { display:none; }
+    .sizaBookChapter { padding:6px 8px; }
+    .sizaBookChapter small { font-size:6px; }
+    .sizaBookChapter strong { font-size:13px; }
+    .sizaBookChapter span { font-size:7px; }
+    .sizaConnectionBadge { bottom:-15px; font-size:6px; }
 
-    .sizaPortraitSlot[data-side="left"] {
-        left: 7px;
-    }
-
-    .sizaPortraitSlot[data-side="right"] {
-        right: 7px;
-    }
-
-    .sizaPortraitCaption {
-        padding: 5px 5px 4px;
-    }
-
-    .sizaPortraitCaption strong {
-        font-size: 9px;
-    }
-
-    .sizaPortraitFrame::after {
-        display: none;
-    }
-
-    .sizaSceneVisualLabel {
-        top: 7px;
-        max-width: 50%;
-        font-size: 7px;
-    }
-
-    .sizaSceneCast {
-        top: 34px;
-        right: 7px;
-        max-width: 46%;
-    }
-
-    .sizaSceneCastChip {
-        padding: 3px 5px;
-        font-size: 7px;
-    }
-
-    .sizaBookFacts {
-        grid-template-columns: 1fr;
-    }
-
-    .sizaTcgTray {
-        margin: 0;
-        grid-template-columns: 1fr;
-        grid-template-areas: "hand" "resources" "status";
-    }
+    .sizaBookScene { margin:5px 5px 0; grid-template-rows:minmax(210px,1fr) auto; }
+    .sizaBookSceneVisual { min-height:210px; }
+    .sizaSceneTopPlaque { min-width:130px; max-width:58%; }
+    .sizaStoryPage { min-height:190px; padding:12px 52px 9px 14px; }
+    .sizaBookSceneDescription { font-size:13px; }
+    .sizaBookLine { font-size:12px; }
+    .sizaBookOutput { max-height:58px; }
+    .sizaContextDrawer { right:9px; top:11px; }
+    .sizaContextDrawer > summary { width:38px; height:38px; font-size:18px; }
+    .sizaBookSceneState { width:min(410px,calc(100vw - 30px)); }
+    .sizaBookInputRow { grid-template-columns:minmax(0,1fr) 64px; }
+    #siza-inputfield { min-height:32px; font-size:12px; }
+    .sizaTcgTray { margin:0 5px 5px; grid-template-columns:1fr; grid-template-areas:"hand" "resources" "status"; }
 }
