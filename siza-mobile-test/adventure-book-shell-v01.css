@@ -1,0 +1,101 @@
+/* SIZA Adventure Book Shell v0.1
+   Presentation only. No gameplay state or rule authority lives here. */
+
+.bookShellV01{
+  --book-paper:#d9c9a7;
+  --book-paper-dark:#bca57d;
+  --book-ink:#211b15;
+  --book-frame:#4a3420;
+  --book-gold:#b8924f;
+  --book-shadow:0 24px 70px rgba(0,0,0,.48);
+  width:min(1180px,calc(100vw - 24px));
+  min-height:min(860px,calc(100dvh - 24px));
+  margin:12px auto;
+  border:1px solid #6d5030;
+  border-radius:16px;
+  overflow:hidden;
+  background:linear-gradient(180deg,#251b14,#120e0b);
+  box-shadow:var(--book-shadow);
+}
+
+.bookHeaderV01{
+  min-height:86px;
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(220px,1.25fr) minmax(180px,1fr);
+  align-items:stretch;
+  border-bottom:1px solid #755938;
+  background:linear-gradient(180deg,#34271c,#1b1510);
+}
+
+.bookIdentityV01,
+.bookChapterV01{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+}
+
+.bookIdentityV01.right{justify-content:flex-end;text-align:right}
+.bookIdentityV01 img{width:58px;height:64px;object-fit:cover;border:1px solid #8a6a3c;border-radius:6px}
+.bookIdentityV01 b{display:block;font:600 17px Georgia,serif;color:#f0dfbd}
+.bookIdentityV01 span{display:block;margin-top:3px;color:#b8a68b;font-size:10px}
+.bookIdentityV01 .bookStatsV01{margin-top:5px;color:#e4c783;font-size:10px;font-weight:700}
+
+.bookChapterV01{
+  justify-content:center;
+  text-align:center;
+  border-left:1px solid #60472d;
+  border-right:1px solid #60472d;
+  background:linear-gradient(180deg,#d8c7a4,#bba67e);
+  color:var(--book-ink);
+}
+.bookChapterV01 small{display:block;text-transform:uppercase;letter-spacing:.13em;font-size:8px}
+.bookChapterV01 b{display:block;margin-top:3px;font:700 22px Georgia,serif}
+.bookChapterV01 span{display:block;margin-top:3px;font-size:10px}
+
+.bookBodyV01{position:relative;min-height:0;background:#0b0a08}
+.bookSceneV01{position:relative;min-height:390px;overflow:hidden;background:linear-gradient(180deg,#203241,#101a21)}
+.bookSceneV01>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bookSceneV01:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.42))}
+
+.bookNarrativeV01{
+  position:relative;
+  z-index:3;
+  margin:-1px 12px 12px;
+  border:1px solid #8b7047;
+  background:linear-gradient(180deg,#e1d2b3,#c7b28c);
+  color:var(--book-ink);
+  box-shadow:0 8px 22px rgba(0,0,0,.22);
+}
+.bookNarrativeTextV01{padding:16px 18px 12px;font:15px/1.55 Georgia,serif}
+.bookNarrativeTextV01 b{font-weight:700}
+.bookPromptV01{margin-top:8px;color:#513a27;font-weight:700}
+
+.bookActionsV01{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:0 18px 16px}
+.bookActionV01{border:1px solid #81663f;background:rgba(255,255,255,.18);color:#2b2118;border-radius:7px;padding:10px 12px;text-align:left}
+.bookActionV01:hover{background:rgba(255,255,255,.32)}
+.bookActionV01 span{display:block;margin-top:3px;opacity:.7;font-size:9px}
+
+.bookShellV01.modeDialogue .bookSceneV01{min-height:320px}
+.bookShellV01.modeDialogue .bookNarrativeTextV01{font-size:17px;line-height:1.65}
+.bookShellV01.modeDialogue .bookActionsV01{grid-template-columns:1fr}
+
+.bookShellV01.modeCombat .bookSceneV01{min-height:0}
+.bookShellV01.modeCombat .bookNarrativeV01{margin-top:0}
+.bookShellV01.modeCombat .bookActionsV01{display:none}
+
+@media(max-width:760px){
+  .bookShellV01{width:100%;min-height:100dvh;margin:0;border-radius:0;border-left:0;border-right:0}
+  .bookHeaderV01{min-height:68px;grid-template-columns:1fr 1.2fr 1fr}
+  .bookIdentityV01,.bookChapterV01{padding:6px}
+  .bookIdentityV01 img{width:42px;height:48px}
+  .bookIdentityV01 b{font-size:12px}
+  .bookIdentityV01 span{font-size:7px}
+  .bookIdentityV01 .bookStatsV01{font-size:8px}
+  .bookChapterV01 b{font-size:15px}
+  .bookChapterV01 span{font-size:7px}
+  .bookSceneV01{min-height:46dvh}
+  .bookNarrativeV01{margin:0}
+  .bookActionsV01{grid-template-columns:1fr}
+}
