@@ -50,7 +50,9 @@ function makeDom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=
   ];
   for(const x of runtimeCases){const OM=setup(o,x.options),NM=setup(n,x.options);o.enemyRespondV070();n.enemyRespondV070();const a=snap(o,OM),b=snap(n,NM);assert(a===b,`${x.name} mismatch :: ${a} / ${b}`);compared++}
 
-  const arena=N.window.SIZA.runArenaCriticalV071();assert(arena.passed===arena.total,`Arena ${arena.passed}/${arena.total}`);
+  const arena=N.window.SIZA.runArenaCriticalV071();
+  for(const r of arena.results.filter(x=>!x.pass))console.error(`ARENA FAIL ${r.name}${r.error?` :: ${r.error}`:''}`);
+  assert(arena.passed===arena.total,`Arena ${arena.passed}/${arena.total}`);
   console.log(`PASS priority response old/new ${compared} comparisons; Arena ${arena.passed}/${arena.total}`);O.window.close();N.window.close();
   const latest=await get('siza-mobile-test/index.html');assert(latest.sha===live.sha&&latest.text===live.text,'Runtime changed during guarded migration');
   const put=await fetch(`${api}/contents/siza-mobile-test/index.html`,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({message:'Use shared priority response selector',content:Buffer.from(candidate).toString('base64'),sha:latest.sha,branch:'main'})});if(!put.ok)throw new Error(`PUT ${put.status}: ${await put.text()}`);const result=await put.json();console.log('COMMIT '+result.commit.sha);
