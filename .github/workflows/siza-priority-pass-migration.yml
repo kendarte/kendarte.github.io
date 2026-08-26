@@ -1,0 +1,23 @@
+name: Siza Priority Pass Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-priority-pass-migration.yml'
+      - '.github/scripts/siza-priority-pass-migration.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-priority-pass:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save jsdom@24
+      - name: Validate old/new and publish runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/siza-priority-pass-migration.js
