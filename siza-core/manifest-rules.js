@@ -56,5 +56,15 @@ function bonusSources(player,card,resolveCard,effectsForEvent){
   return out;
 }
 
-global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources});
+function aiManifestRollPlan(modal,player,landIndexes=[],bonusSource=null){
+  let need=deficit(modal,player);
+  const bonus=need===1&&bonusSource?bonusSource:null;
+  if(bonus)need=Math.max(0,need-bonus.effect.amount);
+  const lands=Array.isArray(landIndexes)?landIndexes:[];
+  return need<=lands.length
+    ?{bonus,burnSelected:lands.slice(0,need),aiFailure:false}
+    :{bonus,burnSelected:null,aiFailure:true};
+}
+
+global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan});
 })(window);
