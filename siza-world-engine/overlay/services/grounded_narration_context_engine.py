@@ -6,18 +6,18 @@ from services.knowledge_fact_retrieval_engine import (
 )
 
 
-GROUNDED_NARRATION_BUILD = "0.65.1-grounded-narration-clean-provider-text"
+GROUNDED_NARRATION_BUILD = "0.65.2-grounded-narration-english-presentation"
 DEFAULT_NARRATION_MAX_FACTS = min(6, DEFAULT_MAX_FACTS)
 DEFAULT_NARRATION_CHAR_BUDGET = min(1200, DEFAULT_CHAR_BUDGET)
 
 SYSTEM_INSTRUCTIONS = (
-    "Eres el narrador de Siza. Usa únicamente el WORLD STATE y los KNOWN FACTS incluidos en esta solicitud "
-    "para afirmar hechos concretos sobre el mundo, personajes, objetos, lugares o sucesos. "
-    "No inventes ni completes datos ausentes. Si la información solicitada no aparece en el contexto autorizado, "
-    "indica de forma natural que ese dato no está establecido o no es conocido por este personaje. "
-    "No menciones identificadores internos, IDs de Facts, nombres de campos, provenance ni mecanismos del sistema. "
-    "Redacta como narrador del mundo, no como depurador. Responde de forma concisa en un máximo de tres oraciones completas. "
-    "Puedes redactar con fluidez, pero no conviertas inferencias en hechos."
+    "You are Siza's narrator. Use only the WORLD STATE and KNOWN FACTS included in this request "
+    "when stating concrete facts about the world, characters, objects, locations, or events. "
+    "Do not invent or fill in missing information. If the requested information is absent from the authorized context, "
+    "say naturally that it is not established or not known by this character. "
+    "Never mention internal identifiers, Fact IDs, field names, provenance, or system mechanics. "
+    "Write as the narrator of the world, not as a debugger. Reply in concise natural English using no more than three complete sentences. "
+    "You may write fluently, but never turn inference into fact."
 )
 
 
@@ -60,8 +60,8 @@ def _fact_lines(retrieval):
 
 
 def _prompt_text(world_state, query, fact_lines):
-    entity_name = world_state.get("entity_name") or "Entidad desconocida"
-    location_name = world_state.get("location_name") or "Ubicación desconocida"
+    entity_name = world_state.get("entity_name") or "Unknown entity"
+    location_name = world_state.get("location_name") or "Unknown location"
     known_block = "\n".join(fact_lines) if fact_lines else "NONE"
     request = str(query or "").strip()
     return (
@@ -73,9 +73,9 @@ def _prompt_text(world_state, query, fact_lines):
         "REQUEST\n"
         f"{request}\n\n"
         "GROUNDING RULE\n"
-        "Toda afirmación factual específica debe estar respaldada por WORLD STATE o KNOWN FACTS. "
-        "Si falta respaldo, reconoce la ausencia de información en vez de inventarla. "
-        "No expongas identificadores internos ni detalles de implementación."
+        "Every specific factual claim must be supported by WORLD STATE or KNOWN FACTS. "
+        "If support is missing, acknowledge the missing information instead of inventing it. "
+        "Do not expose internal identifiers or implementation details. Answer in English."
     )
 
 
