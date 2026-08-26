@@ -9,18 +9,32 @@ from twisted.internet import threads
 from evennia.utils import logger
 
 from services.narration_queue import run_serialized
+from services.player_language_contract import (
+    get_actor_turn_language,
+    language_instruction,
+    localize,
+    normalize_player_language,
+)
 
 
-NARRATOR_BUILD = "0.4.3-relevant-english-presentation"
+NARRATOR_BUILD = "0.4.4-bilingual-turn-presentation"
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_NUM_CTX = int(os.getenv("SIZA_OLLAMA_NUM_CTX", "8192"))
 
-SYSTEM_PROMPT = """You are Siza's prose layer. You are NOT the game engine.
-The WORLD ENGINE has already decided geometry, movement, state, perception, and discoveries.
-Rewrite only authorized facts in concise natural English without adding new facts.
-Do not narrate exits, routes, or navigation unless the player's request specifically concerns navigation.
-"""
+
+def _system_prompt(language):
+    language = normalize_player_language(language)
+    return (
+        "You are Siza's prose layer. You are NOT the game engine.\n"
+        "The WORLD ENGINE has already decided geometry, movement, state, perception, and discoveries.\n"
+        "Rewrite only authorized facts without adding new facts. Authorized source text may be Spanish or English; preserve its meaning exactly.\n"
+        "Do not narrate exits, routes, or navigation unless the player's request specifically concerns navigation.\n"
+        + language_instruction(language)
+    )
+
+
+SYSTEM_PROMPT = _system_prompt("es")
 
 
 def _normalize(text):
@@ -147,107 +161,71 @@ def _contains_basic_verb(fragment):
     return bool(words & common_verbs)
 
 
-def _render_focal(fragment):
-    fragment = _clean_fragment(fragment)
-    if not fragment:
-        return ""
-    if _contains_basic_verb(fragment):
-        return _sentence(fragment)
-    return f"One visible feature stands out: {fragment}."
-
-
-def _render_hearing(fragment):
-    fragment = _clean_fragment(fragment)
-    if not fragment:
-        return ""
-    return f"You hear {fragment}."
-
-
-def _render_room_core(room, include_name=True, include_orientation=False):
-    if not room:
-        return ""
-
-    profile = _plain_dict(room.db.space_profile)
-    geometry = _clean_fragment(profile.get("geometry", ""))
-    scale = _clean_fragment(profile.get("scale", ""))
-    orientation = _clean_fragment(profile.get("orientation", ""))
-    focal_points = [str(item) for item in _plain_list(profile.get("focal_points", [])) if item]
-    hearing = _first_sensory(room, "hearing")
-    sight = _first_sensory(room, "sight")
-
-    sentences = []
-    if geometry:
-        if include_name:
-            sentences.append(f"In {room.key}, the space is arranged as {geometry}.")
-        else:
-            sentences.append(f"The space is arranged as {geometry}.")
-    elif room.db.desc:
-        sentences.append(_sentence(room.db.desc))
-
-    if scale:
-        sentences.append(f"The space feels {scale}.")
-
-    if include_orientation and orientation:
-        sentences.append(_sentence(orientation))
-
-    if focal_points:
-        sentences.append(_render_focal(focal_points[0]))
-    elif sight:
-        sentences.append(_render_focal(sight))
-
-    if hearing:
-        sentences.append(_render_hearing(hearing))
-
-    return " ".join(sentence for sentence in sentences if sentence)
-
-
-def _render_move_fallback(destination):
-    return f"You enter {destination.key}." if destination else "You move on."
-
-
-def _format_visible_names(names):
+def _format_visible_names(names, language="es"):
     names = [str(name) for name in names if name]
     if not names:
         return ""
     if len(names) == 1:
         return names[0]
-    return ", ".join(names[:-1]) + " and " + names[-1]
+    conjunction = " and " if normalize_player_language(language) == "en" else " y "
+    return ", ".join(names[:-1]) + conjunction + names[-1]
 
 
-def _render_observation(character, result):
+def _render_move_fallback(destination, language="es"):
+    language = normalize_player_language(language)
+    if destination:
+        return f"You enter {destination.key}." if language == "en" else f"Entras en {destination.key}."
+    return "You move on." if language == "en" else "Sigues adelante."
+
+
+def _safe_perception_packet(character, result, language):
+    status = str((result or {}).get("status") or "")
     room = getattr(character, "location", None)
-    visible = _visible_contents(room, exclude=character)
-    known = [str(item) for item in result.get("already_known", []) if item]
-    sentences = []
-    if visible:
-        sentences.append(f"In view: {_format_visible_names(visible)}.")
-    if known:
-        sentences.extend(_sentence(item) for item in known)
-    return " ".join(sentence for sentence in sentences if sentence) or "Nothing else stands out at a glance."
+    packet = {
+        "mode": "PERCEPTION",
+        "status": status,
+        "player_language": normalize_player_language(language),
+        "target": str((result or {}).get("target") or "").strip(),
+    }
+    if status == "OBSERVED":
+        packet["visible_contents"] = _visible_contents(room, exclude=character)
+        packet["already_known"] = [str(item) for item in (result.get("already_known", []) or []) if item]
+    elif status == "AUTO_SUCCESS":
+        packet["visible_targets"] = [str(item) for item in (result.get("visible_targets", []) or []) if item]
+        packet["visible_target_details"] = [
+            {
+                "name": str((item or {}).get("name") or ""),
+                "desc": str((item or {}).get("desc") or ""),
+            }
+            for item in (result.get("visible_target_details", []) or [])
+            if isinstance(item, dict)
+        ]
+    elif status == "DISCOVERY":
+        packet["discovered"] = [str(item).strip() for item in (result.get("discovered", []) or []) if item]
+    return packet
 
 
-def _render_auto_success(result):
-    details = result.get("visible_target_details", []) or []
-    if details:
-        detail = details[0]
-        name = str(detail.get("name", "the target"))
-        desc = str(detail.get("desc", "")).strip()
-        prefix = f"You can clearly see {name}."
-        return f"{prefix} {desc}".strip()
-
-    targets = [str(item) for item in result.get("visible_targets", []) if item]
-    if not targets:
-        return "The target is already visible without a closer search."
-    if len(targets) == 1:
-        return f"You can clearly see {targets[0]}."
-    return "You can clearly see " + ", ".join(targets[:-1]) + " and " + targets[-1] + "."
-
-
-def _render_discovery(result):
-    discovered = [str(item).strip() for item in result.get("discovered", []) if item]
-    if not discovered:
-        return "The search reveals nothing new."
-    return " ".join(_sentence(item) for item in discovered)
+def _perception_fallback(character, result, language):
+    language = normalize_player_language(language)
+    status = str((result or {}).get("status") or "")
+    if status == "OBSERVED":
+        visible = _visible_contents(getattr(character, "location", None), exclude=character)
+        if visible:
+            prefix = "In view" if language == "en" else "A la vista"
+            return f"{prefix}: {_format_visible_names(visible, language)}."
+        return localize("nothing_stands_out", language)
+    if status == "AUTO_SUCCESS":
+        targets = [str(item) for item in (result.get("visible_targets", []) or []) if item]
+        if targets:
+            names = _format_visible_names(targets, language)
+            return f"You can clearly see {names}." if language == "en" else f"Puedes ver claramente {names}."
+        return "The target is already visible." if language == "en" else "El objetivo ya está a la vista."
+    if status == "DISCOVERY":
+        discovered = [item for item in (result.get("discovered", []) or []) if item]
+        if discovered:
+            return "You discover new information." if language == "en" else "Descubres información nueva."
+        return localize("search_nothing_new", language)
+    return localize("no_new_information", language)
 
 
 def _post_chat(payload):
@@ -272,11 +250,13 @@ def _post_chat(payload):
 
 
 def _request_chat(packet):
+    safe_packet = dict(packet or {})
+    language = normalize_player_language(safe_packet.get("player_language"))
     payload = {
         "model": OLLAMA_MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(_json_safe(packet), ensure_ascii=False, indent=2)},
+            {"role": "system", "content": _system_prompt(language)},
+            {"role": "user", "content": json.dumps(_json_safe(safe_packet), ensure_ascii=False, indent=2)},
         ],
         "stream": False,
         "think": False,
@@ -309,39 +289,43 @@ def _narrate_async(character, packet, fallback_text):
 
 
 def narrate_move_async(character, source, destination, exit_obj):
-    character.msg("\n" + _render_move_fallback(destination))
+    language = get_actor_turn_language(character)
+    character.msg("\n" + _render_move_fallback(destination, language))
     return None
 
 
 def narrate_perception_async(character, result):
-    status = result.get("status")
-    target = (result.get("target") or "").strip()
+    language = get_actor_turn_language(character)
+    status = str((result or {}).get("status") or "")
+    target = str((result or {}).get("target") or "").strip()
 
-    if status == "OBSERVED":
-        character.msg("\n" + _render_observation(character, result))
-        return None
-
-    if status == "AUTO_SUCCESS":
-        character.msg("\n" + _render_auto_success(result))
-        return None
-
-    if status == "DISCOVERY":
-        character.msg("\n" + _render_discovery(result))
-        return None
+    if status in {"OBSERVED", "AUTO_SUCCESS", "DISCOVERY"}:
+        packet = _safe_perception_packet(character, result, language)
+        return _narrate_async(character, packet, _perception_fallback(character, result, language))
 
     if status == "NO_AUTHORIZED_DISCOVERY":
         if target:
-            character.msg(f"\nYour search reveals no new information about {target}.")
+            text = (
+                f"Your search reveals no new information about {target}."
+                if language == "en"
+                else f"Tu búsqueda no revela información nueva sobre {target}."
+            )
         else:
-            character.msg("\nYour search reveals no new information.")
+            text = "Your search reveals no new information." if language == "en" else "Tu búsqueda no revela información nueva."
+        character.msg("\n" + text)
         return None
 
     if status == "NO_DISCOVERY":
         if target:
-            character.msg(f"\nYou search for clues related to {target}, but find nothing new.")
+            text = (
+                f"You search for clues related to {target}, but find nothing new."
+                if language == "en"
+                else f"Buscas pistas relacionadas con {target}, pero no encuentras nada nuevo."
+            )
         else:
-            character.msg("\nThe search reveals nothing new.")
+            text = localize("search_nothing_new", language)
+        character.msg("\n" + text)
         return None
 
-    character.msg("\nYou gain no new information from that action.")
+    character.msg("\n" + localize("no_new_information", language))
     return None
