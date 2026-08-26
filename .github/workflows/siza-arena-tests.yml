@@ -8,6 +8,7 @@ on:
       - 'siza-mobile-test/adventure-book-shell-adapter-v01.js'
       - 'siza-mobile-test/adventure-book-shell-renderer-v01.js'
       - 'siza-mobile-test/adventure-book-shell-v01.css'
+      - 'siza-mobile-test/world-combat-bridge-v01.js'
       - 'siza-core/**'
       - '.github/scripts/siza-arena-regression.js'
       - '.github/scripts/siza-combat-effects-regression.js'
@@ -20,6 +21,8 @@ on:
       - '.github/scripts/siza-bounce-regression.js'
       - '.github/scripts/siza-resolution-kind-regression.js'
       - '.github/scripts/siza-priority-response-regression.js'
+      - '.github/scripts/siza-world-combat-bridge-regression.js'
+      - '.github/scripts/siza-world-combat-index-regression.js'
       - '.github/workflows/siza-arena-tests.yml'
   workflow_dispatch:
 
@@ -47,7 +50,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const repo=process.env.GH_REPOSITORY,sha=process.env.GH_SHA,token=process.env.GH_TOKEN;
-          const files=['siza-mobile-test/index.html','siza-mobile-test/adventure-book-shell-v01.js','siza-mobile-test/adventure-book-shell-adapter-v01.js','siza-mobile-test/adventure-book-shell-renderer-v01.js','siza-core/card-effects.js','siza-core/card-schema.js','siza-core/cards.js','siza-core/card-renderer.js','siza-core/manifest-rules.js','siza-core/crystal-rules.js','siza-core/entry-rules.js','siza-core/creature-rules.js','.github/scripts/siza-arena-regression.js','.github/scripts/siza-combat-effects-regression.js','.github/scripts/siza-prism-effects-regression.js','.github/scripts/siza-equipment-effects-regression.js','.github/scripts/siza-battlefield-ui-index-regression.js','.github/scripts/siza-entry-rules-regression.js','.github/scripts/siza-crystal-state-regression.js','.github/scripts/siza-creature-stats-regression.js','.github/scripts/siza-bounce-regression.js','.github/scripts/siza-resolution-kind-regression.js','.github/scripts/siza-priority-response-regression.js'];
+          const files=['siza-mobile-test/index.html','siza-mobile-test/adventure-book-shell-v01.js','siza-mobile-test/adventure-book-shell-adapter-v01.js','siza-mobile-test/adventure-book-shell-renderer-v01.js','siza-mobile-test/world-combat-bridge-v01.js','siza-core/card-effects.js','siza-core/card-schema.js','siza-core/cards.js','siza-core/card-renderer.js','siza-core/manifest-rules.js','siza-core/crystal-rules.js','siza-core/entry-rules.js','siza-core/creature-rules.js','.github/scripts/siza-arena-regression.js','.github/scripts/siza-combat-effects-regression.js','.github/scripts/siza-prism-effects-regression.js','.github/scripts/siza-equipment-effects-regression.js','.github/scripts/siza-battlefield-ui-index-regression.js','.github/scripts/siza-entry-rules-regression.js','.github/scripts/siza-crystal-state-regression.js','.github/scripts/siza-creature-stats-regression.js','.github/scripts/siza-bounce-regression.js','.github/scripts/siza-resolution-kind-regression.js','.github/scripts/siza-priority-response-regression.js','.github/scripts/siza-world-combat-bridge-regression.js','.github/scripts/siza-world-combat-index-regression.js'];
           const headers={'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28'};
           (async()=>{
             for(const path of files){
@@ -72,13 +75,19 @@ jobs:
             html=html.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
           }
           if(!html.includes('SizaCreatureRules'))html=html.replace('<script>\nconst NEREIDA_IMG=',`<script>${fs.readFileSync('siza-core/creature-rules.js','utf8')}</script>\n<script>\nconst NEREIDA_IMG=`);
-          for(const name of ['adventure-book-shell-v01.js','adventure-book-shell-adapter-v01.js','adventure-book-shell-renderer-v01.js']){
+          for(const name of ['adventure-book-shell-v01.js','adventure-book-shell-adapter-v01.js','adventure-book-shell-renderer-v01.js','world-combat-bridge-v01.js']){
             const tag=`<script src="${name}"></script>`;
-            if(!html.includes(tag))throw new Error(`Missing Book Shell tag ${name}`);
+            if(!html.includes(tag))throw new Error(`Missing SIZA module tag ${name}`);
             html=html.replace(tag,`<script>${fs.readFileSync(`siza-mobile-test/${name}`,'utf8')}</script>`);
           }
           fs.writeFileSync(path,html);
           NODE
+
+      - name: Run World Combat Bridge contract regression
+        run: node .github/scripts/siza-world-combat-bridge-regression.js
+
+      - name: Run integrated World Combat lifecycle regression
+        run: node .github/scripts/siza-world-combat-index-regression.js
 
       - name: Run Arena regression suite
         run: node .github/scripts/siza-arena-regression.js
