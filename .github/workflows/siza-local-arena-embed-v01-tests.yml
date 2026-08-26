@@ -1,0 +1,113 @@
+name: SIZA Local Arena Embed v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/update_world_engine.bat'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css'
+      - 'siza-mobile-test/index.html'
+      - 'siza-mobile-test/world-combat-bridge-v01.js'
+      - 'siza-core/**'
+      - '.github/workflows/siza-local-arena-embed-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-arena-embed-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Static mount contract
+        shell: bash
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
+          test -f siza-mobile-test/index.html
+          test -f siza-mobile-test/world-combat-bridge-v01.js
+          test -f siza-core/cards.js
+          grep -Fq 'siza-mobile-test" "runtime\web\static\webclient\tcg\siza-mobile-test' siza-world-engine/update_world_engine.bat
+          grep -Fq 'siza-core" "runtime\web\static\webclient\tcg\siza-core' siza-world-engine/update_world_engine.bat
+          grep -Fq 'siza_tcg_embed_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          grep -Fq 'siza_tcg_embed_v01.css' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          echo 'PASS local Arena static mount contract'
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Browser encounter to child Arena to Evennia result regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          (async()=>{
+            const dom=new JSDOM(`<!doctype html><html><body>
+              <div id="siza-book-client" data-mode="EXPLORATION">
+                <div id="siza-tcg-tray" data-active="false">
+                  <div id="siza-tcg-resource-mount"></div>
+                  <div id="siza-tcg-hand-mount"></div>
+                  <div id="siza-tcg-status"></div>
+                </div>
+              </div>
+            </body></html>`,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+            const w=dom.window;
+            const listeners={};
+            const sent=[];
+            w.SizaWorldBookClient={setMode:(mode)=>{w.document.getElementById('siza-book-client').setAttribute('data-mode',mode);return mode;}};
+            w.SizaBookShellV02={setCombatTray:(state)=>{w.document.getElementById('siza-tcg-tray').setAttribute('data-active',state.active?'true':'false');return true;}};
+            w.Evennia={
+              init:()=>{},
+              isConnected:()=>true,
+              msg:(name,args,kwargs)=>sent.push({name,args,kwargs}),
+              emitter:{on:(name,fn)=>listeners[name]=fn}
+            };
+
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js','utf8'));
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            await new Promise(r=>setTimeout(r,0));
+
+            const encounter={
+              encounter_id:'WEB-EMBED-001',encounter_type:'COMBAT_CONFRONTATION',
+              site:{room_id:'CAR-KAL-DAR-TEST',name:'Dockside Fishery'},
+              initiator:{entity_id:'PLAYER:1',name:'Nereida'},
+              opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]
+            };
+            const initial=listeners.siza_combat_encounter([encounter]);
+            if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='COMBAT')throw new Error('encounter did not switch shell to COMBAT');
+            const frame=w.document.getElementById('siza-tcg-embed-frame');
+            if(!frame)throw new Error('local Arena iframe was not mounted');
+            if(!frame.getAttribute('src').includes('/static/webclient/tcg/siza-mobile-test/index.html'))throw new Error(`wrong local Arena src: ${frame.getAttribute('src')}`);
+
+            let startedEncounter=null;
+            frame.contentWindow.SIZA={
+              startWorldEncounter:(packet,mode)=>{startedEncounter={packet,mode};return {ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:packet.encounter_id};},
+              getWorldCombatResult:()=>null
+            };
+            frame.dispatchEvent(new w.Event('load'));
+            await new Promise(r=>setTimeout(r,0));
+            if(!startedEncounter||startedEncounter.packet.encounter_id!=='WEB-EMBED-001')throw new Error('pending encounter was not delivered to child Arena after load');
+
+            const result={
+              result_id:'WEB-EMBED-001:RESULT:1',encounter_id:'WEB-EMBED-001',status:'RESOLVED',outcome:'PLAYER_WIN',
+              winner_ids:['PLAYER:1'],defeated_ids:['NPC:2'],participants:[]
+            };
+            frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('siza:combat-result',{detail:result}));
+            await new Promise(r=>setTimeout(r,0));
+            const resultSend=sent.find(row=>row.name==='text'&&String(row.args&&row.args[0]).startsWith('siza-combat-result '));
+            if(!resultSend)throw new Error('child CombatResult did not return through Evennia transport');
+
+            console.log('PASS browser World encounter -> local Arena -> CombatResult -> Evennia transport');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
