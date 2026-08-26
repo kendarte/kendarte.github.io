@@ -5,7 +5,7 @@ function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;'
 function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must load before SizaCardRenderer.');return global.SizaCardSchema;}
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
 function typeClass(card){return 'type-'+schema().normalizeCard(card).cardType.toLowerCase();}
-function affinityClass(card){const c=schema().normalizeCard(card);return String(c.affinity||c.art||'multi').toLowerCase();}
+function affinityClass(card){const c=schema().normalizeCard(card);return String(c.art||c.affinity||'multi').toLowerCase();}
 
 function artHtml(card,opts={}){
  const c=schema().normalizeCard(card),t=c.artTransform,mobile=opts.variant==='mobile';
