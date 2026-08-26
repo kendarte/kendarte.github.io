@@ -1,0 +1,103 @@
+name: SIZA DM Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/dm_campaign_director.py'
+      - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - 'siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py'
+      - 'siza-world-engine/overlay/commands/dm_commands.py'
+      - '.github/workflows/siza-dm-tests.yml'
+  pull_request:
+    paths:
+      - 'siza-world-engine/overlay/services/dm_campaign_director.py'
+      - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - 'siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py'
+      - 'siza-world-engine/overlay/commands/dm_commands.py'
+      - '.github/workflows/siza-dm-tests.yml'
+
+jobs:
+  dm-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile DM files
+        run: |
+          python -m py_compile \
+            siza-world-engine/overlay/services/dm_campaign_director.py \
+            siza-world-engine/overlay/services/dm_world_context.py \
+            siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py \
+            siza-world-engine/overlay/commands/dm_commands.py
+      - name: Validate Faro Ahogado director contract
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          from services.dm_campaign_director import (
+              build_dm_turn_plan,
+              complete_active_beat,
+              get_campaign_state,
+              set_campaign_signal,
+              start_campaign,
+              validate_campaign_definition,
+          )
+          from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
+
+          class DB:
+              pass
+
+          class Actor:
+              def __init__(self):
+                  self.db = DB()
+                  self.key = 'QA Player'
+
+          actor = Actor()
+          definition = validate_campaign_definition(FARO_AHOGADO_CAMPAIGN)
+          assert definition['valid'], definition
+
+          started = start_campaign(actor, FARO_AHOGADO_CAMPAIGN)
+          assert started['started'] is True, started
+          assert get_campaign_state(actor)['active_beat_id'] == 'FA-BEAT-LEAD'
+
+          plan = build_dm_turn_plan(
+              actor,
+              FARO_AHOGADO_CAMPAIGN,
+              'pregunto por rumores de la expedición y busco una pista sobre el faro',
+              world_snapshot={'location': {'name': 'QA Room', 'room_id': 'QA-001'}},
+          )
+          ids = [row['id'] for row in plan['selected_cards']]
+          assert ids and ids[0] == 'FA-CARD-LEAD-SOURCE', ids
+          assert plan['authority']['dm_may_mutate_world'] is False
+          assert plan['authority']['dm_may_resolve_actions'] is False
+          assert plan['authority']['dm_may_invent_facts'] is False
+
+          set_campaign_signal(actor, 'attention', 1)
+          consequence = build_dm_turn_plan(
+              actor,
+              FARO_AHOGADO_CAMPAIGN,
+              'robo un documento y fuerzo la cerradura',
+              world_snapshot={'location': {'name': 'QA Room', 'room_id': 'QA-001'}},
+          )
+          consequence_ids = [row['id'] for row in consequence['selected_cards']]
+          assert 'FA-CARD-CONSEQUENCE-ATTENTION' in consequence_ids, consequence_ids
+
+          advanced = complete_active_beat(actor, FARO_AHOGADO_CAMPAIGN, evidence={'source': 'QA'})
+          assert advanced['active_beat_id'] == 'FA-BEAT-ROUTE', advanced
+          route = build_dm_turn_plan(
+              actor,
+              FARO_AHOGADO_CAMPAIGN,
+              'quiero encontrar una ruta viable',
+              world_snapshot={'location': {'name': 'QA Room', 'room_id': 'QA-001'}},
+          )
+          route_ids = [row['id'] for row in route['selected_cards']]
+          assert 'FA-CARD-ROUTE-EVIDENCE' in route_ids, route_ids
+
+          print('SIZA DM v0.1: PASS')
+          PY
