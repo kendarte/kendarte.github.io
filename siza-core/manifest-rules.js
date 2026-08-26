@@ -83,5 +83,28 @@ function burnConsumptionPlan(modal){
   return {indices,manifestIndex};
 }
 
-global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan,burnSelectionPlan,burnConsumptionPlan});
+function manifestOutcome(modal,player){
+  const burn=modal.burnSelected.length;
+  const total=player.mf+modal.roll+modal.prismBonus+burn;
+  return {burn,total,success:total>=modal.dc};
+}
+
+function manifestStackPlan(modal,player,card,hasEffect){
+  const effectCheck=typeof hasEffect==='function'?hasEffect:()=>false;
+  return {
+    cardId:player.hand[modal.idx],
+    owner:modal.owner,
+    targetStackId:modal.reactive&&effectCheck(card,'counter-stack-target','resolve')?modal.targetStackId:null
+  };
+}
+
+function manifestFailurePlan(modal,player){
+  const total=player.mf+modal.roll+modal.prismBonus;
+  return {
+    total,
+    resume:modal.reactive?'priority':modal.owner==='enemy'?'enemy':'none'
+  };
+}
+
+global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan,burnSelectionPlan,burnConsumptionPlan,manifestOutcome,manifestStackPlan,manifestFailurePlan});
 })(window);
