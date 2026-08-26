@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.4.0';
+const VERSION='1.5.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -15,5 +15,16 @@ function validateEffects(input=[]){const effects=normalizeEffects(input),errors=
 function forEvent(card,event){return normalizeEffects(card?.effects).filter(effect=>effect.event===event);}
 function hasEffect(card,type,event=null){const list=event?forEvent(card,event):normalizeEffects(card?.effects);return list.some(effect=>effect.type===type);}
 function sumAmount(card,event,type){return forEvent(card,event).filter(effect=>effect.type===type).reduce((sum,effect)=>sum+(effect.amount||0),0);}
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount});
+function effectSide(target,selfSide,opponentSide,defaultTarget='self'){const resolved=target||defaultTarget;return resolved==='opponent'?opponentSide:selfSide;}
+function otherPermanentTargets(match,sourceOwner,entryIndex=null){
+  const targets=[];
+  for(const owner of ['player','enemy']){
+    const player=match[owner];
+    player.battlefield.forEach((id,index)=>{if(!(owner===sourceOwner&&index===entryIndex))targets.push({owner,zone:'battlefield',index,id});});
+    player.artifacts.forEach((id,index)=>targets.push({owner,zone:'artifacts',index,id}));
+    player.equipment.forEach((entry,index)=>targets.push({owner,zone:'equipment',index,id:entry.id}));
+  }
+  return targets;
+}
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets});
 })(window);
