@@ -129,4 +129,65 @@
   .bookShellV01.modeCombat .arenaNavToggleV600{top:74px;left:7px}
 }
 
-.matchBoardV5 .handAreaV5{z-index:36}
+/* Arena hand presentation: cards stay above the command dock and use a clean row. */
+.matchBoardV5 .handAreaV5{
+  z-index:36!important;
+  left:12px!important;
+  right:12px!important;
+  bottom:0!important;
+  height:174px!important;
+  padding:12px 10px 6px!important;
+  display:block!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  scrollbar-width:none;
+}
+.matchBoardV5 .handAreaV5::-webkit-scrollbar{display:none}
+.matchBoardV5 .handV5{
+  width:max-content!important;
+  min-width:100%!important;
+  height:156px!important;
+  padding:0 10px!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  gap:10px!important;
+}
+.matchBoardV5 .handCardV5{
+  flex:0 0 108px!important;
+  width:108px!important;
+  height:156px!important;
+  margin-left:0!important;
+  transform:none!important;
+}
+.matchBoardV5 .handCardV5 .sizaCard{height:156px!important}
+.matchBoardV5 .handCardV5:hover,
+.matchBoardV5 .handCardV5.selected{
+  transform:translateY(-18px) scale(1.055)!important;
+  z-index:45!important;
+}
+
+@media(max-width:760px) and (orientation:portrait){
+  .matchBoardV5 .handAreaV5{
+    left:0!important;
+    right:0!important;
+    height:154px!important;
+    padding:11px 7px 4px!important;
+  }
+  .matchBoardV5 .handV5{
+    height:139px!important;
+    min-width:100%!important;
+    padding:0 9px!important;
+    justify-content:flex-start!important;
+    gap:7px!important;
+  }
+  .matchBoardV5 .handCardV5{
+    flex-basis:96px!important;
+    width:96px!important;
+    height:139px!important;
+    margin-left:0!important;
+  }
+  .matchBoardV5 .handCardV5 .sizaCard{height:139px!important}
+  .matchBoardV5 .handCardV5:hover,
+  .matchBoardV5 .handCardV5.selected{transform:translateY(-14px) scale(1.045)!important}
+}
