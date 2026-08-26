@@ -19,7 +19,7 @@ from services.ollama_narration_provider import DEFAULT_OLLAMA_ENDPOINT, DEFAULT_
 from services.player_language_contract import get_actor_turn_language
 
 
-DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1.2-async-bounded-context-free-action-interpretation"
+DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1.3-async-bounded-context-retry-interpretation"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
@@ -130,14 +130,17 @@ def dispatch_dm_free_action_async(
     on_result,
     on_failure=None,
     provider_callable=None,
+    context_needs=None,
     **provider_options,
 ):
     """Retrieve bounded context on reactor, interpret in worker, return result to reactor."""
+    requested_needs = [str(value) for value in list(context_needs or []) if str(value or "").strip()]
     context_packet = build_dm_context_packet(
         actor,
         raw_player_input,
         dm_plan,
         world_snapshot,
+        context_needs=requested_needs,
     )
     request_packet = build_dm_free_action_request(
         raw_player_input,
@@ -146,6 +149,7 @@ def dispatch_dm_free_action_async(
         player_language=get_actor_turn_language(actor),
     )
     request_packet = _attach_dm_context(request_packet, context_packet)
+    request_packet["context_retry_needs"] = requested_needs
     provider = provider_callable or call_prebuilt_dm_free_action
     deferred = run_serialized(
         actor,
@@ -176,6 +180,7 @@ def dispatch_dm_free_action_async(
         "queued": True,
         "request": request_packet,
         "context": context_packet,
+        "context_needs": requested_needs,
         "deferred": deferred,
         "build": DM_FREE_ACTION_RUNTIME_BUILD,
     }
