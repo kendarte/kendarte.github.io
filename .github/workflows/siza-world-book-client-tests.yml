@@ -38,6 +38,12 @@ jobs:
               '{% block guilib_import %}',
               "webclient/js/siza_book_client.js",
               '{% block client %}',
+              'id="siza-scene-description"',
+              'id="siza-exits"',
+              'id="siza-characters"',
+              'id="siza-visible"',
+              'id="siza-knowledge-panel"',
+              'id="siza-knowledge-list"',
               'id="siza-messagewindow"',
               'id="siza-inputfield"',
               'id="siza-inputsend"',
@@ -51,7 +57,7 @@ jobs:
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
 
-      - name: Run transport adapter regression
+      - name: Run transport and room presentation regression
         shell: bash
         run: |
           node <<'NODE'
@@ -63,39 +69,80 @@ jobs:
           <div id="siza-mode-label"></div><div id="siza-location-label"></div>
           <div id="siza-context-label"></div><div id="siza-connection-label"></div>
           <div id="siza-prompt-label"></div><div id="siza-scene-kicker"></div>
-          <div id="siza-scene-title"></div><div id="siza-messagewindow"></div>
+          <div id="siza-scene-title"></div><p id="siza-scene-description"></p>
+          <section id="siza-exits-card"><span id="siza-exits"></span></section>
+          <section id="siza-characters-card"><span id="siza-characters"></span></section>
+          <section id="siza-visible-card"><span id="siza-visible"></span></section>
+          <details id="siza-knowledge-panel"><span id="siza-knowledge-summary"></span><div id="siza-knowledge-list"></div></details>
+          <div id="siza-messagewindow"></div>
           <div id="siza-current-prompt"></div><textarea id="siza-inputfield"></textarea>
           <button id="siza-inputsend"></button></body></html>`;
           const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
           const w=dom.window;
           const listeners={};
-          let sent=null;
+          const sent=[];
           w.requestAnimationFrame=fn=>fn();
           w.$=()=>({ready:fn=>fn()});
           w.Evennia={
             emitter:null,
             init(){if(!this.emitter)this.emitter={on:(name,fn)=>{listeners[name]=fn}}},
             isConnected(){return true},
-            msg(name,args,kwargs){sent=[name,args,kwargs]}
+            msg(name,args,kwargs){sent.push([name,args,kwargs])}
           };
           w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js','utf8'));
 
-          if(!w.SizaWorldBookClient)throw new Error('SizaWorldBookClient missing');
-          if(!w.SizaWorldBookClient.sendText('look'))throw new Error('sendText rejected connected command');
-          if(JSON.stringify(sent)!==JSON.stringify(['text',['look'],{}]))throw new Error(`wrong Evennia payload ${JSON.stringify(sent)}`);
+          const client=w.SizaWorldBookClient;
+          if(!client)throw new Error('SizaWorldBookClient missing');
+          if(!client.sendText('look'))throw new Error('sendText rejected connected command');
+          if(client.sendText('look'))throw new Error('second command must be blocked while response is pending');
+          if(sent.length!==1||JSON.stringify(sent[0])!==JSON.stringify(['text',['look'],{}]))throw new Error(`wrong Evennia payload ${JSON.stringify(sent)}`);
+          if(!w.document.getElementById('siza-inputsend').disabled)throw new Error('pending command did not disable send button');
 
-          listeners.text(['<b>Room output</b>'],{cls:'out'});
-          if(!w.document.getElementById('siza-messagewindow').innerHTML.includes('Room output'))throw new Error('text listener did not render output');
+          const room=[
+            'Pescaderia de Darsena(#9)',
+            'Un local de prueba usado para validar comercio, objetos y Knowledge dentro del piloto.',
+            'Exits: salir a la calle and entrar a la trastienda',
+            'Characters: Mara Vensal and Informante de Prueba C',
+            'You see: a Cajon de reparto de prueba and a Manifiesto de carga de prueba',
+            'Al comparar las cifras del manifiesto, detectas una discrepancia.',
+            'Al ordenar los sellos y horarios del manifiesto, reconstruyes una secuencia coherente.'
+          ].join('\n');
+
+          listeners.text([room],{cls:'out'});
+          if(w.document.getElementById('siza-location-label').textContent!=='Pescaderia de Darsena')throw new Error('room title not promoted to scene');
+          if(!w.document.getElementById('siza-scene-description').textContent.includes('Un local de prueba'))throw new Error('room description missing');
+          if(!w.document.getElementById('siza-exits').textContent.includes('salir a la calle'))throw new Error('exits not separated');
+          if(!w.document.getElementById('siza-characters').textContent.includes('Mara Vensal'))throw new Error('characters not separated');
+          if(!w.document.getElementById('siza-visible').textContent.includes('Manifiesto'))throw new Error('visible objects not separated');
+          if(w.document.getElementById('siza-knowledge-list').children.length!==2)throw new Error('room knowledge not moved to knowledge panel');
+          if(w.document.getElementById('siza-messagewindow').children.length!==0)throw new Error('initial remembered knowledge must not flood narrative feed');
+          if(w.document.getElementById('siza-inputsend').disabled)throw new Error('server output did not release pending command');
+
+          listeners.text([room],{cls:'out'});
+          if(w.document.getElementById('siza-messagewindow').children.length!==0)throw new Error('identical room packet was not suppressed');
+
+          if(!client.sendText('examinar manifiesto'))throw new Error('next command did not unlock');
+          const updatedRoom=room+'\nCon el ciclo de estampado ya comprendido, identificas el turno responsable.';
+          listeners.text([updatedRoom],{cls:'out'});
+          if(w.document.getElementById('siza-knowledge-list').children.length!==3)throw new Error('new knowledge missing from knowledge panel');
+          if(w.document.getElementById('siza-messagewindow').children.length!==1)throw new Error('only the new discovery should enter narrative feed');
+          if(!w.document.getElementById('siza-messagewindow').textContent.includes('turno responsable'))throw new Error('new discovery narrative missing');
+
+          listeners.text([updatedRoom],{cls:'out'});
+          if(w.document.getElementById('siza-messagewindow').children.length!==1)throw new Error('duplicate updated room packet rendered twice');
+
+          listeners.text(['<b>Mara asiente.</b>'],{cls:'out'});
+          if(!w.document.getElementById('siza-messagewindow').innerHTML.includes('Mara asiente'))throw new Error('normal narrative output did not render');
 
           listeners.prompt(['HP&gt;'],{});
           if(!w.document.getElementById('siza-prompt-label').innerHTML.includes('HP'))throw new Error('prompt listener did not update prompt');
 
-          w.SizaWorldBookClient.setMode('DIALOGUE');
+          client.setMode('DIALOGUE');
           if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='DIALOGUE')throw new Error('dialogue mode did not apply');
 
           listeners.connection_open(['websocket'],{});
           if(w.document.getElementById('siza-book-client').getAttribute('data-connection')!=='open')throw new Error('connection open state missing');
 
-          console.log('PASS transport adapter: text input/output, prompt, mode, connection');
+          console.log('PASS World Book: transport, pending guard, room parsing, knowledge folding, duplicate suppression');
           dom.window.close();
           NODE
