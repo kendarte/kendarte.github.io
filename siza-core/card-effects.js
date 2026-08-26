@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.6.0';
+const VERSION='1.7.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -26,9 +26,14 @@ function otherPermanentTargets(match,sourceOwner,entryIndex=null){
   }
   return targets;
 }
+function preferredPermanentTarget(targets=[],preferredOwner='player'){return targets.find(target=>target.owner===preferredOwner)||targets[0]||null;}
+function bouncePlan(target={}){
+  const zone=target.zone||'battlefield';
+  return{owner:target.owner,zone,index:target.index,destination:'hand',zoneLabel:zone==='equipment'?'Equipo':zone==='artifacts'?'Reliquias':'Invocaciones'};
+}
 function stackTargetIndex(stack,targetStackId){
   const index=stack.findIndex(entry=>entry.id===targetStackId);
   return index>=0?index:stack.length-1;
 }
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,stackTargetIndex});
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex});
 })(window);
