@@ -93,6 +93,22 @@ function combatPlan(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForE
   };
 }
 
+function aiBlockerAssignments(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForEvent){
+  const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  const slots=(combat?.attackers||[])
+    .map((attacker,slot)=>({slot,power:effectivePowerValue(attackerPlayer,attacker.index,cardResolver,effectResolver)}))
+    .sort((a,b)=>b.power-a.power);
+  const blockers=(defenderPlayer?.battlefield||[])
+    .map((id,index)=>({index,card:cardResolver(id)}))
+    .filter(entry=>entry.card?.type==='Creature'&&!(defenderPlayer?.exhausted||[]).includes(entry.index))
+    .map(entry=>entry.index)
+    .sort((a,b)=>toughnessValue(defenderPlayer,b,cardResolver)-toughnessValue(defenderPlayer,a,cardResolver));
+  const assignments={};
+  for(let i=0;i<Math.min(slots.length,blockers.length);i++)assignments[String(slots[i].slot)]=blockers[i];
+  return assignments;
+}
+
 global.SizaCreatureRules=Object.freeze({
   counter:counterValue,
   equipmentFor:equipmentForIndex,
@@ -101,6 +117,7 @@ global.SizaCreatureRules=Object.freeze({
   toughness:toughnessValue,
   addCreature:addBattlefieldCreature,
   removeAt:removeBattlefieldCreature,
-  combatPlan
+  combatPlan,
+  aiBlockers:aiBlockerAssignments
 });
 })(window);
