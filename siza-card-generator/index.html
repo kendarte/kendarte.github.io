@@ -77,7 +77,7 @@
 
     <section class="section">
      <h2>Battle Sprite</h2>
-     <p class="sectionNote">Visual que aparece en el campo de batalla después de manifestar la carta. Es independiente de la ilustración impresa y del template.</p>
+     <p class="sectionNote">Este es el visual que aparece en el campo de batalla después de manifestar la carta. Es independiente de la ilustración impresa.</p>
      <div class="artDrop" id="battleSpriteDropZone">
       <div><strong>Sprite de batalla manifestado</strong><span id="battleSpriteFileStatus">Suba un PNG/WebP/JPG. Se guarda con la carta y Arena lo usa sólo cuando la Invocación está en battlefield.</span></div>
       <div class="artFileButtons"><input id="battleSpriteFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="btn primary" type="button" id="chooseBattleSprite">Subir Battle Sprite</button><button class="btn ghost" type="button" id="removeBattleSprite">Quitar</button></div>
@@ -94,27 +94,32 @@
     <section class="section">
      <h2>Texto, ataque y defensa</h2>
      <div class="grid">
-      <div class="field full"><label for="rules">Reglas</label><textarea id="rules" name="rules"></textarea></div>
-      <div class="field full"><label for="flavor">Flavor</label><textarea id="flavor" name="flavor"></textarea></div>
-      <div class="field"><label for="force">Ataque · disco izquierdo</label><input id="force" name="force" type="number" min="0" max="99"></div>
-      <div class="field"><label for="resistance">Defensa · disco derecho</label><input id="resistance" name="resistance" type="number" min="0" max="99"></div>
-      <div class="field"><label for="setCode">Set</label><input id="setCode" name="setCode" maxlength="6"></div>
-      <div class="field"><label for="cardNumber">Número</label><input id="cardNumber" name="cardNumber" maxlength="8"></div>
+      <div class="field full"><label for="rules">Reglas</label><textarea id="rules"></textarea></div>
+      <div class="field full"><label for="flavor">Flavor</label><textarea id="flavor"></textarea></div>
+      <div class="field"><label for="force">Ataque</label><input id="force" type="number"></div>
+      <div class="field"><label for="resistance">Defensa</label><input id="resistance" type="number"></div>
+      <div class="field"><label for="setCode">Set</label><input id="setCode"></div>
+      <div class="field"><label for="cardNumber">Número</label><input id="cardNumber"></div>
      </div>
     </section>
 
     <section class="section">
      <h2>Efectos estructurados</h2>
-     <p class="sectionNote">Lista JSON validada por el contrato compartido.</p>
-     <div class="field"><label for="effectsJson">Effects</label><textarea class="effectsJson" id="effectsJson" name="effectsJson">[]</textarea></div>
+     <p class="sectionNote">Agregue efectos con selectores. Cada tipo define sus propios parámetros y el editor se amplía automáticamente desde el catálogo de card-effects.js.</p>
+     <div class="field"><label for="effectsJson">Effects</label><textarea id="effectsJson" class="effectsJson"></textarea></div>
     </section>
 
-    <div class="actions"><button class="btn primary" type="button" id="saveDraft">Guardar carta</button><button class="btn ghost" type="button" id="loadExample">Cargar Reina Ahogada</button><button class="btn ghost" type="button" id="resetDraft">Restablecer</button><button class="btn" type="button" id="testMobile">Probar en Mobile Test</button></div>
+    <div class="actions">
+     <button class="btn primary" type="button" id="saveDraft">Guardar carta</button>
+     <button class="btn ghost" type="button" id="loadExample">Cargar Reina Ahogada</button>
+     <button class="btn ghost" type="button" id="resetDraft">Restablecer</button>
+     <button class="btn" type="button" id="testMobile">Probar en Mobile Test</button>
+    </div>
     <textarea class="json" id="jsonOutput" aria-label="JSON de carta" readonly></textarea>
 
     <section class="section">
      <h2>Edición batch</h2>
-     <div class="batchHelp">Formato: lista JSON de objetos con <b>id</b>. Si el batch no incluye arte, Battle Sprite o template, se conservan los ajustes manuales guardados.</div>
+     <div class="batchHelp">Formato: una lista JSON de objetos con <b>id</b>. Puede usar <b>attack</b>/<b>defense</b> en batch; el runtime sigue recibiendo sus valores compatibles. Si el batch no incluye arte, Battle Sprite, template o sus transformaciones, se conservan los ajustes manuales ya guardados.</div>
      <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","attack":5,"defense":5,"difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
      <div class="actions"><button class="btn ghost" type="button" id="exportBatch">Exportar biblioteca</button><button class="btn primary" type="button" id="applyBatch">Aplicar batch</button></div>
     </section>
@@ -122,7 +127,7 @@
   </section>
 
   <section class="tabPanel" id="templateTabPanel" hidden>
-   <div class="builderIntro"><b>Template modular.</b> Cada pieza ocupa exactamente el mismo canvas 1500×2100 con transparencia. El Builder sólo administra la apariencia impresa; ilustración, cristales, texto, stats y Battle Sprite siguen perteneciendo a la carta.</div>
+   <div class="builderIntro"><b>Template Builder modular.</b> Cada pieza usa el mismo canvas transparente 1500×2100. El Builder sólo ensambla apariencia; cristales, texto, stats, ilustración y Battle Sprite siguen siendo datos de la carta.</div>
    <div class="builderLibraryBar">
     <div class="field"><label for="builderTemplateSelect">Templates guardados</label><select id="builderTemplateSelect"><option value="">— Nuevo template —</option></select></div>
     <button class="btn ghost" type="button" id="newTemplate">Nuevo</button>
@@ -138,19 +143,17 @@
    <div class="templateStatus templateBuilderStatus" id="templateBuilderStatus"><strong>Nuevo template</strong> · cargue piezas modulares y guárdelo.</div>
   </section>
  </main>
-
  <aside class="preview">
   <section class="previewPanel" id="cardPreviewPanel">
    <div class="previewHead"><div><div class="eyebrow">CARD_STANDARD_V1</div><h2>Preview vivo</h2></div><span id="schemaVersion"></span></div>
    <div class="cardStage" id="cardPreview"></div>
    <div class="status" id="validationStatus"></div>
-   <div class="handoff" id="handoffStatus">Guardar carta conserva datos, ilustración, Battle Sprite y selección de template. Probar en Mobile Test materializa también las piezas del template.</div>
+   <div class="handoff" id="handoffStatus">Guardar carta conserva datos, ilustración, Battle Sprite y la referencia al template modular. Probar en Mobile Test materializa los assets seleccionados.</div>
   </section>
   <section class="previewPanel" id="templatePreviewPanel" hidden>
-   <div class="previewHead"><div><div class="eyebrow">TEMPLATE 1500×2100</div><h2>Preview ensamblado</h2></div><span id="templatePreviewCount">0 piezas</span></div>
+   <div class="previewHead"><div><div class="eyebrow">TEMPLATE_BUILDER_V2</div><h2>Preview ensamblado</h2></div><span id="templatePreviewCount">0 piezas</span></div>
    <div class="templateAssembleStage" id="templatePreview"><div class="templateAssembleEmpty">Cargue piezas en los slots del Template Builder.</div></div>
    <div class="templateLayerLegend" id="templateLayerLegend"></div>
-   <div class="handoff">Las piezas se apilan en orden fijo sobre el mismo canvas. Guardar el template lo agrega al selector del Card Creator.</div>
   </section>
  </aside>
 </div>
@@ -160,6 +163,7 @@
 <script src="../siza-core/cards.js"></script>
 <script src="../siza-core/card-renderer.js"></script>
 <script src="./app.js"></script>
+<script src="./template-upload-normalizer.js"></script>
 <script src="./effects-editor.js"></script>
 <script src="./rules-sync.js"></script>
 </body>
