@@ -1,3 +1,6 @@
+import re
+from uuid import uuid4
+
 from evennia.utils import logger
 
 from commands.world_combat_bridge_commands import _decode_result_token
@@ -31,6 +34,10 @@ COMBAT_RESULT_PREFIX = "siza-combat-result "
 COMBAT_TEST_PREFIX = "siza-combat-test "
 COMBAT_CLEAR_COMMAND = "siza-combat-clear"
 UI_STATS_COMMAND = "siza-ui-stats"
+EXPLICIT_COMBAT_PATTERNS = (
+    re.compile(r"^(?:ataco|ataca|atacar|golpeo|golpea|golpear)(?:\s+(?:a|contra))?\s+(.+?)\s*[.!?]*$", re.IGNORECASE),
+    re.compile(r"^(?:i\s+)?(?:attack|hit|fight)(?:\s+against)?\s+(.+?)\s*[.!?]*$", re.IGNORECASE),
+)
 
 
 def _is_admin(actor):
@@ -42,6 +49,59 @@ def _is_admin(actor):
         return bool(actor.permissions.check("Admin"))
     except Exception:
         return False
+
+
+def _explicit_combat_target_name(raw):
+    value = str(raw or "").strip()
+    if not value:
+        return ""
+    for pattern in EXPLICIT_COMBAT_PATTERNS:
+        matched = pattern.match(value)
+        if not matched:
+            continue
+        target = str(matched.group(1) or "").strip(" \t\r\n.!?¿¡")
+        if target:
+            return target
+    return ""
+
+
+def _handle_explicit_combat_input(actor, raw):
+    """Route an unambiguous literal attack on a present NPC directly to the authoritative combat bridge."""
+    target_name = _explicit_combat_target_name(raw)
+    if not target_name:
+        return False
+
+    target = actor.search(target_name, location=actor.location)
+    if not target:
+        return True
+    if target is actor or getattr(target, "destination", None):
+        actor.msg("El objetivo debe ser un personaje local.")
+        return True
+    if not bool(getattr(target.db, "is_npc", False)):
+        actor.msg("Ese objetivo no es un personaje con el que pueda iniciarse un combate.")
+        return True
+
+    source_action_id = (
+        f"NATURAL-COMBAT-{int(actor.id)}-{int(target.id)}-{uuid4().hex[:12].upper()}"
+    )
+    packet = build_world_combat_encounter(
+        actor,
+        target,
+        source_action_id=source_action_id,
+        stakes={
+            "player_intent": str(raw or "").strip(),
+            "input_route": "EXPLICIT_COMBAT",
+        },
+    )
+    if not packet.get("accepted"):
+        actor.msg(f"Combat handoff rechazado: {packet.get('status')}")
+        return True
+
+    emitted = emit_world_combat_encounter(actor, packet.get("encounter"))
+    if not emitted.get("accepted"):
+        actor.msg(f"Combat handoff no emitido: {emitted.get('status')}")
+        return True
+    return True
 
 
 def _dialogue_speaker(packet):
@@ -330,6 +390,9 @@ class CmdSizaNoMatchV861(CmdSizaNoMatchV85):
 
         # One language decision per natural-language player turn. Downstream renderers read this contract.
         resolve_turn_language(self.caller, raw)
+
+        if _handle_explicit_combat_input(self.caller, raw):
+            return None
 
         classification = classify_v83_input(self.caller, raw)
         if classification.get("route") == "INTERACTION" and classification.get("explicit_talk_precedence"):
