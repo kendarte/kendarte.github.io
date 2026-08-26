@@ -2,31 +2,31 @@ import re
 import unicodedata
 
 
-PLAYER_LANGUAGE_BUILD = "0.1-bilingual-player-turn-language"
+PLAYER_LANGUAGE_BUILD = "0.1.1-bilingual-player-turn-language"
 SUPPORTED_PLAYER_LANGUAGES = ("es", "en")
 DEFAULT_PLAYER_LANGUAGE = "es"
 
 _ES_MARKERS = {
     "ahora", "alrededor", "aqui", "abrir", "abro", "ataco", "atacar", "busca", "buscar", "busco",
-    "caja", "cajon", "camino", "cerrar", "cierro", "con", "contra", "de", "del", "donde", "el",
-    "ella", "en", "esa", "ese", "esto", "faro", "golpeo", "hacia", "habla", "hablar", "hablo",
-    "intento", "la", "las", "le", "lo", "los", "mira", "mirar", "miro", "muevo", "para", "pateo",
-    "por", "pregunto", "preguntar", "quiero", "robo", "salir", "sobre", "tomo", "una", "uno", "uso",
-    "voy", "y",
+    "caja", "cajon", "camino", "cerrar", "cierro", "con", "contra", "de", "del", "digo", "donde", "el",
+    "ella", "en", "esa", "ese", "esto", "examino", "examinar", "faro", "golpeo", "hacia", "habla", "hablar",
+    "hablo", "inspecciono", "inspeccionar", "intento", "la", "las", "le", "leo", "leer", "lo", "los",
+    "mira", "mirar", "miro", "muevo", "para", "pateo", "por", "pregunto", "preguntar", "quiero", "robo",
+    "salir", "sobre", "tomo", "una", "uno", "uso", "voy", "y",
 }
 _EN_MARKERS = {
-    "about", "around", "ask", "attack", "box", "break", "close", "crate", "door", "drop", "find",
-    "for", "from", "give", "go", "hide", "i", "in", "into", "kick", "lighthouse", "look", "move",
-    "open", "search", "see", "steal", "take", "talk", "the", "there", "this", "to", "toward", "towards",
-    "try", "use", "walk", "want", "with",
+    "about", "around", "ask", "attack", "box", "break", "close", "crate", "door", "drop", "examine",
+    "find", "for", "from", "give", "go", "hide", "i", "in", "inside", "inspect", "into", "kick",
+    "lighthouse", "look", "move", "now", "open", "read", "say", "search", "see", "steal", "take", "talk",
+    "tell", "the", "there", "this", "to", "toward", "towards", "try", "use", "walk", "want", "with",
 }
 _ES_STRONG = {
     "quiero", "intento", "busco", "miro", "hablo", "pregunto", "pateo", "cierro", "abro", "tomo",
-    "donde", "hacia",
+    "examino", "inspecciono", "leo", "digo", "donde", "hacia",
 }
 _EN_STRONG = {
-    "i", "want", "try", "search", "look", "talk", "ask", "kick", "close", "open", "take", "toward",
-    "towards",
+    "i", "want", "try", "search", "look", "talk", "ask", "kick", "close", "open", "take", "examine",
+    "inspect", "read", "tell", "say", "toward", "towards",
 }
 
 _MESSAGES = {
@@ -98,12 +98,18 @@ def detect_player_language(text, previous_language=None):
         if token in _EN_STRONG:
             en_score += 2
 
-    # A bare English imperative should not lose to short shared vocabulary.
     if tokens:
         first = tokens[0]
-        if first in {"look", "search", "ask", "talk", "take", "drop", "open", "close", "kick", "attack", "use", "go", "move"}:
+        if first in {
+            "look", "search", "ask", "talk", "take", "drop", "open", "close", "kick", "attack", "use",
+            "go", "move", "examine", "inspect", "read", "tell", "say",
+        }:
             en_score += 3
-        if first in {"mira", "mirar", "busca", "buscar", "pregunta", "preguntar", "habla", "hablar", "toma", "tomar", "abre", "abrir", "cierra", "cerrar", "patea", "patear", "ataca", "atacar", "usa", "usar", "voy"}:
+        if first in {
+            "mira", "mirar", "busca", "buscar", "pregunta", "preguntar", "habla", "hablar", "toma", "tomar",
+            "abre", "abrir", "cierra", "cerrar", "patea", "patear", "ataca", "atacar", "usa", "usar", "voy",
+            "examina", "examinar", "inspecciona", "inspeccionar", "lee", "leer", "dime", "di",
+        }:
             es_score += 3
 
     previous = normalize_player_language(previous_language) if previous_language else None
