@@ -1,0 +1,187 @@
+/* SIZA Book Combat Battlefield v0.3
+   Layout only. No debug labels, no fake zones, no card-to-token conversion.
+   Existing Arena runtime and renderers remain authoritative.
+*/
+
+/* Two stacked sides of the same scene: opponent above, player below. */
+.arenaHalf {
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  display: block !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+.arenaHalf.enemyHalf {
+  top: 8px !important;
+  height: 134px !important;
+}
+.arenaHalf.playerHalf {
+  top: 145px !important;
+  height: 134px !important;
+}
+.arenaHalf .arenaMag,
+.arenaHalf .arenaMagSlot,
+.arenaHalf .arenaField,
+.arenaHalf .arenaZones {
+  pointer-events: auto !important;
+}
+
+/* Combatants stay at the edges; the center remains the actual battlefield. */
+.enemyHalf .arenaMag {
+  position: absolute !important;
+  right: 12px !important;
+  top: 4px !important;
+  width: 102px !important;
+  height: 126px !important;
+  border-radius: 4px !important;
+}
+.playerHalf .arenaMagSlot {
+  position: absolute !important;
+  left: 12px !important;
+  top: 4px !important;
+  width: 102px !important;
+  height: 126px !important;
+  display: block !important;
+}
+.playerHalf .arenaMag {
+  width: 102px !important;
+  height: 126px !important;
+  border-radius: 4px !important;
+}
+
+/* Permanent/support row. It uses the Arena's real .arenaZones content.
+   Enemy support sits behind enemy creatures; player support behind player creatures. */
+.arenaHalf .arenaZones {
+  position: absolute !important;
+  left: 126px !important;
+  right: 126px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 1px 4px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  scrollbar-width: none !important;
+}
+.arenaHalf .arenaZones::-webkit-scrollbar { display: none !important; }
+.enemyHalf .arenaZones { top: 0 !important; }
+.playerHalf .arenaZones { top: 104px !important; }
+.arenaHalf .arenaZones::before,
+.arenaHalf .arenaZones::after { content: none !important; display: none !important; }
+
+/* Front line reserved for creatures / future battle-sprite renderer.
+   We do NOT change the current card renderer into fake tokens. */
+.arenaHalf .arenaField {
+  position: absolute !important;
+  left: 126px !important;
+  right: 126px !important;
+  height: 104px !important;
+  min-height: 104px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 6px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  scrollbar-width: none !important;
+}
+.arenaHalf .arenaField::-webkit-scrollbar { display: none !important; }
+.enemyHalf .arenaField {
+  top: 29px !important;
+  justify-content: center !important;
+}
+.playerHalf .arenaField {
+  top: 0 !important;
+  justify-content: center !important;
+}
+.enemyHalf .arenaField::before,
+.playerHalf .arenaField::before,
+.enemyHalf .arenaField::after,
+.playerHalf .arenaField::after { content: none !important; display: none !important; }
+
+/* Preserve full existing mini-card presentation for now. No crop/token hack. */
+.arenaMiniCard {
+  flex: 0 0 auto !important;
+  transform-origin: center bottom !important;
+}
+.arenaMiniCard .finalPrintedImageV59 {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  border-radius: inherit !important;
+}
+.arenaMiniCard::after { content: none !important; display: none !important; }
+.arenaMiniCard .mName,
+.arenaMiniCard .mText,
+.arenaMiniCard .mPt { display: revert !important; }
+
+/* Stack is an event overlay, not a permanent battlefield lane. */
+.stackAnchorV5 {
+  z-index: 24 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.stackAnchorV5::before,
+.stackAnchorV5::after { content: none !important; display: none !important; }
+.stackAnchorV5:empty {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Narrative starts after the battlefield. */
+.matchBoardV5 .matchLog {
+  top: 282px !important;
+  height: 54px !important;
+  max-height: 54px !important;
+}
+
+/* Hand remains below narrative; controls remain at the bottom. */
+.handAreaV5 {
+  left: 132px !important;
+  right: 238px !important;
+  bottom: 42px !important;
+  height: 142px !important;
+}
+.handV5 { height: 138px !important; }
+.handCardV5 {
+  width: 100px !important;
+  height: 140px !important;
+  margin-left: -22px !important;
+}
+.handCardV5:first-child { margin-left: 0 !important; }
+.handCardV5 .sizaCard { height: 140px !important; min-height: 0 !important; }
+.handCardV5:hover,
+.handCardV5.selected { transform: translateY(-22px) scale(1.06) !important; }
+
+.resourceRailV610 { bottom: 7px !important; }
+.creatureCommandDockV610 { bottom: 6px !important; }
+.endTurnV5 { bottom: 6px !important; }
+
+@media (max-width: 850px) {
+  .enemyHalf .arenaMag,
+  .playerHalf .arenaMagSlot,
+  .playerHalf .arenaMag { width: 82px !important; height: 118px !important; }
+  .arenaHalf .arenaZones,
+  .arenaHalf .arenaField { left: 96px !important; right: 96px !important; }
+  .handAreaV5 { left: 86px !important; right: 176px !important; }
+  .handCardV5 { width: 90px !important; height: 132px !important; margin-left: -26px !important; }
+  .handCardV5 .sizaCard { height: 132px !important; }
+}
