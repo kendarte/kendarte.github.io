@@ -85,6 +85,18 @@ function runStack(){
   test('Negación retira el objetivo y ambas cartas van al Cementerio',()=>{
     const M=fresh();M.player.graveyard=[];M.enemy.graveyard=[];M.enemy.life=20;M.stack=[{id:'target',cardId:'spark',owner:'enemy'},{id:'counter-test',cardId:'counter',owner:'player',targetStackId:'target'}];H.resolveTopStack();return M.stack.length===0&&M.player.graveyard.includes('counter')&&M.enemy.graveyard.includes('spark')&&M.enemy.life===20;
   });
+  test('stackTargetIndex selecciona objetivo explícito y fallback al tope',()=>{
+    const stack=[{id:'a'},{id:'b'},{id:'c'}];return E.stackTargetIndex(stack,'b')===1&&E.stackTargetIndex(stack,'missing')===2;
+  });
+  test('stackTargetIndex preserva coincidencia undefined y Stack vacío',()=>{
+    return E.stackTargetIndex([{cardId:'x'},{id:'b'}],undefined)===0&&E.stackTargetIndex([],undefined)===-1;
+  });
+  test('Negación anula objetivo explícito aunque no sea el tope',()=>{
+    const M=fresh();M.player.graveyard=[];M.enemy.graveyard=[];M.stack=[{id:'target-low',cardId:'spark',owner:'enemy'},{id:'other-top',cardId:'mist',owner:'enemy'},{id:'counter-low',cardId:'counter',owner:'player',targetStackId:'target-low'}];H.resolveTopStack();return M.stack.length===1&&M.stack[0].id==='other-top'&&M.enemy.graveyard.includes('spark')&&!M.enemy.graveyard.includes('mist')&&M.player.graveyard.includes('counter');
+  });
+  test('Negación con objetivo ausente cae al objeto superior',()=>{
+    const M=fresh();M.player.graveyard=[];M.enemy.graveyard=[];M.stack=[{id:'lower',cardId:'mist',owner:'enemy'},{id:'top',cardId:'spark',owner:'enemy'},{id:'counter-fallback',cardId:'counter',owner:'player',targetStackId:'missing'}];H.resolveTopStack();return M.stack.length===1&&M.stack[0].id==='lower'&&M.enemy.graveyard.includes('spark')&&!M.enemy.graveyard.includes('mist')&&M.player.graveyard.includes('counter');
+  });
   test('resolveStackAll se detiene ante una elección pendiente',()=>{
     const M=fresh();M.player.hand=[];M.player.library=['spark'];M.enemy.life=20;M.stack=[{id:'lower',cardId:'spark',owner:'player'},{id:'top',cardId:'servitor',owner:'player'}];H.resolveStackAll();return M.pendingChoice?.type==='observe'&&M.stack.length===1&&M.stack[0].id==='lower'&&M.enemy.life===20;
   });
