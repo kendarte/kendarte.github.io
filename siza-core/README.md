@@ -7,7 +7,7 @@ Shared card infrastructure used by the Card Generator and `siza-mobile-test`.
 - `cards.js` is the official shared card catalog.
 - `card-renderer.js` renders both standard Generator cards and the Mobile/Arena surface.
 - `card-renderer.css` styles the standard Generator surface.
-- `manifest-rules.js` owns the pure affinity, difficulty, natural-chance, and Manafestation requirement calculations. Mobile keeps only thin state-aware adapters that pass the active Magistocrat data into this shared module.
+- `manifest-rules.js` owns the pure affinity, difficulty, natural-chance, Manafestation requirement, roll-deficit, and eligible manifest-bonus-source calculations. Arena keeps source application, artifact exhaustion, Mana Burn consumption, and presentation state local.
 - `crystal-rules.js` owns printed-pip requirements, spell crystal cost, direct-payment planning, the pure Ofrenda/payment planner, crystal-pool refresh, and atomic crystal spending. Arena injects `cardById` into the planner so generated/test cards remain resolvable; turn sequencing, Ofrenda sacrifice, and other match-state decisions remain local to Arena.
 - `entry-rules.js` owns the three experimental creature-entry modes plus pure preparation, attack eligibility, available-attacker, and legal-blocker calculations. Arena injects the active entry mode, `cardById`, and shared spell-cost calculation while battlefield mutation and combat resolution remain local.
 - `creature-rules.js` owns creature counters, equipped-card lookup, descriptor-driven Equipment power bonuses, effective power/toughness, and the aligned state mutations for adding or removing a creature from battlefield. Arena keeps match-UI index rebasing local after a shared removal so presentation state remains outside the core.
