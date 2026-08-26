@@ -163,9 +163,15 @@ jobs:
               'accepted': False,
               'proposal': {'kind': 'UNSUPPORTED', 'capability_id': 'MOVE:QA'},
           }
+          provider_error = {
+              'status': 'INVALID_PROPOSAL_JSON',
+              'accepted': False,
+              'proposal': {},
+          }
           assert is_valid_unsupported_proposal(valid_unsupported) is True
           assert is_valid_unsupported_proposal(known) is False
           assert is_valid_unsupported_proposal(malformed) is False
+          assert is_valid_unsupported_proposal(provider_error) is False
 
           class Holder:
               pass
@@ -254,6 +260,7 @@ jobs:
           assert 'dispatch_dm_unsupported_action_async(actor, raw_player_input)' in input_source
 
           print('SIZA valid UNSUPPORTED gate: PASS')
+          print('SIZA provider failures do not escalate: PASS')
           print('SIZA Director -> Interpreter -> Judge -> execution pipeline: PASS')
           print('SIZA DM bilingual authoritative presentation: PASS')
           PY
