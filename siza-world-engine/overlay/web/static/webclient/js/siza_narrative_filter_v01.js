@@ -29,6 +29,14 @@
         return !!(entry && entry.classList && entry.classList.contains("sizaBookSystem"));
     }
 
+    function isDialogueDuplicate(entry, output, value) {
+        if (!entry || !output || entry.getAttribute("data-siza-structured-dialogue") === "true") {
+            return false;
+        }
+        var lastDialogue = clean(output.getAttribute("data-last-dialogue-text"));
+        return !!lastDialogue && clean(value) === lastDialogue;
+    }
+
     function trimVisibleEvents(output) {
         if (!output) {
             return;
@@ -51,7 +59,7 @@
         entry.setAttribute("data-siza-filtered", "true");
 
         var value = clean(entry.textContent);
-        if (isDebugNoise(value) || isSystemOnly(entry)) {
+        if (isDebugNoise(value) || isSystemOnly(entry) || isDialogueDuplicate(entry, output, value)) {
             if (entry.parentNode === output) {
                 output.removeChild(entry);
             }
@@ -63,6 +71,9 @@
         entry.textContent = value;
         entry.classList.add("sizaNarrativeEvent");
         entry.setAttribute("data-siza-player-visible", "true");
+        if (entry.getAttribute("data-siza-structured-dialogue") !== "true") {
+            output.removeAttribute("data-last-dialogue-text");
+        }
         trimVisibleEvents(output);
     }
 
@@ -95,7 +106,8 @@
 
     window.SizaNarrativeFilterV01 = Object.freeze({
         clean: clean,
-        isDebugNoise: isDebugNoise
+        isDebugNoise: isDebugNoise,
+        isDialogueDuplicate: isDialogueDuplicate
     });
 
     if (document.readyState === "loading") {
