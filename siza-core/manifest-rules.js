@@ -36,5 +36,25 @@ function manifestRequirement(card,mag){
   return {unsupported:false,die,minBurn,text:minBurn?`${die}+ · Burn mínimo ${minBurn}`:`${die}+`};
 }
 
-global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement});
+function deficit(modal,player){
+  return Math.max(0,modal.dc-(player.mf+(modal.roll||0)+(modal.prismBonus||0)+(modal.burnSelected?.length||0)));
+}
+
+function bonusSources(player,card,resolveCard,effectsForEvent){
+  const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  const spent=new Set(player?.artifactExhausted||[]),out=[];
+  (player?.artifacts||[]).forEach((id,index)=>{
+    if(spent.has(index))return;
+    const source=cardResolver(id);
+    for(const effect of effectResolver(source,'manifest-roll')){
+      if(effect.type!=='manifest-bonus'||!(effect.amount>0))continue;
+      if(effect.requiresPip&&!(card?.pips?.[effect.requiresPip]>0))continue;
+      out.push({index,id,source,effect});
+    }
+  });
+  return out;
+}
+
+global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources});
 })(window);
