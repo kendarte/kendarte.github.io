@@ -28,7 +28,11 @@ H.TEST_CARD_DB_V1.push(
   {id:'reg_combat_grow_1_1',name:'Combat Grow 1/1',type:'Creature',power:1,toughness:1,effects:[{event:'combat-damage',type:'add-power-counter',amount:2}]},
   {id:'reg_combat_def_grow',name:'Combat Defender Grow',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:1}]},
   {id:'reg_ai_3_3',name:'AI 3/3',type:'Creature',power:3,toughness:3,effects:[]},
-  {id:'reg_ai_1_4',name:'AI 1/4',type:'Creature',power:1,toughness:4,effects:[]}
+  {id:'reg_ai_1_4',name:'AI 1/4',type:'Creature',power:1,toughness:4,effects:[]},
+  {id:'reg_ad_two',name:'AD Two',type:'Creature',power:1,toughness:2,effects:[{event:'attack-declared',type:'damage-character',target:'opponent',amount:2}]},
+  {id:'reg_ad_three',name:'AD Three',type:'Creature',power:1,toughness:2,effects:[{event:'attack-declared',type:'damage-character',target:'opponent',amount:3}]},
+  {id:'reg_ad_default',name:'AD Default',type:'Creature',power:1,toughness:2,effects:[{event:'attack-declared',type:'damage-character',amount:1}]},
+  {id:'reg_ad_self',name:'AD Self',type:'Creature',power:1,toughness:2,effects:[{event:'attack-declared',type:'damage-character',target:'self',amount:4}]}
 );
 const P={battlefield:['reg_stats_body'],powerCounters:[2],equipment:[{id:'reg_stats_blade',target:0},{id:'reg_stats_charm',target:0},{id:'reg_stats_blade',target:null}]};
 const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
@@ -49,6 +53,12 @@ test('Equipment posterior a criatura removida rebasa su objetivo',()=>{const X=s
 test('Índice inválido no muta estado',()=>{const X=statePlayer(),before=JSON.stringify(X),id=R.removeAt(X,9);return id===null&&JSON.stringify(X)===before});
 
 function combatPlayer(ids,equipment=[]){return{battlefield:[...ids],powerCounters:ids.map(()=>0),summonedOn:ids.map(()=>0),equipment:equipment.map(x=>({...x}))}}
+function attackPlan(ids,indices=ids.map((_,index)=>index)){const A=combatPlayer(ids);return R.attackDeclaredDamage(A,indices,H.cardById,E.forEvent)}
+test('attackDeclaredDamage suma una fuente data-driven',()=>{const x=attackPlan(['reg_ad_two']);return x.amount===2&&x.source==='AD Two'});
+test('attackDeclaredDamage conserva source cuando todas las fuentes coinciden',()=>{const x=attackPlan(['reg_ad_two','reg_ad_two']);return x.amount===4&&x.source==='AD Two'});
+test('attackDeclaredDamage usa etiqueta genérica para fuentes mixtas',()=>{const x=attackPlan(['reg_ad_two','reg_ad_three']);return x.amount===5&&x.source==='Efectos de ataque'});
+test('attackDeclaredDamage usa opponent por defecto e ignora target self',()=>{const x=attackPlan(['reg_ad_default','reg_ad_self']);return x.amount===1&&x.source==='AD Default'});
+
 function plan(attackers,defenders,blockers={},equipment=[]){const A=combatPlayer(attackers,equipment),D=combatPlayer(defenders),combat={attackers:attackers.map((id,index)=>({index,id})),blockers};return R.combatPlan(combat,A,D,H.cardById,E.forEvent)}
 test('combatPlan calcula daño sin bloqueo y counter gain',()=>{const x=plan(['reg_combat_grow_1_3'],[]);return x.damage===1&&JSON.stringify(x.attackerCounterGains)==='[[0,2]]'&&!x.attackerDeaths.length&&!x.defenderDeaths.length});
 test('combatPlan marca muerte simultánea 2/2 contra 2/2',()=>{const x=plan(['reg_combat_2_2'],['reg_combat_2_2'],{'0':0});return JSON.stringify(x.attackerDeaths)==='[0]'&&JSON.stringify(x.defenderDeaths)==='[0]'&&x.damage===0});
