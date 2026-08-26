@@ -14,20 +14,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Inspect wb-00 serialization
+      - name: Inspect all World Book chunk boundaries
         run: |
           python - <<'PY'
           import re
           from pathlib import Path
 
-          path = Path('rivarica/chunks/wb-00.js')
-          raw = path.read_bytes()
-          text = raw.decode('utf-8')
-          marker = text.find('H4sI')
-          print('bytes=', len(raw), 'chars=', len(text), 'marker=', marker)
-          print('prefix_repr=', repr(text[:220]))
-          print('around_marker_repr=', repr(text[max(0, marker-90):marker+140]))
-          print('double_quotes=', text.count('"'), 'single_quotes=', text.count("'"), 'backslashes=', text.count('\\'))
-          print('long_base64_runs=', [(m.start(), len(m.group(0))) for m in re.finditer(r'[A-Za-z0-9+/=]{64,}', text)][:8])
-          assert marker >= 0
+          total = 0
+          for index in range(6):
+              path = Path(f'rivarica/chunks/wb-{index:02d}.js')
+              text = path.read_text(encoding='utf-8')
+              runs = list(re.finditer(r'[A-Za-z0-9+/=]{32,}', text))
+              lengths = [len(m.group(0)) for m in runs]
+              total += sum(lengths)
+              print(f'wb-{index:02d}: chars={len(text)} quotes={text.count(chr(34))} backslashes={text.count(chr(92))} runs={lengths}')
+              print('  prefix=', repr(text[:90]))
+              print('  suffix=', repr(text[-90:]))
+              print('  run_edges=', [(m.start(), m.end(), repr(m.group(0)[:12]), repr(m.group(0)[-12:])) for m in runs])
+          print('TOTAL_BASE64_RUN_CHARS=', total, 'MOD4=', total % 4)
           PY
