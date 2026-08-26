@@ -19,8 +19,8 @@ const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',error=>console.error('[JSDOM prism]',error.message));
 const dom=new JSDOM(original.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole});
 dom.window.setTimeout=()=>0;
-const H=dom.window.__SIZA_PRISM_TEST__;
-if(!H)throw new Error('Prism test hooks were not exposed');
+const H=dom.window.__SIZA_PRISM_TEST__,R=dom.window.SizaManifestRules;
+if(!H||!R)throw new Error('Prism test hooks were not exposed');
 
 const results=[];
 const test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
@@ -36,13 +36,15 @@ function setupPlayer(cardId='counter',artifactId='prism',roll=3,dc=6){
   return{M,modal};
 }
 
-function setupAi(){
+function setupAi({cardId='counter',hand=['counter','dock'],artifacts=['prism'],roll=3,dc=6,prismBonus=0,burnSelected=[],aiFailure=false,mf=null}={}){
   const M=H.createMatch(false,'prepare');
   H.setMatch(M);
-  M.enemy.artifacts=['prism'];
+  M.enemy.artifacts=[...artifacts];
   M.enemy.artifactExhausted=[];
-  M.enemy.hand=['counter','dock'];
-  const modal={type:'manifest',owner:'enemy',cardId:'counter',idx:0,roll:3,burnSelected:[],prismBonus:0,dc:6,ai:true,stage:'roll',payment:{spent:{}}};
+  M.enemy.hand=[...hand];
+  if(mf!=null)M.enemy.mf=mf;
+  const modal={type:'manifest',owner:'enemy',cardId,idx:0,roll,burnSelected:[...burnSelected],prismBonus,dc,ai:true,stage:'roll',payment:{spent:{}}};
+  if(aiFailure)modal.aiFailure=true;
   H.setModal(modal);
   return{M,modal};
 }
@@ -79,6 +81,37 @@ test('Fuente temporal desconocida puede dar +2 sólo por effects',()=>{
   const before=H.manifestInlineHtml();
   H.usePrismV070();
   return source?.id==='regression_generated_focus'&&source.effect.amount===2&&before.includes('AGOTAR PRISMA +2')&&modal.prismBonus===2&&M.player.artifactExhausted[0]===0;
+});
+
+test('aiManifestRollPlan usa bonus sólo con déficit exactamente uno',()=>{
+  const bonus={index:0,effect:{amount:1}};
+  const one=R.aiManifestRollPlan({dc:3,roll:2,prismBonus:0,burnSelected:[]},{mf:0},[],bonus);
+  const two=R.aiManifestRollPlan({dc:4,roll:2,prismBonus:0,burnSelected:[]},{mf:0},[1,2],bonus);
+  return one.bonus===bonus&&!one.aiFailure&&one.burnSelected.length===0&&two.bonus===null&&!two.aiFailure&&JSON.stringify(two.burnSelected)===JSON.stringify([1,2]);
+});
+
+test('aiManifestRollPlan reporta fallo sin reemplazar Burn previo',()=>{
+  const modal={dc:5,roll:1,prismBonus:0,burnSelected:[9]};
+  const plan=R.aiManifestRollPlan(modal,{mf:0},[1],null);
+  return plan.aiFailure===true&&plan.burnSelected===null&&JSON.stringify(modal.burnSelected)===JSON.stringify([9]);
+});
+
+test('IA selecciona la primera Reserva necesaria como Burn',()=>{
+  const {M,modal}=setupAi({artifacts:[],hand:['counter','dock','cinder'],roll:2,dc:6,mf:3});
+  H.enemyResolveManifestRoll();
+  return modal.prismBonus===0&&!modal.aiFailure&&JSON.stringify(modal.burnSelected)===JSON.stringify([1])&&M.enemy.artifactExhausted.length===0;
+});
+
+test('IA no usa Prisma cuando el déficit es dos',()=>{
+  const {M,modal}=setupAi({hand:['counter','dock','cinder'],roll:2,dc:7,mf:3});
+  H.enemyResolveManifestRoll();
+  return modal.prismBonus===0&&!modal.aiFailure&&JSON.stringify(modal.burnSelected)===JSON.stringify([1,2])&&M.enemy.artifactExhausted.length===0;
+});
+
+test('IA conserva aiFailure histórico aunque luego el total alcance D',()=>{
+  const {modal}=setupAi({artifacts:[],hand:['counter'],roll:3,dc:5,mf:2,aiFailure:true,burnSelected:[9]});
+  H.enemyResolveManifestRoll();
+  return modal.aiFailure===true&&modal.burnSelected.length===0;
 });
 
 for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.error?` :: ${result.error}`:''}`);
