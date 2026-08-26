@@ -79,6 +79,17 @@ html=replaceFunction(html,'checkWin',`function checkWin(){
   }
 }`);
 
+// replaceFunction() ends at the next named function. ENTRY_V070 originally lived
+// between checkWin() and crystalReqV070(), so restore that declaration explicitly.
+if(!html.includes('const ENTRY_V070=SizaEntryRules.MODES;')){
+  html=replaceOnce(
+    html,
+    '\nfunction crystalReqV070(c)',
+    '\nconst ENTRY_V070=SizaEntryRules.MODES;\nfunction crystalReqV070(c)',
+    'Arena entry mode declaration'
+  );
+}
+
 if(!html.includes('startWorldEncounter,getWorldCombatResult')){
   html=replaceOnce(
     html,
@@ -95,6 +106,7 @@ const required=[
   'function startWorldEncounter(',
   'function getWorldCombatResult()',
   'SizaWorldCombatBridgeV01.emitResult(M)',
+  'const ENTRY_V070=SizaEntryRules.MODES;',
   'startWorldEncounter,getWorldCombatResult'
 ];
 for(const token of required)if(!html.includes(token))fail(`postcondition missing: ${token}`);
