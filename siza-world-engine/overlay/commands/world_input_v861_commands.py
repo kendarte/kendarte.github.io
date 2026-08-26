@@ -7,6 +7,7 @@ from commands.world_input_v84_commands import _current_interaction_capability
 from commands.world_input_v85_commands import CmdSizaNoMatchV85, handle_action_proposal_result_v85
 from services.action_proposal_async_runtime import DEFAULT_ACTION_FAILURE_TEXT
 from services.active_perception_proposal_runtime import dispatch_active_perception_proposal_async
+from services.action_resolution_engine import adventure_stats
 from services.interaction_engine import parse_interaction_intent
 from services.ranked_fact_conversation_engine import (
     RANKED_FACT_CONVERSATION_BUILD,
@@ -26,6 +27,7 @@ NATURAL_RANKED_FACT_TALK_BUILD = "0.86.1-ranked-single-fact-talk-authority"
 COMBAT_RESULT_PREFIX = "siza-combat-result "
 COMBAT_TEST_PREFIX = "siza-combat-test "
 COMBAT_CLEAR_COMMAND = "siza-combat-clear"
+UI_STATS_COMMAND = "siza-ui-stats"
 
 
 def _is_admin(actor):
@@ -43,6 +45,19 @@ def _handle_reserved_combat_input(actor, raw):
     """Handle browser/QA bridge messages before any natural-language or AI routing."""
     value = str(raw or "").strip()
     lowered = value.lower()
+
+    if lowered == UI_STATS_COMMAND:
+        stats = adventure_stats(actor)
+        actor.msg(
+            siza_character_stats=(
+                ({
+                    "stats": {key: stats.get(key) for key in ("FUE", "AGI", "COO", "INT", "PER", "PSI")},
+                    "authored_count": sum(1 for value in stats.values() if value is not None),
+                },),
+                {},
+            )
+        )
+        return True
 
     if lowered.startswith(COMBAT_RESULT_PREFIX):
         token = value[len(COMBAT_RESULT_PREFIX):].strip()
