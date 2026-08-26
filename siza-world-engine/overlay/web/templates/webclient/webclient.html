@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block client %}
-<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION">
+<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false">
   <header class="sizaBookHeader">
     <section class="sizaBookIdentity" aria-label="Personaje">
       <div class="sizaBookIdentityMark" aria-hidden="true">S</div>
@@ -36,7 +36,35 @@
         <span id="siza-scene-kicker">ESCENA ACTUAL</span>
         <strong id="siza-scene-title">Esperando estado del mundo</strong>
       </div>
-      <div id="siza-messagewindow" class="sizaBookOutput" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+      <div class="sizaBookSceneState">
+        <p id="siza-scene-description" class="sizaBookSceneDescription">La escena aparecerá aquí cuando el World Engine devuelva el estado de la habitación.</p>
+
+        <div class="sizaBookFacts" aria-label="Elementos de escena">
+          <section id="siza-exits-card" class="sizaBookFact" hidden>
+            <small>SALIDAS</small>
+            <span id="siza-exits">—</span>
+          </section>
+          <section id="siza-characters-card" class="sizaBookFact" hidden>
+            <small>PERSONAS</small>
+            <span id="siza-characters">—</span>
+          </section>
+          <section id="siza-visible-card" class="sizaBookFact" hidden>
+            <small>A LA VISTA</small>
+            <span id="siza-visible">—</span>
+          </section>
+        </div>
+
+        <details id="siza-knowledge-panel" class="sizaKnowledgePanel" hidden>
+          <summary><span>CONOCIMIENTO</span><strong id="siza-knowledge-summary">0 datos recordados</strong></summary>
+          <div id="siza-knowledge-list" class="sizaKnowledgeList"></div>
+        </details>
+      </div>
+
+      <div class="sizaBookNarrativeFeed" aria-label="Sucesos recientes">
+        <div class="sizaBookNarrativeLabel">ÚLTIMO SUCESO</div>
+        <div id="siza-messagewindow" class="sizaBookOutput" role="log" aria-live="polite" aria-relevant="additions"></div>
+      </div>
     </section>
 
     <section class="sizaBookNarrative" aria-label="Narración e input">
