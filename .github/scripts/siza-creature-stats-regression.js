@@ -59,6 +59,13 @@ test('attackDeclaredDamage conserva source cuando todas las fuentes coinciden',(
 test('attackDeclaredDamage usa etiqueta genérica para fuentes mixtas',()=>{const x=attackPlan(['reg_ad_two','reg_ad_three']);return x.amount===5&&x.source==='Efectos de ataque'});
 test('attackDeclaredDamage usa opponent por defecto e ignora target self',()=>{const x=attackPlan(['reg_ad_default','reg_ad_self']);return x.amount===1&&x.source==='AD Default'});
 
+function blockerPlan(blockers,slot,index,legal){return R.blockerAssignmentPlan(blockers,slot,index,legal)}
+test('blockerAssignmentPlan crea asignación legal con slot string',()=>{const x=blockerPlan({},2,1,[0,1,2]);return JSON.stringify(x)==='{"removeSlots":[],"slot":"2","blockerIndex":1}'});
+test('blockerAssignmentPlan mueve un bloqueador ya asignado',()=>{const x=blockerPlan({'0':1,'2':0},3,1,[0,1]);return JSON.stringify(x)==='{"removeSlots":["0"],"slot":"3","blockerIndex":1}'});
+test('blockerAssignmentPlan elimina todas las asignaciones duplicadas del mismo bloqueador',()=>{const x=blockerPlan({'0':1,'1':1,'2':0},4,1,[0,1]);return JSON.stringify(x.removeSlots)==='["0","1"]'&&x.slot==='4'&&x.blockerIndex===1});
+test('blockerAssignmentPlan rechaza índice ilegal',()=>blockerPlan({'0':0},1,2,[0,1])===null);
+test('blockerAssignmentPlan es puro y no muta blockers',()=>{const b={'0':1,'2':0},before=JSON.stringify(b);blockerPlan(b,3,1,[0,1]);return JSON.stringify(b)===before});
+
 function plan(attackers,defenders,blockers={},equipment=[]){const A=combatPlayer(attackers,equipment),D=combatPlayer(defenders),combat={attackers:attackers.map((id,index)=>({index,id})),blockers};return R.combatPlan(combat,A,D,H.cardById,E.forEvent)}
 test('combatPlan calcula daño sin bloqueo y counter gain',()=>{const x=plan(['reg_combat_grow_1_3'],[]);return x.damage===1&&JSON.stringify(x.attackerCounterGains)==='[[0,2]]'&&!x.attackerDeaths.length&&!x.defenderDeaths.length});
 test('combatPlan marca muerte simultánea 2/2 contra 2/2',()=>{const x=plan(['reg_combat_2_2'],['reg_combat_2_2'],{'0':0});return JSON.stringify(x.attackerDeaths)==='[0]'&&JSON.stringify(x.defenderDeaths)==='[0]'&&x.damage===0});
