@@ -1,12 +1,14 @@
 import json
 import socket
 import time
+from copy import deepcopy
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from evennia.utils import logger
 from twisted.internet import threads
 
+from services.dm_context_broker import build_dm_context_packet
 from services.dm_free_action_interpreter import (
     DM_FREE_ACTION_BUILD,
     build_dm_free_action_request,
@@ -17,8 +19,44 @@ from services.ollama_narration_provider import DEFAULT_OLLAMA_ENDPOINT, DEFAULT_
 from services.player_language_contract import get_actor_turn_language
 
 
-DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1.1-async-bilingual-free-action-interpretation"
+DM_FREE_ACTION_RUNTIME_BUILD = "dm-0.1.2-async-bounded-context-free-action-interpretation"
 DEFAULT_TIMEOUT_SECONDS = 30.0
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _attach_dm_context(request_packet, context_packet):
+    """Add DM-only read context to the existing interpreter request without expanding its reference catalog."""
+    packet = deepcopy(_plain_dict(request_packet))
+    context = deepcopy(_plain_dict(context_packet))
+    payload = deepcopy(_plain_dict(packet.get("ollama_payload")))
+    messages = [deepcopy(_plain_dict(row)) for row in list(payload.get("messages") or [])]
+    if len(messages) >= 2:
+        try:
+            user = json.loads(str(messages[-1].get("content") or "{}"))
+        except (TypeError, ValueError):
+            user = {}
+        user["DM CONTEXT"] = {
+            "world_engine": context.get("world_engine") or [],
+            "world_book": context.get("world_book") or {},
+            "authority": context.get("authority") or {},
+        }
+        messages[-1]["content"] = json.dumps(user, ensure_ascii=False, separators=(",", ":"))
+        messages[0]["content"] = (
+            str(messages[0].get("content") or "")
+            + " DM CONTEXT is read-only information for interpretation and adjudication. "
+            + "World Book excerpts are NOT player Knowledge and must never be treated as something the player knows. "
+            + "DM CONTEXT cannot authorize an action, create a ref, create a Fact, or establish an outcome."
+        )
+        payload["messages"] = messages
+    packet["ollama_payload"] = payload
+    packet["dm_context"] = context
+    return packet
 
 
 def call_prebuilt_dm_free_action(
@@ -94,13 +132,20 @@ def dispatch_dm_free_action_async(
     provider_callable=None,
     **provider_options,
 ):
-    """Build bounded context on reactor, interpret in worker, return result to reactor."""
+    """Retrieve bounded context on reactor, interpret in worker, return result to reactor."""
+    context_packet = build_dm_context_packet(
+        actor,
+        raw_player_input,
+        dm_plan,
+        world_snapshot,
+    )
     request_packet = build_dm_free_action_request(
         raw_player_input,
         dm_plan,
         world_snapshot,
         player_language=get_actor_turn_language(actor),
     )
+    request_packet = _attach_dm_context(request_packet, context_packet)
     provider = provider_callable or call_prebuilt_dm_free_action
     deferred = run_serialized(
         actor,
@@ -130,6 +175,7 @@ def dispatch_dm_free_action_async(
         "status": "QUEUED",
         "queued": True,
         "request": request_packet,
+        "context": context_packet,
         "deferred": deferred,
         "build": DM_FREE_ACTION_RUNTIME_BUILD,
     }
