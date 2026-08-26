@@ -2,13 +2,13 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from services.action_resolution_engine import begin_action_resolution, resolve_action_resolution
+from services.action_resolution_engine import begin_action_resolution, normalize_check_spec, resolve_action_resolution
 from services.confront_d6_resolution_engine import calculate_confront_d6, CONFRONT_D6_PROVIDER
 from services.consequence_engine import emit_world_action
 from services.direct_d6_resolution_engine import calculate_direct_d6, DIRECT_D6_PROVIDER
 
 
-DM_FREE_ACTION_CHECK_BUILD = "dm-0.1-existing-d6-free-action-resolution"
+DM_FREE_ACTION_CHECK_BUILD = "dm-0.1.1-existing-d6-free-action-resolution"
 DM_AUTO_PROVIDER = "SIZA_DM_AUTO"
 HISTORY_LIMIT = 50
 
@@ -104,41 +104,38 @@ def _action_packet(actor, step, outcome, provider, resolution=None, raw_player_i
     }
 
 
-def resolve_judged_dm_check(
+def _resolve_existing_d6_check(
     actor,
-    step,
+    row,
+    check_spec,
     *,
     raw_player_input="",
     forced_roll=None,
     forced_target_roll=None,
+    history_context=None,
+    success_status="DM_CHECK_RESOLVED",
 ):
-    """Resolve one DM_CHECK using only existing World Engine check preparation and d6 providers."""
-    row = _plain_dict(step)
-    if str(row.get("executor") or "") != "DM_CHECK":
-        return {"status": "NOT_DM_CHECK", "executed": False, "build": DM_FREE_ACTION_CHECK_BUILD}
-    judgment = _plain_dict(row.get("judgment"))
-    mode = str(judgment.get("mode") or "").upper().strip()
+    """Resolve an already-authorized DIRECT/CONFRONT check without letting AI select the outcome."""
+    checked = normalize_check_spec(check_spec)
+    if not checked.get("valid"):
+        return {
+            "status": "INVALID_AUTHORIZED_CHECK",
+            "executed": False,
+            "check": checked,
+            "build": DM_FREE_ACTION_CHECK_BUILD,
+        }
+    mode = str(checked.get("mode") or "").upper().strip()
     if mode not in {"DIRECT", "CONFRONT"}:
-        return {"status": "UNSUPPORTED_JUDGED_MODE", "executed": False, "mode": mode, "build": DM_FREE_ACTION_CHECK_BUILD}
+        return {
+            "status": "UNSUPPORTED_AUTHORIZED_CHECK_MODE",
+            "executed": False,
+            "mode": mode,
+            "build": DM_FREE_ACTION_CHECK_BUILD,
+        }
 
     target = _opposition_target(actor, row) if mode == "CONFRONT" else None
-    check_spec = {
-        "id": f"DM-CHECK-{uuid4().hex[:16].upper()}",
-        "trigger": "OPPOSITION" if mode == "CONFRONT" else "OBSTACLE",
-        "mode": mode,
-        "stat": judgment.get("actor_stat"),
-        "target_stat": judgment.get("target_stat") if mode == "CONFRONT" else None,
-        "difficulty": judgment.get("difficulty") if mode == "DIRECT" else None,
-        "metadata": {
-            "source": "DM_FREE_ACTION",
-            "action_type": row.get("action_type"),
-            "desired_effect": row.get("desired_effect"),
-            "difficulty_tier": judgment.get("difficulty_tier"),
-            "dm_reason": judgment.get("reason"),
-        },
-    }
     resolution_id = f"DM-RES-{uuid4().hex}"
-    prepared = begin_action_resolution(actor, check_spec, target=target, resolution_id=resolution_id)
+    prepared = begin_action_resolution(actor, checked, target=target, resolution_id=resolution_id)
     if str(prepared.get("status") or "") != "PENDING_RESOLUTION":
         return {
             "status": "CHECK_PREPARATION_BLOCKED",
@@ -189,7 +186,7 @@ def resolve_judged_dm_check(
     history_record = {
         "status": "RESOLVED",
         "action": action,
-        "judgment": judgment,
+        "resolution_context": deepcopy(_plain_dict(history_context)),
         "resolution": persisted,
         "calculation": calculated,
         "consequence": consequence,
@@ -197,7 +194,7 @@ def resolve_judged_dm_check(
     }
     _save_history(actor, history_record)
     return {
-        "status": "DM_CHECK_RESOLVED",
+        "status": success_status,
         "executed": True,
         "outcome": outcome,
         "provider": provider,
@@ -210,6 +207,81 @@ def resolve_judged_dm_check(
     }
 
 
+def resolve_judged_dm_check(
+    actor,
+    step,
+    *,
+    raw_player_input="",
+    forced_roll=None,
+    forced_target_roll=None,
+):
+    """Resolve one DM_CHECK using only existing World Engine check preparation and d6 providers."""
+    row = _plain_dict(step)
+    if str(row.get("executor") or "") != "DM_CHECK":
+        return {"status": "NOT_DM_CHECK", "executed": False, "build": DM_FREE_ACTION_CHECK_BUILD}
+    judgment = _plain_dict(row.get("judgment"))
+    mode = str(judgment.get("mode") or "").upper().strip()
+    if mode not in {"DIRECT", "CONFRONT"}:
+        return {"status": "UNSUPPORTED_JUDGED_MODE", "executed": False, "mode": mode, "build": DM_FREE_ACTION_CHECK_BUILD}
+
+    check_spec = {
+        "id": f"DM-CHECK-{uuid4().hex[:16].upper()}",
+        "trigger": "OPPOSITION" if mode == "CONFRONT" else "OBSTACLE",
+        "mode": mode,
+        "stat": judgment.get("actor_stat"),
+        "target_stat": judgment.get("target_stat") if mode == "CONFRONT" else None,
+        "difficulty": judgment.get("difficulty") if mode == "DIRECT" else None,
+        "metadata": {
+            "source": "DM_FREE_ACTION",
+            "action_type": row.get("action_type"),
+            "desired_effect": row.get("desired_effect"),
+            "difficulty_tier": judgment.get("difficulty_tier"),
+            "dm_reason": judgment.get("reason"),
+        },
+    }
+    return _resolve_existing_d6_check(
+        actor,
+        row,
+        check_spec,
+        raw_player_input=raw_player_input,
+        forced_roll=forced_roll,
+        forced_target_roll=forced_target_roll,
+        history_context={"kind": "DM_JUDGMENT", "judgment": judgment},
+        success_status="DM_CHECK_RESOLVED",
+    )
+
+
+def resolve_authored_dm_check(
+    actor,
+    step,
+    *,
+    raw_player_input="",
+    forced_roll=None,
+    forced_target_roll=None,
+):
+    """Resolve one authored DM affordance check exactly as defined by world data; the Judge is bypassed."""
+    row = _plain_dict(step)
+    if str(row.get("executor") or "") != "AUTHORED_CHECK":
+        return {"status": "NOT_AUTHORED_CHECK", "executed": False, "build": DM_FREE_ACTION_CHECK_BUILD}
+    check_spec = _plain_dict(row.get("authoritative_check"))
+    if not check_spec:
+        return {"status": "MISSING_AUTHORED_CHECK", "executed": False, "build": DM_FREE_ACTION_CHECK_BUILD}
+    return _resolve_existing_d6_check(
+        actor,
+        row,
+        check_spec,
+        raw_player_input=raw_player_input,
+        forced_roll=forced_roll,
+        forced_target_roll=forced_target_roll,
+        history_context={
+            "kind": "AUTHORED_AFFORDANCE_CHECK",
+            "affordance": _plain_dict(row.get("affordance")),
+            "authoritative_check": check_spec,
+        },
+        success_status="AUTHORED_CHECK_RESOLVED",
+    )
+
+
 def resolve_judged_dm_auto(actor, step, *, raw_player_input=""):
     """Record an automatic verified action as world input without a dice check."""
     row = _plain_dict(step)
@@ -220,7 +292,7 @@ def resolve_judged_dm_auto(actor, step, *, raw_player_input=""):
     history_record = {
         "status": "RESOLVED",
         "action": action,
-        "judgment": _plain_dict(row.get("judgment")),
+        "resolution_context": {"kind": "DM_AUTO", "judgment": _plain_dict(row.get("judgment"))},
         "resolution": None,
         "calculation": None,
         "consequence": consequence,
