@@ -47,9 +47,9 @@
 .sizaCardTemplateQueenV3 .sizaManafestBadgeV3{z-index:12!important}
 .sizaCardTemplateQueenV3 .sizaStatPlateV3{z-index:13!important}
 
-/* Standard frame crystal rail: only nudge the existing stack into the ornamental channel. */
+/* Standard frame crystal rail: move the existing stack right into the ornamental channel. */
 .sizaCardTemplateQueenV3 .sizaCardCrystalRailV3{
-  left:5%!important;
+  left:7.1%!important;
   top:15.2%!important;
 }
 
