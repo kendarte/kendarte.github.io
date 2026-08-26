@@ -13,11 +13,11 @@ for(const name of ['entry-rules.js','creature-rules.js']){
   else if(!html.includes(globalName))throw new Error(`${globalName} unavailable`);
 }
 const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');
-const probe=`window.__RESOLUTION_KIND_REGRESSION__={createMatch,setMatch:m=>state.match=m,resolveTopStack,TEST_CARD_DB_V1};\n`;
+const probe=`window.__RESOLUTION_KIND_REGRESSION__={createMatch,setMatch:m=>state.match=m,resolveTopStack,completeStackV070,TEST_CARD_DB_V1};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM resolution-kind]',e.message));
-const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
-const H=dom.window.__RESOLUTION_KIND_REGRESSION__,S=dom.window.SizaCardSchema;
-if(!H||!S)throw new Error('Resolution kind hooks unavailable');
+const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.__scheduled=[];dom.window.setTimeout=(fn,delay)=>{dom.window.__scheduled.push([fn?.name||'',delay]);return 0};
+const H=dom.window.__RESOLUTION_KIND_REGRESSION__,S=dom.window.SizaCardSchema,E=dom.window.SizaCardEffects;
+if(!H||!S||!E)throw new Error('Resolution kind hooks unavailable');
 const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
 
 H.TEST_CARD_DB_V1.push(
@@ -36,6 +36,13 @@ test('Creature oficial entra en battlefield con arrays alineados',()=>{const M=r
 test('Artifact normal oficial entra en Reliquias',()=>{const M=resolve('prism');return M.player.artifacts[0]==='prism'&&!M.player.equipment.length&&!M.player.graveyard.length});
 test('Equipment oficial entra en zona Equipment sin objetivo',()=>{const M=resolve('tideblade');return M.player.equipment.length===1&&M.player.equipment[0].id==='tideblade'&&M.player.equipment[0].target===null&&!M.player.artifacts.length});
 test('Instant oficial resuelve y termina en Cementerio',()=>{const M=resolve('spark');return M.enemy.life===18&&M.player.graveyard.includes('spark')&&!M.player.artifacts.length&&!M.player.equipment.length});
-test('Cartas generadas usan clasificación por datos, no por ID',()=>{const A=resolve('reg_resolution_artifact','enemy'),E=resolve('reg_resolution_equipment','enemy'),C=resolve('reg_resolution_creature','enemy'),I=resolve('reg_resolution_spell','player',M=>{M.player.library=['mist']});return A.enemy.artifacts[0]==='reg_resolution_artifact'&&E.enemy.equipment[0]?.id==='reg_resolution_equipment'&&C.enemy.battlefield[0]==='reg_resolution_creature'&&I.player.hand[0]==='mist'&&I.player.graveyard.includes('reg_resolution_spell')});
+test('Cartas generadas usan clasificación por datos, no por ID',()=>{const A=resolve('reg_resolution_artifact','enemy'),E1=resolve('reg_resolution_equipment','enemy'),C=resolve('reg_resolution_creature','enemy'),I=resolve('reg_resolution_spell','player',M=>{M.player.library=['mist']});return A.enemy.artifacts[0]==='reg_resolution_artifact'&&E1.enemy.equipment[0]?.id==='reg_resolution_equipment'&&C.enemy.battlefield[0]==='reg_resolution_creature'&&I.player.hand[0]==='mist'&&I.player.graveyard.includes('reg_resolution_spell')});
+test('stackCompletionPlan prioriza partida terminada sobre elección pendiente',()=>JSON.stringify(E.stackCompletionPlan({over:true,pendingChoice:{type:'discard'},stackReturnOwner:'enemy'}))===JSON.stringify({kind:'over'}));
+test('stackCompletionPlan conserva elección pendiente sin consumir retorno',()=>JSON.stringify(E.stackCompletionPlan({over:false,pendingChoice:{type:'discard'},stackReturnOwner:'enemy'}))===JSON.stringify({kind:'choice',active:'choice'}));
+test('stackCompletionPlan distingue retorno rival y jugador con fallback histórico',()=>{const r=E.stackCompletionPlan({stackReturnOwner:'enemy'}),p=E.stackCompletionPlan({stackReturnOwner:'player'}),f=E.stackCompletionPlan({stackReturnOwner:'unexpected'});return r.kind==='return'&&r.stackReturnOwner===null&&r.active==='enemy'&&r.phase==='Main rival'&&r.scheduleEnemy===true&&p.active==='player'&&p.phase==='Main'&&!p.scheduleEnemy&&f.active==='player'&&f.phase==='Main'&&!f.scheduleEnemy});
+function complete({over=false,pendingChoice=null,stackReturnOwner=null}={}){const M=fresh();M.stack=[];M.over=over;M.pendingChoice=pendingChoice;M.stackReturnOwner=stackReturnOwner;M.active='resolving';M.phase='Stack listo';dom.window.__scheduled.length=0;H.completeStackV070();return{M,scheduled:dom.window.__scheduled.slice()}}
+test('completeStack conserva retorno cuando hay elección pendiente',()=>{const {M,scheduled}=complete({pendingChoice:{type:'discard'},stackReturnOwner:'enemy'});return M.active==='choice'&&M.stackReturnOwner==='enemy'&&M.pendingChoice?.type==='discard'&&!scheduled.length});
+test('completeStack devuelve turno rival limpia owner y programa IA',()=>{const {M,scheduled}=complete({stackReturnOwner:'enemy'});return M.active==='enemy'&&M.phase==='Main rival'&&M.stackReturnOwner===null&&scheduled.length===1&&scheduled[0][1]===420});
+test('completeStack devuelve turno jugador sin programar IA',()=>{const {M,scheduled}=complete({stackReturnOwner:'player'});return M.active==='player'&&M.phase==='Main'&&M.stackReturnOwner===null&&!scheduled.length});
 
 for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`SIZA resolution kind regression: ${passed}/${results.length}`);dom.window.close();if(passed!==results.length)process.exit(1);
