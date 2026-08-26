@@ -17,6 +17,7 @@ function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
 function typeClass(card){return 'type-'+schema().normalizeCard(card).cardType.toLowerCase();}
 function affinityClass(card){const c=schema().normalizeCard(card);return String(c.art||c.affinity||'multi').toLowerCase();}
+function titleLengthClass(value){const n=String(value??'').trim().length;return n>34?'titleXLV4':n>22?'titleLongV4':'';}
 
 function artHtml(card,opts={}){
  const c=schema().normalizeCard(card),t=c.artTransform,mobile=opts.variant==='mobile';
@@ -60,15 +61,15 @@ function printedType(card){
 function rulesHtml(c){return `<div class="sizaCardRulesTextV2">${esc(c.rules)}</div>${c.flavor?`<div class="sizaGeneratedFlavor flavor sizaCardFlavorV2">“${esc(c.flavor)}”</div>`:''}`;}
 
 function bodyHtml(card,opts={}){
- const c=schema().normalizeCard(card),s=stats(c,opts),mobile=opts.variant==='mobile',risk=mobile?(opts.risk??difficultyText(c)):difficultyText(c),hasStats=c.cardType==='Creature'&&s.power!=null;
+ const c=schema().normalizeCard(card),s=stats(c,opts),mobile=opts.variant==='mobile',risk=mobile?(opts.risk??difficultyText(c)):difficultyText(c),hasStats=c.cardType==='Creature'&&s.power!=null,titleClass=titleLengthClass(c.name);
  return `<div class="sizaGeneratedInner sizaCardFrameV2 sizaQueenLayoutV3">
-  <div class="sizaCardTitlePlateV3 sizaGeneratedTitle"><span class="sizaCardNameV2">${esc(c.name)}</span></div>
+  <div class="sizaCardTitlePlateV3 sizaGeneratedTitle"><span class="sizaCardNameV2${titleClass?' '+titleClass:''}">${esc(c.name)}</span></div>
   <div class="sizaCardDifficultyV2 sizaManafestBadgeV3 sizaGeneratedDifficulty${mobile?' cardRisk':''}">${esc(risk)}</div>
   ${crystalRailHtml(c)}
   <div class="sizaGeneratedArtWindow sizaCardArtV2">${artHtml(c,{variant:mobile?'mobile':'standard'})}</div>
   <div class="sizaGeneratedType sizaCardTypeV2">${esc(printedType(c))}</div>
   <div class="sizaGeneratedRules sizaCardRulesV2">${rulesHtml(c)}</div>
-  ${hasStats?`<div class="sizaStatPlateV3 sizaStatLeftV3"><span>${esc(s.power)}</span></div><div class="sizaStatPlateV3 sizaStatRightV3"><span>${esc(s.toughness)}</span></div>`:''}
+  ${hasStats?`<div class="sizaStatPlateV3 sizaStatLeftV3"><span class="sizaStatValueV4">${esc(s.power)}</span><small class="sizaStatLabelV4">ATAQUE</small></div><div class="sizaStatPlateV3 sizaStatRightV3"><span class="sizaStatValueV4">${esc(s.toughness)}</span><small class="sizaStatLabelV4">DEFENSA</small></div>`:''}
   <footer class="sizaGeneratedFooter sizaCardFooterV2"><span class="sizaCardSetV2">${esc(c.setCode||'SZA')} · ${esc(c.cardNumber||'000')}</span></footer>
  </div>`;
 }
