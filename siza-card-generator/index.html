@@ -6,7 +6,8 @@
 <title>Siza · Card Generator</title>
 <link rel="stylesheet" href="../siza-core/card-renderer.css">
 <style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#06111a;color:#dbe7ee;font-family:Arial,sans-serif}button,input,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:minmax(380px,540px) 1fr}.editor{padding:22px;border-right:1px solid #20384a;background:linear-gradient(180deg,#0a1d2b,#06111a);overflow:auto}.preview{padding:28px;display:grid;place-items:start center;align-content:start;gap:18px;background:radial-gradient(circle at 55% 24%,#16344a,#07131d 55%,#040b10)}.eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a98b57;font-weight:900}.title{margin:6px 0 3px;font:500 28px Georgia,serif}.sub{margin:0 0 18px;color:#8fa6b5;font-size:12px;line-height:1.5}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:9px;font-weight:800;letter-spacing:.08em;color:#9db2c0;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid #31516a;border-radius:8px;background:#071722;color:#e5eef3;padding:9px 10px;outline:none}.field textarea{min-height:78px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#ad8c52}.section{margin-top:16px;padding-top:14px;border-top:1px solid #20384a}.section h2{margin:0 0 10px;font:500 16px Georgia,serif;color:#e9d59d}.sectionNote{margin:-4px 0 10px;color:#7892a3;font-size:9px;line-height:1.45}.pips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.pip label{display:block;text-align:center;color:#8fa7b6;font-size:8px}.pip input{text-align:center;padding:7px 3px}.artControls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rangeRow{display:grid;grid-template-columns:1fr 52px;gap:6px;align-items:center}.rangeRow input[type=range]{padding:0}.effectsJson{min-height:150px!important;font:10px/1.45 Consolas,monospace!important}.status{width:min(500px,100%);border:1px solid #29465a;border-radius:12px;background:#071722;padding:11px 13px;font-size:10px;line-height:1.45}.status.good{border-color:#355f4b}.status.bad{border-color:#7a3e45}.status b{display:block;margin-bottom:4px;color:#e9d59d}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.btn{border:1px solid #466a81;border-radius:8px;background:#0c2b3d;color:#dceaf2;padding:9px 12px;font-size:9px;font-weight:900;letter-spacing:.04em;cursor:pointer}.btn.primary{border-color:#9a7b45;background:#5a4727;color:#ffebba}.btn.danger{border-color:#70454a;background:#32171b;color:#f0c7c7}.btn.ghost{background:transparent}.json,.batchJson{margin-top:14px;width:100%;min-height:160px;border:1px solid #29465a;border-radius:9px;background:#030a0f;color:#9fc4d8;padding:10px;font:10px/1.45 Consolas,monospace;resize:vertical}.batchJson{min-height:190px;margin-top:0}.previewHead{width:min(500px,100%);display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.previewHead h2{margin:0;font:500 20px Georgia,serif}.previewHead span{color:#728b9b;font-size:9px}.cardStage{min-height:470px;display:grid;place-items:start center}.handoff{width:min(500px,100%);padding:10px 12px;border:1px dashed #36556a;border-radius:10px;color:#87a0b0;font-size:9px;line-height:1.45}.libraryBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:end;padding:11px;border:1px solid #29465a;border-radius:11px;background:#071722}.libraryBar .field{min-width:0}.artDrop,.frameDrop{margin-bottom:10px;padding:14px;border:1px dashed #52748a;border-radius:11px;background:#071722;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;transition:.15s}.artDrop.dragover,.frameDrop.dragover{border-color:#c49a55;background:#0c2432}.artDrop strong,.frameDrop strong{display:block;font:500 14px Georgia,serif;color:#ead7a4}.artDrop span,.frameDrop span{display:block;margin-top:3px;color:#8098a8;font-size:9px;line-height:1.4}.artFileButtons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.templateBar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:end;margin-bottom:9px}.templateStatus{padding:8px 10px;border:1px solid #29465a;border-radius:8px;background:#06131d;color:#8ca4b4;font-size:9px;line-height:1.45}.templateStatus strong{color:#e6d299}.battleSpritePreview{position:relative;height:190px;margin:10px 0;border:1px solid #29465a;border-radius:11px;overflow:hidden;background:radial-gradient(circle at 50% 52%,#17384e,#071722 66%,#040b10);display:grid;place-items:center;color:#617b90;font-size:10px}.battleSpritePreview img{position:absolute;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;transform-origin:center;filter:drop-shadow(0 12px 18px rgba(0,0,0,.55))}.batchHelp{padding:8px 10px;border-left:2px solid #4c6c80;background:#071722;color:#859dac;font-size:9px;line-height:1.45}@media(max-width:900px){.app{grid-template-columns:1fr}.editor{border-right:0;border-bottom:1px solid #20384a}.preview{min-height:640px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.libraryBar{grid-template-columns:1fr 1fr}.libraryBar .field{grid-column:1/-1}.artDrop,.frameDrop{grid-template-columns:1fr}.artFileButtons{justify-content:flex-start}.artControls{grid-template-columns:1fr}.templateBar{grid-template-columns:1fr 1fr}.templateBar .field{grid-column:1/-1}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#06111a;color:#dbe7ee;font-family:Arial,sans-serif}button,input,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:minmax(390px,560px) 1fr}.editor{padding:22px;border-right:1px solid #20384a;background:linear-gradient(180deg,#0a1d2b,#06111a);overflow:auto}.preview{padding:28px;display:grid;place-items:start center;align-content:start;gap:18px;background:radial-gradient(circle at 55% 24%,#16344a,#07131d 55%,#040b10)}.eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a98b57;font-weight:900}.title{margin:6px 0 3px;font:500 28px Georgia,serif}.sub{margin:0 0 15px;color:#8fa6b5;font-size:12px;line-height:1.5}.toolTabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 16px;padding:5px;border:1px solid #29465a;border-radius:11px;background:#06131d}.toolTab{border:1px solid transparent;border-radius:8px;background:transparent;color:#819bad;padding:10px 12px;font-size:9px;font-weight:900;letter-spacing:.08em;cursor:pointer}.toolTab.active{border-color:#8b6d3d;background:#172131;color:#f0d89f}.tabPanel[hidden],.previewPanel[hidden]{display:none!important}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:9px;font-weight:800;letter-spacing:.08em;color:#9db2c0;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid #31516a;border-radius:8px;background:#071722;color:#e5eef3;padding:9px 10px;outline:none}.field textarea{min-height:78px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#ad8c52}.section{margin-top:16px;padding-top:14px;border-top:1px solid #20384a}.section h2{margin:0 0 10px;font:500 16px Georgia,serif;color:#e9d59d}.sectionNote{margin:-4px 0 10px;color:#7892a3;font-size:9px;line-height:1.45}.pips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.pip label{display:block;text-align:center;color:#8fa7b6;font-size:8px}.pip input{text-align:center;padding:7px 3px}.artControls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rangeRow{display:grid;grid-template-columns:1fr 52px;gap:6px;align-items:center}.rangeRow input[type=range]{padding:0}.effectsJson{min-height:150px!important;font:10px/1.45 Consolas,monospace!important}.status{width:min(500px,100%);border:1px solid #29465a;border-radius:12px;background:#071722;padding:11px 13px;font-size:10px;line-height:1.45}.status.good{border-color:#355f4b}.status.bad{border-color:#7a3e45}.status b{display:block;margin-bottom:4px;color:#e9d59d}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.btn{border:1px solid #466a81;border-radius:8px;background:#0c2b3d;color:#dceaf2;padding:9px 12px;font-size:9px;font-weight:900;letter-spacing:.04em;cursor:pointer}.btn.primary{border-color:#9a7b45;background:#5a4727;color:#ffebba}.btn.danger{border-color:#70454a;background:#32171b;color:#f0c7c7}.btn.ghost{background:transparent}.json,.batchJson{margin-top:14px;width:100%;min-height:160px;border:1px solid #29465a;border-radius:9px;background:#030a0f;color:#9fc4d8;padding:10px;font:10px/1.45 Consolas,monospace;resize:vertical}.batchJson{min-height:190px;margin-top:0}.previewHead{width:min(500px,100%);display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.previewHead h2{margin:0;font:500 20px Georgia,serif}.previewHead span{color:#728b9b;font-size:9px}.cardStage{min-height:470px;display:grid;place-items:start center}.handoff{width:min(500px,100%);padding:10px 12px;border:1px dashed #36556a;border-radius:10px;color:#87a0b0;font-size:9px;line-height:1.45}.libraryBar,.builderLibraryBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:end;padding:11px;border:1px solid #29465a;border-radius:11px;background:#071722}.libraryBar .field,.builderLibraryBar .field{min-width:0}.artDrop{margin-bottom:10px;padding:14px;border:1px dashed #52748a;border-radius:11px;background:#071722;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;transition:.15s}.artDrop.dragover{border-color:#c49a55;background:#0c2432}.artDrop strong{display:block;font:500 14px Georgia,serif;color:#ead7a4}.artDrop span{display:block;margin-top:3px;color:#8098a8;font-size:9px;line-height:1.4}.artFileButtons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.templateSelectBox{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.templateStatus{padding:8px 10px;border:1px solid #29465a;border-radius:8px;background:#06131d;color:#8ca4b4;font-size:9px;line-height:1.45}.templateStatus strong{color:#e6d299}.battleSpritePreview{position:relative;height:190px;margin:10px 0;border:1px solid #29465a;border-radius:11px;overflow:hidden;background:radial-gradient(circle at 50% 52%,#17384e,#071722 66%,#040b10);display:grid;place-items:center;color:#617b90;font-size:10px}.battleSpritePreview img{position:absolute;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;transform-origin:center;filter:drop-shadow(0 12px 18px rgba(0,0,0,.55))}.batchHelp{padding:8px 10px;border-left:2px solid #4c6c80;background:#071722;color:#859dac;font-size:9px;line-height:1.45}.builderIntro{padding:12px 13px;border:1px solid #29465a;border-radius:11px;background:#071722;color:#8ca4b4;font-size:10px;line-height:1.55;margin-bottom:12px}.builderIntro b{color:#e8d49e}.templateSlots{display:grid;gap:8px;margin-top:12px}.templateSlot{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px;border:1px solid #29465a;border-radius:10px;background:#071722}.templateSlotPreview{position:relative;width:62px;aspect-ratio:5/7;border:1px solid #38556a;border-radius:6px;background:#041019;overflow:hidden;display:grid;place-items:center;color:#536d7e;font-size:7px;text-align:center}.templateSlotPreview img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.templateSlotCopy b{display:block;color:#e7d29a;font:500 12px Georgia,serif}.templateSlotCopy span{display:block;margin-top:3px;color:#718b9d;font-size:8px;line-height:1.35}.templateSlotFile{margin-top:4px;color:#9ab0bd!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.templateSlotActions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.templateBuilderStatus{margin-top:10px}.templateAssembleStage{position:relative;width:min(360px,80vw);aspect-ratio:5/7;border:1px solid #39576c;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#0b2130,#030a0f);box-shadow:0 18px 48px rgba(0,0,0,.38)}.templateAssembleStage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.templateAssembleEmpty{position:absolute;inset:0;display:grid;place-items:center;padding:30px;text-align:center;color:#617c8e;font-size:10px;line-height:1.5}.templateLayerLegend{width:min(500px,100%);display:flex;flex-wrap:wrap;gap:5px}.templateLayerLegend span{border:1px solid #29465a;border-radius:999px;padding:4px 7px;color:#7790a1;font-size:7px}.templateLayerLegend span.on{border-color:#80653b;color:#e5ca8b;background:#171a1d}
+@media(max-width:900px){.app{grid-template-columns:1fr}.editor{border-right:0;border-bottom:1px solid #20384a}.preview{min-height:640px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.libraryBar,.builderLibraryBar{grid-template-columns:1fr 1fr}.libraryBar .field,.builderLibraryBar .field{grid-column:1/-1}.artDrop{grid-template-columns:1fr}.artFileButtons{justify-content:flex-start}.artControls{grid-template-columns:1fr}.templateSelectBox{grid-template-columns:1fr}.templateSlot{grid-template-columns:52px 1fr}.templateSlotPreview{width:52px}.templateSlotActions{grid-column:1/-1;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -14,133 +15,143 @@
  <main class="editor">
   <div class="eyebrow">Siza · Shared Tooling</div>
   <h1 class="title">Card Generator</h1>
-  <p class="sub">Una sola carta dinámica para Generator, Collection y Arena. Los cambios manuales quedan guardados por ID y los batch se aplican sin borrar el arte manual si no lo especifican.</p>
-
-  <div class="libraryBar">
-   <div class="field"><label for="savedCards">Biblioteca local</label><select id="savedCards"><option value="">— Cartas guardadas —</option></select></div>
-   <button class="btn ghost" type="button" id="newCard">Nueva</button>
-   <button class="btn danger" type="button" id="deleteCard">Eliminar</button>
+  <p class="sub">Carta y template son sistemas separados: el Card Creator usa templates guardados; el Template Builder construye esos templates por piezas modulares.</p>
+  <div class="toolTabs" role="tablist">
+   <button class="toolTab active" type="button" id="tabCardBtn" data-tab="card">CARD CREATOR</button>
+   <button class="toolTab" type="button" id="tabTemplateBtn" data-tab="template">TEMPLATE BUILDER</button>
   </div>
 
-  <form id="cardForm" autocomplete="off">
-   <div class="grid" style="margin-top:14px">
-    <div class="field"><label for="id">ID</label><input id="id" name="id"></div>
-    <div class="field"><label for="name">Nombre</label><input id="name" name="name"></div>
-    <div class="field"><label for="cardType">Tipo</label><select id="cardType" name="cardType"><option>Instant</option><option>Creature</option><option>Artifact</option><option>Land</option></select></div>
-    <div class="field"><label for="subtype">Subtipo</label><input id="subtype" name="subtype"></div>
-    <div class="field"><label for="difficulty">Manafestación</label><input id="difficulty" name="difficulty" type="number" min="0" max="20"></div>
-    <div class="field"><label for="cost">Coste nominal</label><input id="cost" name="cost" type="number" min="0" max="20"></div>
-    <div class="field"><label for="affinity">Afinidad visual</label><select id="affinity" name="affinity"><option value="azul">Azul</option><option value="rojo">Rojo</option><option value="multi">Multi</option><option value="land">Land</option></select></div>
-    <div class="field"><label for="glyph">Glyph fallback</label><input id="glyph" name="glyph" maxlength="4"></div>
+  <section class="tabPanel" id="cardTabPanel">
+   <div class="libraryBar">
+    <div class="field"><label for="savedCards">Biblioteca local</label><select id="savedCards"><option value="">— Cartas guardadas —</option></select></div>
+    <button class="btn ghost" type="button" id="newCard">Nueva</button>
+    <button class="btn danger" type="button" id="deleteCard">Eliminar</button>
    </div>
 
-   <section class="section">
-    <h2>Cristales impresos</h2>
-    <div class="pips">
-     <div class="pip"><label>U · Azul</label><input id="pipU" type="number" min="0" max="9"></div>
-     <div class="pip"><label>R · Rojo</label><input id="pipR" type="number" min="0" max="9"></div>
-     <div class="pip"><label>G · Verde</label><input id="pipG" type="number" min="0" max="9"></div>
-     <div class="pip"><label>W · Blanco</label><input id="pipW" type="number" min="0" max="9"></div>
-     <div class="pip"><label>B · Negro</label><input id="pipB" type="number" min="0" max="9"></div>
+   <form id="cardForm" autocomplete="off">
+    <div class="grid" style="margin-top:14px">
+     <div class="field"><label for="id">ID</label><input id="id" name="id"></div>
+     <div class="field"><label for="name">Nombre</label><input id="name" name="name"></div>
+     <div class="field"><label for="cardType">Tipo</label><select id="cardType" name="cardType"><option>Instant</option><option>Creature</option><option>Artifact</option><option>Land</option></select></div>
+     <div class="field"><label for="subtype">Subtipo</label><input id="subtype" name="subtype"></div>
+     <div class="field"><label for="difficulty">Manafestación</label><input id="difficulty" name="difficulty" type="number" min="0" max="20"></div>
+     <div class="field"><label for="cost">Coste nominal</label><input id="cost" name="cost" type="number" min="0" max="20"></div>
+     <div class="field"><label for="affinity">Afinidad visual</label><select id="affinity" name="affinity"><option value="azul">Azul</option><option value="rojo">Rojo</option><option value="multi">Multi</option><option value="land">Land</option></select></div>
+     <div class="field"><label for="glyph">Glyph fallback</label><input id="glyph" name="glyph" maxlength="4"></div>
     </div>
-   </section>
 
-   <section class="section">
-    <h2>Frame / Template</h2>
-    <p class="sectionNote">Suba su frame completo en PNG, WebP o JPG. Queda guardado como template local y puede reutilizarlo en otras cartas.</p>
-    <div class="templateBar">
-     <div class="field"><label for="templateSelect">Template activo</label><select id="templateSelect"><option value="standard">Standard</option></select></div>
-     <input id="frameFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-     <button class="btn primary" type="button" id="chooseFrame">Subir frame</button>
-     <button class="btn ghost" type="button" id="standardFrame">Standard</button>
-    </div>
-    <div class="frameDrop" id="frameDropZone">
-     <div><strong>Biblioteca de templates</strong><span>También puede arrastrar aquí un frame. El nombre del archivo se usa como nombre del template.</span></div>
-     <div class="artFileButtons"><button class="btn" type="button" id="chooseFrameAlt">Agregar template</button></div>
-    </div>
-    <div class="templateStatus" id="frameFileStatus"><strong>Standard</strong> · usando el frame base del sistema.</div>
-   </section>
-
-   <section class="section">
-    <h2>Ilustración</h2>
-    <div class="artDrop" id="artDropZone">
-     <div><strong>Slot de ilustración de la carta</strong><span id="artFileStatus">Suba una imagen. Se guarda localmente asociada al ID de la carta y puede volver a editar X, Y y zoom después.</span></div>
-     <div class="artFileButtons">
-      <input id="artFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-      <button class="btn primary" type="button" id="chooseArt">Subir ilustración</button>
-      <button class="btn ghost" type="button" id="removeArt">Quitar</button>
+    <section class="section">
+     <h2>Cristales impresos</h2>
+     <div class="pips">
+      <div class="pip"><label>U · Azul</label><input id="pipU" type="number" min="0" max="9"></div>
+      <div class="pip"><label>R · Rojo</label><input id="pipR" type="number" min="0" max="9"></div>
+      <div class="pip"><label>G · Verde</label><input id="pipG" type="number" min="0" max="9"></div>
+      <div class="pip"><label>W · Blanco</label><input id="pipW" type="number" min="0" max="9"></div>
+      <div class="pip"><label>B · Negro</label><input id="pipB" type="number" min="0" max="9"></div>
      </div>
-    </div>
-    <div class="field"><label for="artUrl">URL externa opcional</label><input id="artUrl" name="artUrl" placeholder="../assets/cards/art/mi_carta.webp"></div>
-    <div class="artControls" style="margin-top:9px">
-     <div class="field"><label>Posición X</label><div class="rangeRow"><input id="artX" type="range" min="0" max="100" step="1"><input id="artXValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Posición Y</label><div class="rangeRow"><input id="artY" type="range" min="0" max="100" step="1"><input id="artYValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Zoom</label><div class="rangeRow"><input id="artScale" type="range" min="0.25" max="4" step="0.05"><input id="artScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
-    </div>
-   </section>
+    </section>
 
-   <section class="section">
-    <h2>Battle Sprite</h2>
-    <p class="sectionNote">Este es el visual que aparece en el campo de batalla después de manifestar la carta. Es independiente de la ilustración impresa.</p>
-    <div class="artDrop" id="battleSpriteDropZone">
-     <div><strong>Sprite de batalla manifestado</strong><span id="battleSpriteFileStatus">Suba un PNG/WebP/JPG. Se guarda con la carta y Arena lo usa sólo cuando la Invocación está en battlefield.</span></div>
-     <div class="artFileButtons">
-      <input id="battleSpriteFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-      <button class="btn primary" type="button" id="chooseBattleSprite">Subir Battle Sprite</button>
-      <button class="btn ghost" type="button" id="removeBattleSprite">Quitar</button>
+    <section class="section">
+     <h2>Template</h2>
+     <p class="sectionNote">Aquí sólo se selecciona un template ya construido. Las piezas se editan exclusivamente en Template Builder.</p>
+     <div class="templateSelectBox">
+      <div class="field"><label for="templateSelect">Template activo</label><select id="templateSelect"><option value="standard">Standard · sistema</option></select></div>
+      <button class="btn ghost" type="button" id="openTemplateBuilder">Editar templates</button>
      </div>
-    </div>
-    <div class="battleSpritePreview" id="battleSpritePreview"><span>Sin Battle Sprite</span></div>
-    <div class="field"><label for="battleSpriteUrl">URL externa opcional</label><input id="battleSpriteUrl" name="battleSpriteUrl" placeholder="../assets/cards/battle/mi_invocacion.webp"></div>
-    <div class="artControls" style="margin-top:9px">
-     <div class="field"><label>Posición X</label><div class="rangeRow"><input id="battleSpriteX" type="range" min="0" max="100" step="1"><input id="battleSpriteXValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Posición Y</label><div class="rangeRow"><input id="battleSpriteY" type="range" min="0" max="100" step="1"><input id="battleSpriteYValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Zoom</label><div class="rangeRow"><input id="battleSpriteScale" type="range" min="0.25" max="4" step="0.05"><input id="battleSpriteScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
-    </div>
-   </section>
+     <div class="templateStatus" id="templateCardStatus"><strong>Standard</strong> · template base del sistema.</div>
+    </section>
 
-   <section class="section">
-    <h2>Texto, ataque y defensa</h2>
-    <div class="grid">
-     <div class="field full"><label for="rules">Reglas</label><textarea id="rules" name="rules"></textarea></div>
-     <div class="field full"><label for="flavor">Flavor</label><textarea id="flavor" name="flavor"></textarea></div>
-     <div class="field"><label for="force">Ataque · disco izquierdo</label><input id="force" name="force" type="number" min="0" max="99"></div>
-     <div class="field"><label for="resistance">Defensa · disco derecho</label><input id="resistance" name="resistance" type="number" min="0" max="99"></div>
-     <div class="field"><label for="setCode">Set</label><input id="setCode" name="setCode" maxlength="6"></div>
-     <div class="field"><label for="cardNumber">Número</label><input id="cardNumber" name="cardNumber" maxlength="8"></div>
-    </div>
-   </section>
+    <section class="section">
+     <h2>Ilustración</h2>
+     <div class="artDrop" id="artDropZone">
+      <div><strong>Slot de ilustración de la carta</strong><span id="artFileStatus">Suba una imagen. Se guarda localmente asociada al ID de la carta y puede volver a editar X, Y y zoom después.</span></div>
+      <div class="artFileButtons"><input id="artFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="btn primary" type="button" id="chooseArt">Subir ilustración</button><button class="btn ghost" type="button" id="removeArt">Quitar</button></div>
+     </div>
+     <div class="field"><label for="artUrl">URL externa opcional</label><input id="artUrl" name="artUrl" placeholder="../assets/cards/art/mi_carta.webp"></div>
+     <div class="artControls" style="margin-top:9px">
+      <div class="field"><label>Posición X</label><div class="rangeRow"><input id="artX" type="range" min="0" max="100" step="1"><input id="artXValue" type="number" min="0" max="100"></div></div>
+      <div class="field"><label>Posición Y</label><div class="rangeRow"><input id="artY" type="range" min="0" max="100" step="1"><input id="artYValue" type="number" min="0" max="100"></div></div>
+      <div class="field"><label>Zoom</label><div class="rangeRow"><input id="artScale" type="range" min="0.25" max="4" step="0.05"><input id="artScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
+     </div>
+    </section>
 
-   <section class="section">
-    <h2>Efectos estructurados</h2>
-    <p class="sectionNote">Lista JSON validada por el contrato compartido. Eventos disponibles ahora: <b>resolve</b> y <b>enter</b>.</p>
-    <div class="field"><label for="effectsJson">Effects</label><textarea class="effectsJson" id="effectsJson" name="effectsJson">[]</textarea></div>
-   </section>
+    <section class="section">
+     <h2>Battle Sprite</h2>
+     <p class="sectionNote">Visual que aparece en el campo de batalla después de manifestar la carta. Es independiente de la ilustración impresa y del template.</p>
+     <div class="artDrop" id="battleSpriteDropZone">
+      <div><strong>Sprite de batalla manifestado</strong><span id="battleSpriteFileStatus">Suba un PNG/WebP/JPG. Se guarda con la carta y Arena lo usa sólo cuando la Invocación está en battlefield.</span></div>
+      <div class="artFileButtons"><input id="battleSpriteFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="btn primary" type="button" id="chooseBattleSprite">Subir Battle Sprite</button><button class="btn ghost" type="button" id="removeBattleSprite">Quitar</button></div>
+     </div>
+     <div class="battleSpritePreview" id="battleSpritePreview"><span>Sin Battle Sprite</span></div>
+     <div class="field"><label for="battleSpriteUrl">URL externa opcional</label><input id="battleSpriteUrl" name="battleSpriteUrl" placeholder="../assets/cards/battle/mi_invocacion.webp"></div>
+     <div class="artControls" style="margin-top:9px">
+      <div class="field"><label>Posición X</label><div class="rangeRow"><input id="battleSpriteX" type="range" min="0" max="100" step="1"><input id="battleSpriteXValue" type="number" min="0" max="100"></div></div>
+      <div class="field"><label>Posición Y</label><div class="rangeRow"><input id="battleSpriteY" type="range" min="0" max="100" step="1"><input id="battleSpriteYValue" type="number" min="0" max="100"></div></div>
+      <div class="field"><label>Zoom</label><div class="rangeRow"><input id="battleSpriteScale" type="range" min="0.25" max="4" step="0.05"><input id="battleSpriteScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
+     </div>
+    </section>
 
-   <div class="actions">
-    <button class="btn primary" type="button" id="saveDraft">Guardar carta</button>
-    <button class="btn ghost" type="button" id="loadExample">Cargar Reina Ahogada</button>
-    <button class="btn ghost" type="button" id="resetDraft">Restablecer</button>
-    <button class="btn" type="button" id="testMobile">Probar en Mobile Test</button>
+    <section class="section">
+     <h2>Texto, ataque y defensa</h2>
+     <div class="grid">
+      <div class="field full"><label for="rules">Reglas</label><textarea id="rules" name="rules"></textarea></div>
+      <div class="field full"><label for="flavor">Flavor</label><textarea id="flavor" name="flavor"></textarea></div>
+      <div class="field"><label for="force">Ataque · disco izquierdo</label><input id="force" name="force" type="number" min="0" max="99"></div>
+      <div class="field"><label for="resistance">Defensa · disco derecho</label><input id="resistance" name="resistance" type="number" min="0" max="99"></div>
+      <div class="field"><label for="setCode">Set</label><input id="setCode" name="setCode" maxlength="6"></div>
+      <div class="field"><label for="cardNumber">Número</label><input id="cardNumber" name="cardNumber" maxlength="8"></div>
+     </div>
+    </section>
+
+    <section class="section">
+     <h2>Efectos estructurados</h2>
+     <p class="sectionNote">Lista JSON validada por el contrato compartido.</p>
+     <div class="field"><label for="effectsJson">Effects</label><textarea class="effectsJson" id="effectsJson" name="effectsJson">[]</textarea></div>
+    </section>
+
+    <div class="actions"><button class="btn primary" type="button" id="saveDraft">Guardar carta</button><button class="btn ghost" type="button" id="loadExample">Cargar Reina Ahogada</button><button class="btn ghost" type="button" id="resetDraft">Restablecer</button><button class="btn" type="button" id="testMobile">Probar en Mobile Test</button></div>
+    <textarea class="json" id="jsonOutput" aria-label="JSON de carta" readonly></textarea>
+
+    <section class="section">
+     <h2>Edición batch</h2>
+     <div class="batchHelp">Formato: lista JSON de objetos con <b>id</b>. Si el batch no incluye arte, Battle Sprite o template, se conservan los ajustes manuales guardados.</div>
+     <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","attack":5,"defense":5,"difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
+     <div class="actions"><button class="btn ghost" type="button" id="exportBatch">Exportar biblioteca</button><button class="btn primary" type="button" id="applyBatch">Aplicar batch</button></div>
+    </section>
+   </form>
+  </section>
+
+  <section class="tabPanel" id="templateTabPanel" hidden>
+   <div class="builderIntro"><b>Template modular.</b> Cada pieza ocupa exactamente el mismo canvas 1500×2100 con transparencia. El Builder sólo administra la apariencia impresa; ilustración, cristales, texto, stats y Battle Sprite siguen perteneciendo a la carta.</div>
+   <div class="builderLibraryBar">
+    <div class="field"><label for="builderTemplateSelect">Templates guardados</label><select id="builderTemplateSelect"><option value="">— Nuevo template —</option></select></div>
+    <button class="btn ghost" type="button" id="newTemplate">Nuevo</button>
+    <button class="btn danger" type="button" id="deleteTemplate">Eliminar</button>
    </div>
-   <textarea class="json" id="jsonOutput" aria-label="JSON de carta" readonly></textarea>
-
-   <section class="section">
-    <h2>Edición batch</h2>
-    <div class="batchHelp">Formato: una lista JSON de objetos con <b>id</b>. Puede usar <b>attack</b>/<b>defense</b> en batch; el runtime sigue recibiendo sus valores compatibles. Si el batch no incluye arte, Battle Sprite, template o sus transformaciones, se conservan los ajustes manuales ya guardados.</div>
-    <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","attack":5,"defense":5,"difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
-    <div class="actions">
-     <button class="btn ghost" type="button" id="exportBatch">Exportar biblioteca</button>
-     <button class="btn primary" type="button" id="applyBatch">Aplicar batch</button>
-    </div>
-   </section>
-  </form>
+   <div class="grid" style="margin-top:12px">
+    <div class="field"><label for="templateBuilderName">Nombre del template</label><input id="templateBuilderName" placeholder="Standard Arcana Blue"></div>
+    <div class="field"><label for="templateBuilderId">ID</label><input id="templateBuilderId" readonly></div>
+   </div>
+   <input id="templatePartFile" type="file" accept="image/png,image/webp" hidden>
+   <div class="templateSlots" id="templateSlots"></div>
+   <div class="actions"><button class="btn primary" type="button" id="saveTemplate">Guardar template</button><button class="btn ghost" type="button" id="useTemplateInCard">Usar en Card Creator</button></div>
+   <div class="templateStatus templateBuilderStatus" id="templateBuilderStatus"><strong>Nuevo template</strong> · cargue piezas modulares y guárdelo.</div>
+  </section>
  </main>
+
  <aside class="preview">
-  <div class="previewHead"><div><div class="eyebrow">CARD_STANDARD_V1</div><h2>Preview vivo</h2></div><span id="schemaVersion"></span></div>
-  <div class="cardStage" id="cardPreview"></div>
-  <div class="status" id="validationStatus"></div>
-  <div class="handoff" id="handoffStatus">Guardar carta conserva los datos, ilustración, Battle Sprite y template localmente. Probar en Mobile Test materializa los assets seleccionados.</div>
+  <section class="previewPanel" id="cardPreviewPanel">
+   <div class="previewHead"><div><div class="eyebrow">CARD_STANDARD_V1</div><h2>Preview vivo</h2></div><span id="schemaVersion"></span></div>
+   <div class="cardStage" id="cardPreview"></div>
+   <div class="status" id="validationStatus"></div>
+   <div class="handoff" id="handoffStatus">Guardar carta conserva datos, ilustración, Battle Sprite y selección de template. Probar en Mobile Test materializa también las piezas del template.</div>
+  </section>
+  <section class="previewPanel" id="templatePreviewPanel" hidden>
+   <div class="previewHead"><div><div class="eyebrow">TEMPLATE 1500×2100</div><h2>Preview ensamblado</h2></div><span id="templatePreviewCount">0 piezas</span></div>
+   <div class="templateAssembleStage" id="templatePreview"><div class="templateAssembleEmpty">Cargue piezas en los slots del Template Builder.</div></div>
+   <div class="templateLayerLegend" id="templateLayerLegend"></div>
+   <div class="handoff">Las piezas se apilan en orden fijo sobre el mismo canvas. Guardar el template lo agrega al selector del Card Creator.</div>
+  </section>
  </aside>
 </div>
 <script src="../siza-core/card-effects.js"></script>
