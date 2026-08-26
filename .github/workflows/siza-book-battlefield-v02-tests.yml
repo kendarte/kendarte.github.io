@@ -47,7 +47,7 @@ jobs:
           for token in required_css:
               assert token in css, f'missing battlefield CSS contract: {token}'
 
-          support_block = css.split('.arenaHalf .arenaZones {', 1)[1].split('}', 1)[0]
+          support_block = css.rsplit('.arenaHalf .arenaZones {', 1)[1].split('}', 1)[0]
           assert 'display: flex !important' in support_block, 'support zones must stay visible'
           assert 'display: none' not in support_block, 'support zones must not be hidden'
           assert 'siza_tcg_battlefield_v02.css?v=0200' in js, 'child iframe stylesheet injection missing'
