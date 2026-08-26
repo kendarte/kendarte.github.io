@@ -1,0 +1,33 @@
+name: SIZA World Book Format Diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-worldbook-format-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect-chunk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect wb-00 serialization
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('rivarica/chunks/wb-00.js')
+          raw = path.read_bytes()
+          text = raw.decode('utf-8')
+          marker = text.find('H4sI')
+          print('bytes=', len(raw), 'chars=', len(text), 'marker=', marker)
+          print('prefix_repr=', repr(text[:220]))
+          print('around_marker_repr=', repr(text[max(0, marker-90):marker+140]))
+          print('double_quotes=', text.count('"'), 'single_quotes=', text.count("'"), 'backslashes=', text.count('\\'))
+          print('long_base64_runs=', [(m.start(), len(m.group(0))) for m in re.finditer(r'[A-Za-z0-9+/=]{64,}', text)][:8])
+          assert marker >= 0
+          PY
