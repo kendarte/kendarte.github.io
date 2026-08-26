@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate clean battlefield layout contract
+      - name: Validate RPG scene TCG zone contract
         shell: bash
         run: |
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js
@@ -28,16 +28,29 @@ jobs:
           js = Path('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js').read_text(encoding='utf-8')
           template = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
 
-          for token in [
+          required = [
               '.arenaHalf.enemyHalf',
+              'top: 8px !important',
               '.arenaHalf.playerHalf',
+              'top: 164px !important',
               '.arenaHalf .arenaZones',
+              'height: 48px !important',
               '.arenaHalf .arenaField',
+              'height: 116px !important',
+              'left: 110px !important',
+              'right: 110px !important',
               '.stackAnchorV5:empty',
+              'display: none !important',
+              '.matchBoardV5 .matchLog',
               '.handAreaV5',
               'object-fit: contain !important',
-          ]:
-              assert token in css, f'missing clean battlefield contract: {token}'
+          ]
+          for token in required:
+              assert token in css, f'missing RPG/TCG battlefield contract: {token}'
+
+          # Book header owns combatant portraits; field must not duplicate them.
+          for selector in ['.arenaHalf .arenaMag', '.arenaHalf .arenaMagSlot', '.arenaHalfLabelV610', '.emptyFieldV5']:
+              assert selector in css, f'missing suppression selector: {selector}'
 
           forbidden = [
               'SUPPORT · ARTIFACTS',
@@ -48,16 +61,18 @@ jobs:
               'object-fit: cover !important',
           ]
           for token in forbidden:
-              assert token not in css, f'debug/fake battlefield presentation returned: {token}'
+              assert token not in css, f'fake/debug card-table presentation returned: {token}'
 
-          assert 'siza_tcg_battlefield_v03.css?v=0300' in js
-          assert 'siza-book-battlefield-v02' in js, 'v0.3 must remove stale v0.2 iframe stylesheet'
+          assert '0.3.1-book-battlefield-rpg-tcg-layout' in js
+          assert 'siza_tcg_battlefield_v03.css?v=0310' in js
+          assert 'siza-book-battlefield-v02' in js
           assert 'siza_tcg_battlefield_v03.js' in template
           assert 'siza_tcg_battlefield_v02.js' not in template
           assert template.index('siza_tcg_embed_v01.js') < template.index('siza_tcg_battlefield_v03.js')
 
-          print('PASS clean opponent/player battlefield geometry')
-          print('PASS real support and creature zones stay available without debug labels')
-          print('PASS current card renderer is preserved; no fake token crop')
-          print('PASS stale v0.2 battlefield loader cannot remain active')
+          print('PASS duplicate field portraits and debug lane labels are suppressed')
+          print('PASS scene depth reserves permanent and creature planes')
+          print('PASS outer gutters remain free for Library/Graveyard/Exile state piles')
+          print('PASS Stack is transient and hand/log/HUD remain separate')
+          print('PASS current full card renderer remains uncropped')
           PY
