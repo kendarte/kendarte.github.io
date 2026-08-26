@@ -39,10 +39,19 @@ jobs:
           python - <<'PY'
           import json
           import sys
+          import types
           from pathlib import Path
 
           overlay = Path('siza-world-engine/overlay').resolve()
           sys.path.insert(0, str(overlay))
+
+          # Production runs inside Evennia. CI only needs the tiny import surface used by consequence/state modules.
+          evennia_stub = types.ModuleType('evennia')
+          evennia_stub.create_script = lambda *args, **kwargs: None
+          evennia_stub.search_script = lambda *args, **kwargs: []
+          evennia_stub.search_tag = lambda *args, **kwargs: []
+          evennia_stub.search_object = lambda *args, **kwargs: []
+          sys.modules['evennia'] = evennia_stub
 
           from services.dm_free_action_adjudicator import adjudicate_dm_free_action
           from services.dm_free_action_judge import build_dm_judge_request, parse_dm_judge_response
