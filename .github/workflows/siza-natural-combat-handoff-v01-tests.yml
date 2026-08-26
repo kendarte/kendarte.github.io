@@ -5,6 +5,7 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
       - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
       - '.github/workflows/siza-natural-combat-handoff-v01-tests.yml'
   workflow_dispatch:
 
@@ -32,7 +33,6 @@ jobs:
           ast.parse(adjudicator_source)
           ast.parse(execution_source)
 
-          # Execute only the deterministic adjudication helpers, with the check normalizer stubbed.
           tree = ast.parse(adjudicator_source)
           wanted = {'_plain_dict','_plain_list','_resolve_ref','_is_local','_is_inventory','_verified_context','_authored_affordance','_adjudicate_step'}
           selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
@@ -86,7 +86,6 @@ jobs:
           assert attack_remote['status'] == 'REJECTED', attack_remote
           mara.location = room
 
-          # Execute only the combat bridge helper with mocked World Combat authority.
           tree = ast.parse(execution_source)
           wanted_exec = {'_plain_dict','_plain_list','_find_current_object','_execute_combat'}
           selected_exec = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted_exec]
@@ -119,7 +118,95 @@ jobs:
           assert captured['source_action_id'].startswith('DM-COMBAT-1-2-'), captured
           assert captured['emitted']['encounter_id'] == 'NATURAL-COMBAT-001'
 
-          print('PASS natural ATTACK -> deterministic COMBAT -> World Combat Encounter')
+          print('PASS interpreted ATTACK -> deterministic COMBAT -> World Combat Encounter')
           print('PASS non-character and non-local combat targets rejected')
           print('PASS player intent preserved as authored combat stakes')
+          PY
+
+      - name: Validate explicit player text reaches combat without Qwen
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          import re
+          from pathlib import Path
+          from types import SimpleNamespace
+
+          path = Path('siza-world-engine/overlay/commands/world_input_v861_commands.py')
+          source = path.read_text(encoding='utf-8')
+          tree = ast.parse(source)
+
+          assignments = []
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  names = {target.id for target in node.targets if isinstance(target, ast.Name)}
+                  if 'EXPLICIT_COMBAT_PATTERNS' in names:
+                      assignments.append(node)
+          wanted = {'_explicit_combat_target_name', '_handle_explicit_combat_input'}
+          selected = assignments + [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
+
+          captured = {}
+          def build_encounter(actor, opponent, *, source_action_id='', stakes=None, **kwargs):
+              captured['actor'] = actor
+              captured['opponent'] = opponent
+              captured['source_action_id'] = source_action_id
+              captured['stakes'] = dict(stakes or {})
+              return {'accepted': True, 'encounter': {'encounter_id':'EXPLICIT-COMBAT-001'}}
+          def emit_encounter(actor, encounter):
+              captured['emitted'] = dict(encounter)
+              return {'accepted': True, 'status':'ENCOUNTER_EMITTED', 'encounter_id':encounter['encounter_id']}
+
+          ns = {
+              're': re,
+              'uuid4': lambda: SimpleNamespace(hex='ABCDEF1234567890'),
+              'build_world_combat_encounter': build_encounter,
+              'emit_world_combat_encounter': emit_encounter,
+          }
+          exec(compile(ast.Module(body=selected, type_ignores=[]), str(path), 'exec'), ns)
+
+          assert ns['_explicit_combat_target_name']('Ataco a Mara Vensal.') == 'Mara Vensal'
+          assert ns['_explicit_combat_target_name']('golpeo a Mara Vensal') == 'Mara Vensal'
+          assert ns['_explicit_combat_target_name']('attack Mara Vensal') == 'Mara Vensal'
+          assert ns['_explicit_combat_target_name']('I attack Mara Vensal.') == 'Mara Vensal'
+          assert ns['_explicit_combat_target_name']('hablo con Mara Vensal') == ''
+
+          class DB(SimpleNamespace):
+              pass
+          class Actor:
+              id = 1
+              def __init__(self, target):
+                  self.location = SimpleNamespace(key='Pescaderia de Darsena')
+                  self.target = target
+                  self.messages = []
+                  self.searches = []
+              def search(self, name, location=None):
+                  self.searches.append((name, location))
+                  return self.target if name == self.target.key else None
+              def msg(self, text=None, **kwargs):
+                  if text is not None:
+                      self.messages.append(str(text))
+
+          mara = SimpleNamespace(id=2, key='Mara Vensal', destination=None, db=DB(is_npc=True))
+          actor = Actor(mara)
+          handled = ns['_handle_explicit_combat_input'](actor, 'Ataco a Mara Vensal.')
+          assert handled is True
+          assert actor.searches == [('Mara Vensal', actor.location)]
+          assert captured['actor'] is actor and captured['opponent'] is mara
+          assert captured['source_action_id'].startswith('NATURAL-COMBAT-1-2-')
+          assert captured['stakes'] == {
+              'player_intent':'Ataco a Mara Vensal.',
+              'input_route':'EXPLICIT_COMBAT',
+          }
+          assert captured['emitted']['encounter_id'] == 'EXPLICIT-COMBAT-001'
+          assert actor.messages == []
+
+          crate = SimpleNamespace(id=3, key='Cajon', destination=None, db=DB(is_npc=False))
+          actor2 = Actor(crate)
+          assert ns['_handle_explicit_combat_input'](actor2, 'Ataco al Cajon.') is True
+          assert actor2.messages, 'non-character target should be rejected visibly'
+
+          assert '_handle_explicit_combat_input(self.caller, raw)' in source
+          print('PASS exact natural input Ataco a Mara Vensal -> combat bridge without Qwen')
+          print('PASS dialogue text does not false-positive as combat')
+          print('PASS non-character explicit combat target rejected')
           PY
