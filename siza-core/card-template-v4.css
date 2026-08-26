@@ -1,15 +1,28 @@
 /* Canonical Siza card geometry v4. Shared by Generator, Collection and Arena. */
 .sizaCardTemplateQueenV3 .sizaCardTitlePlateV3{
- left:17.2%!important;
+ left:16.7%!important;
  top:5.0%!important;
- width:61.4%!important;
+ width:63.7%!important;
  height:8.1%!important;
- padding:0 3.2%!important;
+ padding:0 3.0%!important;
 }
 .sizaCardTemplateQueenV3 .sizaCardNameV2{
- font-size:4.35cqw!important;
+ display:block!important;
+ width:100%!important;
+ font-size:4.05cqw!important;
  line-height:1!important;
+ white-space:nowrap!important;
+ overflow:visible!important;
  text-overflow:clip!important;
+ letter-spacing:-.005em;
+}
+.sizaCardTemplateQueenV3 .sizaCardNameV2.titleLongV4{
+ font-size:3.55cqw!important;
+ letter-spacing:-.018em!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardNameV2.titleXLV4{
+ font-size:3.15cqw!important;
+ letter-spacing:-.028em!important;
 }
 .sizaCardTemplateQueenV3 .sizaManafestBadgeV3{
  right:3.25%!important;
@@ -43,9 +56,31 @@
 .sizaCardTemplateQueenV3 .sizaStatPlateV3{
  bottom:2.65%!important;
  width:17.4%!important;
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:center!important;
+ justify-content:center!important;
+ padding:0!important;
 }
 .sizaCardTemplateQueenV3 .sizaStatLeftV3{left:2.55%!important}
 .sizaCardTemplateQueenV3 .sizaStatRightV3{right:2.55%!important}
+.sizaCardTemplateQueenV3 .sizaStatValueV4{
+ display:block;
+ font-size:8.7cqw;
+ line-height:.78;
+ font-weight:700;
+}
+.sizaCardTemplateQueenV3 .sizaStatLabelV4{
+ display:block;
+ margin-top:8%;
+ font-family:Arial,sans-serif;
+ font-size:1.72cqw;
+ line-height:1;
+ font-weight:900;
+ letter-spacing:.055em;
+ color:#f1e6ce;
+ text-shadow:0 1px 1px #000;
+}
 .sizaCardTemplateQueenV3 .sizaCardFooterV2{
  left:34.25%!important;
  bottom:3.45%!important;
@@ -56,5 +91,6 @@
 }
 
 /* Thumbnail geometry follows the same measured top/bottom anchors. */
-.sizaCardThumbQueenV3 .sizaCardThumbHeaderV2{left:17.2%!important;width:61.4%!important}
+.sizaCardThumbQueenV3 .sizaCardThumbHeaderV2{left:16.7%!important;width:63.7%!important}
+.sizaCardThumbQueenV3 .sizaGeneratedThumbName{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .sizaCardThumbQueenV3 .sizaThumbDifficultyV3{right:3.25%!important}
