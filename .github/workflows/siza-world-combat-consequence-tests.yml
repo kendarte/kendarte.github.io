@@ -1,0 +1,23 @@
+name: Siza World Combat Consequence Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/world_combat_handoff_engine.py'
+      - 'siza-world-engine/overlay/services/consequence_engine.py'
+      - 'siza-world-engine/overlay/services/player_recipient_consequence_engine.py'
+      - 'siza-world-engine/overlay/commands/world_combat_bridge_commands.py'
+      - '.github/scripts/siza-world-combat-consequence-regression.py'
+      - '.github/workflows/siza-world-combat-consequence-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  world-combat-consequences:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run World Combat consequence regression
+        run: python .github/scripts/siza-world-combat-consequence-regression.py
