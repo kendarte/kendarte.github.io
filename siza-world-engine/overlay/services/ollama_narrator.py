@@ -11,14 +11,15 @@ from evennia.utils import logger
 from services.narration_queue import run_serialized
 
 
-NARRATOR_BUILD = "0.4.2-persistence-check"
+NARRATOR_BUILD = "0.4.3-relevant-english-presentation"
 OLLAMA_URL = os.getenv("SIZA_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 OLLAMA_MODEL = os.getenv("SIZA_OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_NUM_CTX = int(os.getenv("SIZA_OLLAMA_NUM_CTX", "8192"))
 
-SYSTEM_PROMPT = """Eres la capa de prosa de Siza. NO eres el motor del juego.
-El WORLD ENGINE ya decidió geometría, movimiento, estado, percepción y descubrimientos.
-Tu única tarea es reformular hechos autorizados sin agregar hechos nuevos.
+SYSTEM_PROMPT = """You are Siza's prose layer. You are NOT the game engine.
+The WORLD ENGINE has already decided geometry, movement, state, perception, and discoveries.
+Rewrite only authorized facts in concise natural English without adding new facts.
+Do not narrate exits, routes, or navigation unless the player's request specifically concerns navigation.
 """
 
 
@@ -138,6 +139,7 @@ def _sentence(text):
 def _contains_basic_verb(fragment):
     words = set(_normalize(fragment).split())
     common_verbs = {
+        "is", "are", "occupies", "connects", "organizes", "waits", "receives", "passes", "remains", "leads",
         "es", "son", "esta", "estan", "ocupa", "ocupan", "comunica", "comunican",
         "conecta", "conectan", "organiza", "organizan", "espera", "esperan",
         "recibe", "reciben", "pasa", "pasan", "queda", "quedan", "lleva", "llevan",
@@ -151,20 +153,17 @@ def _render_focal(fragment):
         return ""
     if _contains_basic_verb(fragment):
         return _sentence(fragment)
-    return f"Entre los elementos visibles destacan {fragment}."
+    return f"One visible feature stands out: {fragment}."
 
 
 def _render_hearing(fragment):
     fragment = _clean_fragment(fragment)
     if not fragment:
         return ""
-    first = _normalize(fragment).split()[0] if _normalize(fragment) else ""
-    plural = first.endswith("s") and not first.endswith("us")
-    verb = "Se escuchan" if plural else "Se escucha"
-    return f"{verb} {fragment}."
+    return f"You hear {fragment}."
 
 
-def _render_room_core(room, include_name=True):
+def _render_room_core(room, include_name=True, include_orientation=False):
     if not room:
         return ""
 
@@ -179,16 +178,16 @@ def _render_room_core(room, include_name=True):
     sentences = []
     if geometry:
         if include_name:
-            sentences.append(f"En {room.key}, el espacio se organiza como {geometry}.")
+            sentences.append(f"In {room.key}, the space is arranged as {geometry}.")
         else:
-            sentences.append(f"El espacio se organiza como {geometry}.")
+            sentences.append(f"The space is arranged as {geometry}.")
     elif room.db.desc:
         sentences.append(_sentence(room.db.desc))
 
     if scale:
-        sentences.append(f"La escala del lugar es {scale}.")
+        sentences.append(f"The space feels {scale}.")
 
-    if orientation:
+    if include_orientation and orientation:
         sentences.append(_sentence(orientation))
 
     if focal_points:
@@ -203,10 +202,7 @@ def _render_room_core(room, include_name=True):
 
 
 def _render_move_fallback(destination):
-    core = _render_room_core(destination, include_name=False)
-    if core:
-        return f"Entras en {destination.key}. {core}"
-    return f"Llegas a {destination.key}."
+    return f"You enter {destination.key}." if destination else "You move on."
 
 
 def _format_visible_names(names):
@@ -215,44 +211,42 @@ def _format_visible_names(names):
         return ""
     if len(names) == 1:
         return names[0]
-    return ", ".join(names[:-1]) + " y " + names[-1]
+    return ", ".join(names[:-1]) + " and " + names[-1]
 
 
 def _render_observation(character, result):
     room = getattr(character, "location", None)
-    core = _render_room_core(room, include_name=True)
-
     visible = _visible_contents(room, exclude=character)
-    if visible:
-        core = (core + f" A simple vista distingues {_format_visible_names(visible)}.").strip()
-
     known = [str(item) for item in result.get("already_known", []) if item]
+    sentences = []
+    if visible:
+        sentences.append(f"In view: {_format_visible_names(visible)}.")
     if known:
-        core = (core + " " + " ".join(_sentence(item) for item in known)).strip()
-    return core or "No hay datos descriptivos adicionales autorizados para este lugar."
+        sentences.extend(_sentence(item) for item in known)
+    return " ".join(sentence for sentence in sentences if sentence) or "Nothing else stands out at a glance."
 
 
 def _render_auto_success(result):
     details = result.get("visible_target_details", []) or []
     if details:
         detail = details[0]
-        name = str(detail.get("name", "el objetivo"))
+        name = str(detail.get("name", "the target"))
         desc = str(detail.get("desc", "")).strip()
-        prefix = f"Distingues a {name}." if detail.get("is_npc") else f"Distingues {name}."
+        prefix = f"You can clearly see {name}."
         return f"{prefix} {desc}".strip()
 
     targets = [str(item) for item in result.get("visible_targets", []) if item]
     if not targets:
-        return "El objetivo es visible sin necesidad de una búsqueda minuciosa."
+        return "The target is already visible without a closer search."
     if len(targets) == 1:
-        return f"A simple vista distingues {targets[0]}."
-    return "A simple vista distingues " + ", ".join(targets[:-1]) + " y " + targets[-1] + "."
+        return f"You can clearly see {targets[0]}."
+    return "You can clearly see " + ", ".join(targets[:-1]) + " and " + targets[-1] + "."
 
 
 def _render_discovery(result):
     discovered = [str(item).strip() for item in result.get("discovered", []) if item]
     if not discovered:
-        return "La búsqueda no descubre ningún detalle nuevo."
+        return "The search reveals nothing new."
     return " ".join(_sentence(item) for item in discovered)
 
 
@@ -270,7 +264,7 @@ def _post_chat(payload):
         body = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"HTTP {exc.code}: {body[:300]}") from exc
     except urllib.error.URLError as exc:
-        raise RuntimeError(f"No se pudo conectar con Ollama en {OLLAMA_URL}: {exc.reason}") from exc
+        raise RuntimeError(f"Could not connect to Ollama at {OLLAMA_URL}: {exc.reason}") from exc
 
     if data.get("error"):
         raise RuntimeError(str(data["error"]))
@@ -337,17 +331,17 @@ def narrate_perception_async(character, result):
 
     if status == "NO_AUTHORIZED_DISCOVERY":
         if target:
-            character.msg(f"\nLa búsqueda no aporta información nueva sobre {target}.")
+            character.msg(f"\nYour search reveals no new information about {target}.")
         else:
-            character.msg("\nLa búsqueda no aporta información nueva.")
+            character.msg("\nYour search reveals no new information.")
         return None
 
     if status == "NO_DISCOVERY":
         if target:
-            character.msg(f"\nBuscas indicios relacionados con {target}, pero no descubres ningún detalle nuevo.")
+            character.msg(f"\nYou search for clues related to {target}, but find nothing new.")
         else:
-            character.msg("\nLa búsqueda no descubre ningún detalle nuevo.")
+            character.msg("\nThe search reveals nothing new.")
         return None
 
-    character.msg("\nNo obtienes información nueva con esa acción.")
+    character.msg("\nYou gain no new information from that action.")
     return None
