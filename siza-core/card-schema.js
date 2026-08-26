@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const CARD_SCHEMA_VERSION='1.4.0';
+const CARD_SCHEMA_VERSION='1.5.0';
 const CARD_TYPES=['Instant','Creature','Artifact','Land'];
 const COLORS=['U','R','G','W','B'];
 const TYPE_ALIASES={instant:'Instant',instantaneo:'Instant','instantáneo':'Instant',creature:'Creature',invocacion:'Creature','invocación':'Creature',artifact:'Artifact',artefacto:'Artifact',land:'Land',reserva:'Land',tierra:'Land'};
@@ -73,6 +73,9 @@ function normalizeCard(input={}){
   artUrl:text(input.artUrl,''),
   artAssetKey:text(input.artAssetKey,''),
   artTransform:normalizeArtTransform(input.artTransform),
+  battleSpriteUrl:text(input.battleSpriteUrl,''),
+  battleSpriteAssetKey:text(input.battleSpriteAssetKey,''),
+  battleSpriteTransform:normalizeArtTransform(input.battleSpriteTransform),
   rules:text(input.rules??input.text,''),
   text:text(input.text??input.rules,''),
   flavor:text(input.flavor,''),
@@ -111,8 +114,8 @@ function validateCard(input={}){
 
 function cardFromMobileShape(input={}){return normalizeCard(input);}
 function cardToMobileShape(input={}){
- const c=normalizeCard(input),out={id:c.id,name:c.name,template:c.template,frameUrl:c.frameUrl,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),effects:clone(c.effects)};
- if(c.frameAssetKey)out.frameAssetKey=c.frameAssetKey;if(c.artAssetKey)out.artAssetKey=c.artAssetKey;if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
+ const c=normalizeCard(input),out={id:c.id,name:c.name,template:c.template,frameUrl:c.frameUrl,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),battleSpriteUrl:c.battleSpriteUrl,battleSpriteTransform:clone(c.battleSpriteTransform),effects:clone(c.effects)};
+ if(c.frameAssetKey)out.frameAssetKey=c.frameAssetKey;if(c.artAssetKey)out.artAssetKey=c.artAssetKey;if(c.battleSpriteAssetKey)out.battleSpriteAssetKey=c.battleSpriteAssetKey;if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
 }
 
 global.SizaCardSchema=Object.freeze({
