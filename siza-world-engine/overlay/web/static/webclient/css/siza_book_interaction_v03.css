@@ -1,0 +1,152 @@
+/* SIZA Book interaction layer v0.3: scene navigation, stats, memories and placeholder. */
+
+.sizaScenePlaceholder {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    gap: 8px;
+    text-align: center;
+    pointer-events: none;
+    color: rgba(222, 203, 162, .72);
+    background:
+        linear-gradient(135deg, rgba(181,143,83,.08) 25%, transparent 25%) 0 0 / 28px 28px,
+        linear-gradient(315deg, rgba(181,143,83,.06) 25%, transparent 25%) 0 0 / 28px 28px,
+        radial-gradient(circle at 50% 40%, #284247 0, #17282c 48%, #0b1113 100%);
+}
+.sizaBookSceneVisual[data-has-image="true"] .sizaScenePlaceholder { display:none; }
+.sizaScenePlaceholder span {
+    font: 700 8px/1 system-ui,sans-serif;
+    letter-spacing: .18em;
+    color: rgba(199,169,113,.6);
+}
+.sizaScenePlaceholder strong {
+    font: 600 clamp(16px,2.2vw,28px)/1.15 Georgia,serif;
+    color: rgba(235,220,188,.72);
+}
+
+.sizaPageTools {
+    position:absolute;
+    z-index:15;
+    top:12px;
+    right:14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+.sizaPageTool {
+    width:64px;
+    min-height:28px;
+    border:1px solid #6d4d2e;
+    border-radius:999px;
+    background:linear-gradient(180deg,#c7aa72,#a68450);
+    color:#302116;
+    box-shadow:inset 0 0 0 2px rgba(89,57,30,.22),0 3px 8px rgba(0,0,0,.22);
+    font:700 7px/1 system-ui,sans-serif;
+    letter-spacing:.08em;
+    cursor:pointer;
+}
+.sizaPageTool[aria-expanded="true"] {
+    background:linear-gradient(180deg,#ead5a7,#c29a5d);
+    border-color:#4e351f;
+}
+
+.sizaInfoPanel {
+    position:absolute;
+    z-index:14;
+    right:88px;
+    top:12px;
+    width:min(560px,calc(100% - 120px));
+    max-height:260px;
+    overflow:auto;
+    padding:12px;
+    border:1px solid #705333;
+    border-radius:5px;
+    color:#ddd0b5;
+    background:rgba(28,19,14,.985);
+    box-shadow:0 12px 28px rgba(0,0,0,.44);
+}
+.sizaInfoPanelTitle {
+    margin-bottom:9px;
+    color:#d5b57d;
+    font:700 9px/1 system-ui,sans-serif;
+    letter-spacing:.13em;
+}
+.sizaRawFact { display:none !important; }
+.sizaActionLinks {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+.sizaActionLink {
+    appearance:none;
+    border:0;
+    padding:0;
+    color:#e7d2a6;
+    background:transparent;
+    font:600 11px/1.35 Georgia,serif;
+    text-decoration:underline;
+    text-decoration-color:rgba(213,181,125,.42);
+    text-underline-offset:3px;
+    cursor:pointer;
+    text-align:left;
+}
+.sizaActionLink:hover { color:#fff0c8; text-decoration-color:#e4c184; }
+.sizaActionLink::after { content:'  ›'; color:#9f7b49; text-decoration:none; }
+
+.sizaStatsGrid {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+}
+.sizaStatsGrid > div {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:8px 9px;
+    border:1px solid rgba(181,143,83,.25);
+    background:rgba(255,255,255,.025);
+}
+.sizaStatsGrid span {
+    color:#b99b6c;
+    font:700 8px/1.2 system-ui,sans-serif;
+    letter-spacing:.04em;
+}
+.sizaStatsGrid strong {
+    color:#f0ddb8;
+    font:600 17px/1 Georgia,serif;
+}
+.sizaInfoStatus {
+    margin-top:9px;
+    color:#9e8b6e;
+    font:9px/1.35 system-ui,sans-serif;
+}
+
+#siza-memories-panel .sizaKnowledgePanel {
+    display:block;
+    margin:0;
+    padding:0;
+    border:0;
+}
+#siza-memories-panel .sizaKnowledgePanel[hidden] { display:none; }
+#siza-memories-panel .sizaKnowledgePanel summary {
+    margin-bottom:8px;
+    color:#b99561;
+}
+
+/* The right-side panels own navigation/knowledge now; old drawer styling must not reappear. */
+.sizaContextDrawer { display:none !important; }
+
+@media(max-width:760px) {
+    .sizaPageTools { top:8px; right:8px; flex-direction:row; }
+    .sizaPageTool { width:auto; min-width:48px; padding:0 8px; }
+    .sizaInfoPanel {
+        top:43px;
+        right:8px;
+        width:calc(100% - 16px);
+        max-height:220px;
+    }
+    .sizaStatsGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
