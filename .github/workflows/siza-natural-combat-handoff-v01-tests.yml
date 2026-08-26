@@ -1,0 +1,125 @@
+name: SIZA Natural Combat Handoff v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - '.github/workflows/siza-natural-combat-handoff-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  natural-combat-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate ATTACK adjudication and combat bridge handoff
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          from types import SimpleNamespace
+
+          adjudicator_path = Path('siza-world-engine/overlay/services/dm_free_action_adjudicator.py')
+          execution_path = Path('siza-world-engine/overlay/services/dm_free_action_execution_bridge.py')
+          adjudicator_source = adjudicator_path.read_text(encoding='utf-8')
+          execution_source = execution_path.read_text(encoding='utf-8')
+          ast.parse(adjudicator_source)
+          ast.parse(execution_source)
+
+          # Execute only the deterministic adjudication helpers, with the check normalizer stubbed.
+          tree = ast.parse(adjudicator_source)
+          wanted = {'_plain_dict','_plain_list','_resolve_ref','_is_local','_is_inventory','_verified_context','_authored_affordance','_adjudicate_step'}
+          selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
+          adj_ns = {'normalize_check_spec': lambda value: {'valid': True, **dict(value or {})}}
+          exec(compile(ast.Module(body=selected, type_ignores=[]), str(adjudicator_path), 'exec'), adj_ns)
+
+          class DB(SimpleNamespace):
+              pass
+          class Obj:
+              def __init__(self, oid, key, *, npc=False):
+                  self.id = oid
+                  self.key = key
+                  self.db = DB(is_npc=npc, state={}, portable=False, dm_affordances=[], npc_id=(f'NPC-{oid}' if npc else ''))
+                  self.location = None
+                  self.contents = []
+                  self.exits = []
+                  self.destination = None
+
+          room = Obj(10, 'Pescaderia de Darsena')
+          room.db.room_id = 'CAR-KAL-DAR-007'
+          player = Obj(1, 'Nereida')
+          mara = Obj(2, 'Mara Vensal', npc=True)
+          crate = Obj(3, 'Cajon')
+          player.location = room
+          mara.location = room
+          crate.location = room
+          room.contents = [player, mara, crate]
+
+          attack_mara = adj_ns['_adjudicate_step'](player, {
+              'action_type':'ATTACK',
+              'primary_ref':'DBREF:2',
+              'desired_effect':'derrotar a Mara'
+          }, 0)
+          assert attack_mara['status'] == 'ADMISSIBLE', attack_mara
+          assert attack_mara['executor'] == 'COMBAT', attack_mara
+          assert attack_mara['target_dbref'] == 2, attack_mara
+
+          attack_crate = adj_ns['_adjudicate_step'](player, {
+              'action_type':'ATTACK',
+              'primary_ref':'DBREF:3',
+              'desired_effect':'romper el cajon'
+          }, 0)
+          assert attack_crate['status'] == 'REJECTED' and attack_crate['reason'] == 'COMBAT_TARGET_NOT_CHARACTER', attack_crate
+
+          mara.location = Obj(20, 'Otra habitacion')
+          attack_remote = adj_ns['_adjudicate_step'](player, {
+              'action_type':'ATTACK',
+              'primary_ref':'DBREF:2',
+              'desired_effect':'atacar a Mara'
+          }, 0)
+          assert attack_remote['status'] == 'REJECTED', attack_remote
+          mara.location = room
+
+          # Execute only the combat bridge helper with mocked World Combat authority.
+          tree = ast.parse(execution_source)
+          wanted_exec = {'_plain_dict','_plain_list','_find_current_object','_execute_combat'}
+          selected_exec = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted_exec]
+          captured = {}
+          def build_encounter(actor, opponent, *, source_action_id='', stakes=None, **kwargs):
+              captured['actor'] = actor
+              captured['opponent'] = opponent
+              captured['source_action_id'] = source_action_id
+              captured['stakes'] = dict(stakes or {})
+              return {'accepted': True, 'encounter': {'encounter_id':'NATURAL-COMBAT-001','opponents':[{'entity_id':'NPC-2'}]}}
+          def emit_encounter(actor, encounter):
+              captured['emitted'] = dict(encounter)
+              return {'accepted': True, 'status':'ENCOUNTER_EMITTED', 'encounter_id':encounter['encounter_id']}
+          exec_ns = {
+              'uuid4': lambda: SimpleNamespace(hex='ABCDEF1234567890'),
+              'build_world_combat_encounter': build_encounter,
+              'emit_world_combat_encounter': emit_encounter,
+          }
+          exec(compile(ast.Module(body=selected_exec, type_ignores=[]), str(execution_path), 'exec'), exec_ns)
+
+          result = exec_ns['_execute_combat'](player, {
+              'executor':'COMBAT',
+              'target_dbref':2,
+              'desired_effect':'derrotar a Mara'
+          })
+          assert result['executed'] is True, result
+          assert result['encounter']['encounter_id'] == 'NATURAL-COMBAT-001', result
+          assert captured['actor'] is player and captured['opponent'] is mara
+          assert captured['stakes'] == {'player_intent':'derrotar a Mara'}, captured
+          assert captured['source_action_id'].startswith('DM-COMBAT-1-2-'), captured
+          assert captured['emitted']['encounter_id'] == 'NATURAL-COMBAT-001'
+
+          print('PASS natural ATTACK -> deterministic COMBAT -> World Combat Encounter')
+          print('PASS non-character and non-local combat targets rejected')
+          print('PASS player intent preserved as authored combat stakes')
+          PY
