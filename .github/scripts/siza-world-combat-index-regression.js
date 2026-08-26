@@ -15,7 +15,7 @@ function inlineRemainingCore(source){
 const html=inlineRemainingCore(fs.readFileSync('siza-mobile-test/index.html','utf8'));
 const marker='window.SIZA={';
 if(!html.includes(marker))throw new Error('SIZA export marker not found');
-const probe=`window.__SIZA_WORLD_BRIDGE_TEST__={getState:()=>state,getMatch:()=>state.match,checkWin,createMatch};\n`;
+const probe=`window.__SIZA_WORLD_BRIDGE_TEST__={getState:()=>state,getMatch:()=>state.match,checkWin,createMatch,totalDeck};\n`;
 const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',error=>console.error('[JSDOM world-bridge]',error.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole});
@@ -42,7 +42,8 @@ const beforeAdventure=JSON.stringify(H.getState().adventure);
 const emitted=[];
 w.addEventListener('siza:combat-result',event=>emitted.push(event.detail));
 const started=S.startWorldEncounter(encounter,'prepare');
-assert(started.ok&&started.status==='WORLD_ENCOUNTER_STARTED','external encounter did not start');
+console.log('World encounter start packet:',JSON.stringify(started),'deck=',H.totalDeck());
+assert(started.ok&&started.status==='WORLD_ENCOUNTER_STARTED','external encounter did not start: '+JSON.stringify(started));
 let M=H.getMatch();
 assert(M&&M.worldBridge?.encounter?.encounter_id===encounter.encounter_id,'encounter not attached to real match');
 assert(M.player.life===17&&M.player.mf===3,'player encounter TCG profile not applied');
