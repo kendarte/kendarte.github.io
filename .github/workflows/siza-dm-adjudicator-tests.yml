@@ -5,6 +5,7 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
       - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_check_engine.py'
       - 'siza-world-engine/overlay/services/dm_free_action_judge.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
       - '.github/workflows/siza-dm-adjudicator-tests.yml'
@@ -12,6 +13,7 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
       - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_check_engine.py'
       - 'siza-world-engine/overlay/services/dm_free_action_judge.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
       - '.github/workflows/siza-dm-adjudicator-tests.yml'
@@ -24,11 +26,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Compile DM adjudicator, judge and execution bridge
+      - name: Compile DM adjudicator, judge, check and execution bridge
         run: |
           python -m py_compile \
             siza-world-engine/overlay/services/dm_free_action_adjudicator.py \
             siza-world-engine/overlay/services/dm_free_action_execution_bridge.py \
+            siza-world-engine/overlay/services/dm_free_action_check_engine.py \
             siza-world-engine/overlay/services/dm_free_action_judge.py \
             siza-world-engine/overlay/services/dm_world_context.py
       - name: Validate deterministic adjudication boundary
@@ -43,6 +46,7 @@ jobs:
 
           from services.dm_free_action_adjudicator import adjudicate_dm_free_action
           from services.dm_free_action_judge import build_dm_judge_request, parse_dm_judge_response
+          from services import dm_free_action_check_engine as check_engine
 
           class DB:
               pass
@@ -61,13 +65,17 @@ jobs:
                   self.db.dm_affordances = []
                   self.db.exit_id = None
                   self.db.state = {}
+                  self.db.adventure_stats = {}
 
           room = Obj('QA Room', 1)
+          room.db.room_id = 'QA-ROOM'
           actor = Obj('QA Player', 2, location=room)
+          actor.db.adventure_stats = {'FUE': 4, 'AGI': 3}
           room.contents.append(actor)
           portable = Obj('Portable Box', 3, location=room, portable=True)
           fixed = Obj('Fixed Counter', 4, location=room, portable=False)
           npc = Obj('QA NPC', 5, location=room, npc=True)
+          npc.db.adventure_stats = {'AGI': 2, 'FUE': 2}
           room.contents.extend([portable, fixed, npc])
           exit_obj = Obj('salir', 6, location=room)
           destination = Obj('Street', 7)
@@ -191,12 +199,47 @@ jobs:
               packet('MOVE_OBJECT', 'DBREF:3', 'DBREF:5', desired='patear la caja hacia el NPC', resolution='CONFRONT', stat='FUE'),
           )
           assert authored['status'] == 'ADMISSIBLE', authored
-          assert authored['steps'][0]['executor'] == 'CHECK_ONLY', authored
+          assert authored['steps'][0]['executor'] == 'AUTHORED_CHECK', authored
           assert authored['steps'][0]['authoritative_check']['mode'] == 'DIRECT', authored
           assert authored['steps'][0]['authoritative_check']['stat'] == 'FUE', authored
           assert authored['steps'][0]['model_resolution_hint'] == 'CONFRONT', authored
           assert authored['authority']['model_difficulty_used'] is False, authored
 
+          check_engine.emit_world_action = lambda action: {'status': 'QA_CONSEQUENCE_ACCEPTED', 'action_id': action.get('action_id')}
+          authored_result = check_engine.resolve_authored_dm_check(
+              actor,
+              authored['steps'][0],
+              raw_player_input='pateo la caja hacia el NPC',
+              forced_roll=1,
+          )
+          assert authored_result['status'] == 'AUTHORED_CHECK_RESOLVED', authored_result
+          assert authored_result['executed'] is True, authored_result
+          assert authored_result['outcome'] == 'SUCCESS', authored_result
+          assert authored_result['resolution']['check_id'] == 'QA-KICK-CHECK', authored_result
+          assert authored_result['calculation']['forced_for_validation'] is True, authored_result
+          assert authored_result['consequence']['status'] == 'QA_CONSEQUENCE_ACCEPTED', authored_result
+
+          portable.db.dm_affordances = [{
+              'id': 'QA-LONG-CHECK',
+              'enabled': True,
+              'action_type': 'MOVE_OBJECT',
+              'executor': 'CHECK_ONLY',
+              'check': {
+                  'id': 'QA-LONG-CHECK-SPEC',
+                  'trigger': 'OBSTACLE',
+                  'mode': 'ACCUMULATE',
+                  'stat': 'FUE',
+                  'difficulty': 4,
+              },
+          }]
+          unsupported_authored = adjudicate_dm_free_action(
+              actor,
+              packet('MOVE_OBJECT', 'DBREF:3', 'DBREF:5', desired='empujar durante mucho tiempo'),
+          )
+          assert unsupported_authored['status'] == 'NOT_ADMISSIBLE', unsupported_authored
+          assert unsupported_authored['steps'][0]['reason'] == 'AUTHORED_CHECK_MODE_NOT_EXECUTABLE', unsupported_authored
+
           print('SIZA DM adjudicator boundary: PASS')
           print('SIZA DM bounded judge contract: PASS')
+          print('SIZA DM authored check execution: PASS')
           PY
