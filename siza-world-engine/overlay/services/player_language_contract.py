@@ -2,7 +2,7 @@ import re
 import unicodedata
 
 
-PLAYER_LANGUAGE_BUILD = "0.1.1-bilingual-player-turn-language"
+PLAYER_LANGUAGE_BUILD = "0.1.2-bilingual-player-turn-language-ui-event"
 SUPPORTED_PLAYER_LANGUAGES = ("es", "en")
 DEFAULT_PLAYER_LANGUAGE = "es"
 
@@ -176,10 +176,30 @@ def set_actor_turn_language(actor, language):
     return value
 
 
+def _emit_player_language(actor, detection):
+    if actor is None:
+        return False
+    msg = getattr(actor, "msg", None)
+    if not callable(msg):
+        return False
+    packet = {
+        "language": normalize_player_language((detection or {}).get("language")),
+        "confidence": (detection or {}).get("confidence"),
+        "source": (detection or {}).get("source"),
+        "build": PLAYER_LANGUAGE_BUILD,
+    }
+    try:
+        actor.msg(siza_player_language=((packet,), {}))
+        return True
+    except Exception:
+        return False
+
+
 def resolve_turn_language(actor, raw_player_input):
     previous = get_actor_turn_language(actor)
     detection = detect_player_language(raw_player_input, previous_language=previous)
     set_actor_turn_language(actor, detection.get("language"))
+    _emit_player_language(actor, detection)
     return detection
 
 
