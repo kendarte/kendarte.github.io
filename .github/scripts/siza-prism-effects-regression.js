@@ -14,12 +14,12 @@ function inlineCore(html){
 const original=inlineCore(fs.readFileSync('siza-mobile-test/index.html','utf8'));
 const marker='window.SIZA={';
 if(!original.includes(marker))throw new Error('SIZA export marker not found');
-const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,usePrismV070,selectBurn,consumeBurnV070,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
+const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,getState:()=>state,usePrismV070,selectBurn,consumeBurnV070,commitManifest,failManifest,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
 const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',error=>console.error('[JSDOM prism]',error.message));
 const dom=new JSDOM(original.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole});
 dom.window.setTimeout=()=>0;
-const H=dom.window.__SIZA_PRISM_TEST__,R=dom.window.SizaManifestRules;
+const H=dom.window.__SIZA_PRISM_TEST__,R=dom.window.SizaManifestRules,E=dom.window.SizaCardEffects;
 if(!H||!R)throw new Error('Prism test hooks were not exposed');
 
 const results=[];
@@ -53,6 +53,13 @@ function setupBurn({hand=['counter','dock','cinder'],roll=2,dc=6,mf=3,idx=0,sele
   const M=H.createMatch(false,'prepare');H.setMatch(M);M.player.hand=[...hand];M.player.mf=mf;
   const modal={type:'manifest',owner:'player',cardId:M.player.hand[idx],idx,roll,burnSelected:[...selected],prismBonus:0,dc,ai,stage:'roll',payment:{spent:{}}};
   H.setModal(modal);return{M,modal};
+}
+
+function setupOutcome({owner='player',hand=['counter'],idx=0,cardId=null,mf=2,roll=3,dc=6,prismBonus=0,burnSelected=[],reactive=false,targetStackId=null}={}){
+  const M=H.createMatch(false,'prepare');H.setMatch(M);M.stack=[];M.stackReturnOwner=null;M.log=[];M.active='player';M.phase='Main';
+  const P=M[owner];P.hand=[...hand];P.exile=[];P.graveyard=[];P.battlefield=[];P.powerCounters=[];P.summonedOn=[];P.exhausted=[];P.mf=mf;
+  const modal={type:'manifest',owner,cardId:cardId||P.hand[idx],idx,roll,burnSelected:[...burnSelected],prismBonus,dc,ai:owner==='enemy',stage:'roll',reactive,targetStackId,payment:{spent:{}}};
+  H.setModal(modal);return{M,P,modal};
 }
 
 test('Prisma oficial descubre bonus +1 desde effects',()=>{
@@ -158,6 +165,36 @@ test('burnConsumptionPlan conserva error histórico con modal incompleto',()=>{
 test('consumeBurn runtime exilia descendente y conserva carta manifestada',()=>{
   const {M,modal}=setupBurn({hand:['dock','mist','counter','spark','cinder'],idx:2,selected:[0,4]});M.player.exile=[];H.consumeBurnV070(modal,M.player);
   return JSON.stringify(M.player.hand)===JSON.stringify(['mist','counter','spark'])&&JSON.stringify(M.player.exile)===JSON.stringify(['cinder','dock'])&&modal.idx===1&&M.player.hand[modal.idx]==='counter';
+});
+
+test('manifestOutcome conserva Burn total y umbral de éxito',()=>{
+  const fail=R.manifestOutcome({dc:6,roll:3,prismBonus:0,burnSelected:[]},{mf:2});
+  const pass=R.manifestOutcome({dc:6,roll:3,prismBonus:0,burnSelected:[1]},{mf:2});
+  return fail.burn===0&&fail.total===5&&!fail.success&&pass.burn===1&&pass.total===6&&pass.success;
+});
+
+test('manifestStackPlan conserva carta owner y target reactivo',()=>{
+  const counter=dom.window.SizaCardCatalog.get('counter'),mist=dom.window.SizaCardCatalog.get('mist'),has=(c,t,e)=>E.hasEffect(c,t,e);
+  const reactive=R.manifestStackPlan({idx:1,owner:'player',reactive:true,targetStackId:'stk_target'},{hand:['dock','counter']},counter,has);
+  const normal=R.manifestStackPlan({idx:0,owner:'enemy',reactive:true,targetStackId:'stk_target'},{hand:['mist']},mist,has);
+  return reactive.cardId==='counter'&&reactive.owner==='player'&&reactive.targetStackId==='stk_target'&&normal.cardId==='mist'&&normal.owner==='enemy'&&normal.targetStackId===null;
+});
+
+test('manifestFailurePlan conserva total sin Burn y continuación',()=>{
+  const player=R.manifestFailurePlan({owner:'player',reactive:false,roll:2,prismBonus:1,burnSelected:[9]},{mf:2});
+  const enemy=R.manifestFailurePlan({owner:'enemy',reactive:false,roll:2,prismBonus:0,burnSelected:[9]},{mf:2});
+  const reactive=R.manifestFailurePlan({owner:'enemy',reactive:true,roll:2,prismBonus:0,burnSelected:[9]},{mf:2});
+  return player.total===5&&player.resume==='none'&&enemy.total===4&&enemy.resume==='enemy'&&reactive.total===4&&reactive.resume==='priority';
+});
+
+test('commitManifest usa outcome y stack plan compartidos',()=>{
+  const {M,P}=setupOutcome({hand:['dock','counter','cinder'],idx:1,cardId:'counter',mf:2,roll:3,dc:6,burnSelected:[0],reactive:true,targetStackId:'stk_target'});P.exile=[];H.commitManifest();
+  return H.getState().modal===null&&JSON.stringify(P.hand)===JSON.stringify(['cinder'])&&JSON.stringify(P.exile)===JSON.stringify(['dock'])&&M.stack.length===1&&M.stack[0].cardId==='counter'&&M.stack[0].owner==='player'&&M.stack[0].targetStackId==='stk_target';
+});
+
+test('failManifest usa failure plan y devuelve Main al rival',()=>{
+  const {M,P}=setupOutcome({owner:'enemy',hand:['mist'],idx:0,cardId:'mist',mf:2,roll:2,dc:7});H.failManifest();
+  return H.getState().modal===null&&M.active==='enemy'&&JSON.stringify(P.hand)===JSON.stringify(['mist'])&&M.stack.length===0;
 });
 
 for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.error?` :: ${result.error}`:''}`);
