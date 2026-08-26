@@ -5,12 +5,14 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
       - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_judge.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
       - '.github/workflows/siza-dm-adjudicator-tests.yml'
   pull_request:
     paths:
       - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
       - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_judge.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
       - '.github/workflows/siza-dm-adjudicator-tests.yml'
 
@@ -22,15 +24,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Compile DM adjudicator and execution bridge
+      - name: Compile DM adjudicator, judge and execution bridge
         run: |
           python -m py_compile \
             siza-world-engine/overlay/services/dm_free_action_adjudicator.py \
             siza-world-engine/overlay/services/dm_free_action_execution_bridge.py \
+            siza-world-engine/overlay/services/dm_free_action_judge.py \
             siza-world-engine/overlay/services/dm_world_context.py
       - name: Validate deterministic adjudication boundary
         run: |
           python - <<'PY'
+          import json
           import sys
           from pathlib import Path
 
@@ -38,6 +42,7 @@ jobs:
           sys.path.insert(0, str(overlay))
 
           from services.dm_free_action_adjudicator import adjudicate_dm_free_action
+          from services.dm_free_action_judge import build_dm_judge_request, parse_dm_judge_response
 
           class DB:
               pass
@@ -55,6 +60,7 @@ jobs:
                   self.db.portable = portable
                   self.db.dm_affordances = []
                   self.db.exit_id = None
+                  self.db.state = {}
 
           room = Obj('QA Room', 1)
           actor = Obj('QA Player', 2, location=room)
@@ -115,8 +121,57 @@ jobs:
               actor,
               packet('MOVE_OBJECT', 'DBREF:3', 'DBREF:5', desired='patear la caja hacia el NPC', resolution='CONFRONT', stat='FUE'),
           )
-          assert move_object['status'] == 'NOT_ADMISSIBLE', move_object
-          assert move_object['steps'][0]['reason'] == 'NO_AUTHORIZED_EXECUTION_ROUTE', move_object
+          assert move_object['status'] == 'NEEDS_JUDGMENT', move_object
+          assert move_object['steps'][0]['reason'] == 'REQUIRES_BOUNDED_DM_JUDGMENT', move_object
+          assert move_object['steps'][0]['verified_context']['primary']['portable'] is True, move_object
+          assert move_object['steps'][0]['verified_context']['secondary']['kind'] == 'NPC', move_object
+
+          judge_request = build_dm_judge_request(
+              'pateo la caja hacia el NPC para apartarlo',
+              move_object,
+              dm_plan={'campaign_id': 'QA', 'active_beat': {'id': 'QA-BEAT', 'state_goal': 'QA'}},
+          )
+          assert 'outcome' not in judge_request['schema']['properties'], judge_request['schema']
+          judgment = {
+              'judgments': [{
+                  'step_index': 0,
+                  'mode': 'CONFRONT',
+                  'actor_stat': 'FUE',
+                  'target_stat': 'AGI',
+                  'difficulty_tier': '',
+                  'reason': 'El jugador aplica fuerza y el objetivo puede apartarse activamente.',
+              }]
+          }
+          fake = json.dumps({'message': {'content': json.dumps(judgment)}})
+          judged = parse_dm_judge_response(fake, judge_request['steps'])
+          assert judged['status'] == 'JUDGED' and judged['accepted'] is True, judged
+          assert judged['judgments'][0]['mode'] == 'CONFRONT', judged
+          assert judged['judgments'][0]['difficulty'] is None, judged
+
+          bad_judgment = json.loads(json.dumps(judgment))
+          bad_judgment['judgments'][0]['difficulty_tier'] = 'IMPOSSIBLE'
+          rejected_judge = parse_dm_judge_response(
+              json.dumps({'message': {'content': json.dumps(bad_judgment)}}),
+              judge_request['steps'],
+          )
+          assert rejected_judge['status'] == 'INVALID_JUDGMENT', rejected_judge
+
+          direct_judgment = {
+              'judgments': [{
+                  'step_index': 0,
+                  'mode': 'DIRECT',
+                  'actor_stat': 'FUE',
+                  'target_stat': '',
+                  'difficulty_tier': 'HARD',
+                  'reason': 'El obstáculo exige un esfuerzo difícil pero no tiene oposición activa.',
+              }]
+          }
+          direct = parse_dm_judge_response(
+              json.dumps({'message': {'content': json.dumps(direct_judgment)}}),
+              judge_request['steps'],
+          )
+          assert direct['status'] == 'JUDGED', direct
+          assert direct['judgments'][0]['difficulty'] == 9, direct
 
           portable.db.dm_affordances = [{
               'id': 'QA-KICK',
@@ -143,4 +198,5 @@ jobs:
           assert authored['authority']['model_difficulty_used'] is False, authored
 
           print('SIZA DM adjudicator boundary: PASS')
+          print('SIZA DM bounded judge contract: PASS')
           PY
