@@ -95,11 +95,11 @@
         Array.prototype.forEach.call(list.children,function(node){
             var raw=node.getAttribute("data-raw-memory");
             if(!raw){raw=clean(node.textContent);node.setAttribute("data-raw-memory",raw);}
-            node.textContent=translateMemory(raw);
+            var translated=translateMemory(raw);if(clean(node.textContent)!==translated)node.textContent=translated;
         });
-        var count=list.children.length;
-        if(summary)summary.textContent=isEnglish()?(count===1?"1 memory":count+" memories"):(count===1?"1 recuerdo":count+" recuerdos");
-        if(empty){empty.hidden=count>0;empty.textContent=choose("No hay hechos recordados en este lugar.","No remembered facts at this location.");}
+        var count=list.children.length,next=isEnglish()?(count===1?"1 memory":count+" memories"):(count===1?"1 recuerdo":count+" recuerdos");
+        if(summary&&clean(summary.textContent)!==next)summary.textContent=next;
+        if(empty){empty.hidden=count>0;var emptyText=choose("No hay hechos recordados en este lugar.","No remembered facts at this location.");if(clean(empty.textContent)!==emptyText)empty.textContent=emptyText;}
         if(panel)panel.hidden=count===0;
     }
 
@@ -112,6 +112,8 @@
         return visibleName;
     }
 
+    function setNodeText(node,value){if(node&&clean(node.textContent)!==clean(value))node.textContent=value;}
+
     function localizeRoom(){
         var location=byId("siza-location-label"),description=byId("siza-scene-description"),placeholder=byId("siza-scene-placeholder-label");
         if(!location)return;
@@ -120,95 +122,95 @@
         if(description&&!description.getAttribute("data-raw-description"))description.setAttribute("data-raw-description",clean(description.textContent));
         var presentation=ROOM_PRESENTATION[rawName],rawDescription=description&&description.getAttribute("data-raw-description");
         if(presentation&&isEnglish()){
-            location.textContent=presentation.enName;
-            if(description)description.textContent=presentation.enDescription;
-            if(placeholder)placeholder.textContent=presentation.enName;
+            setNodeText(location,presentation.enName);
+            if(description)setNodeText(description,presentation.enDescription);
+            if(placeholder)setNodeText(placeholder,presentation.enName);
         }else{
-            if(rawName)location.textContent=rawName;
-            if(description&&rawDescription)description.textContent=rawDescription;
-            if(placeholder)placeholder.textContent=rawName||choose("Ubicación","Location");
+            if(rawName)setNodeText(location,rawName);
+            if(description&&rawDescription)setNodeText(description,rawDescription);
+            if(placeholder)setNodeText(placeholder,rawName||choose("Ubicación","Location"));
         }
     }
 
-    function setText(id,value){var node=byId(id);if(node)node.textContent=value;}
+    function setText(id,value){setNodeText(byId(id),value);}
 
     function localizeStaticUi(){
         var root=byId("siza-book-client");
         if(root)root.setAttribute("data-language",currentLanguage);
 
         var player=root&&root.querySelector(".sizaHeaderCharacterPlayer .sizaHeaderCharacterCopy small");
-        if(player)player.textContent=choose("PERSONAJE","PLAYER");
+        setNodeText(player,choose("PERSONAJE","PLAYER"));
         setText("siza-player-state",choose("Personaje persistente","Persistent character"));
 
         var focusSmall=root&&root.querySelector(".sizaHeaderCharacterFocus .sizaHeaderCharacterCopy small");
         var focusRole=root&&root.querySelector(".sizaHeaderCharacterFocus .sizaHeaderCharacterCopy > span");
-        if(focusSmall)focusSmall.textContent=choose("EN ESCENA","IN SCENE");
-        if(focusRole)focusRole.textContent=choose("Interlocutor / acompañante","Interlocutor / companion");
+        setNodeText(focusSmall,choose("EN ESCENA","IN SCENE"));
+        setNodeText(focusRole,choose("Interlocutor / acompañante","Interlocutor / companion"));
         var focusName=byId("siza-focus-portrait-name");
-        if(focusName&&(/^(No character|Sin personaje)$/i.test(clean(focusName.textContent))))focusName.textContent=choose("Sin personaje","No character");
+        if(focusName&&(/^(No character|Sin personaje)$/i.test(clean(focusName.textContent))))setNodeText(focusName,choose("Sin personaje","No character"));
 
         var sceneToggle=byId("siza-scene-panel-toggle"),statsToggle=byId("siza-stats-panel-toggle"),memoriesToggle=byId("siza-memories-panel-toggle");
-        if(sceneToggle)sceneToggle.textContent=choose("ESCENA","SCENE");
-        if(statsToggle)statsToggle.textContent=choose("ATRIBUTOS","STATS");
-        if(memoriesToggle)memoriesToggle.textContent=choose("RECUERDOS","MEMORIES");
+        setNodeText(sceneToggle,choose("ESCENA","SCENE"));
+        setNodeText(statsToggle,choose("ATRIBUTOS","STATS"));
+        setNodeText(memoriesToggle,choose("RECUERDOS","MEMORIES"));
 
         var scenePanel=byId("siza-scene-panel"),statsPanel=byId("siza-stats-panel"),memPanel=byId("siza-memories-panel");
         if(scenePanel){
-            var title=scenePanel.querySelector(".sizaInfoPanelTitle");if(title)title.textContent=choose("ESCENA","SCENE");
+            var title=scenePanel.querySelector(".sizaInfoPanelTitle");setNodeText(title,choose("ESCENA","SCENE"));
             var cards=scenePanel.querySelectorAll(".sizaBookFact small");
             var labels=isEnglish()?["EXITS","PEOPLE","IN VIEW"]:["SALIDAS","PERSONAS","A LA VISTA"];
-            Array.prototype.forEach.call(cards,function(node,index){if(labels[index])node.textContent=labels[index];});
+            Array.prototype.forEach.call(cards,function(node,index){if(labels[index])setNodeText(node,labels[index]);});
         }
         if(statsPanel){
-            var statsTitle=statsPanel.querySelector(".sizaInfoPanelTitle");if(statsTitle)statsTitle.textContent=choose("ATRIBUTOS DEL PERSONAJE","CHARACTER STATS");
+            var statsTitle=statsPanel.querySelector(".sizaInfoPanelTitle");setNodeText(statsTitle,choose("ATRIBUTOS DEL PERSONAJE","CHARACTER STATS"));
             var statLabels=statsPanel.querySelectorAll("#siza-stats-grid span");
             var stats=isEnglish()?["Strength","Agility","Coordination","Intelligence","Perception","Psyche"]:["Fuerza","Agilidad","Coordinación","Inteligencia","Percepción","Psique"];
-            Array.prototype.forEach.call(statLabels,function(node,index){if(stats[index])node.textContent=stats[index];});
+            Array.prototype.forEach.call(statLabels,function(node,index){if(stats[index])setNodeText(node,stats[index]);});
         }
         if(memPanel){
-            var memTitle=memPanel.querySelector(".sizaInfoPanelTitle");if(memTitle)memTitle.textContent=choose("RECUERDOS","MEMORIES");
-            var known=memPanel.querySelector("#siza-knowledge-panel summary span");if(known)known.textContent=choose("HECHOS CONOCIDOS","KNOWN FACTS");
+            var memTitle=memPanel.querySelector(".sizaInfoPanelTitle");setNodeText(memTitle,choose("RECUERDOS","MEMORIES"));
+            var known=memPanel.querySelector("#siza-knowledge-panel summary span");setNodeText(known,choose("HECHOS CONOCIDOS","KNOWN FACTS"));
         }
 
         var prompt=byId("siza-current-prompt");
         if(prompt){
             var promptText=clean(prompt.textContent);
             var sentMatch=promptText.match(/^(?:Acción enviada:|Action sent:)\s*(.*)$/i);
-            prompt.textContent=sentMatch?(choose("Acción enviada: ","Action sent: ")+sentMatch[1]):choose("¿Qué haces?","What do you do?");
+            setNodeText(prompt,sentMatch?(choose("Acción enviada: ","Action sent: ")+sentMatch[1]):choose("¿Qué haces?","What do you do?"));
         }
         var field=byId("siza-inputfield");if(field)field.setAttribute("placeholder",choose("Describe lo que haces…","Describe what you do…"));
-        var send=byId("siza-inputsend");if(send&&!send.disabled)send.textContent=choose("ENVIAR","SEND");
-        var hint=root&&root.querySelector(".sizaBookInputHint");if(hint)hint.textContent=choose("Enter para enviar · Shift+Enter para nueva línea · ↑/↓ historial","Enter to send · Shift+Enter for a new line · ↑/↓ history");
+        var send=byId("siza-inputsend");if(send&&!send.disabled)setNodeText(send,choose("ENVIAR","SEND"));
+        var hint=root&&root.querySelector(".sizaBookInputHint");setNodeText(hint,choose("Enter para enviar · Shift+Enter para nueva línea · ↑/↓ historial","Enter to send · Shift+Enter for a new line · ↑/↓ history"));
 
-        var placeholder=root&&root.querySelector("#siza-scene-placeholder > span");if(placeholder)placeholder.textContent=choose("IMAGEN DEL LUGAR","LOCATION IMAGE");
+        var placeholder=root&&root.querySelector("#siza-scene-placeholder > span");setNodeText(placeholder,choose("IMAGEN DEL LUGAR","LOCATION IMAGE"));
         var tcgResources=byId("siza-tcg-resource-mount"),tcgHand=byId("siza-tcg-hand-mount"),tcgStatus=byId("siza-tcg-status");
-        if(tcgResources&&/^(RESOURCES|RECURSOS)$/i.test(clean(tcgResources.textContent)))tcgResources.textContent=choose("RECURSOS","RESOURCES");
-        if(tcgHand&&/^(HAND \/ CARDS|MANO \/ CARTAS)$/i.test(clean(tcgHand.textContent)))tcgHand.textContent=choose("MANO / CARTAS","HAND / CARDS");
-        if(tcgStatus&&/^(READY|PREPARADO)$/i.test(clean(tcgStatus.textContent)))tcgStatus.textContent=choose("PREPARADO","READY");
+        if(tcgResources&&/^(RESOURCES|RECURSOS)$/i.test(clean(tcgResources.textContent)))setNodeText(tcgResources,choose("RECURSOS","RESOURCES"));
+        if(tcgHand&&/^(HAND \/ CARDS|MANO \/ CARTAS)$/i.test(clean(tcgHand.textContent)))setNodeText(tcgHand,choose("MANO / CARTAS","HAND / CARDS"));
+        if(tcgStatus&&/^(READY|PREPARADO)$/i.test(clean(tcgStatus.textContent)))setNodeText(tcgStatus,choose("PREPARADO","READY"));
     }
 
     function localizeConnection(){
         var node=byId("siza-connection-label");if(!node)return;
         var text=clean(node.textContent).toLowerCase();
-        if(["conectado","connected"].indexOf(text)!==-1)node.textContent=choose("Conectado","Connected");
-        else if(["conectando…","connecting…","conectando...","connecting..."].indexOf(text)!==-1)node.textContent=choose("Conectando…","Connecting…");
-        else if(["desconectado","disconnected"].indexOf(text)!==-1)node.textContent=choose("Desconectado","Disconnected");
-        else if(["error de conexión","connection error"].indexOf(text)!==-1)node.textContent=choose("Error de conexión","Connection error");
+        if(["conectado","connected"].indexOf(text)!==-1)setNodeText(node,choose("Conectado","Connected"));
+        else if(["conectando…","connecting…","conectando...","connecting..."].indexOf(text)!==-1)setNodeText(node,choose("Conectando…","Connecting…"));
+        else if(["desconectado","disconnected"].indexOf(text)!==-1)setNodeText(node,choose("Desconectado","Disconnected"));
+        else if(["error de conexión","connection error"].indexOf(text)!==-1)setNodeText(node,choose("Error de conexión","Connection error"));
     }
 
     function localizeMode(){
         var node=byId("siza-mode-label");if(!node)return;
         var text=clean(node.textContent).toUpperCase();
-        if(text==="EXPLORACIÓN"||text==="EXPLORATION")node.textContent=choose("EXPLORACIÓN","EXPLORATION");
-        else if(text==="DIÁLOGO"||text==="DIALOGUE")node.textContent=choose("DIÁLOGO","DIALOGUE");
-        else if(text==="COMBATE"||text==="COMBAT")node.textContent=choose("COMBATE","COMBAT");
+        if(text==="EXPLORACIÓN"||text==="EXPLORATION")setNodeText(node,choose("EXPLORACIÓN","EXPLORATION"));
+        else if(text==="DIÁLOGO"||text==="DIALOGUE")setNodeText(node,choose("DIÁLOGO","DIALOGUE"));
+        else if(text==="COMBATE"||text==="COMBAT")setNodeText(node,choose("COMBATE","COMBAT"));
     }
 
     function localizeCast(){
         var cast=byId("siza-scene-cast");if(!cast)return;
         Array.prototype.forEach.call(cast.children,function(node){
             var raw=node.getAttribute("data-raw-label")||clean(node.textContent);if(!node.getAttribute("data-raw-label"))node.setAttribute("data-raw-label",raw);
-            node.textContent=entityLabel(raw);
+            setNodeText(node,entityLabel(raw));
         });
     }
 
@@ -245,8 +247,8 @@
 
     function requestStats(){
         var status=byId("siza-stats-status");
-        if(!window.Evennia||!Evennia.isConnected()){if(status)status.textContent=choose("World Engine no está conectado.","World Engine is not connected.");return;}
-        if(status)status.textContent=choose("Leyendo valores actuales del World Engine…","Reading current World Engine values…");
+        if(!window.Evennia||!Evennia.isConnected()){if(status)setNodeText(status,choose("World Engine no está conectado.","World Engine is not connected."));return;}
+        if(status)setNodeText(status,choose("Leyendo valores actuales del World Engine…","Reading current World Engine values…"));
         Evennia.msg("text",["siza-ui-stats"],{});
     }
 
@@ -254,11 +256,21 @@
         var packet=args&&args.length?args[0]:args;
         if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
         packet=packet||{};var stats=packet.stats||{};
-        ["FUE","AGI","COO","INT","PER","PSI"].forEach(function(stat){var el=byId("siza-stat-"+stat),value=stats[stat];if(el)el.textContent=value===null||value===undefined?"—":String(value);});
-        var status=byId("siza-stats-status");if(status)status.textContent=choose("Los atributos se leen directamente del estado persistente del personaje.","Stats are read directly from the persistent character state.");
+        ["FUE","AGI","COO","INT","PER","PSI"].forEach(function(stat){var el=byId("siza-stat-"+stat),value=stats[stat];if(el)setNodeText(el,value===null||value===undefined?"—":String(value));});
+        var status=byId("siza-stats-status");if(status)setNodeText(status,choose("Los atributos se leen directamente del estado persistente del personaje.","Stats are read directly from the persistent character state."));
     }
 
-    function observe(id,callback){var node=byId(id);if(!node||!window.MutationObserver)return;new MutationObserver(callback).observe(node,{childList:true,characterData:true,subtree:true});}
+    function observe(id,callback){
+        var node=byId(id);if(!node||!window.MutationObserver)return;
+        var last=clean(node.textContent);
+        new MutationObserver(function(){
+            var now=clean(node.textContent);
+            if(now===last)return;
+            last=now;
+            callback();
+            last=clean(node.textContent);
+        }).observe(node,{childList:true,characterData:true,subtree:true});
+    }
 
     function init(){
         try{currentLanguage=normalizeLanguage(window.localStorage.getItem(STORAGE_KEY)||"es");}catch(error){currentLanguage="es";}
