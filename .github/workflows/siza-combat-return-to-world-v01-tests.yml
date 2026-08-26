@@ -1,0 +1,128 @@
+name: SIZA Combat Return to World v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js'
+      - '.github/workflows/siza-combat-return-to-world-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  combat-return-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax and backend acknowledgement contract
+        shell: bash
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          path = Path('siza-world-engine/overlay/commands/world_input_v861_commands.py')
+          source = path.read_text(encoding='utf-8')
+          ast.parse(source)
+          assert '"world_consequences_applied": False' not in source, 'reserved callback still hardcodes false consequence state'
+          assert 'applied = bool(accepted.get("world_consequences_applied"))' in source
+          assert '"world_consequences_applied": applied' in source
+          assert '"consequence_status": accepted.get("consequence_status")' in source
+          print('PASS backend callback reports authoritative consequence result')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Accepted result returns same book to exploration
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const {JSDOM} = require('jsdom');
+
+          const dom = new JSDOM(`<!doctype html><html><body>
+            <div id="siza-book-client" data-mode="EXPLORATION"></div>
+            <section id="siza-tcg-tray" data-active="false">
+              <div id="siza-tcg-resource-mount"></div>
+              <div id="siza-tcg-hand-mount"></div>
+              <div id="siza-tcg-status"></div>
+            </section>
+          </body></html>`, {runScripts:'outside-only', url:'http://localhost:4001/webclient/'});
+
+          const w = dom.window;
+          const listeners = {};
+          const sent = [];
+          const modes = [];
+          const trays = [];
+          const lookRequests = [];
+
+          w.setTimeout = fn => { fn(); return 1; };
+          w.Evennia = {
+            emitter: null,
+            init(){ if(!this.emitter) this.emitter = {on:(name,fn)=>{listeners[name]=fn}}; },
+            isConnected(){ return true; },
+            msg(name,args,kwargs){ sent.push([name,args,kwargs]); }
+          };
+          w.SizaWorldBookClient = {
+            setMode(mode){ modes.push(mode); w.document.getElementById('siza-book-client').setAttribute('data-mode',mode); },
+            sendText(command){ lookRequests.push(command); return true; }
+          };
+          w.SizaBookShellV02 = {
+            setCombatTray(state){ trays.push({...state}); w.document.getElementById('siza-tcg-tray').setAttribute('data-active',state.active?'true':'false'); return true; }
+          };
+          w.SIZA = {
+            startWorldEncounter(encounter){ return {ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:encounter.encounter_id}; }
+          };
+
+          w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js','utf8'));
+
+          const encounter = {
+            encounter_id:'COMBAT-RETURN-001',
+            site:{name:'Pescaderia de Darsena'},
+            opponents:[{name:'Mara Vensal'}]
+          };
+          listeners.siza_combat_encounter([encounter],{});
+          if(modes.at(-1)!=='COMBAT') throw new Error('encounter did not activate COMBAT');
+          if(w.document.getElementById('siza-tcg-tray').getAttribute('data-active')!=='true') throw new Error('combat tray did not activate');
+
+          const result = {
+            result_id:'COMBAT-RETURN-001:RESULT:1',
+            encounter_id:'COMBAT-RETURN-001',
+            status:'RESOLVED',
+            outcome:'PLAYER_WIN'
+          };
+          w.dispatchEvent(new w.CustomEvent('siza:combat-result',{detail:result}));
+          if(sent.length!==1 || sent[0][0]!=='text' || !String(sent[0][1][0]).startsWith('siza-combat-result ')) throw new Error('combat result did not return to Evennia');
+
+          listeners.siza_combat_result_accepted([{
+            encounter_id:'COMBAT-RETURN-001',
+            outcome:'PLAYER_WIN',
+            world_consequences_applied:true,
+            consequence_status:'CONSEQUENCES_APPLIED'
+          }],{});
+
+          if(modes.at(-1)!=='EXPLORATION') throw new Error('accepted result did not return shell to EXPLORATION');
+          if(w.document.getElementById('siza-tcg-tray').getAttribute('data-active')!=='false') throw new Error('combat tray stayed active');
+          if(lookRequests.length!==1 || lookRequests[0]!=='look') throw new Error(`room refresh wrong: ${JSON.stringify(lookRequests)}`);
+          if(w.SizaWorldTcgTransportV01.getActiveEncounter()!==null) throw new Error('active encounter was not cleared');
+
+          const modeCount = modes.length;
+          listeners.siza_combat_result_accepted([{
+            encounter_id:'WRONG-ENCOUNTER',
+            world_consequences_applied:true,
+            consequence_status:'CONSEQUENCES_APPLIED'
+          }],{});
+          if(modes.length!==modeCount) throw new Error('stale/mismatched acknowledgement changed shell');
+
+          console.log('PASS combat result -> authoritative acknowledgement -> EXPLORATION + room refresh');
+          dom.window.close();
+          NODE
