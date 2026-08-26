@@ -37,6 +37,18 @@ def _location_packet(actor):
     }
 
 
+def _entity_packet(obj):
+    return {
+        "name": str(obj.key),
+        "dbref": int(obj.id) if getattr(obj, "id", None) is not None else None,
+        "aliases": _aliases(obj),
+        "is_npc": bool(getattr(obj.db, "is_npc", False)),
+        "npc_id": str(getattr(obj.db, "npc_id", "") or "") or None,
+        "object_id": str(getattr(obj.db, "object_id", "") or "") or None,
+        "portable": bool(getattr(obj.db, "portable", False)),
+    }
+
+
 def _local_entities(actor):
     site = getattr(actor, "location", None) if actor else None
     if not site:
@@ -45,15 +57,20 @@ def _local_entities(actor):
     for obj in list(getattr(site, "contents", []) or []):
         if obj is actor or getattr(obj, "destination", None) or bool(getattr(obj.db, "hidden", False)):
             continue
-        rows.append({
-            "name": str(obj.key),
-            "dbref": int(obj.id) if getattr(obj, "id", None) is not None else None,
-            "aliases": _aliases(obj),
-            "is_npc": bool(getattr(obj.db, "is_npc", False)),
-            "npc_id": str(getattr(obj.db, "npc_id", "") or "") or None,
-            "object_id": str(getattr(obj.db, "object_id", "") or "") or None,
-        })
+        rows.append(_entity_packet(obj))
     rows.sort(key=lambda row: (0 if row.get("is_npc") else 1, str(row.get("name") or "")))
+    return rows
+
+
+def _inventory(actor):
+    if not actor:
+        return []
+    rows = []
+    for obj in list(getattr(actor, "contents", []) or []):
+        if getattr(obj, "destination", None) or bool(getattr(obj.db, "hidden", False)):
+            continue
+        rows.append(_entity_packet(obj))
+    rows.sort(key=lambda row: str(row.get("name") or ""))
     return rows
 
 
@@ -118,6 +135,7 @@ def build_dm_world_snapshot(actor, raw_player_input="", max_known_facts=6, fact_
     return {
         "location": _location_packet(actor),
         "local_entities": _local_entities(actor),
+        "inventory": _inventory(actor),
         "local_exits": _local_exits(actor),
         "active_local_events": _local_active_events(actor),
         "player": {
