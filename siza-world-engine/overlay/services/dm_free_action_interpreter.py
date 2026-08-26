@@ -59,20 +59,8 @@ def _plain_list(value):
         return []
 
 
-def build_reference_catalog(world_snapshot):
-    """Return the only authoritative references Qwen may bind directly."""
-    snapshot = _plain_dict(world_snapshot)
-    rows = [
-        {"ref": "SELF", "kind": "SELF", "name": "jugador"},
-        {
-            "ref": "ROOM",
-            "kind": "ROOM",
-            "name": str((_plain_dict(snapshot.get("location"))).get("name") or "ubicación actual"),
-        },
-    ]
-    seen = {"SELF", "ROOM"}
-
-    for entity in _plain_list(snapshot.get("local_entities")):
+def _append_entity_refs(rows, seen, entities, scope):
+    for entity in _plain_list(entities):
         row = _plain_dict(entity)
         dbref = row.get("dbref")
         if dbref is None:
@@ -84,10 +72,30 @@ def build_reference_catalog(world_snapshot):
         rows.append({
             "ref": ref,
             "kind": "NPC" if bool(row.get("is_npc")) else "OBJECT",
+            "scope": str(scope or ""),
             "name": str(row.get("name") or ref),
             "npc_id": row.get("npc_id"),
             "object_id": row.get("object_id"),
+            "portable": bool(row.get("portable", False)),
         })
+
+
+def build_reference_catalog(world_snapshot):
+    """Return the only authoritative references Qwen may bind directly."""
+    snapshot = _plain_dict(world_snapshot)
+    rows = [
+        {"ref": "SELF", "kind": "SELF", "scope": "SELF", "name": "jugador"},
+        {
+            "ref": "ROOM",
+            "kind": "ROOM",
+            "scope": "LOCAL",
+            "name": str((_plain_dict(snapshot.get("location"))).get("name") or "ubicación actual"),
+        },
+    ]
+    seen = {"SELF", "ROOM"}
+
+    _append_entity_refs(rows, seen, snapshot.get("local_entities"), "LOCAL")
+    _append_entity_refs(rows, seen, snapshot.get("inventory"), "INVENTORY")
 
     for exit_row in _plain_list(snapshot.get("local_exits")):
         row = _plain_dict(exit_row)
@@ -105,6 +113,7 @@ def build_reference_catalog(world_snapshot):
         rows.append({
             "ref": ref,
             "kind": "EXIT",
+            "scope": "LOCAL",
             "name": str(row.get("name") or ref),
             "exit_id": exit_id or None,
             "destination_name": row.get("destination_name"),
@@ -197,6 +206,7 @@ def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot):
         "NO decides si funciona. NO narras. NO produces resultados. NO modificas el mundo. "
         "NO inventes objetos, NPC, lugares, Facts, IDs, capacidades ni condiciones. "
         "Solo puedes usar primary_ref/secondary_ref si el ref existe exactamente en REFERENCE CATALOG. "
+        "El campo scope indica si una referencia está LOCAL o en INVENTORY; no ignores esa diferencia. "
         "Si el jugador menciona algo que no tiene ref, deja el ref vacío y copia una descripción corta en unresolved_target. "
         "resolution_hint y stat_hint son recomendaciones de clasificación, nunca autoridad. "
         "Descompón una acción compuesta en un máximo de tres pasos conservando el orden del jugador. "
@@ -227,12 +237,13 @@ def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot):
         "schema": schema,
         "ollama_payload": {
             "stream": False,
+            "think": False,
             "format": schema,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": json.dumps(user, ensure_ascii=False, separators=(",", ":"))},
             ],
-            "options": {"temperature": 0},
+            "options": {"temperature": 0, "num_predict": 480},
         },
         "build": DM_FREE_ACTION_BUILD,
     }
