@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.10.0';
+const VERSION='1.11.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -48,5 +48,11 @@ function priorityPassPlan(responseWindow,owner){
   if(responseWindow?.responder!==owner)return null;
   return{responseWindow:null,pendingResolution:true,active:'resolving',phase:'Stack listo'};
 }
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,preferredResponseCard,priorityWindowPlan,priorityPassPlan});
+function stackCompletionPlan(match={}){
+  if(match.over)return{kind:'over'};
+  if(match.pendingChoice)return{kind:'choice',active:'choice'};
+  const owner=match.stackReturnOwner||'player',enemy=owner==='enemy';
+  return{kind:'return',stackReturnOwner:null,active:enemy?'enemy':'player',phase:enemy?'Main rival':'Main',scheduleEnemy:enemy};
+}
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,preferredResponseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan});
 })(window);
