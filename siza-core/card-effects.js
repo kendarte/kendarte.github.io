@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.14.0';
+const VERSION='1.15.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -35,6 +35,26 @@ function stackTargetIndex(stack,targetStackId){
   const index=stack.findIndex(entry=>entry.id===targetStackId);
   return index>=0?index:stack.length-1;
 }
+function runtimePlan(effect,context={}){
+  const match=context.match,sourceOwner=context.sourceOwner,opponentOwner=sourceOwner==='player'?'enemy':'player';
+  const targetOwner=defaultTarget=>effectSide(effect.target,sourceOwner,opponentOwner,defaultTarget);
+  if(effect.type==='counter-stack-target')return{kind:'counter-stack-target',terminal:true,stackIndex:stackTargetIndex(match.stack,context.targetStackId)};
+  if(effect.type==='draw')return{kind:'draw',terminal:false,targetOwner:targetOwner('self'),amount:effect.amount||1,logResolve:effect.event==='resolve'};
+  if(effect.type==='damage-character')return{kind:'damage-character',terminal:false,targetOwner:targetOwner('opponent'),amount:effect.amount||1};
+  if(effect.type==='observe-top'){
+    const owner=targetOwner('self'),topCardId=match[owner].library[0];
+    return{kind:'observe-top',terminal:false,targetOwner:owner,topCardId,action:topCardId?(sourceOwner==='player'&&owner===sourceOwner?'choice':'log'):'none'};
+  }
+  if(effect.type==='bounce-other-permanent'){
+    const targets=otherPermanentTargets(match,sourceOwner,context.entryIndex),action=!targets.length?'none':sourceOwner==='player'?'choice':'bounce';
+    return{kind:'bounce-other-permanent',terminal:false,targets,action,preferredTarget:action==='bounce'?preferredPermanentTarget(targets,'player'):null};
+  }
+  if(effect.type==='discard'){
+    const owner=targetOwner('self'),target=match[owner],action=effect.amount!==1?'none':sourceOwner==='player'&&owner===sourceOwner?'choice':target.hand.length?'discard-last':'none';
+    return{kind:'discard',terminal:false,targetOwner:owner,amount:effect.amount,action};
+  }
+  return{kind:effect.type,terminal:false};
+}
 function preferredResponseCard(hand=[],resolveCard,canPay){
   return hand.map((id,index)=>({i:index,c:resolveCard(id)}))
     .filter(entry=>entry.c?.type==='Instant'&&canPay(entry.c))
@@ -61,5 +81,5 @@ function stackCompletionPlan(match={}){
 }
 function shouldContinueStackResolution(match,resolvedCount,limit=30){return !!(match.stack.length&&!match.pendingChoice&&!match.over&&resolvedCount<limit);}
 function matchWinner(playerLife,enemyLife){return playerLife<=0||enemyLife<=0?(playerLife>0?'player':'enemy'):null;}
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,preferredResponseCard,preferredMainPhaseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,runtimePlan,preferredResponseCard,preferredMainPhaseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
 })(window);
