@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.3.0';
+const VERSION='1.4.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -13,5 +13,7 @@ function normalizeEffect(input={}){const type=TYPES.includes(input.type)?input.t
 function normalizeEffects(input=[]){return Array.isArray(input)?input.map(normalizeEffect):[];}
 function validateEffects(input=[]){const effects=normalizeEffects(input),errors=[],warnings=[];effects.forEach((effect,index)=>{const p=`effects[${index}]`;if(!TYPES.includes(effect.type))errors.push(`${p}: tipo de efecto inválido (${effect.type||'vacío'}).`);if(!EVENTS.includes(effect.event))errors.push(`${p}: evento inválido (${effect.event||'vacío'}).`);if(['draw','damage-character','discard','add-power-counter','manifest-bonus','modify-power'].includes(effect.type)&&(!Number.isInteger(effect.amount)||effect.amount<=0))errors.push(`${p}: ${effect.type} requiere amount > 0.`);if(['draw','damage-character','discard'].includes(effect.type)&&effect.target&&!TARGETS.includes(effect.target))errors.push(`${p}: target inválido (${effect.target}).`);if(effect.type==='discard'&&effect.amount!==1)errors.push(`${p}: el runtime actual sólo admite discard amount=1.`);if(effect.type==='discard'&&effect.choice&&effect.choice!=='owner')errors.push(`${p}: discard sólo admite choice=owner.`);if(effect.type==='manifest-bonus'&&effect.event!=='manifest-roll')errors.push(`${p}: manifest-bonus requiere event=manifest-roll.`);if(effect.type==='modify-power'&&effect.event!=='equipped')errors.push(`${p}: modify-power requiere event=equipped.`);if(effect.requiresPip&&!COLORS.includes(effect.requiresPip))errors.push(`${p}: requiresPip inválido (${effect.requiresPip}).`);if(effect.type==='damage-character'&&!effect.target)warnings.push(`${p}: damage-character sin target usa opponent por contrato runtime.`);if(effect.type==='draw'&&!effect.target)warnings.push(`${p}: draw sin target usa self por contrato runtime.`);});return{valid:errors.length===0,errors,warnings,effects};}
 function forEvent(card,event){return normalizeEffects(card?.effects).filter(effect=>effect.event===event);}
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent});
+function hasEffect(card,type,event=null){const list=event?forEvent(card,event):normalizeEffects(card?.effects);return list.some(effect=>effect.type===type);}
+function sumAmount(card,event,type){return forEvent(card,event).filter(effect=>effect.type===type).reduce((sum,effect)=>sum+(effect.amount||0),0);}
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount});
 })(window);
