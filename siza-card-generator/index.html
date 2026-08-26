@@ -64,12 +64,12 @@
    </section>
 
    <section class="section">
-    <h2>Texto y estadísticas</h2>
+    <h2>Texto, ataque y defensa</h2>
     <div class="grid">
      <div class="field full"><label for="rules">Reglas</label><textarea id="rules" name="rules"></textarea></div>
      <div class="field full"><label for="flavor">Flavor</label><textarea id="flavor" name="flavor"></textarea></div>
-     <div class="field"><label for="force">Fuerza</label><input id="force" name="force" type="number" min="0" max="99"></div>
-     <div class="field"><label for="resistance">Resistencia</label><input id="resistance" name="resistance" type="number" min="0" max="99"></div>
+     <div class="field"><label for="force">Ataque · disco izquierdo</label><input id="force" name="force" type="number" min="0" max="99"></div>
+     <div class="field"><label for="resistance">Defensa · disco derecho</label><input id="resistance" name="resistance" type="number" min="0" max="99"></div>
      <div class="field"><label for="setCode">Set</label><input id="setCode" name="setCode" maxlength="6"></div>
      <div class="field"><label for="cardNumber">Número</label><input id="cardNumber" name="cardNumber" maxlength="8"></div>
     </div>
@@ -91,8 +91,8 @@
 
    <section class="section">
     <h2>Edición batch</h2>
-    <div class="batchHelp">Formato: una lista JSON de objetos con <b>id</b>. Puede mandar cartas completas o sólo campos a cambiar. Si el batch no incluye <b>artUrl</b>, <b>artAssetKey</b> o <b>artTransform</b>, se conserva el arte y ajuste manual ya guardado.</div>
-    <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
+    <div class="batchHelp">Formato: una lista JSON de objetos con <b>id</b>. Puede usar <b>attack</b>/<b>defense</b> en batch; el runtime sigue recibiendo sus valores compatibles. Si el batch no incluye <b>artUrl</b>, <b>artAssetKey</b> o <b>artTransform</b>, se conserva el arte y ajuste manual ya guardado.</div>
+    <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","attack":5,"defense":5,"difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
     <div class="actions">
      <button class="btn ghost" type="button" id="exportBatch">Exportar biblioteca</button>
      <button class="btn primary" type="button" id="applyBatch">Aplicar batch</button>
