@@ -7,8 +7,12 @@ on:
       - 'siza-world-engine/overlay/web/templates/webclient/siza_book_shell_v02.html'
       - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js'
       - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_shell_v02.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js'
       - 'siza-world-engine/overlay/web/static/webclient/css/custom.css'
       - 'siza-world-engine/overlay/web/static/webclient/css/siza_book_shell_v02.css'
+      - 'siza-world-engine/overlay/services/world_combat_handoff_engine.py'
+      - 'siza-world-engine/overlay/commands/world_combat_bridge_commands.py'
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
       - '.github/workflows/siza-world-book-client-tests.yml'
   workflow_dispatch:
 
@@ -25,10 +29,14 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate JavaScript syntax
+      - name: Validate JavaScript and Python syntax
         run: |
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_shell_v02.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
+          python -m py_compile siza-world-engine/overlay/services/world_combat_handoff_engine.py
+          python -m py_compile siza-world-engine/overlay/commands/world_combat_bridge_commands.py
+          python -m py_compile siza-world-engine/overlay/commands/world_input_v861_commands.py
 
       - name: Validate template contract
         shell: bash
@@ -44,6 +52,7 @@ jobs:
               'siza_book_shell_v02.css',
               'siza_book_client.js',
               'siza_book_shell_v02.js',
+              'siza_world_tcg_transport_v01.js',
               'siza_book_shell_v02.html',
               'id="siza-scene-visual"',
               'id="siza-player-portrait"',
@@ -64,7 +73,106 @@ jobs:
           for token in required:
               assert token in combined, f'missing template token: {token}'
           assert 'goldenlayout' not in combined.lower(), 'custom client must not reintroduce GoldenLayout'
-          print('PASS template contract v0.2')
+          print('PASS template contract v0.2 + TCG transport')
+          PY
+
+      - name: Run World Engine combat handoff authority regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from types import SimpleNamespace
+
+          sys.path.insert(0, 'siza-world-engine/overlay')
+          from services.world_combat_handoff_engine import (
+              accept_world_combat_result,
+              build_world_combat_encounter,
+              emit_world_combat_encounter,
+              validate_world_combat_result,
+          )
+
+          class Attrs:
+              def __init__(self, owner): self.owner = owner
+              def remove(self, name):
+                  if hasattr(self.owner.db, name): delattr(self.owner.db, name)
+
+          class Obj:
+              def __init__(self, oid, key, *, npc=False):
+                  self.id = oid
+                  self.key = key
+                  self.location = None
+                  self.db = SimpleNamespace(
+                      npc_id=(f'NPC-{oid}' if npc else ''),
+                      player_id='',
+                      is_npc=npc,
+                      tcg_profile={},
+                      tcg_deck_id='',
+                      tcg_loadout={},
+                      state={'marker': key},
+                  )
+                  self.attributes = Attrs(self)
+                  self.messages = []
+              def msg(self, *args, **kwargs): self.messages.append((args, kwargs))
+
+          room = Obj(9, 'Dársenas de Campana')
+          room.db.room_id = 'CAR-KAL-CITY-DAR-001'
+          room.db.world_context_tags = ['DARSENA', 'SECURITY']
+          room.db.combat_modifiers = [{'id': 'WET_GROUND'}]
+          player = Obj(1, 'Nereida')
+          guard = Obj(2, 'Guardia de Dársena', npc=True)
+          player.location = room
+          guard.location = room
+          player.db.tcg_profile = {'life': 18, 'mf': 3}
+          guard.db.tcg_profile = {'life': 12, 'mf': 1}
+
+          world_before = json.dumps({'room': room.db.state, 'guard': guard.db.state}, sort_keys=True)
+          built = build_world_combat_encounter(player, guard, source_action_id='ACT-1', encounter_id='COMBAT-TEST-001')
+          assert built['accepted'] is True and built['encounter']['encounter_id'] == 'COMBAT-TEST-001'
+          assert built['encounter']['initiator']['entity_id'] == 'PLAYER:DBREF:1'
+          assert built['encounter']['opponents'][0]['entity_id'] == 'NPC-2'
+          assert built['encounter']['site']['room_id'] == 'CAR-KAL-CITY-DAR-001'
+
+          emitted = emit_world_combat_encounter(player, built['encounter'])
+          assert emitted['accepted'] is True
+          assert player.db.pending_tcg_encounter['status'] == 'PENDING'
+          custom = player.messages[-1][1]['siza_combat_encounter']
+          assert custom[0][0]['encounter_id'] == 'COMBAT-TEST-001'
+
+          result = {
+              'result_id': 'COMBAT-TEST-001:RESULT:1',
+              'encounter_id': 'COMBAT-TEST-001',
+              'status': 'RESOLVED',
+              'outcome': 'PLAYER_WIN',
+              'winner_ids': ['PLAYER:DBREF:1'],
+              'defeated_ids': ['NPC-2'],
+              'participants': [
+                  {'entity_id': 'PLAYER:DBREF:1', 'life_start': 18, 'life_remaining': 9, 'damage': 9},
+                  {'entity_id': 'NPC-2', 'life_start': 12, 'life_remaining': 0, 'damage': 12},
+              ],
+          }
+          valid = validate_world_combat_result(player, result)
+          assert valid['accepted'] is True
+          accepted = accept_world_combat_result(player, result)
+          assert accepted['accepted'] is True and accepted['world_consequences_applied'] is False
+          assert player.db.pending_tcg_encounter['status'] == 'RESOLVED'
+          assert player.db.last_tcg_combat_result['outcome'] == 'PLAYER_WIN'
+          world_after = json.dumps({'room': room.db.state, 'guard': guard.db.state}, sort_keys=True)
+          assert world_before == world_after, 'handoff transport mutated authoritative world state'
+
+          player2 = Obj(3, 'Otro jugador')
+          player2.location = room
+          bad_build = build_world_combat_encounter(player2, guard, encounter_id='COMBAT-TEST-002')
+          emit_world_combat_encounter(player2, bad_build['encounter'])
+          tampered = dict(result)
+          tampered['encounter_id'] = 'COMBAT-TEST-002'
+          tampered['participants'] = [{'entity_id': 'PLAYER:DBREF:3'}, {'entity_id': 'INVENTED-NPC'}]
+          tampered['winner_ids'] = ['PLAYER:DBREF:3']
+          tampered['defeated_ids'] = ['INVENTED-NPC']
+          rejected = validate_world_combat_result(player2, tampered)
+          assert rejected['accepted'] is False and rejected['status'] == 'PARTICIPANT_MISMATCH'
+
+          print('PASS World Engine TCG handoff: exact encounter, custom output, result validation, no world mutation')
           PY
 
       - name: Install JSDOM
@@ -150,5 +258,74 @@ jobs:
           if(w.document.getElementById('siza-messagewindow').children.length!==0)throw new Error('identical room packet was not suppressed');
 
           console.log('PASS World Book v0.2: transport, room parsing, portraits, visual slot, dormant TCG mount');
+          dom.window.close();
+          NODE
+
+      - name: Run World TCG browser handoff regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          const html=`<!doctype html><html><body>
+            <div id="siza-book-client" data-mode="EXPLORATION"></div>
+            <section id="siza-tcg-tray" data-active="false">
+              <div id="siza-tcg-resource-mount"></div>
+              <div id="siza-tcg-hand-mount"></div>
+              <div id="siza-tcg-status"></div>
+            </section>
+          </body></html>`;
+          const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+          const w=dom.window;
+          const listeners={};
+          const sent=[];
+          let startedEncounter=null;
+          w.Evennia={
+            emitter:null,
+            init(){if(!this.emitter)this.emitter={on:(name,fn)=>{listeners[name]=fn}}},
+            isConnected(){return true},
+            msg(name,args,kwargs){sent.push([name,args,kwargs])}
+          };
+          w.SizaWorldBookClient={setMode(mode){w.document.getElementById('siza-book-client').setAttribute('data-mode',mode)}};
+          w.SizaBookShellV02={setCombatTray(state){w.document.getElementById('siza-tcg-tray').setAttribute('data-active',state.active?'true':'false');w.document.getElementById('siza-tcg-status').textContent=state.status||'';return true}};
+          w.SIZA={startWorldEncounter(encounter,mode){startedEncounter=encounter;return{ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:encounter.encounter_id,mode}}};
+          w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js','utf8'));
+          w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+
+          const encounter={
+            encounter_id:'COMBAT-BROWSER-001',
+            encounter_type:'COMBAT_CONFRONTATION',
+            site:{room_id:'CAR-KAL-CITY-DAR-001',name:'Dársenas de Campana'},
+            initiator:{entity_id:'PLAYER:DBREF:1',name:'Nereida'},
+            opponents:[{entity_id:'NPC-2',name:'Guardia de Dársena'}]
+          };
+          if(typeof listeners.siza_combat_encounter!=='function')throw new Error('custom encounter listener not registered');
+          listeners.siza_combat_encounter([encounter],{});
+          if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='COMBAT')throw new Error('encounter did not switch shell to COMBAT');
+          if(w.document.getElementById('siza-tcg-tray').getAttribute('data-active')!=='true')throw new Error('encounter did not activate TCG tray');
+          if(startedEncounter?.encounter_id!==encounter.encounter_id)throw new Error('encounter was not handed to Arena runtime');
+          if(w.document.getElementById('siza-tcg-status').textContent!=='Combate activo')throw new Error('Arena start state not reflected in tray');
+
+          const result={
+            result_id:'COMBAT-BROWSER-001:RESULT:1',
+            encounter_id:'COMBAT-BROWSER-001',
+            status:'RESOLVED',
+            outcome:'PLAYER_WIN',
+            winner_ids:['PLAYER:DBREF:1'],
+            defeated_ids:['NPC-2'],
+            participants:[{entity_id:'PLAYER:DBREF:1'},{entity_id:'NPC-2'}]
+          };
+          w.dispatchEvent(new w.CustomEvent('siza:combat-result',{detail:result}));
+          const callback=sent.find(row=>row[0]==='text'&&String(row[1]?.[0]||'').startsWith('siza-combat-result '));
+          if(!callback)throw new Error('combat result was not sent back through Evennia text transport');
+          const token=callback[1][0].slice('siza-combat-result '.length);
+          const padded=token.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-token.length%4)%4);
+          const decoded=JSON.parse(Buffer.from(padded,'base64').toString('utf8'));
+          if(JSON.stringify(decoded)!==JSON.stringify(result))throw new Error('combat result callback payload changed in transport');
+
+          listeners.siza_combat_result_accepted([{encounter_id:'COMBAT-BROWSER-001',outcome:'PLAYER_WIN'}],{});
+          if(!w.document.getElementById('siza-tcg-status').textContent.includes('Resultado aceptado'))throw new Error('World Engine acceptance not reflected in tray');
+
+          console.log('PASS World TCG browser transport: custom encounter -> Arena -> result callback -> acceptance');
           dom.window.close();
           NODE
