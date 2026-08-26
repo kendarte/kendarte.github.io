@@ -8,10 +8,10 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1-local-worldbook-v08-retrieval"
+WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.1-local-worldbook-v08-retrieval"
 DEFAULT_MAX_SNIPPETS = 4
 DEFAULT_CHAR_BUDGET = 2200
-_CHUNK_RE = re.compile(r'WB_CHUNKS\.push\("([A-Za-z0-9+/=]+)"\)')
+_CHUNK_RE = re.compile(r'''WB_CHUNKS\s*\.\s*push\s*\(\s*["']([A-Za-z0-9+/=]+)["']\s*\)''')
 _TOKEN_RE = re.compile(r"[a-z0-9_:-]+")
 _STOPWORDS = {
     "a", "al", "and", "ante", "con", "de", "del", "el", "en", "for", "la", "las", "los",
@@ -104,9 +104,9 @@ def find_worldbook_chunks_dir(explicit_dir=None):
 def _extract_chunk_payload(path):
     source = Path(path).read_text(encoding="utf-8")
     matches = _CHUNK_RE.findall(source)
-    if len(matches) != 1:
+    if not matches:
         raise ValueError(f"INVALID_WORLDBOOK_CHUNK:{Path(path).name}")
-    return matches[0]
+    return "".join(matches)
 
 
 @lru_cache(maxsize=4)
