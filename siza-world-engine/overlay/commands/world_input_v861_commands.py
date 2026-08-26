@@ -7,6 +7,7 @@ from commands.world_input_v84_commands import _current_interaction_capability
 from commands.world_input_v85_commands import CmdSizaNoMatchV85, handle_action_proposal_result_v85
 from services.active_perception_proposal_runtime import dispatch_active_perception_proposal_async
 from services.action_resolution_engine import adventure_stats
+from services.dm_free_action_pipeline import dispatch_dm_unsupported_action_async, is_valid_unsupported_proposal
 from services.interaction_engine import parse_interaction_intent
 from services.player_language_contract import get_actor_turn_language, localize, resolve_turn_language
 from services.ranked_fact_conversation_engine import (
@@ -23,7 +24,7 @@ from services.world_combat_handoff_engine import (
 )
 
 
-NATURAL_RANKED_FACT_TALK_BUILD = "0.86.1-ranked-single-fact-talk-authority"
+NATURAL_RANKED_FACT_TALK_BUILD = "0.86.2-ranked-talk-plus-dm-unsupported-escalation"
 COMBAT_RESULT_PREFIX = "siza-combat-result "
 COMBAT_TEST_PREFIX = "siza-combat-test "
 COMBAT_CLEAR_COMMAND = "siza-combat-clear"
@@ -134,7 +135,7 @@ def handle_action_proposal_result_v861(
     render_async_callable=None,
     provider_options=None,
 ):
-    """For ordinary TALK, bind disclosure and transfer to one ranked fact_id. All other routes stay on v0.85."""
+    """Keep known closed routes unchanged; escalate only a schema-valid UNSUPPORTED decision to the DM layer."""
     if parse_semantic_fact_inform_intent(raw_player_input):
         return handle_action_proposal_result_v85(
             actor,
@@ -144,6 +145,9 @@ def handle_action_proposal_result_v861(
             render_async_callable=render_async_callable,
             provider_options=provider_options,
         )
+
+    if is_valid_unsupported_proposal(proposal_result):
+        return dispatch_dm_unsupported_action_async(actor, raw_player_input)
 
     current = _current_interaction_capability(actor, proposal_result)
     if current:
@@ -172,7 +176,7 @@ def handle_action_proposal_result_v861(
 
 
 def _proposal_failure(actor, failure):
-    logger.log_err(f"SIZA v0.86.1 action proposal runtime failure: {failure}")
+    logger.log_err(f"SIZA v0.86.2 action proposal runtime failure: {failure}")
     actor.msg("\n" + localize("unsupported", get_actor_turn_language(actor)))
     return failure
 
