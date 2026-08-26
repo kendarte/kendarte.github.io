@@ -60,6 +60,22 @@ function combatCounterGain(card,effectsForEvent){
     .reduce((sum,effect)=>sum+(effect.amount||0),0);
 }
 
+function attackDeclaredDamage(player,indices,resolveCard,effectsForEvent){
+  const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  let amount=0;
+  const sources=[];
+  for(const index of indices||[]){
+    const card=cardResolver(player?.battlefield?.[index]);
+    for(const effect of effectResolver(card,'attack-declared')){
+      if(effect.type!=='damage-character'||(effect.target||'opponent')!=='opponent'||!(effect.amount>0))continue;
+      amount+=effect.amount;
+      sources.push(card?.name);
+    }
+  }
+  return{amount,source:sources.length&&sources.every(name=>name===sources[0])?sources[0]:'Efectos de ataque'};
+}
+
 function combatPlan(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
@@ -117,6 +133,7 @@ global.SizaCreatureRules=Object.freeze({
   toughness:toughnessValue,
   addCreature:addBattlefieldCreature,
   removeAt:removeBattlefieldCreature,
+  attackDeclaredDamage,
   combatPlan,
   aiBlockers:aiBlockerAssignments
 });
