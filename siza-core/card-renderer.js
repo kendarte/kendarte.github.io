@@ -18,6 +18,21 @@ const FRAME_STANDARD_BASE_URL=RENDERER_SRC?new URL('assets/frames/standard/frame
   link.href=new URL(path,RENDERER_SRC).href;
   document.head.appendChild(link);
  }
+ if(!document.getElementById('siza-battle-sprite-v1-css')){
+  const style=document.createElement('style');
+  style.id='siza-battle-sprite-v1-css';
+  style.textContent=`
+.sizaBattleSpriteV1{display:none}
+.arenaMiniCard .generatedFaceSlotV1,.arenaMiniCard .generatedCardThumbV1{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+.arenaMiniCard .generatedCardThumbV1.hasBattleSpriteV1{border:0!important;background:transparent!important;overflow:visible!important}
+.arenaMiniCard .generatedCardThumbV1.hasBattleSpriteV1>:not(.sizaBattleSpriteV1){display:none!important}
+.arenaMiniCard .generatedCardThumbV1.hasBattleSpriteV1 .sizaBattleSpriteV1{display:block;position:absolute;inset:0;z-index:25;overflow:hidden;border-radius:8px;background:radial-gradient(circle at 50% 52%,rgba(29,74,100,.7),rgba(4,14,22,.96) 72%);pointer-events:none}
+.arenaMiniCard .sizaBattleSpriteV1 img{position:absolute;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;transform-origin:center;filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))}
+.arenaMiniCard .sizaBattleSpriteNameV1{position:absolute;z-index:2;left:4px;right:4px;bottom:4px;padding:3px 4px;border-radius:5px;background:rgba(3,11,18,.78);color:#f1e4c7;font:700 7px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.arenaMiniCard .sizaBattleSpriteStatsV1{position:absolute;z-index:3;right:4px;top:4px;padding:2px 4px;border-radius:999px;background:rgba(3,11,18,.82);border:1px solid rgba(211,170,93,.62);color:#f5e5bd;font:800 8px Georgia,serif}
+`;
+  document.head.appendChild(style);
+ }
 })();
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
@@ -40,6 +55,11 @@ function artHtml(card,opts={}){
  const c=schema().normalizeCard(card),t=c.artTransform,mobile=opts.variant==='mobile';
  if(c.artUrl)return `<span class="sizaArtHostV5"><img class="${mobile?'generatedArtImageV1':'sizaGeneratedArt'}" src="${esc(c.artUrl)}" alt="" draggable="false" style="object-position:${t.x}% ${t.y}%;transform:scale(${t.scale})" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${artFallbackHtml(c,mobile,true)}</span>`;
  return artFallbackHtml(c,mobile,false);
+}
+function battleSpriteHtml(card,opts={}){
+ const c=schema().normalizeCard(card);if(!c.battleSpriteUrl)return'';
+ const t=c.battleSpriteTransform,s=stats(c,opts),hasStats=c.cardType==='Creature'&&s.power!=null;
+ return `<span class="sizaBattleSpriteV1"><img src="${esc(c.battleSpriteUrl)}" alt="" draggable="false" style="left:${t.x}%;top:${t.y}%;transform:translate(-50%,-50%) scale(${t.scale})" onerror="this.parentElement.style.display='none'"><span class="sizaBattleSpriteNameV1">${esc(c.name)}</span>${hasStats?`<span class="sizaBattleSpriteStatsV1">${esc(s.power)}/${esc(s.toughness)}</span>`:''}</span>`;
 }
 
 function crystalRequirement(card){
@@ -106,16 +126,16 @@ function renderCard(card,opts={}){return opts.variant==='mobile'?renderMobileCar
 
 function thumbBody(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),hasStats=c.cardType==='Creature'&&s.power!=null;
- return `${frameHtml(c,'sizaFrameStandardThumbV5')}${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}`;
+ return `${frameHtml(c,'sizaFrameStandardThumbV5')}${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}${battleSpriteHtml(c,opts)}`;
 }
 function renderStandardThumb(card,opts={}){
  const c=schema().normalizeCard(card);return `<div class="sizaGeneratedThumb sizaCardThumbV2 sizaCardThumbQueenV3 affinity-${esc(affinityClass(c))} ${typeClass(c)}" data-card-id="${esc(c.id)}" data-template="${esc(c.template)}">${thumbBody(c,opts)}</div>`;
 }
 function renderMobileThumb(card,opts={}){
- const c=schema().normalizeCard(card);return `<div class="generatedFaceSlotV1"><div class="generatedCardThumbV1 sizaCardThumbV2 sizaCardThumbQueenV3 ${typeClass(c)} ${esc(affinityClass(c))}" data-template="${esc(c.template)}">${thumbBody(c,{...opts,variant:'mobile'})}</div></div>`;
+ const c=schema().normalizeCard(card),spriteClass=c.battleSpriteUrl?' hasBattleSpriteV1':'';return `<div class="generatedFaceSlotV1"><div class="generatedCardThumbV1 sizaCardThumbV2 sizaCardThumbQueenV3 ${typeClass(c)} ${esc(affinityClass(c))}${spriteClass}" data-template="${esc(c.template)}">${thumbBody(c,{...opts,variant:'mobile'})}</div></div>`;
 }
 function renderThumb(card,opts={}){return opts.variant==='mobile'?renderMobileThumb(card,opts):renderStandardThumb(card,opts);}
 function mount(target,card,opts={}){const el=typeof target==='string'?document.querySelector(target):target;if(!el)throw new Error('Renderer target not found.');el.innerHTML=opts.thumb?renderThumb(card,opts):renderCard(card,opts);return el.firstElementChild;}
 
-global.SizaCardRenderer=Object.freeze({renderCard,renderThumb,mount,manaHtml,artHtml,crystalHtml,crystalRequirement});
+global.SizaCardRenderer=Object.freeze({renderCard,renderThumb,mount,manaHtml,artHtml,battleSpriteHtml,crystalHtml,crystalRequirement});
 })(window);
