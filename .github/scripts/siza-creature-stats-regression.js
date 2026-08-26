@@ -26,7 +26,9 @@ H.TEST_CARD_DB_V1.push(
   {id:'reg_combat_1_1',name:'Combat 1/1',type:'Creature',power:1,toughness:1,effects:[]},
   {id:'reg_combat_grow_1_3',name:'Combat Grow 1/3',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:2}]},
   {id:'reg_combat_grow_1_1',name:'Combat Grow 1/1',type:'Creature',power:1,toughness:1,effects:[{event:'combat-damage',type:'add-power-counter',amount:2}]},
-  {id:'reg_combat_def_grow',name:'Combat Defender Grow',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:1}]}
+  {id:'reg_combat_def_grow',name:'Combat Defender Grow',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:1}]},
+  {id:'reg_ai_3_3',name:'AI 3/3',type:'Creature',power:3,toughness:3,effects:[]},
+  {id:'reg_ai_1_4',name:'AI 1/4',type:'Creature',power:1,toughness:4,effects:[]}
 );
 const P={battlefield:['reg_stats_body'],powerCounters:[2],equipment:[{id:'reg_stats_blade',target:0},{id:'reg_stats_charm',target:0},{id:'reg_stats_blade',target:null}]};
 const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
@@ -54,5 +56,12 @@ test('combatPlan conserva counter gain sólo si atacante sobrevive',()=>{const s
 test('combatPlan incorpora Equipment al daño efectivo',()=>{const x=plan(['reg_combat_2_2'],[],{},[{id:'reg_stats_blade',target:0}]);return x.damage===5});
 test('combatPlan concede counter gain a bloqueador superviviente',()=>{const x=plan(['reg_combat_1_1'],['reg_combat_def_grow'],{'0':0});return JSON.stringify(x.attackerDeaths)==='[0]'&&JSON.stringify(x.defenderCounterGains)==='[[0,1]]'});
 test('combatPlan produce snapshot de intercambio para logs',()=>{const x=plan(['reg_combat_2_2'],['reg_combat_1_1'],{'0':0}),e=x.exchanges[0];return e.attackerName==='Combat 2/2'&&e.defenderName==='Combat 1/1'&&e.attackerPower===2&&e.attackerToughness===2&&e.defenderPower===1&&e.defenderToughness===1});
+
+function aiPlan(attackers,defenders,{exhausted=[],equipment=[]}={}){const A=combatPlayer(attackers,equipment),D=combatPlayer(defenders);D.exhausted=[...exhausted];const combat={attackers:attackers.map((id,index)=>({index,id})),blockers:{}};return R.aiBlockers(combat,A,D,H.cardById,E.forEvent)}
+test('aiBlockers empareja mayor poder con mayor resistencia',()=>{const x=aiPlan(['reg_combat_1_1','reg_ai_3_3','reg_combat_2_2'],['reg_combat_1_1','reg_ai_1_4','reg_combat_grow_1_3']);return x['1']===1&&x['2']===2&&x['0']===0});
+test('aiBlockers excluye bloqueadores agotados',()=>{const x=aiPlan(['reg_combat_1_1','reg_ai_3_3','reg_combat_2_2'],['reg_combat_1_1','reg_ai_1_4','reg_combat_grow_1_3'],{exhausted:[1]});return x['1']===2&&x['2']===0&&x['0']==null});
+test('aiBlockers usa poder efectivo con Equipment para ordenar atacantes',()=>{const plain=aiPlan(['reg_combat_1_1','reg_combat_2_2'],['reg_ai_1_4','reg_combat_grow_1_3']),equipped=aiPlan(['reg_combat_1_1','reg_combat_2_2'],['reg_ai_1_4','reg_combat_grow_1_3'],{equipment:[{id:'reg_stats_blade',target:0}]});return plain['1']===0&&plain['0']===1&&equipped['0']===0&&equipped['1']===1});
+test('aiBlockers deja atacantes sin bloquear cuando faltan defensores',()=>{const x=aiPlan(['reg_ai_3_3','reg_combat_2_2','reg_combat_1_1'],['reg_ai_1_4']);return x['0']===0&&x['1']==null&&x['2']==null});
+test('aiBlockers ignora permanentes no Creature en battlefield defensivo',()=>{const x=aiPlan(['reg_ai_3_3'],['reg_stats_blade','reg_ai_1_4']);return x['0']===1});
 
 for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`SIZA creature rules regression: ${passed}/${results.length}`);dom.window.close();if(passed!==results.length)process.exit(1);
