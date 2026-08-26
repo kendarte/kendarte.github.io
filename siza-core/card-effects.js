@@ -1,17 +1,61 @@
 (function(global){
 'use strict';
 
-const VERSION='1.15.0';
+const VERSION='1.16.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
 const COLORS=Object.freeze(['U','R','G','W','B']);
+const EVENT_LABELS=Object.freeze({
+ resolve:'Al resolverse',
+ enter:'Al entrar en juego',
+ 'attack-declared':'Al declarar ataque',
+ 'combat-damage':'Al hacer daño de combate',
+ 'manifest-roll':'En una tirada de Manafestación',
+ equipped:'Mientras está equipado'
+});
+const TARGET_LABELS=Object.freeze({self:'Propietario',opponent:'Rival'});
+const COLOR_LABELS=Object.freeze({U:'Azul',R:'Rojo',G:'Verde',W:'Blanco',B:'Negro'});
+const EDITOR_DEFINITIONS=Object.freeze({
+ draw:Object.freeze({label:'Robar cartas',description:'Roba una cantidad de cartas.',defaultEvent:'resolve',defaults:Object.freeze({target:'self',amount:1}),fields:Object.freeze([
+  Object.freeze({key:'target',kind:'target',label:'Quién roba'}),
+  Object.freeze({key:'amount',kind:'number',label:'Cantidad',min:1,max:20,step:1})
+ ])}),
+ 'damage-character':Object.freeze({label:'Daño a personaje',description:'Inflige daño directamente a un personaje.',defaultEvent:'resolve',defaults:Object.freeze({target:'opponent',amount:1}),fields:Object.freeze([
+  Object.freeze({key:'target',kind:'target',label:'Objetivo'}),
+  Object.freeze({key:'amount',kind:'number',label:'Daño',min:1,max:99,step:1})
+ ])}),
+ 'counter-stack-target':Object.freeze({label:'Contrarrestar spell',description:'Contrarresta el objetivo actual del Stack.',defaultEvent:'resolve',defaults:Object.freeze({}),fields:Object.freeze([])}),
+ 'observe-top':Object.freeze({label:'Observar carta superior',description:'Observa la primera carta de la Library elegida.',defaultEvent:'enter',defaults:Object.freeze({target:'self'}),fields:Object.freeze([
+  Object.freeze({key:'target',kind:'target',label:'Library'}),
+ ])}),
+ 'bounce-other-permanent':Object.freeze({label:'Devolver otro permanente',description:'Devuelve otro permanente a la mano de su dueño.',defaultEvent:'enter',defaults:Object.freeze({}),fields:Object.freeze([])}),
+ discard:Object.freeze({label:'Descartar carta',description:'Hace descartar una carta; el dueño elige cuando corresponde.',defaultEvent:'enter',defaults:Object.freeze({target:'self',amount:1,choice:'owner'}),fields:Object.freeze([
+  Object.freeze({key:'target',kind:'target',label:'Quién descarta'})
+ ])}),
+ 'add-power-counter':Object.freeze({label:'Ganar contador +1/+1',description:'Añade contadores permanentes de poder/resistencia.',defaultEvent:'combat-damage',defaults:Object.freeze({amount:1}),fields:Object.freeze([
+  Object.freeze({key:'amount',kind:'number',label:'Contadores',min:1,max:20,step:1})
+ ])}),
+ 'manifest-bonus':Object.freeze({label:'Bonificación de Manafestación',description:'Suma un bono a una tirada de Manafestación que cumpla el requisito.',defaultEvent:'manifest-roll',lockedEvent:true,defaults:Object.freeze({amount:1,requiresPip:'U',exhaustSource:true}),fields:Object.freeze([
+  Object.freeze({key:'amount',kind:'number',label:'Bonificación',min:1,max:20,step:1}),
+  Object.freeze({key:'requiresPip',kind:'color',label:'Requiere cristal'}),
+  Object.freeze({key:'exhaustSource',kind:'boolean',label:'Agotar la fuente'})
+ ])}),
+ 'modify-power':Object.freeze({label:'Modificar ataque equipado',description:'Modifica el ataque de la criatura equipada.',defaultEvent:'equipped',lockedEvent:true,defaults:Object.freeze({amount:1}),fields:Object.freeze([
+  Object.freeze({key:'amount',kind:'number',label:'Ataque adicional',min:1,max:20,step:1})
+ ])})
+});
 
 function text(value,fallback=''){return String(value??fallback);}
 function integer(value,fallback=0){const n=Number(value);return Number.isFinite(n)?Math.trunc(n):fallback;}
 function normalizeEffect(input={}){const type=TYPES.includes(input.type)?input.type:text(input.type,''),event=EVENTS.includes(input.event)?input.event:'resolve',effect={type,event};if(input.target!=null)effect.target=TARGETS.includes(input.target)?input.target:text(input.target);if(input.amount!=null)effect.amount=Math.max(0,integer(input.amount,0));if(input.choice!=null)effect.choice=text(input.choice);if(input.requiresPip!=null)effect.requiresPip=text(input.requiresPip).toUpperCase();if(input.exhaustSource!=null)effect.exhaustSource=!!input.exhaustSource;return effect;}
 function normalizeEffects(input=[]){return Array.isArray(input)?input.map(normalizeEffect):[];}
 function validateEffects(input=[]){const effects=normalizeEffects(input),errors=[],warnings=[];effects.forEach((effect,index)=>{const p=`effects[${index}]`;if(!TYPES.includes(effect.type))errors.push(`${p}: tipo de efecto inválido (${effect.type||'vacío'}).`);if(!EVENTS.includes(effect.event))errors.push(`${p}: evento inválido (${effect.event||'vacío'}).`);if(['draw','damage-character','discard','add-power-counter','manifest-bonus','modify-power'].includes(effect.type)&&(!Number.isInteger(effect.amount)||effect.amount<=0))errors.push(`${p}: ${effect.type} requiere amount > 0.`);if(['draw','damage-character','discard'].includes(effect.type)&&effect.target&&!TARGETS.includes(effect.target))errors.push(`${p}: target inválido (${effect.target}).`);if(effect.type==='discard'&&effect.amount!==1)errors.push(`${p}: el runtime actual sólo admite discard amount=1.`);if(effect.type==='discard'&&effect.choice&&effect.choice!=='owner')errors.push(`${p}: discard sólo admite choice=owner.`);if(effect.type==='manifest-bonus'&&effect.event!=='manifest-roll')errors.push(`${p}: manifest-bonus requiere event=manifest-roll.`);if(effect.type==='modify-power'&&effect.event!=='equipped')errors.push(`${p}: modify-power requiere event=equipped.`);if(effect.requiresPip&&!COLORS.includes(effect.requiresPip))errors.push(`${p}: requiresPip inválido (${effect.requiresPip}).`);if(effect.type==='damage-character'&&!effect.target)warnings.push(`${p}: damage-character sin target usa opponent por contrato runtime.`);if(effect.type==='draw'&&!effect.target)warnings.push(`${p}: draw sin target usa self por contrato runtime.`);});return{valid:errors.length===0,errors,warnings,effects};}
+function editorDefinition(type){return EDITOR_DEFINITIONS[type]||null;}
+function newEffect(type,event=null){
+ const def=editorDefinition(type);if(!def)return normalizeEffect({type,event:event||'resolve'});
+ return normalizeEffect({type,event:event||def.defaultEvent,...def.defaults});
+}
 function forEvent(card,event){return normalizeEffects(card?.effects).filter(effect=>effect.event===event);}
 function hasEffect(card,type,event=null){const list=event?forEvent(card,event):normalizeEffects(card?.effects);return list.some(effect=>effect.type===type);}
 function sumAmount(card,event,type){return forEvent(card,event).filter(effect=>effect.type===type).reduce((sum,effect)=>sum+(effect.amount||0),0);}
@@ -81,5 +125,5 @@ function stackCompletionPlan(match={}){
 }
 function shouldContinueStackResolution(match,resolvedCount,limit=30){return !!(match.stack.length&&!match.pendingChoice&&!match.over&&resolvedCount<limit);}
 function matchWinner(playerLife,enemyLife){return playerLife<=0||enemyLife<=0?(playerLife>0?'player':'enemy'):null;}
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,runtimePlan,preferredResponseCard,preferredMainPhaseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,EVENT_LABELS,TARGET_LABELS,COLOR_LABELS,EDITOR_DEFINITIONS,editorDefinition,newEffect,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,runtimePlan,preferredResponseCard,preferredMainPhaseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
 })(window);
