@@ -11,7 +11,7 @@ const entryTag='<script src="../siza-core/entry-rules.js"></script>';
 if(html.includes(entryTag))html=html.replace(entryTag,`<script>${fs.readFileSync('siza-core/entry-rules.js','utf8')}</script>`);
 const marker='window.SIZA={';
 if(!html.includes(marker))throw new Error('SIZA export marker missing');
-const probe=`window.__ENTRY_RULES_REGRESSION__={createMatch,setMatch:m=>state.match=m,preparingV070,canAttackV070,availableAttackersV610,legalBlockersV070,spellCostV070,ENTRY_V070,TEST_CARD_DB_V1};\n`;
+const probe=`window.__ENTRY_RULES_REGRESSION__={createMatch,setMatch:m=>state.match=m,preparingV070,canAttackV070,availableAttackersV610,legalBlockersV070,enemyAfterMain,spellCostV070,ENTRY_V070,TEST_CARD_DB_V1};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM entry-rules]',e.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});
 dom.window.setTimeout=()=>0;
@@ -31,6 +31,11 @@ function fresh(mode='prepare'){
   return M;
 }
 function add(P,id,born){P.battlefield.push(id);P.powerCounters.push(0);P.summonedOn.push(born)}
+function rival(mode='prepare'){
+  const M=H.createMatch(false,mode);H.setMatch(M);M.rules.entryMode=mode;M.active='enemy';M.phase='Main rival';M.combat=null;M.over=false;M.log=[];
+  M.enemy.battlefield=[];M.enemy.powerCounters=[];M.enemy.summonedOn=[];M.enemy.exhausted=[];M.enemy.ownTurn=3;
+  return M;
+}
 
 test('Arena usa exactamente los modos compartidos',()=>H.ENTRY_V070===dom.window.SizaEntryRules.MODES&&H.ENTRY_V070.prepare.short==='PREPARACIÓN UNIVERSAL');
 test('Preparación universal bloquea una Invocación recién entrada',()=>{const M=fresh('prepare');add(M.player,'reg_entry_one',3);return H.preparingV070(M.player,0)===true&&!H.canAttackV070(M.player,0)});
@@ -40,6 +45,8 @@ test('Impulso permite una Invocación de un cristal pero no una de dos',()=>{con
 test('Agotamiento bloquea ataque aunque la entrada lo permita',()=>{const M=fresh('immediate');add(M.player,'reg_entry_one',3);M.player.exhausted=[0];return !H.canAttackV070(M.player,0)&&H.availableAttackersV610().length===0});
 test('availableAttackers filtra por preparación y agotamiento',()=>{const M=fresh('oneCrystal');add(M.player,'reg_entry_one',3);add(M.player,'reg_entry_two',3);add(M.player,'reg_entry_one',2);M.player.exhausted=[2];return JSON.stringify(H.availableAttackersV610())==='[0]'});
 test('Bloqueadores legales ignoran preparación pero excluyen agotadas y no criaturas',()=>{const M=fresh('prepare');add(M.player,'reg_entry_one',3);add(M.player,'reg_entry_two',3);add(M.player,'reg_entry_artifact',3);M.player.exhausted=[1];return JSON.stringify(H.legalBlockersV070(M.player))==='[0]'});
+test('Rival reutiliza selector compartido en preparación',()=>{const M=rival('prepare');add(M.enemy,'reg_entry_one',2);add(M.enemy,'reg_entry_two',3);H.enemyAfterMain();return JSON.stringify(M.combat?.attackers)===JSON.stringify([{index:0,id:'reg_entry_one'}])&&JSON.stringify(M.enemy.exhausted)===JSON.stringify([0])&&M.active==='defense'});
+test('Rival reutiliza selector compartido con entrada inmediata',()=>{const M=rival('immediate');add(M.enemy,'reg_entry_two',3);H.enemyAfterMain();return JSON.stringify(M.combat?.attackers)===JSON.stringify([{index:0,id:'reg_entry_two'}])&&M.enemy.exhausted.includes(0)});
 
 for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);
 const passed=results.filter(r=>r.pass).length;
