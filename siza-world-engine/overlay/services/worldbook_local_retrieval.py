@@ -8,10 +8,17 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.3-local-worldbook-v08-retrieval"
+WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.4-local-worldbook-v18-retrieval"
+WORLDBOOK_VERSION = "1.8"
+EXPECTED_PAYLOAD_CHARS = 136904
 DEFAULT_MAX_SNIPPETS = 4
 DEFAULT_CHAR_BUDGET = 2200
-_CHUNK_RE = re.compile(r"[A-Za-z0-9+/=]{64,}")
+CONTENT_FILES = (
+    "wb18-00.txt", "wb18-01.txt", "wb18-02.txt", "wb18-03.txt", "wb18-04.txt",
+    "wb18-05a.txt", "wb18-05b.txt", "wb18-05c.txt", "wb18-05d.txt",
+    "wb18-06.txt", "wb18-07.txt", "wb18-08.txt", "wb18-09.txt", "wb18-10.txt",
+    "wb18-11a.txt", "wb18-11b.txt", "wb18-11c.txt", "wb18-11d.txt", "wb18-11e.txt", "wb18-11f.txt",
+)
 _TOKEN_RE = re.compile(r"[a-z0-9_:-]+")
 _STOPWORDS = {
     "a", "al", "and", "ante", "con", "de", "del", "el", "en", "for", "la", "las", "los",
@@ -69,18 +76,18 @@ class _VisibleTextParser(HTMLParser):
         return "\n".join(lines)
 
 
-def _candidate_chunk_dirs(explicit_dir=None):
+def _candidate_content_dirs(explicit_dir=None):
     seen = set()
     values = []
     if explicit_dir:
         values.append(Path(explicit_dir))
-    env_dir = str(os.environ.get("SIZA_WORLDBOOK_CHUNKS", "") or "").strip()
+    env_dir = str(os.environ.get("SIZA_WORLDBOOK_CONTENT", "") or "").strip()
     if env_dir:
         values.append(Path(env_dir))
 
     here = Path(__file__).resolve()
     for parent in here.parents:
-        values.append(parent / "rivarica" / "chunks")
+        values.append(parent / "rivarica" / "content")
 
     for value in values:
         try:
@@ -94,44 +101,39 @@ def _candidate_chunk_dirs(explicit_dir=None):
         yield resolved
 
 
-def find_worldbook_chunks_dir(explicit_dir=None):
-    for directory in _candidate_chunk_dirs(explicit_dir=explicit_dir):
-        if all((directory / f"wb-{index:02d}.js").is_file() for index in range(6)):
+def find_worldbook_content_dir(explicit_dir=None):
+    for directory in _candidate_content_dirs(explicit_dir=explicit_dir):
+        if all((directory / filename).is_file() for filename in CONTENT_FILES):
             return directory
     return None
-
-
-def _extract_chunk_payload(path):
-    source = Path(path).read_text(encoding="utf-8")
-    matches = _CHUNK_RE.findall(source)
-    if not matches:
-        raise ValueError(f"INVALID_WORLDBOOK_CHUNK:{Path(path).name}")
-    # The v0.8 assets are transport fragments rather than trustworthy standalone
-    # JavaScript strings. Use the raw base64 runs and let strict base64+gzip decoding
-    # validate the joined package.
-    return "".join(matches)
 
 
 @lru_cache(maxsize=4)
 def _load_visible_text_cached(directory_text):
     directory = Path(directory_text)
-    encoded = "".join(_extract_chunk_payload(directory / f"wb-{index:02d}.js") for index in range(6))
+    parts = [(directory / filename).read_text(encoding="utf-8").strip() for filename in CONTENT_FILES]
+    encoded = "".join(parts)
+    if len(encoded) != EXPECTED_PAYLOAD_CHARS:
+        raise ValueError(f"INCOMPLETE_WORLDBOOK_V18_PAYLOAD:{len(encoded)}/{EXPECTED_PAYLOAD_CHARS}")
     html_bytes = gzip.decompress(base64.b64decode(encoded, validate=True))
     html_text = html_bytes.decode("utf-8")
+    if "Rivarica World Book v1.8" not in html_text:
+        raise ValueError("INVALID_WORLDBOOK_V18_CONTENT")
     parser = _VisibleTextParser()
     parser.feed(html_text)
     parser.close()
     return parser.text()
 
 
-def load_worldbook_visible_text(chunks_dir=None):
-    directory = find_worldbook_chunks_dir(explicit_dir=chunks_dir)
+def load_worldbook_visible_text(content_dir=None):
+    directory = find_worldbook_content_dir(explicit_dir=content_dir)
     if not directory:
         return {
             "status": "WORLDBOOK_NOT_FOUND",
             "available": False,
+            "version": WORLDBOOK_VERSION,
             "text": "",
-            "chunks_dir": None,
+            "content_dir": None,
             "build": WORLDBOOK_RETRIEVAL_BUILD,
         }
     try:
@@ -140,16 +142,18 @@ def load_worldbook_visible_text(chunks_dir=None):
         return {
             "status": "WORLDBOOK_DECODE_ERROR",
             "available": False,
+            "version": WORLDBOOK_VERSION,
             "text": "",
-            "chunks_dir": str(directory),
+            "content_dir": str(directory),
             "error": str(exc),
             "build": WORLDBOOK_RETRIEVAL_BUILD,
         }
     return {
         "status": "READY",
         "available": True,
+        "version": WORLDBOOK_VERSION,
         "text": text,
-        "chunks_dir": str(directory),
+        "content_dir": str(directory),
         "build": WORLDBOOK_RETRIEVAL_BUILD,
     }
 
@@ -180,19 +184,19 @@ def _score_window(window_text, query_phrases, query_tokens):
     folded = _fold(window_text)
     window_tokens = set(_tokens(window_text))
     score = 0
-    matched = []
+    phrase_matches = []
     for phrase in query_phrases:
         clean = _fold(phrase)
         if clean and clean in folded:
             score += 250
-            matched.append(clean)
+            phrase_matches.append(clean)
     overlap = sorted(set(query_tokens).intersection(window_tokens))
     score += 35 * len(overlap)
-    return score, matched, overlap
+    return score, phrase_matches, overlap
 
 
-def retrieve_worldbook_context(queries, *, chunks_dir=None, max_snippets=DEFAULT_MAX_SNIPPETS, char_budget=DEFAULT_CHAR_BUDGET):
-    """Retrieve bounded local World Book excerpts for DM-only adjudication context."""
+def retrieve_worldbook_context(queries, *, content_dir=None, max_snippets=DEFAULT_MAX_SNIPPETS, char_budget=DEFAULT_CHAR_BUDGET):
+    """Retrieve bounded World Book v1.8 excerpts for DM-only context; never grants player Knowledge."""
     query_phrases = []
     for value in list(queries or []):
         clean = str(value or "").strip()
@@ -208,7 +212,7 @@ def retrieve_worldbook_context(queries, *, chunks_dir=None, max_snippets=DEFAULT
     except (TypeError, ValueError):
         char_budget = DEFAULT_CHAR_BUDGET
 
-    loaded = load_worldbook_visible_text(chunks_dir=chunks_dir)
+    loaded = load_worldbook_visible_text(content_dir=content_dir)
     if not loaded.get("available"):
         return {
             **loaded,
@@ -222,20 +226,17 @@ def retrieve_worldbook_context(queries, *, chunks_dir=None, max_snippets=DEFAULT
         return {
             "status": "NO_QUERY",
             "available": True,
+            "version": WORLDBOOK_VERSION,
             "queries": query_phrases,
             "snippets": [],
             "used_chars": 0,
-            "chunks_dir": loaded.get("chunks_dir"),
+            "content_dir": loaded.get("content_dir"),
             "authority": "DM_CONTEXT_ONLY",
             "player_knowledge": False,
             "build": WORLDBOOK_RETRIEVAL_BUILD,
         }
 
-    query_tokens = []
-    for phrase in query_phrases:
-        query_tokens.extend(_tokens(phrase))
-    query_tokens = sorted(set(query_tokens))
-
+    query_tokens = sorted({token for phrase in query_phrases for token in _tokens(phrase)})
     ranked = []
     for index, window in enumerate(_windows(loaded.get("text") or "")):
         score, phrase_matches, token_matches = _score_window(window.get("text"), query_phrases, query_tokens)
@@ -269,7 +270,8 @@ def retrieve_worldbook_context(queries, *, chunks_dir=None, max_snippets=DEFAULT
             break
         seen_text.add(key)
         selected.append({
-            "source": "RIVARICA_WORLDBOOK_V08_LOCAL",
+            "source": "RIVARICA_WORLDBOOK_V18_LOCAL",
+            "version": WORLDBOOK_VERSION,
             "window_index": row.get("window_index"),
             "score": row.get("score"),
             "matched_terms": row.get("token_matches"),
@@ -280,11 +282,12 @@ def retrieve_worldbook_context(queries, *, chunks_dir=None, max_snippets=DEFAULT
     return {
         "status": "RETRIEVED" if selected else "NO_MATCH",
         "available": True,
+        "version": WORLDBOOK_VERSION,
         "queries": query_phrases,
         "query_tokens": query_tokens,
         "snippets": selected,
         "used_chars": used_chars,
-        "chunks_dir": loaded.get("chunks_dir"),
+        "content_dir": loaded.get("content_dir"),
         "authority": "DM_CONTEXT_ONLY",
         "player_knowledge": False,
         "build": WORLDBOOK_RETRIEVAL_BUILD,
