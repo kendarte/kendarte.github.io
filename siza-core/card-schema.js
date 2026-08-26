@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const CARD_SCHEMA_VERSION='1.2.0';
+const CARD_SCHEMA_VERSION='1.3.0';
 const CARD_TYPES=['Instant','Creature','Artifact','Land'];
 const COLORS=['U','R','G','W','B'];
 const TYPE_ALIASES={instant:'Instant',instantaneo:'Instant','instantáneo':'Instant',creature:'Creature',invocacion:'Creature','invocación':'Creature',artifact:'Artifact',artefacto:'Artifact',land:'Land',reserva:'Land',tierra:'Land'};
@@ -18,6 +18,11 @@ function equipmentCost(input={}){return Math.max(0,Number(input?.equipCost)||0);
 function isEquipmentCard(input={}){
  const effects=normalizeEffects(input?.effects),hasEquipped=global.SizaCardEffects?.forEvent?global.SizaCardEffects.forEvent({...input,effects},'equipped').length>0:effects.some(effect=>effect?.event==='equipped');
  return !!(input?.type==='Artifact'&&(equipmentCost(input)>0||hasEquipped));
+}
+function resolutionKind(input={}){
+ if(input?.type==='Creature')return'creature';
+ if(input?.type==='Artifact')return isEquipmentCard(input)?'equipment':'artifact';
+ return'spell';
 }
 
 function normalizePips(input={}){
@@ -118,6 +123,7 @@ global.SizaCardSchema=Object.freeze({
  pipsToCrystalArray,
  normalizeEffects,
  equipmentCost,
- isEquipmentCard
+ isEquipmentCard,
+ resolutionKind
 });
 })(window);
