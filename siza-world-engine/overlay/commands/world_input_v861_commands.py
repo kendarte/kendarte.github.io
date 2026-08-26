@@ -15,6 +15,7 @@ from services.ranked_fact_conversation_engine import (
     resolve_ranked_talk_with_disclosure_and_acquisition,
 )
 from services.semantic_fact_inform_engine import parse_semantic_fact_inform_intent
+from services.styled_grounded_dialogue_renderer import render_styled_grounded_dialogue_async
 from services.world_combat_handoff_engine import (
     WORLD_COMBAT_HANDOFF_BUILD,
     accept_world_combat_result,
@@ -24,7 +25,8 @@ from services.world_combat_handoff_engine import (
 )
 
 
-NATURAL_RANKED_FACT_TALK_BUILD = "0.86.2-ranked-talk-plus-dm-unsupported-escalation"
+NATURAL_RANKED_FACT_TALK_BUILD = "0.86.3-ranked-talk-plus-structured-dialogue-ui"
+DIALOGUE_UI_BUILD = "0.1.0-structured-dialogue-ui"
 COMBAT_RESULT_PREFIX = "siza-combat-result "
 COMBAT_TEST_PREFIX = "siza-combat-test "
 COMBAT_CLEAR_COMMAND = "siza-combat-clear"
@@ -40,6 +42,121 @@ def _is_admin(actor):
         return bool(actor.permissions.check("Admin"))
     except Exception:
         return False
+
+
+def _dialogue_speaker(packet):
+    result = dict(packet or {})
+    acquisition = dict(result.get("knowledge_acquisition") or {})
+    return str(
+        acquisition.get("source_name")
+        or result.get("source_name")
+        or result.get("target_name")
+        or result.get("npc_name")
+        or "NPC"
+    ).strip() or "NPC"
+
+
+def _dialogue_topic(packet):
+    result = dict(packet or {})
+    acquisition = dict(result.get("knowledge_acquisition") or {})
+    return str(acquisition.get("topic") or result.get("topic") or "").strip()
+
+
+def _emit_dialogue_ui(actor, speaker, text, *, topic="", status="DIALOGUE"):
+    display = str(text or "").strip()
+    if not actor or not display:
+        return False
+    actor.msg(
+        siza_dialogue=(
+            ({
+                "speaker": str(speaker or "NPC").strip() or "NPC",
+                "text": display,
+                "topic": str(topic or "").strip(),
+                "language": get_actor_turn_language(actor),
+                "status": str(status or "DIALOGUE"),
+                "build": DIALOGUE_UI_BUILD,
+            },),
+            {},
+        )
+    )
+    return True
+
+
+def _ui_dialogue_renderer(
+    actor,
+    npc_name,
+    topic,
+    fact_text,
+    *,
+    style_context=None,
+    fallback_text="",
+    **provider_options,
+):
+    """Use the existing grounded renderer, adding only a presentation event for the book client."""
+    upstream_on_result = provider_options.pop("on_result", None)
+
+    def _on_result(current_actor, result):
+        packet = result if isinstance(result, dict) else {}
+        display = str(packet.get("display_text") or fallback_text or fact_text or "").strip()
+        if display:
+            _emit_dialogue_ui(
+                current_actor,
+                npc_name,
+                display,
+                topic=topic,
+                status=packet.get("status") or "DIALOGUE_RENDERED",
+            )
+            # Keep the terminal/MUD transport compatible; the book client de-duplicates this copy.
+            current_actor.msg("\n" + display)
+        if callable(upstream_on_result):
+            return upstream_on_result(current_actor, packet)
+        return packet
+
+    return render_styled_grounded_dialogue_async(
+        actor,
+        npc_name,
+        topic,
+        fact_text,
+        style_context=style_context,
+        fallback_text=fallback_text,
+        on_result=_on_result,
+        **provider_options,
+    )
+
+
+def _present_conversation_v861(
+    actor,
+    packet,
+    *,
+    emit_messages=True,
+    render_async_callable=None,
+    provider_options=None,
+):
+    renderer = render_async_callable
+    if renderer is None and emit_messages:
+        renderer = _ui_dialogue_renderer
+
+    result = present_conversation_result_v82(
+        actor,
+        packet,
+        emit_messages=emit_messages,
+        render_async_callable=renderer,
+        provider_options=provider_options,
+    )
+
+    if emit_messages:
+        render = dict((result or {}).get("dialogue_render") or {})
+        if not bool(render.get("queued")):
+            text = str((result or {}).get("response_text") or (result or {}).get("rendered_text") or "").strip()
+            if text:
+                _emit_dialogue_ui(
+                    actor,
+                    _dialogue_speaker(result),
+                    text,
+                    topic=_dialogue_topic(result),
+                    status=render.get("status") or "DIALOGUE_DIRECT",
+                )
+    return result
 
 
 def _handle_reserved_combat_input(actor, raw):
@@ -157,7 +274,7 @@ def handle_action_proposal_result_v861(
             expected_target_dbref=current.get("target_dbref"),
         )
         packet = {**dict(packet or {}), "build": NATURAL_RANKED_FACT_TALK_BUILD}
-        return present_conversation_result_v82(
+        return _present_conversation_v861(
             actor,
             packet,
             emit_messages=emit_messages,
@@ -176,7 +293,7 @@ def handle_action_proposal_result_v861(
 
 
 def _proposal_failure(actor, failure):
-    logger.log_err(f"SIZA v0.86.2 action proposal runtime failure: {failure}")
+    logger.log_err(f"SIZA v0.86.3 action proposal runtime failure: {failure}")
     actor.msg("\n" + localize("unsupported", get_actor_turn_language(actor)))
     return failure
 
@@ -218,7 +335,7 @@ class CmdSizaNoMatchV861(CmdSizaNoMatchV85):
                 self.caller,
                 raw,
             )
-            present_conversation_result_v82(self.caller, packet, emit_messages=True)
+            _present_conversation_v861(self.caller, packet, emit_messages=True)
             return None
         if classification.get("route") == "AI_ACTION_PROPOSAL":
             dispatch_unknown_action_v861(self.caller, raw)
