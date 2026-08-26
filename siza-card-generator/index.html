@@ -6,7 +6,7 @@
 <title>Siza · Card Generator</title>
 <link rel="stylesheet" href="../siza-core/card-renderer.css">
 <style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#06111a;color:#dbe7ee;font-family:Arial,sans-serif}button,input,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:minmax(360px,520px) 1fr}.editor{padding:22px;border-right:1px solid #20384a;background:linear-gradient(180deg,#0a1d2b,#06111a);overflow:auto}.preview{padding:28px;display:grid;place-items:start center;align-content:start;gap:18px;background:radial-gradient(circle at 55% 24%,#16344a,#07131d 55%,#040b10)}.eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a98b57;font-weight:900}.title{margin:6px 0 3px;font:500 28px Georgia,serif}.sub{margin:0 0 18px;color:#8fa6b5;font-size:12px;line-height:1.5}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:9px;font-weight:800;letter-spacing:.08em;color:#9db2c0;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid #31516a;border-radius:8px;background:#071722;color:#e5eef3;padding:9px 10px;outline:none}.field textarea{min-height:78px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#ad8c52}.section{margin-top:16px;padding-top:14px;border-top:1px solid #20384a}.section h2{margin:0 0 10px;font:500 16px Georgia,serif;color:#e9d59d}.sectionNote{margin:-4px 0 10px;color:#7892a3;font-size:9px;line-height:1.45}.pips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.pip label{display:block;text-align:center;color:#8fa7b6;font-size:8px}.pip input{text-align:center;padding:7px 3px}.artControls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rangeRow{display:grid;grid-template-columns:1fr 52px;gap:6px;align-items:center}.rangeRow input[type=range]{padding:0}.effectsJson{min-height:150px!important;font:10px/1.45 Consolas,monospace!important}.status{width:min(500px,100%);border:1px solid #29465a;border-radius:12px;background:#071722;padding:11px 13px;font-size:10px;line-height:1.45}.status.good{border-color:#355f4b}.status.bad{border-color:#7a3e45}.status b{display:block;margin-bottom:4px;color:#e9d59d}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.btn{border:1px solid #466a81;border-radius:8px;background:#0c2b3d;color:#dceaf2;padding:9px 12px;font-size:9px;font-weight:900;letter-spacing:.04em;cursor:pointer}.btn.primary{border-color:#9a7b45;background:#5a4727;color:#ffebba}.btn.ghost{background:transparent}.json{margin-top:14px;width:100%;min-height:160px;border:1px solid #29465a;border-radius:9px;background:#030a0f;color:#9fc4d8;padding:10px;font:10px/1.45 Consolas,monospace;resize:vertical}.previewHead{width:min(500px,100%);display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.previewHead h2{margin:0;font:500 20px Georgia,serif}.previewHead span{color:#728b9b;font-size:9px}.cardStage{min-height:470px;display:grid;place-items:start center}.handoff{width:min(500px,100%);padding:10px 12px;border:1px dashed #36556a;border-radius:10px;color:#87a0b0;font-size:9px;line-height:1.45}@media(max-width:900px){.app{grid-template-columns:1fr}.editor{border-right:0;border-bottom:1px solid #20384a}.preview{min-height:640px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#06111a;color:#dbe7ee;font-family:Arial,sans-serif}button,input,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:minmax(380px,540px) 1fr}.editor{padding:22px;border-right:1px solid #20384a;background:linear-gradient(180deg,#0a1d2b,#06111a);overflow:auto}.preview{padding:28px;display:grid;place-items:start center;align-content:start;gap:18px;background:radial-gradient(circle at 55% 24%,#16344a,#07131d 55%,#040b10)}.eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a98b57;font-weight:900}.title{margin:6px 0 3px;font:500 28px Georgia,serif}.sub{margin:0 0 18px;color:#8fa6b5;font-size:12px;line-height:1.5}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:9px;font-weight:800;letter-spacing:.08em;color:#9db2c0;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid #31516a;border-radius:8px;background:#071722;color:#e5eef3;padding:9px 10px;outline:none}.field textarea{min-height:78px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#ad8c52}.section{margin-top:16px;padding-top:14px;border-top:1px solid #20384a}.section h2{margin:0 0 10px;font:500 16px Georgia,serif;color:#e9d59d}.sectionNote{margin:-4px 0 10px;color:#7892a3;font-size:9px;line-height:1.45}.pips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.pip label{display:block;text-align:center;color:#8fa7b6;font-size:8px}.pip input{text-align:center;padding:7px 3px}.artControls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rangeRow{display:grid;grid-template-columns:1fr 52px;gap:6px;align-items:center}.rangeRow input[type=range]{padding:0}.effectsJson{min-height:150px!important;font:10px/1.45 Consolas,monospace!important}.status{width:min(500px,100%);border:1px solid #29465a;border-radius:12px;background:#071722;padding:11px 13px;font-size:10px;line-height:1.45}.status.good{border-color:#355f4b}.status.bad{border-color:#7a3e45}.status b{display:block;margin-bottom:4px;color:#e9d59d}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.btn{border:1px solid #466a81;border-radius:8px;background:#0c2b3d;color:#dceaf2;padding:9px 12px;font-size:9px;font-weight:900;letter-spacing:.04em;cursor:pointer}.btn.primary{border-color:#9a7b45;background:#5a4727;color:#ffebba}.btn.danger{border-color:#70454a;background:#32171b;color:#f0c7c7}.btn.ghost{background:transparent}.json,.batchJson{margin-top:14px;width:100%;min-height:160px;border:1px solid #29465a;border-radius:9px;background:#030a0f;color:#9fc4d8;padding:10px;font:10px/1.45 Consolas,monospace;resize:vertical}.batchJson{min-height:190px;margin-top:0}.previewHead{width:min(500px,100%);display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.previewHead h2{margin:0;font:500 20px Georgia,serif}.previewHead span{color:#728b9b;font-size:9px}.cardStage{min-height:470px;display:grid;place-items:start center}.handoff{width:min(500px,100%);padding:10px 12px;border:1px dashed #36556a;border-radius:10px;color:#87a0b0;font-size:9px;line-height:1.45}.libraryBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:end;padding:11px;border:1px solid #29465a;border-radius:11px;background:#071722}.libraryBar .field{min-width:0}.artDrop{margin-bottom:10px;padding:14px;border:1px dashed #52748a;border-radius:11px;background:#071722;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;transition:.15s}.artDrop.dragover{border-color:#c49a55;background:#0c2432}.artDrop strong{display:block;font:500 14px Georgia,serif;color:#ead7a4}.artDrop span{display:block;margin-top:3px;color:#8098a8;font-size:9px;line-height:1.4}.artFileButtons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.batchHelp{padding:8px 10px;border-left:2px solid #4c6c80;background:#071722;color:#859dac;font-size:9px;line-height:1.45}@media(max-width:900px){.app{grid-template-columns:1fr}.editor{border-right:0;border-bottom:1px solid #20384a}.preview{min-height:640px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.libraryBar{grid-template-columns:1fr 1fr}.libraryBar .field{grid-column:1/-1}.artDrop{grid-template-columns:1fr}.artFileButtons{justify-content:flex-start}.artControls{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -14,14 +14,21 @@
  <main class="editor">
   <div class="eyebrow">Siza · Shared Tooling</div>
   <h1 class="title">Card Generator</h1>
-  <p class="sub">La carta es datos + arte. El preview usa el mismo renderer compartido que Collection, Deck Builder y Arena.</p>
+  <p class="sub">Una sola carta dinámica para Generator, Collection y Arena. Los cambios manuales quedan guardados por ID y los batch se aplican sin borrar el arte manual si no lo especifican.</p>
+
+  <div class="libraryBar">
+   <div class="field"><label for="savedCards">Biblioteca local</label><select id="savedCards"><option value="">— Cartas guardadas —</option></select></div>
+   <button class="btn ghost" type="button" id="newCard">Nueva</button>
+   <button class="btn danger" type="button" id="deleteCard">Eliminar</button>
+  </div>
+
   <form id="cardForm" autocomplete="off">
-   <div class="grid">
+   <div class="grid" style="margin-top:14px">
     <div class="field"><label for="id">ID</label><input id="id" name="id"></div>
     <div class="field"><label for="name">Nombre</label><input id="name" name="name"></div>
     <div class="field"><label for="cardType">Tipo</label><select id="cardType" name="cardType"><option>Instant</option><option>Creature</option><option>Artifact</option><option>Land</option></select></div>
     <div class="field"><label for="subtype">Subtipo</label><input id="subtype" name="subtype"></div>
-    <div class="field"><label for="difficulty">Dificultad</label><input id="difficulty" name="difficulty" type="number" min="0" max="20"></div>
+    <div class="field"><label for="difficulty">Manafestación</label><input id="difficulty" name="difficulty" type="number" min="0" max="20"></div>
     <div class="field"><label for="cost">Coste nominal</label><input id="cost" name="cost" type="number" min="0" max="20"></div>
     <div class="field"><label for="affinity">Afinidad visual</label><select id="affinity" name="affinity"><option value="azul">Azul</option><option value="rojo">Rojo</option><option value="multi">Multi</option><option value="land">Land</option></select></div>
     <div class="field"><label for="glyph">Glyph fallback</label><input id="glyph" name="glyph" maxlength="4"></div>
@@ -30,11 +37,29 @@
    <section class="section">
     <h2>Cristales impresos</h2>
     <div class="pips">
-     <div class="pip"><label>U</label><input id="pipU" type="number" min="0" max="9"></div>
-     <div class="pip"><label>R</label><input id="pipR" type="number" min="0" max="9"></div>
-     <div class="pip"><label>G</label><input id="pipG" type="number" min="0" max="9"></div>
-     <div class="pip"><label>W</label><input id="pipW" type="number" min="0" max="9"></div>
-     <div class="pip"><label>B</label><input id="pipB" type="number" min="0" max="9"></div>
+     <div class="pip"><label>U · Azul</label><input id="pipU" type="number" min="0" max="9"></div>
+     <div class="pip"><label>R · Rojo</label><input id="pipR" type="number" min="0" max="9"></div>
+     <div class="pip"><label>G · Verde</label><input id="pipG" type="number" min="0" max="9"></div>
+     <div class="pip"><label>W · Blanco</label><input id="pipW" type="number" min="0" max="9"></div>
+     <div class="pip"><label>B · Negro</label><input id="pipB" type="number" min="0" max="9"></div>
+    </div>
+   </section>
+
+   <section class="section">
+    <h2>Ilustración</h2>
+    <div class="artDrop" id="artDropZone">
+     <div><strong>Slot de ilustración de la carta</strong><span id="artFileStatus">Suba una imagen. Se guarda localmente asociada al ID de la carta y puede volver a editar X, Y y zoom después.</span></div>
+     <div class="artFileButtons">
+      <input id="artFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      <button class="btn primary" type="button" id="chooseArt">Subir ilustración</button>
+      <button class="btn ghost" type="button" id="removeArt">Quitar</button>
+     </div>
+    </div>
+    <div class="field"><label for="artUrl">URL externa opcional</label><input id="artUrl" name="artUrl" placeholder="../assets/cards/art/mi_carta.webp"></div>
+    <div class="artControls" style="margin-top:9px">
+     <div class="field"><label>Posición X</label><div class="rangeRow"><input id="artX" type="range" min="0" max="100" step="1"><input id="artXValue" type="number" min="0" max="100"></div></div>
+     <div class="field"><label>Posición Y</label><div class="rangeRow"><input id="artY" type="range" min="0" max="100" step="1"><input id="artYValue" type="number" min="0" max="100"></div></div>
+     <div class="field"><label>Zoom</label><div class="rangeRow"><input id="artScale" type="range" min="0.25" max="4" step="0.05"><input id="artScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
     </div>
    </section>
 
@@ -56,30 +81,30 @@
     <div class="field"><label for="effectsJson">Effects</label><textarea class="effectsJson" id="effectsJson" name="effectsJson">[]</textarea></div>
    </section>
 
-   <section class="section">
-    <h2>Arte separado</h2>
-    <div class="field"><label for="artUrl">artUrl</label><input id="artUrl" name="artUrl" placeholder="../assets/cards/art/mi_carta.webp"></div>
-    <div class="artControls" style="margin-top:9px">
-     <div class="field"><label>X</label><div class="rangeRow"><input id="artX" type="range" min="0" max="100" step="1"><input id="artXValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Y</label><div class="rangeRow"><input id="artY" type="range" min="0" max="100" step="1"><input id="artYValue" type="number" min="0" max="100"></div></div>
-     <div class="field"><label>Escala</label><div class="rangeRow"><input id="artScale" type="range" min="0.25" max="4" step="0.05"><input id="artScaleValue" type="number" min="0.25" max="4" step="0.05"></div></div>
-    </div>
-   </section>
-
    <div class="actions">
-    <button class="btn primary" type="button" id="saveDraft">Guardar borrador</button>
-    <button class="btn ghost" type="button" id="loadExample">Cargar ejemplo</button>
-    <button class="btn ghost" type="button" id="resetDraft">Limpiar</button>
+    <button class="btn primary" type="button" id="saveDraft">Guardar carta</button>
+    <button class="btn ghost" type="button" id="loadExample">Cargar Reina Ahogada</button>
+    <button class="btn ghost" type="button" id="resetDraft">Restablecer</button>
     <button class="btn" type="button" id="testMobile">Probar en Mobile Test</button>
    </div>
    <textarea class="json" id="jsonOutput" aria-label="JSON de carta" readonly></textarea>
+
+   <section class="section">
+    <h2>Edición batch</h2>
+    <div class="batchHelp">Formato: una lista JSON de objetos con <b>id</b>. Puede mandar cartas completas o sólo campos a cambiar. Si el batch no incluye <b>artUrl</b>, <b>artAssetKey</b> o <b>artTransform</b>, se conserva el arte y ajuste manual ya guardado.</div>
+    <div class="field" style="margin-top:10px"><label for="batchJson">Batch JSON</label><textarea class="batchJson" id="batchJson" placeholder='[{"id":"queen","difficulty":7,"pips":{"U":2,"B":1}}]'></textarea></div>
+    <div class="actions">
+     <button class="btn ghost" type="button" id="exportBatch">Exportar biblioteca</button>
+     <button class="btn primary" type="button" id="applyBatch">Aplicar batch</button>
+    </div>
+   </section>
   </form>
  </main>
  <aside class="preview">
   <div class="previewHead"><div><div class="eyebrow">CARD_STANDARD_V1</div><h2>Preview vivo</h2></div><span id="schemaVersion"></span></div>
   <div class="cardStage" id="cardPreview"></div>
   <div class="status" id="validationStatus"></div>
-  <div class="handoff" id="handoffStatus">Probar en Mobile Test guarda esta versión como carta temporal y abre Collection. El catálogo oficial no se modifica.</div>
+  <div class="handoff" id="handoffStatus">Guardar carta conserva los datos y la ilustración localmente. Probar en Mobile Test crea sólo una versión temporal para Collection/Arena.</div>
  </aside>
 </div>
 <script src="../siza-core/card-effects.js"></script>
