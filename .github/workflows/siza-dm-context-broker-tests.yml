@@ -1,0 +1,207 @@
+name: SIZA DM Context Broker Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/worldbook_local_retrieval.py'
+      - 'siza-world-engine/overlay/services/dm_context_broker.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_judge_runtime.py'
+      - 'rivarica/chunks/wb-*.js'
+      - '.github/workflows/siza-dm-context-broker-tests.yml'
+  pull_request:
+    paths:
+      - 'siza-world-engine/overlay/services/worldbook_local_retrieval.py'
+      - 'siza-world-engine/overlay/services/dm_context_broker.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_judge_runtime.py'
+      - 'rivarica/chunks/wb-*.js'
+      - '.github/workflows/siza-dm-context-broker-tests.yml'
+
+jobs:
+  context-broker-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile context broker and runtimes
+        run: |
+          python -m py_compile \
+            siza-world-engine/overlay/services/worldbook_local_retrieval.py \
+            siza-world-engine/overlay/services/dm_context_broker.py \
+            siza-world-engine/overlay/services/dm_free_action_runtime.py \
+            siza-world-engine/overlay/services/dm_free_action_judge_runtime.py
+
+      - name: Validate real offline World Book package
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          from services.worldbook_local_retrieval import (
+              find_worldbook_chunks_dir,
+              load_worldbook_visible_text,
+              retrieve_worldbook_context,
+          )
+
+          chunks = find_worldbook_chunks_dir()
+          assert chunks is not None, 'World Book chunks were not found from overlay path'
+          assert chunks.name == 'chunks'
+
+          loaded = load_worldbook_visible_text()
+          assert loaded['available'] is True, loaded
+          assert loaded['status'] == 'READY', loaded
+          assert len(loaded['text']) > 10000, len(loaded['text'])
+          assert '<script' not in loaded['text'].lower()
+
+          result = retrieve_worldbook_context(['Rivarica'], max_snippets=3, char_budget=1200)
+          assert result['available'] is True, result
+          assert result['status'] == 'RETRIEVED', result
+          assert 1 <= len(result['snippets']) <= 3, result
+          assert result['used_chars'] <= 1200, result['used_chars']
+          assert result['authority'] == 'DM_CONTEXT_ONLY'
+          assert result['player_knowledge'] is False
+          assert all(row['source'] == 'RIVARICA_WORLDBOOK_V08_LOCAL' for row in result['snippets'])
+
+          print('SIZA local compressed World Book decode: PASS')
+          print('SIZA bounded World Book retrieval: PASS')
+          PY
+
+      - name: Validate broker authority and query allowlist
+        run: |
+          python - <<'PY'
+          import copy
+          import sys
+          import types
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          action_catalog = types.ModuleType('services.action_intent_proposal_engine')
+          action_catalog.build_local_capability_catalog = lambda actor: [
+              {'capability_id': 'TALK:QA-NPC', 'kind': 'INTERACTION', 'target_dbref': 3},
+          ]
+          sys.modules['services.action_intent_proposal_engine'] = action_catalog
+
+          fact_retrieval = types.ModuleType('services.knowledge_fact_retrieval_engine')
+          def retrieve_known_facts(entity, query='', max_facts=2, char_budget=600, **kwargs):
+              if getattr(entity, 'key', '') != 'QA NPC':
+                  return {'selected': [], 'selected_fact_ids': [], 'context_text': ''}
+              return {
+                  'selected': [{
+                      'id': 'QA-NPC-FACT',
+                      'topic': 'Rivarica',
+                      'text': 'The NPC holds an authoritative QA fact.',
+                      'canon_status': 'prototype',
+                  }],
+                  'selected_fact_ids': ['QA-NPC-FACT'],
+                  'context_text': '[QA-NPC-FACT] The NPC holds an authoritative QA fact.',
+              }
+          fact_retrieval.retrieve_known_facts = retrieve_known_facts
+          sys.modules['services.knowledge_fact_retrieval_engine'] = fact_retrieval
+
+          object_actions = types.ModuleType('services.object_action_engine')
+          object_actions.authored_object_actions = lambda obj: []
+          sys.modules['services.object_action_engine'] = object_actions
+
+          from services.dm_context_broker import build_dm_context_packet
+
+          class DB:
+              pass
+
+          class Obj:
+              def __init__(self, key, oid, *, npc=False, location=None):
+                  self.key = key
+                  self.id = oid
+                  self.location = location
+                  self.contents = []
+                  self.exits = []
+                  self.destination = None
+                  self.db = DB()
+                  self.db.is_npc = npc
+                  self.db.hidden = False
+                  self.db.npc_id = f'NPC-{oid}' if npc else ''
+                  self.db.object_id = '' if npc else f'OBJ-{oid}'
+                  self.db.portable = False
+                  self.db.state = {'qa_state': 'unchanged'}
+                  self.db.relationships = {}
+                  self.db.knowledge = {'KEEP': 1}
+                  self.db.knowledge_facts = []
+
+          room = Obj('QA Room', 1)
+          room.db.room_id = 'QA-ROOM'
+          player = Obj('QA Player', 2, location=room)
+          npc = Obj('QA NPC', 3, npc=True, location=room)
+          room.contents.extend([player, npc])
+
+          snapshot = {
+              'location': {'name': room.key, 'room_id': room.db.room_id, 'dbref': room.id},
+              'local_entities': [{'name': npc.key, 'dbref': npc.id, 'is_npc': True, 'npc_id': npc.db.npc_id}],
+              'inventory': [],
+              'local_exits': [],
+              'active_local_events': [],
+              'player': {
+                  'known_fact_ids': ['PLAYER-ONLY'],
+                  'known_facts': [{'id': 'PLAYER-ONLY', 'text': 'Player-authorized fact'}],
+              },
+          }
+          plan = {
+              'retrieval_requests': {
+                  'world_engine': [
+                      'local_entities_with_relevant_knowledge',
+                      'THIS_QUERY_MUST_NEVER_EXECUTE',
+                  ],
+                  'world_book': ['Rivarica'],
+              }
+          }
+
+          before_player = copy.deepcopy(player.db.knowledge)
+          before_npc = copy.deepcopy(npc.db.knowledge)
+          before_snapshot = copy.deepcopy(snapshot)
+          packet = build_dm_context_packet(
+              player,
+              'I ask the local NPC about Rivarica.',
+              plan,
+              snapshot,
+              context_needs=['TARGET_STATE', 'WORLD_BOOK_CANON'],
+              worldbook_chunks_dir='rivarica/chunks',
+          )
+
+          assert packet['status'] == 'CONTEXT_READY', packet
+          by_query = {row['query']: row for row in packet['world_engine']}
+          assert by_query['local_entities_with_relevant_knowledge']['status'] == 'RESOLVED'
+          assert by_query['THIS_QUERY_MUST_NEVER_EXECUTE']['status'] == 'UNSUPPORTED_QUERY'
+          assert by_query['local_npc_state']['status'] == 'RESOLVED'
+          assert packet['world_book']['available'] is True
+          assert packet['world_book']['player_knowledge'] is False
+          assert packet['authority'] == {
+              'read_only': True,
+              'dm_only': True,
+              'mutates_world': False,
+              'creates_facts': False,
+              'grants_player_knowledge': False,
+              'executes_actions': False,
+          }
+          assert player.db.knowledge == before_player
+          assert npc.db.knowledge == before_npc
+          assert snapshot == before_snapshot
+          assert snapshot['player']['known_fact_ids'] == ['PLAYER-ONLY']
+
+          runtime_source = Path('siza-world-engine/overlay/services/dm_free_action_runtime.py').read_text(encoding='utf-8')
+          judge_source = Path('siza-world-engine/overlay/services/dm_free_action_judge_runtime.py').read_text(encoding='utf-8')
+          assert 'build_dm_context_packet(' in runtime_source
+          assert 'World Book excerpts are NOT player Knowledge' in runtime_source
+          assert 'build_dm_context_packet(' in judge_source
+          assert 'context_needs=list(_plain_dict(adjudication).get("context_needs") or [])' in judge_source
+
+          print('SIZA broker allowlisted World Engine queries: PASS')
+          print('SIZA DM-only lore/player Knowledge separation: PASS')
+          print('SIZA Interpreter + Judge context wiring: PASS')
+          PY
