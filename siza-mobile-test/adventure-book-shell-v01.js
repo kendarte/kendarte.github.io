@@ -16,6 +16,10 @@
     return Number.isFinite(value) ? value : fallback;
   }
 
+  function cleanOptionalNumber(value) {
+    return Number.isFinite(value) ? value : null;
+  }
+
   function normalizeMode(mode) {
     const value = String(mode || '').toUpperCase();
     return MODES[value] || MODES.EXPLORATION;
@@ -28,10 +32,10 @@
       name: cleanText(character.name),
       title: cleanText(character.title),
       portrait: cleanText(character.portrait),
-      life: cleanNumber(character.life),
-      mf: cleanNumber(character.mf),
-      prow: cleanNumber(character.prow),
-      eva: cleanNumber(character.eva),
+      life: cleanOptionalNumber(character.life),
+      mf: cleanOptionalNumber(character.mf),
+      prow: cleanOptionalNumber(character.prow),
+      eva: cleanOptionalNumber(character.eva),
       status: Array.isArray(character.status) ? character.status.map(String) : []
     };
   }
