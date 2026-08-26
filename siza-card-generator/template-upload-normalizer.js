@@ -1,6 +1,49 @@
 (function(){
 'use strict';
 
+const TEMPLATE_LIBRARY_KEY='siza_card_generator_templates_v2';
+const SYSTEM_TEMPLATE_VERSION=1;
+const FRAME_BASE='../siza-core/assets/frames/standard/frame_standard_base.svg?v=094b0ee6';
+const SYSTEM_TEMPLATES=[
+ {id:'standard_white',name:'Standard · Blanco',overlay:'../siza-core/assets/templates/standard/affinity_white.svg?v=1'},
+ {id:'standard_blue',name:'Standard · Azul',overlay:'../siza-core/assets/templates/standard/affinity_blue.svg?v=1'},
+ {id:'standard_black',name:'Standard · Negro',overlay:'../siza-core/assets/templates/standard/affinity_black.svg?v=1'},
+ {id:'standard_red',name:'Standard · Rojo',overlay:'../siza-core/assets/templates/standard/affinity_red.svg?v=1'},
+ {id:'standard_green',name:'Standard · Verde',overlay:'../siza-core/assets/templates/standard/affinity_green.svg?v=1'},
+ {id:'standard_colorless',name:'Standard · Incoloro',overlay:'../siza-core/assets/templates/standard/affinity_colorless.svg?v=1'},
+ {id:'standard_multicolor',name:'Standard · Multicolor',overlay:'../siza-core/assets/templates/standard/affinity_multicolor.svg?v=1'}
+];
+
+function seedSystemTemplates(){
+ let library={};
+ try{const parsed=JSON.parse(localStorage.getItem(TEMPLATE_LIBRARY_KEY)||'{}');library=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{}}catch(e){library={}}
+ let added=0;
+ const now=new Date().toISOString();
+ for(const spec of SYSTEM_TEMPLATES){
+  if(library[spec.id])continue;
+  library[spec.id]={
+   id:spec.id,
+   name:spec.name,
+   version:2,
+   systemTemplateVersion:SYSTEM_TEMPLATE_VERSION,
+   parts:{
+    frame_base:{assetKey:'',url:FRAME_BASE,fileName:'frame_standard_base.svg'},
+    affinity_overlay:{assetKey:'',url:spec.overlay,fileName:spec.overlay.split('/').pop().split('?')[0]}
+   },
+   createdAt:now,
+   updatedAt:now
+  };
+  added++;
+ }
+ if(!added)return false;
+ try{localStorage.setItem(TEMPLATE_LIBRARY_KEY,JSON.stringify(library));return true}catch(e){return false}
+}
+
+if(seedSystemTemplates()){
+ location.reload();
+ return;
+}
+
 const WIDTH=1500;
 const HEIGHT=2100;
 const input=document.getElementById('templatePartFile');
