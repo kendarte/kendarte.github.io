@@ -7,7 +7,8 @@ on:
       - 'siza-world-engine/overlay/services/dm_context_broker.py'
       - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
       - 'siza-world-engine/overlay/services/dm_free_action_judge_runtime.py'
-      - 'rivarica/chunks/wb-*.js'
+      - 'rivarica/content/wb18-*.txt'
+      - 'rivarica/index.html'
       - '.github/workflows/siza-dm-context-broker-tests.yml'
   pull_request:
     paths:
@@ -15,7 +16,8 @@ on:
       - 'siza-world-engine/overlay/services/dm_context_broker.py'
       - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
       - 'siza-world-engine/overlay/services/dm_free_action_judge_runtime.py'
-      - 'rivarica/chunks/wb-*.js'
+      - 'rivarica/content/wb18-*.txt'
+      - 'rivarica/index.html'
       - '.github/workflows/siza-dm-context-broker-tests.yml'
 
 jobs:
@@ -35,7 +37,7 @@ jobs:
             siza-world-engine/overlay/services/dm_free_action_runtime.py \
             siza-world-engine/overlay/services/dm_free_action_judge_runtime.py
 
-      - name: Validate real offline World Book package
+      - name: Validate real offline World Book v1.8 package
         run: |
           python - <<'PY'
           import sys
@@ -45,31 +47,39 @@ jobs:
           sys.path.insert(0, str(overlay))
 
           from services.worldbook_local_retrieval import (
-              find_worldbook_chunks_dir,
+              CONTENT_FILES,
+              EXPECTED_PAYLOAD_CHARS,
+              find_worldbook_content_dir,
               load_worldbook_visible_text,
               retrieve_worldbook_context,
           )
 
-          chunks = find_worldbook_chunks_dir()
-          assert chunks is not None, 'World Book chunks were not found from overlay path'
-          assert chunks.name == 'chunks'
+          content_dir = find_worldbook_content_dir()
+          assert content_dir is not None, 'World Book v1.8 content was not found from overlay path'
+          assert content_dir.name == 'content'
+          assert len(CONTENT_FILES) == 20, CONTENT_FILES
+          joined = ''.join((content_dir / filename).read_text(encoding='utf-8').strip() for filename in CONTENT_FILES)
+          assert len(joined) == EXPECTED_PAYLOAD_CHARS == 136904, len(joined)
 
           loaded = load_worldbook_visible_text()
           assert loaded['available'] is True, loaded
           assert loaded['status'] == 'READY', loaded
+          assert loaded['version'] == '1.8', loaded
           assert len(loaded['text']) > 10000, len(loaded['text'])
+          assert 'Rivarica World Book v1.8' in loaded['text']
           assert '<script' not in loaded['text'].lower()
 
           result = retrieve_worldbook_context(['Rivarica'], max_snippets=3, char_budget=1200)
           assert result['available'] is True, result
           assert result['status'] == 'RETRIEVED', result
+          assert result['version'] == '1.8', result
           assert 1 <= len(result['snippets']) <= 3, result
           assert result['used_chars'] <= 1200, result['used_chars']
           assert result['authority'] == 'DM_CONTEXT_ONLY'
           assert result['player_knowledge'] is False
-          assert all(row['source'] == 'RIVARICA_WORLDBOOK_V08_LOCAL' for row in result['snippets'])
+          assert all(row['source'] == 'RIVARICA_WORLDBOOK_V18_LOCAL' for row in result['snippets'])
 
-          print('SIZA local compressed World Book decode: PASS')
+          print('SIZA canonical local World Book v1.8 decode: PASS')
           print('SIZA bounded World Book retrieval: PASS')
           PY
 
@@ -171,7 +181,7 @@ jobs:
               plan,
               snapshot,
               context_needs=['TARGET_STATE', 'WORLD_BOOK_CANON'],
-              worldbook_chunks_dir='rivarica/chunks',
+              worldbook_chunks_dir='rivarica/content',
           )
 
           assert packet['status'] == 'CONTEXT_READY', packet
