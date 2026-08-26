@@ -4,6 +4,12 @@
     var MODES = ["EXPLORATION", "DIALOGUE", "COMBAT"];
     var history = [];
     var historyIndex = 0;
+    var pendingCommand = null;
+    var pendingTimer = null;
+    var lastPacketSignature = "";
+    var lastPacketAt = 0;
+    var currentRoomKey = "";
+    var currentRoomNotes = [];
 
     function byId(id) {
         return document.getElementById(id);
@@ -13,6 +19,36 @@
         return String(value || "out").replace(/[^a-zA-Z0-9 _-]/g, "");
     }
 
+    function normalizeSpace(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function htmlToText(html) {
+        var holder = document.createElement("div");
+        var source = String(html === undefined || html === null ? "" : html)
+            .replace(/<br\s*\/?\s*>/gi, "\n")
+            .replace(/<\/(p|div|li|tr)>/gi, "\n");
+        holder.innerHTML = source;
+        return String(holder.textContent || holder.innerText || "")
+            .replace(/\u00a0/g, " ")
+            .replace(/\r/g, "");
+    }
+
+    function packetSignature(html) {
+        return htmlToText(html).replace(/\s+/g, " ").trim();
+    }
+
+    function isDuplicatePacket(html) {
+        var signature = packetSignature(html);
+        var now = Date.now();
+        if (signature && signature === lastPacketSignature && now - lastPacketAt < 10000) {
+            return true;
+        }
+        lastPacketSignature = signature;
+        lastPacketAt = now;
+        return false;
+    }
+
     function scrollOutput() {
         var output = byId("siza-messagewindow");
         if (output) {
@@ -20,15 +56,45 @@
         }
     }
 
+    function trimNarrative() {
+        var output = byId("siza-messagewindow");
+        if (!output) {
+            return;
+        }
+        while (output.children.length > 8) {
+            output.removeChild(output.firstChild);
+        }
+    }
+
     function appendHtml(html, cls) {
         var output = byId("siza-messagewindow");
-        if (!output || html === null || html === undefined) {
+        if (!output || html === null || html === undefined || normalizeSpace(htmlToText(html)) === "") {
             return;
         }
         var entry = document.createElement("div");
         entry.className = "sizaBookLine " + safeClass(cls);
         entry.innerHTML = String(html);
         output.appendChild(entry);
+        trimNarrative();
+        scrollOutput();
+    }
+
+    function appendText(text, cls) {
+        var output = byId("siza-messagewindow");
+        var value = normalizeSpace(text);
+        if (!output || !value) {
+            return;
+        }
+        var previous = output.lastElementChild;
+        if (previous && previous.getAttribute("data-siza-text") === value) {
+            return;
+        }
+        var entry = document.createElement("div");
+        entry.className = "sizaBookLine " + safeClass(cls);
+        entry.setAttribute("data-siza-text", value);
+        entry.textContent = value;
+        output.appendChild(entry);
+        trimNarrative();
         scrollOutput();
     }
 
@@ -37,10 +103,17 @@
         if (!output) {
             return;
         }
+        var value = normalizeSpace(text);
+        var previous = output.lastElementChild;
+        if (previous && previous.getAttribute("data-siza-text") === value) {
+            return;
+        }
         var entry = document.createElement("div");
         entry.className = "sizaBookLine sizaBookSystem " + safeClass(kind || "");
-        entry.textContent = String(text || "");
+        entry.setAttribute("data-siza-text", value);
+        entry.textContent = value;
         output.appendChild(entry);
+        trimNarrative();
         scrollOutput();
     }
 
@@ -94,14 +167,207 @@
         });
     }
 
+    function metadataValue(lines, prefix) {
+        var lower = prefix.toLowerCase();
+        for (var i = 0; i < lines.length; i += 1) {
+            if (lines[i].toLowerCase().indexOf(lower) === 0) {
+                return normalizeSpace(lines[i].slice(prefix.length));
+            }
+        }
+        return "";
+    }
+
+    function metadataIndex(lines, prefixes) {
+        for (var i = 0; i < lines.length; i += 1) {
+            for (var j = 0; j < prefixes.length; j += 1) {
+                if (lines[i].toLowerCase().indexOf(prefixes[j].toLowerCase()) === 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    function parseRoomSnapshot(html) {
+        var lines = htmlToText(html)
+            .split("\n")
+            .map(function (line) { return normalizeSpace(line); })
+            .filter(function (line) { return !!line; });
+        if (!lines.length) {
+            return null;
+        }
+
+        var titleIndex = -1;
+        for (var i = 0; i < lines.length; i += 1) {
+            if (/\(#\d+\)\s*$/.test(lines[i])) {
+                titleIndex = i;
+                break;
+            }
+        }
+        if (titleIndex === -1) {
+            return null;
+        }
+
+        var body = lines.slice(titleIndex);
+        var prefixes = ["Exits:", "Characters:", "You see:"];
+        var firstMeta = metadataIndex(body, prefixes);
+        if (firstMeta === -1) {
+            return null;
+        }
+
+        var lastMeta = firstMeta;
+        for (var m = 0; m < body.length; m += 1) {
+            for (var p = 0; p < prefixes.length; p += 1) {
+                if (body[m].toLowerCase().indexOf(prefixes[p].toLowerCase()) === 0) {
+                    lastMeta = Math.max(lastMeta, m);
+                }
+            }
+        }
+
+        var rawTitle = body[0];
+        var dbrefMatch = rawTitle.match(/\(#(\d+)\)\s*$/);
+        var cleanTitle = normalizeSpace(rawTitle.replace(/\(#\d+\)\s*$/, ""));
+
+        return {
+            key: rawTitle,
+            title: cleanTitle,
+            dbref: dbrefMatch ? dbrefMatch[1] : "",
+            description: body.slice(1, firstMeta).join(" "),
+            exits: metadataValue(body, "Exits:"),
+            characters: metadataValue(body, "Characters:"),
+            visible: metadataValue(body, "You see:"),
+            notes: body.slice(lastMeta + 1)
+        };
+    }
+
+    function setFact(id, wrapId, value) {
+        var el = byId(id);
+        var wrap = byId(wrapId);
+        var text = normalizeSpace(value);
+        if (el) {
+            el.textContent = text || "—";
+        }
+        if (wrap) {
+            wrap.hidden = !text;
+        }
+    }
+
+    function renderKnowledge(notes) {
+        var panel = byId("siza-knowledge-panel");
+        var summary = byId("siza-knowledge-summary");
+        var list = byId("siza-knowledge-list");
+        if (!panel || !summary || !list) {
+            return;
+        }
+        list.innerHTML = "";
+        notes.forEach(function (note) {
+            var item = document.createElement("div");
+            item.className = "sizaKnowledgeItem";
+            item.textContent = note;
+            list.appendChild(item);
+        });
+        panel.hidden = notes.length === 0;
+        summary.textContent = notes.length === 1 ? "1 dato recordado" : notes.length + " datos recordados";
+    }
+
+    function renderRoomSnapshot(room) {
+        var description = byId("siza-scene-description");
+        var location = byId("siza-location-label");
+        var sceneTitle = byId("siza-scene-title");
+        var context = byId("siza-context-label");
+        var sameRoom = currentRoomKey === room.key;
+        var previousNotes = currentRoomNotes.slice();
+        var newNotes = [];
+
+        if (location) {
+            location.textContent = room.title;
+        }
+        if (sceneTitle) {
+            sceneTitle.textContent = room.title;
+        }
+        if (context) {
+            context.textContent = room.dbref ? "World Engine · escena persistente" : "World Engine";
+        }
+        if (description) {
+            description.textContent = room.description || "Sin descripción disponible.";
+        }
+
+        setFact("siza-exits", "siza-exits-card", room.exits);
+        setFact("siza-characters", "siza-characters-card", room.characters);
+        setFact("siza-visible", "siza-visible-card", room.visible);
+        renderKnowledge(room.notes);
+
+        if (sameRoom) {
+            room.notes.forEach(function (note) {
+                if (previousNotes.indexOf(note) === -1) {
+                    newNotes.push(note);
+                }
+            });
+        }
+
+        currentRoomKey = room.key;
+        currentRoomNotes = room.notes.slice();
+
+        newNotes.forEach(function (note) {
+            appendText(note, "sizaBookDiscovery");
+        });
+    }
+
+    function setPending(isPending, command) {
+        var root = byId("siza-book-client");
+        var button = byId("siza-inputsend");
+        var prompt = byId("siza-current-prompt");
+
+        if (pendingTimer) {
+            clearTimeout(pendingTimer);
+            pendingTimer = null;
+        }
+
+        pendingCommand = isPending ? String(command || "") : null;
+        if (root) {
+            root.setAttribute("data-pending", isPending ? "true" : "false");
+        }
+        if (button) {
+            button.disabled = !!isPending;
+            button.textContent = isPending ? "ESPERANDO" : "ENVIAR";
+        }
+        if (prompt) {
+            prompt.textContent = isPending && pendingCommand ? "Acción enviada: " + pendingCommand : "¿Qué haces?";
+        }
+
+        if (isPending) {
+            pendingTimer = setTimeout(function () {
+                if (!pendingCommand) {
+                    return;
+                }
+                setPending(false);
+                appendSystem("El World Engine no devolvió salida todavía. Puedes reintentar.", "warning");
+            }, 8000);
+        }
+    }
+
+    function handleServerPacket(html, cls) {
+        setPending(false);
+        if (html === null || html === undefined || isDuplicatePacket(html)) {
+            return;
+        }
+        var room = parseRoomSnapshot(html);
+        if (room) {
+            renderRoomSnapshot(room);
+            return;
+        }
+        appendHtml(html, cls);
+    }
+
     function onText(args, kwargs) {
         if (args && args.length) {
-            appendHtml(args[0], kwargs && kwargs.cls);
+            handleServerPacket(args[0], kwargs && kwargs.cls);
         }
     }
 
     function onPrompt(args) {
         var prompt = byId("siza-prompt-label");
+        setPending(false);
         if (prompt && args && args.length && args[0]) {
             prompt.innerHTML = String(args[0]);
         }
@@ -109,20 +375,23 @@
 
     function onUnknown(cmdname, args, kwargs) {
         if ((cmdname === "html" || cmdname === "text") && args && args.length) {
-            appendHtml(args[0], kwargs && kwargs.cls);
+            handleServerPacket(args[0], kwargs && kwargs.cls);
         }
     }
 
     function onConnectionOpen() {
+        setPending(false);
         setConnection("Conectado", "open");
     }
 
     function onConnectionClose() {
+        setPending(false);
         setConnection("Desconectado", "closed");
         appendSystem("La conexión con el World Engine se cerró.", "warning");
     }
 
     function onConnectionError() {
+        setPending(false);
         setConnection("Error de conexión", "error");
         appendSystem("No se pudo mantener la conexión con el World Engine.", "error");
     }
@@ -136,11 +405,15 @@
             appendSystem("Todavía no hay conexión con el World Engine.", "warning");
             return false;
         }
+        if (pendingCommand) {
+            return false;
+        }
         history.push(value);
         if (history.length > 100) {
             history.shift();
         }
         historyIndex = history.length;
+        setPending(true, value);
         Evennia.msg("text", [value], {});
         return true;
     }
@@ -207,11 +480,13 @@
 
         bindInput();
         setMode("EXPLORATION");
+        setPending(false);
         setConnection(Evennia.isConnected() ? "Conectado" : "Conectando…", Evennia.isConnected() ? "open" : "connecting");
     }
 
     window.SizaWorldBookClient = Object.freeze({
         appendHtml: appendHtml,
+        parseRoomSnapshot: parseRoomSnapshot,
         sendText: sendText,
         setContext: setContext,
         setMode: setMode
