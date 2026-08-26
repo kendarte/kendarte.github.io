@@ -4,7 +4,7 @@
 function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must load before SizaCardRenderer.');return global.SizaCardSchema;}
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
-function legacyImage(card){const c=schema().normalizeCard(card),raw=card?.legacyFullCardImage||global.SizaCardCatalog?.get?.(c.id)?.legacyFullCardImage||'';if(!raw)return'';if(/^(?:https?:|data:|\/)/i.test(raw))return raw;return '/siza-mobile-test/'+String(raw).replace(/^\.\//,'');}
+function legacyImage(card){const c=schema().normalizeCard(card),raw=card?.legacyFullCardImage||global.SizaCardCatalog?.get?.(c.id)?.legacyFullCardImage||'';if(!raw)return'';if(/^(?:https?:|data:|\/)/i.test(raw))return raw;const path=String(raw).replace(/^\.\//,'').replace('cards-v0514/','cards%2Dv0514/');return '/siza-mobile-test/'+path;}
 
 function manaHtml(card,opts={}){
  const c=schema().normalizeCard(card),colored=Object.values(c.pips||{}).reduce((a,b)=>a+b,0),generic=Math.max(0,c.cost-colored),parts=[],mobile=opts.variant==='mobile';
