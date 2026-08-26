@@ -5,6 +5,8 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_campaign_director.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_interpreter.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
       - 'siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py'
       - 'siza-world-engine/overlay/commands/dm_commands.py'
       - '.github/workflows/siza-dm-tests.yml'
@@ -12,6 +14,8 @@ on:
     paths:
       - 'siza-world-engine/overlay/services/dm_campaign_director.py'
       - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_interpreter.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_runtime.py'
       - 'siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py'
       - 'siza-world-engine/overlay/commands/dm_commands.py'
       - '.github/workflows/siza-dm-tests.yml'
@@ -29,11 +33,14 @@ jobs:
           python -m py_compile \
             siza-world-engine/overlay/services/dm_campaign_director.py \
             siza-world-engine/overlay/services/dm_world_context.py \
+            siza-world-engine/overlay/services/dm_free_action_interpreter.py \
+            siza-world-engine/overlay/services/dm_free_action_runtime.py \
             siza-world-engine/overlay/world/faro_ahogado_vertical_slice.py \
             siza-world-engine/overlay/commands/dm_commands.py
       - name: Validate Faro Ahogado director contract
         run: |
           python - <<'PY'
+          import json
           import sys
           from pathlib import Path
 
@@ -47,6 +54,10 @@ jobs:
               set_campaign_signal,
               start_campaign,
               validate_campaign_definition,
+          )
+          from services.dm_free_action_interpreter import (
+              build_dm_free_action_request,
+              parse_dm_free_action_response,
           )
           from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
 
@@ -99,5 +110,74 @@ jobs:
           route_ids = [row['id'] for row in route['selected_cards']]
           assert 'FA-CARD-ROUTE-EVIDENCE' in route_ids, route_ids
 
+          snapshot = {
+              'location': {'name': 'Pescadería de Dársena', 'room_id': 'QA-ROOM', 'dbref': 9},
+              'local_entities': [
+                  {'name': 'Mara Vensal', 'dbref': 11, 'is_npc': True, 'npc_id': 'MARA'},
+                  {'name': 'Cajón', 'dbref': 12, 'is_npc': False, 'object_id': 'BOX'},
+              ],
+              'local_exits': [
+                  {'name': 'salir', 'exit_dbref': 13, 'exit_id': 'EXIT-13', 'destination_name': 'Calle'},
+              ],
+              'active_local_events': [],
+              'player': {
+                  'known_facts': [
+                      {'id': 'FACT-1', 'topic': 'manifiesto', 'text': 'Hay una anotación duplicada.', 'knowledge_level': 1,
+                       'source': {'private': 'MUST_NOT_REACH_MODEL'}}
+                  ]
+              },
+          }
+          free_plan = build_dm_turn_plan(
+              actor,
+              FARO_AHOGADO_CAMPAIGN,
+              'pateo el cajón hacia Mara para apartarla',
+              world_snapshot=snapshot,
+          )
+          request = build_dm_free_action_request(
+              'pateo el cajón hacia Mara para apartarla',
+              free_plan,
+              snapshot,
+          )
+          boundary = json.dumps(request['ollama_payload'], ensure_ascii=False)
+          assert 'DBREF:11' in boundary and 'DBREF:12' in boundary
+          assert 'MUST_NOT_REACH_MODEL' not in boundary
+          assert 'outcome' not in request['schema']['properties']
+
+          valid_content = {
+              'intent': 'MOVE_OBJECT',
+              'goal': 'Apartar a Mara usando el cajón.',
+              'steps': [
+                  {
+                      'action_type': 'MOVE_OBJECT',
+                      'verb': 'patear',
+                      'primary_ref': 'DBREF:12',
+                      'secondary_ref': 'DBREF:11',
+                      'unresolved_target': '',
+                      'desired_effect': 'Desplazar el cajón hacia Mara para obligarla a apartarse.',
+                      'resolution_hint': 'CONFRONT',
+                      'stat_hint': 'FUE',
+                  }
+              ],
+              'context_needs': ['WORLD_OBJECT_STATE', 'TARGET_STATE'],
+              'confidence': 0.96,
+          }
+          fake_ollama = json.dumps({'message': {'content': json.dumps(valid_content)}})
+          interpreted = parse_dm_free_action_response(fake_ollama, request['allowed_refs'])
+          assert interpreted['status'] == 'INTERPRETED' and interpreted['accepted'] is True, interpreted
+
+          invented = json.loads(json.dumps(valid_content))
+          invented['steps'][0]['secondary_ref'] = 'DBREF:9999'
+          fake_invented = json.dumps({'message': {'content': json.dumps(invented)}})
+          rejected = parse_dm_free_action_response(fake_invented, request['allowed_refs'])
+          assert rejected['status'] == 'INVALID_INTENT' and rejected['accepted'] is False, rejected
+          assert any('INVENTED_REF' in err for err in rejected['validation']['errors'])
+
+          outcome_injection = json.loads(json.dumps(valid_content))
+          outcome_injection['outcome'] = 'SUCCESS'
+          fake_outcome = json.dumps({'message': {'content': json.dumps(outcome_injection)}})
+          outcome_rejected = parse_dm_free_action_response(fake_outcome, request['allowed_refs'])
+          assert outcome_rejected['status'] == 'INVALID_INTENT', outcome_rejected
+
           print('SIZA DM v0.1: PASS')
+          print('SIZA DM free action boundary: PASS')
           PY
