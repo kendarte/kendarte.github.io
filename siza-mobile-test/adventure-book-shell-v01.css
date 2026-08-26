@@ -128,3 +128,5 @@
   .bookShellV01.modeCombat .matchBoardV5{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0 0 12px 12px}
   .bookShellV01.modeCombat .arenaNavToggleV600{top:74px;left:7px}
 }
+
+.matchBoardV5 .handAreaV5{z-index:36}
