@@ -1,0 +1,69 @@
+name: SIZA Narrative Filter v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js'
+      - '.github/workflows/siza-narrative-filter-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  narrative-filter-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax check
+        run: node --check siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Filter MUD debug from book narrative
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+
+          (async()=>{
+            const html=`<!doctype html><html><body><div id="siza-messagewindow">
+              <div class="sizaBookLine">[MudInfo] [2026-08-26(05:22)]: admin connected</div>
+              <div class="sizaBookLine">You become admin.</div>
+              <div class="sizaBookLine"><span style="background:#000;color:#0f0">Mara watches the manifest carefully.</span></div>
+              <div class="sizaBookLine sizaBookSystem warning">The World Engine has not returned a result yet.</div>
+            </div></body></html>`;
+            const dom=new JSDOM(html,{runScripts:'outside-only'});
+            const w=dom.window;
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            await new Promise(resolve=>setTimeout(resolve,0));
+
+            const out=w.document.getElementById('siza-messagewindow');
+            if(out.children.length!==1)throw new Error(`expected one player-visible entry, got ${out.children.length}`);
+            if(out.textContent.trim()!=='Mara watches the manifest carefully.')throw new Error(`wrong visible text: ${out.textContent}`);
+            if(out.firstElementChild.querySelector('span'))throw new Error('terminal/ANSI HTML styling was not stripped');
+
+            ['First result','Second result','Third result','Fourth result'].forEach(text=>{
+              const line=w.document.createElement('div');
+              line.className='sizaBookLine';
+              line.textContent=text;
+              out.appendChild(line);
+            });
+            await new Promise(resolve=>setTimeout(resolve,0));
+            if(out.children.length!==3)throw new Error(`narrative history was not bounded: ${out.children.length}`);
+            if(out.textContent.includes('First result'))throw new Error('old narrative event was not trimmed');
+            if(!out.textContent.includes('Fourth result'))throw new Error('latest narrative event missing');
+
+            console.log('PASS narrative filter: debug hidden, prose sanitized, latest events bounded');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
