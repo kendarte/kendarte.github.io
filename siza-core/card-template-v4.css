@@ -1,0 +1,60 @@
+/* Canonical Siza card geometry v4. Shared by Generator, Collection and Arena. */
+.sizaCardTemplateQueenV3 .sizaCardTitlePlateV3{
+ left:17.2%!important;
+ top:5.0%!important;
+ width:61.4%!important;
+ height:8.1%!important;
+ padding:0 3.2%!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardNameV2{
+ font-size:4.35cqw!important;
+ line-height:1!important;
+ text-overflow:clip!important;
+}
+.sizaCardTemplateQueenV3 .sizaManafestBadgeV3{
+ right:3.25%!important;
+ top:3.45%!important;
+ width:15.2%!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardCrystalRailV3{
+ left:4.65%!important;
+ top:15.15%!important;
+ width:9.75%!important;
+ height:38.9%!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardArtV2{
+ left:16.0%!important;
+ top:14.75%!important;
+ width:79.0%!important;
+ height:40.3%!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardTypeV2{
+ left:15.3%!important;
+ top:55.8%!important;
+ width:79.7%!important;
+ height:6.8%!important;
+}
+.sizaCardTemplateQueenV3 .sizaCardRulesV2{
+ left:12.8%!important;
+ top:63.55%!important;
+ width:74.4%!important;
+ height:24.15%!important;
+}
+.sizaCardTemplateQueenV3 .sizaStatPlateV3{
+ bottom:2.65%!important;
+ width:17.4%!important;
+}
+.sizaCardTemplateQueenV3 .sizaStatLeftV3{left:2.55%!important}
+.sizaCardTemplateQueenV3 .sizaStatRightV3{right:2.55%!important}
+.sizaCardTemplateQueenV3 .sizaCardFooterV2{
+ left:34.25%!important;
+ bottom:3.45%!important;
+ width:31.5%!important;
+ height:4.55%!important;
+ padding:0 3%!important;
+ font-size:2.55cqw!important;
+}
+
+/* Thumbnail geometry follows the same measured top/bottom anchors. */
+.sizaCardThumbQueenV3 .sizaCardThumbHeaderV2{left:17.2%!important;width:61.4%!important}
+.sizaCardThumbQueenV3 .sizaThumbDifficultyV3{right:3.25%!important}
