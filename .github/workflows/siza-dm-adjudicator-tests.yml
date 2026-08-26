@@ -1,0 +1,146 @@
+name: SIZA DM Adjudicator Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - '.github/workflows/siza-dm-adjudicator-tests.yml'
+  pull_request:
+    paths:
+      - 'siza-world-engine/overlay/services/dm_free_action_adjudicator.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_execution_bridge.py'
+      - 'siza-world-engine/overlay/services/dm_world_context.py'
+      - '.github/workflows/siza-dm-adjudicator-tests.yml'
+
+jobs:
+  adjudicator-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile DM adjudicator and execution bridge
+        run: |
+          python -m py_compile \
+            siza-world-engine/overlay/services/dm_free_action_adjudicator.py \
+            siza-world-engine/overlay/services/dm_free_action_execution_bridge.py \
+            siza-world-engine/overlay/services/dm_world_context.py
+      - name: Validate deterministic adjudication boundary
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          from services.dm_free_action_adjudicator import adjudicate_dm_free_action
+
+          class DB:
+              pass
+
+          class Obj:
+              def __init__(self, key, oid, *, location=None, npc=False, portable=False):
+                  self.key = key
+                  self.id = oid
+                  self.location = location
+                  self.contents = []
+                  self.exits = []
+                  self.destination = None
+                  self.db = DB()
+                  self.db.is_npc = npc
+                  self.db.portable = portable
+                  self.db.dm_affordances = []
+                  self.db.exit_id = None
+
+          room = Obj('QA Room', 1)
+          actor = Obj('QA Player', 2, location=room)
+          room.contents.append(actor)
+          portable = Obj('Portable Box', 3, location=room, portable=True)
+          fixed = Obj('Fixed Counter', 4, location=room, portable=False)
+          npc = Obj('QA NPC', 5, location=room, npc=True)
+          room.contents.extend([portable, fixed, npc])
+          exit_obj = Obj('salir', 6, location=room)
+          destination = Obj('Street', 7)
+          exit_obj.destination = destination
+          exit_obj.db.exit_id = 'QA-EXIT'
+          room.exits.append(exit_obj)
+
+          def packet(action_type, primary_ref, secondary_ref='', *, desired='test', resolution='UNKNOWN', stat=''):
+              return {
+                  'status': 'INTERPRETED',
+                  'accepted': True,
+                  'intent': {
+                      'intent': action_type,
+                      'goal': desired,
+                      'steps': [{
+                          'action_type': action_type,
+                          'verb': action_type.lower(),
+                          'primary_ref': primary_ref,
+                          'secondary_ref': secondary_ref,
+                          'unresolved_target': '',
+                          'desired_effect': desired,
+                          'resolution_hint': resolution,
+                          'stat_hint': stat,
+                      }],
+                      'context_needs': [],
+                      'confidence': 0.99,
+                  },
+              }
+
+          take = adjudicate_dm_free_action(actor, packet('TAKE', 'DBREF:3'))
+          assert take['status'] == 'ADMISSIBLE', take
+          assert take['steps'][0]['executor'] == 'GENERIC_TAKE', take
+
+          fixed_take = adjudicate_dm_free_action(actor, packet('TAKE', 'DBREF:4'))
+          assert fixed_take['status'] == 'NOT_ADMISSIBLE', fixed_take
+          assert fixed_take['steps'][0]['reason'] == 'TARGET_NOT_PORTABLE', fixed_take
+
+          attack = adjudicate_dm_free_action(actor, packet('ATTACK', 'DBREF:5', desired='atacar al NPC', resolution='COMBAT'))
+          assert attack['status'] == 'ADMISSIBLE', attack
+          assert attack['steps'][0]['executor'] == 'COMBAT', attack
+
+          movement = adjudicate_dm_free_action(actor, packet('MOVE', 'EXIT_DBREF:6'))
+          assert movement['status'] == 'ADMISSIBLE', movement
+          assert movement['steps'][0]['executor'] == 'MOVEMENT', movement
+
+          stale = adjudicate_dm_free_action(actor, packet('TAKE', 'DBREF:9999'))
+          assert stale['status'] == 'NOT_ADMISSIBLE', stale
+          assert stale['steps'][0]['reason'] == 'PRIMARY_REF_NOT_CURRENT', stale
+
+          move_object = adjudicate_dm_free_action(
+              actor,
+              packet('MOVE_OBJECT', 'DBREF:3', 'DBREF:5', desired='patear la caja hacia el NPC', resolution='CONFRONT', stat='FUE'),
+          )
+          assert move_object['status'] == 'NOT_ADMISSIBLE', move_object
+          assert move_object['steps'][0]['reason'] == 'NO_AUTHORIZED_EXECUTION_ROUTE', move_object
+
+          portable.db.dm_affordances = [{
+              'id': 'QA-KICK',
+              'enabled': True,
+              'action_type': 'MOVE_OBJECT',
+              'executor': 'CHECK_ONLY',
+              'check': {
+                  'id': 'QA-KICK-CHECK',
+                  'trigger': 'OBSTACLE',
+                  'mode': 'DIRECT',
+                  'stat': 'FUE',
+                  'difficulty': 4,
+              },
+          }]
+          authored = adjudicate_dm_free_action(
+              actor,
+              packet('MOVE_OBJECT', 'DBREF:3', 'DBREF:5', desired='patear la caja hacia el NPC', resolution='CONFRONT', stat='FUE'),
+          )
+          assert authored['status'] == 'ADMISSIBLE', authored
+          assert authored['steps'][0]['executor'] == 'CHECK_ONLY', authored
+          assert authored['steps'][0]['authoritative_check']['mode'] == 'DIRECT', authored
+          assert authored['steps'][0]['authoritative_check']['stat'] == 'FUE', authored
+          assert authored['steps'][0]['model_resolution_hint'] == 'CONFRONT', authored
+          assert authored['authority']['model_difficulty_used'] is False, authored
+
+          print('SIZA DM adjudicator boundary: PASS')
+          PY
