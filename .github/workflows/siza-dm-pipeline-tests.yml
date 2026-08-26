@@ -264,3 +264,247 @@ jobs:
           print('SIZA Director -> Interpreter -> Judge -> execution pipeline: PASS')
           print('SIZA DM bilingual authoritative presentation: PASS')
           PY
+      - name: Validate one bounded context retry and hard stop
+        run: |
+          python - <<'PY'
+          import sys
+          import types
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          class Logger:
+              @staticmethod
+              def log_err(*args, **kwargs):
+                  return None
+
+          evennia = types.ModuleType('evennia')
+          evennia_utils = types.ModuleType('evennia.utils')
+          evennia_utils.logger = Logger()
+          evennia.utils = evennia_utils
+          sys.modules['evennia'] = evennia
+          sys.modules['evennia.utils'] = evennia_utils
+
+          counts = {'start': 0, 'plan': 0, 'snapshot': 0, 'interpret': 0, 'judge': 0, 'execute': 0, 'schedule': 0}
+
+          campaign = types.ModuleType('services.dm_campaign_director')
+          campaign.get_campaign_state = lambda actor: getattr(actor.db, 'dm_campaign_state', {})
+          def start_campaign(actor, definition, force=False):
+              counts['start'] += 1
+              state = {'campaign_id': definition['id'], 'status': 'ACTIVE', 'active_beat_id': 'FA-BEAT-LEAD'}
+              actor.db.dm_campaign_state = state
+              return {'status': 'STARTED', 'state': state}
+          def build_plan(actor, definition, raw, world_snapshot=None):
+              counts['plan'] += 1
+              return {'status': 'PLANNED', 'campaign_id': definition['id'], 'active_beat': {'id': 'FA-BEAT-LEAD'}, 'selected_cards': []}
+          campaign.start_campaign = start_campaign
+          campaign.build_dm_turn_plan = build_plan
+          sys.modules['services.dm_campaign_director'] = campaign
+
+          context = types.ModuleType('services.dm_world_context')
+          def build_snapshot(actor, raw_player_input=''):
+              counts['snapshot'] += 1
+              return {
+                  'location': {'name': 'QA Room', 'room_id': 'QA'},
+                  'local_entities': [{'name': 'Existing Crate', 'dbref': 3}],
+                  'inventory': [],
+                  'local_exits': [],
+                  'active_local_events': [],
+                  'player': {'known_facts': []},
+                  'snapshot_number': counts['snapshot'],
+              }
+          context.build_dm_world_snapshot = build_snapshot
+          sys.modules['services.dm_world_context'] = context
+
+          faro = types.ModuleType('world.faro_ahogado_vertical_slice')
+          faro.FARO_AHOGADO_CAMPAIGN = {'id': 'CAMPAIGN-FARO-AHOGADO-VS01'}
+          sys.modules['world.faro_ahogado_vertical_slice'] = faro
+
+          adjudicator = types.ModuleType('services.dm_free_action_adjudicator')
+          def adjudicate(actor, packet):
+              intent = packet['intent']
+              step = intent['steps'][0]
+              if step.get('unresolved_target') and not step.get('primary_ref'):
+                  return {
+                      'status': 'NEEDS_CONTEXT',
+                      'admissible': False,
+                      'context_needs': list(intent.get('context_needs') or []),
+                      'steps': [{'index': 0, 'status': 'NEEDS_CONTEXT', 'reason': 'UNRESOLVED_TARGET'}],
+                  }
+              return {
+                  'status': 'NEEDS_JUDGMENT',
+                  'admissible': False,
+                  'context_needs': list(intent.get('context_needs') or []),
+                  'steps': [{'index': 0, 'status': 'NEEDS_JUDGMENT', 'action_type': 'MOVE_OBJECT'}],
+              }
+          adjudicator.adjudicate_dm_free_action = adjudicate
+          sys.modules['services.dm_free_action_adjudicator'] = adjudicator
+
+          execution = types.ModuleType('services.dm_free_action_execution_bridge')
+          def execute(actor, plan, raw_player_input=''):
+              counts['execute'] += 1
+              return {
+                  'status': 'EXECUTED',
+                  'executed': True,
+                  'results': [{'status': 'DM_CHECK_RESOLVED', 'executed': True, 'outcome': 'SUCCESS'}],
+                  'rendered_text': '',
+              }
+          execution.execute_adjudicated_dm_free_action = execute
+          sys.modules['services.dm_free_action_execution_bridge'] = execution
+
+          judgment_bridge = types.ModuleType('services.dm_free_action_judgment_bridge')
+          judgment_bridge.apply_dm_judgment = lambda adjudication, result: {
+              'status': 'ADMISSIBLE',
+              'admissible': True,
+              'steps': [{'index': 0, 'status': 'ADMISSIBLE', 'executor': 'DM_CHECK'}],
+          }
+          sys.modules['services.dm_free_action_judgment_bridge'] = judgment_bridge
+
+          interpreter_runtime = types.ModuleType('services.dm_free_action_runtime')
+          interpreter_runtime.dispatch_dm_free_action_async = lambda *args, **kwargs: {'status': 'UNUSED_DEFAULT'}
+          sys.modules['services.dm_free_action_runtime'] = interpreter_runtime
+          judge_runtime = types.ModuleType('services.dm_free_action_judge_runtime')
+          judge_runtime.dispatch_dm_judge_async = lambda *args, **kwargs: {'status': 'UNUSED_DEFAULT'}
+          sys.modules['services.dm_free_action_judge_runtime'] = judge_runtime
+
+          from services.player_language_contract import resolve_turn_language
+          from services.dm_free_action_pipeline import dispatch_dm_unsupported_action_async
+
+          class Holder:
+              pass
+          class Actor:
+              def __init__(self):
+                  self.db = Holder()
+                  self.ndb = Holder()
+                  self.messages = []
+              def msg(self, text=None, **kwargs):
+                  if text is not None:
+                      self.messages.append(str(text))
+
+          def schedule_now(callback):
+              counts['schedule'] += 1
+              return callback()
+
+          def judge_dispatch(actor, raw, adjudication, plan, *, on_result, on_failure=None, **kwargs):
+              counts['judge'] += 1
+              return on_result(actor, {
+                  'status': 'JUDGED',
+                  'accepted': True,
+                  'judgments': [{'step_index': 0, 'mode': 'DIRECT', 'actor_stat': 'FUE', 'target_stat': None, 'difficulty_tier': 'STANDARD', 'difficulty': 7, 'reason': 'qa'}],
+              })
+
+          seen_needs = []
+          def resolves_on_retry(actor, raw, plan, snapshot, *, on_result, on_failure=None, context_needs=None, **kwargs):
+              counts['interpret'] += 1
+              needs = list(context_needs or [])
+              seen_needs.append(needs)
+              if not needs:
+                  step = {
+                      'action_type': 'MOVE_OBJECT', 'verb': 'kick', 'primary_ref': '', 'secondary_ref': '',
+                      'unresolved_target': 'the existing crate by the door', 'desired_effect': raw,
+                      'resolution_hint': 'DIRECT', 'stat_hint': 'FUE',
+                  }
+                  context_request = ['WORLD_OBJECT_STATE']
+              else:
+                  assert needs == ['WORLD_OBJECT_STATE'], needs
+                  step = {
+                      'action_type': 'MOVE_OBJECT', 'verb': 'kick', 'primary_ref': '', 'secondary_ref': '',
+                      'unresolved_target': '', 'desired_effect': raw,
+                      'resolution_hint': 'DIRECT', 'stat_hint': 'FUE',
+                  }
+                  context_request = needs
+              return {'status': 'QUEUED', 'callback_result': on_result(actor, {
+                  'status': 'INTERPRETED', 'accepted': True,
+                  'intent': {'intent': 'MOVE_OBJECT', 'goal': raw, 'steps': [step], 'context_needs': context_request, 'confidence': 0.9},
+              })}
+
+          actor = Actor()
+          resolve_turn_language(actor, 'I kick the crate away from the door.')
+          result = dispatch_dm_unsupported_action_async(
+              actor,
+              'I kick the crate away from the door.',
+              interpreter_dispatch_callable=resolves_on_retry,
+              judge_dispatch_callable=judge_dispatch,
+              retry_scheduler_callable=schedule_now,
+          )
+          assert result['status'] == 'DM_PIPELINE_QUEUED', result
+          assert seen_needs == [[], ['WORLD_OBJECT_STATE']], seen_needs
+          assert counts['interpret'] == 2, counts
+          assert counts['schedule'] == 1, counts
+          assert counts['snapshot'] == 2, counts
+          assert counts['plan'] == 1, counts
+          assert counts['judge'] == 1 and counts['execute'] == 1, counts
+          assert actor.messages[-1].strip() == 'Your attempt succeeds.', actor.messages
+
+          before = dict(counts)
+          def never_resolves(actor, raw, plan, snapshot, *, on_result, on_failure=None, context_needs=None, **kwargs):
+              counts['interpret'] += 1
+              needs = list(context_needs or [])
+              return {'status': 'QUEUED', 'callback_result': on_result(actor, {
+                  'status': 'INTERPRETED', 'accepted': True,
+                  'intent': {
+                      'intent': 'USE', 'goal': raw,
+                      'steps': [{
+                          'action_type': 'USE', 'verb': 'use', 'primary_ref': '', 'secondary_ref': '',
+                          'unresolved_target': 'an object that does not exist', 'desired_effect': raw,
+                          'resolution_hint': 'UNKNOWN', 'stat_hint': '',
+                      }],
+                      'context_needs': ['WORLD_OBJECT_STATE'], 'confidence': 0.8,
+                  },
+              })}
+
+          actor2 = Actor()
+          resolve_turn_language(actor2, 'Uso un objeto que no existe.')
+          dispatch_dm_unsupported_action_async(
+              actor2,
+              'Uso un objeto que no existe.',
+              interpreter_dispatch_callable=never_resolves,
+              judge_dispatch_callable=judge_dispatch,
+              retry_scheduler_callable=schedule_now,
+          )
+          assert counts['interpret'] - before['interpret'] == 2, counts
+          assert counts['schedule'] - before['schedule'] == 1, counts
+          assert counts['plan'] - before['plan'] == 1, counts
+          assert actor2.messages[-1].strip() == 'El mundo no ofrece suficiente soporte ahora mismo para resolver esa acción.', actor2.messages
+
+          before_empty = dict(counts)
+          def unresolved_without_need(actor, raw, plan, snapshot, *, on_result, on_failure=None, context_needs=None, **kwargs):
+              counts['interpret'] += 1
+              return {'status': 'QUEUED', 'callback_result': on_result(actor, {
+                  'status': 'INTERPRETED', 'accepted': True,
+                  'intent': {
+                      'intent': 'USE', 'goal': raw,
+                      'steps': [{
+                          'action_type': 'USE', 'verb': 'use', 'primary_ref': '', 'secondary_ref': '',
+                          'unresolved_target': 'unknown thing', 'desired_effect': raw,
+                          'resolution_hint': 'UNKNOWN', 'stat_hint': '',
+                      }],
+                      'context_needs': [], 'confidence': 0.7,
+                  },
+              })}
+
+          actor3 = Actor()
+          resolve_turn_language(actor3, 'I use the unknown thing.')
+          dispatch_dm_unsupported_action_async(
+              actor3,
+              'I use the unknown thing.',
+              interpreter_dispatch_callable=unresolved_without_need,
+              judge_dispatch_callable=judge_dispatch,
+              retry_scheduler_callable=schedule_now,
+          )
+          assert counts['interpret'] - before_empty['interpret'] == 1, counts
+          assert counts['schedule'] - before_empty['schedule'] == 0, counts
+          assert actor3.messages[-1].strip() == 'The world does not currently provide enough support to resolve that action.', actor3.messages
+
+          runtime_source = Path('siza-world-engine/overlay/services/dm_free_action_runtime.py').read_text(encoding='utf-8')
+          pipeline_source = Path('siza-world-engine/overlay/services/dm_free_action_pipeline.py').read_text(encoding='utf-8')
+          assert 'context_needs=requested_needs' in runtime_source
+          assert 'MAX_CONTEXT_RETRIES = 1' in pipeline_source
+          assert 'fresh_snapshot = build_dm_world_snapshot' in pipeline_source
+
+          print('SIZA one bounded context retry: PASS')
+          print('SIZA unresolved nonexistent target hard stop: PASS')
+          print('SIZA empty context request does not retry: PASS')
+          print('SIZA Director plan is not advanced twice on retry: PASS')
+          PY
