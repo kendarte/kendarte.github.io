@@ -1,10 +1,10 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.3.0-book-battlefield-layout";
+    var BUILD = "0.3.1-book-battlefield-rpg-tcg-layout";
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-book-battlefield-v03";
-    var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0300";
+    var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0310";
     var childObserver = null;
     var parentObserver = null;
     var applyTimer = null;
@@ -35,8 +35,8 @@
             link.id = STYLE_ID;
             link.rel = "stylesheet";
             link.type = "text/css";
-            link.href = STYLE_HREF;
         }
+        if (link.getAttribute("href") !== STYLE_HREF) link.href = STYLE_HREF;
         doc.head.appendChild(link);
         return true;
     }
