@@ -11,12 +11,14 @@ from services.interaction_proposal_execution_bridge import extract_player_author
 from services.knowledge_context_engine import fact_knowledge_state
 from services.npc_fact_disclosure_engine import _visible_local_npc_by_dbref
 from services.npc_fact_disclosure_state_engine import evaluate_fact_disclosure_v85
+from services.player_language_contract import detect_player_language, get_actor_turn_language
 
 
-RANKED_FACT_CONVERSATION_BUILD = "0.86.1-ranked-topic-single-fact-authority"
+RANKED_FACT_CONVERSATION_BUILD = "0.86.2-ranked-topic-bilingual-presentation"
 _TOPIC_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "que", "y", "o", "se", "su", "sus",
+    "an", "and", "about", "of", "the", "to", "with", "in", "on", "for", "or", "his", "her", "their",
 }
 
 
@@ -122,6 +124,14 @@ def select_best_known_topic_fact(npc, topic):
     }
 
 
+def _same_language_text(text, language):
+    value = str(text or "").strip()
+    if not value:
+        return ""
+    detected = detect_player_language(value, previous_language=language).get("language")
+    return value if detected == language else ""
+
+
 def resolve_ranked_talk_with_disclosure_and_acquisition(
     actor,
     raw,
@@ -130,6 +140,7 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
 ):
     """Choose one Fact once, then use that same fact_id for disclosure, memory and authoritative transfer."""
     location = getattr(actor, "location", None) if actor else None
+    language = get_actor_turn_language(actor)
     if not actor or not location:
         return {
             "status": "INTERACTION_REJECTED",
@@ -149,10 +160,15 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
         else _find_npc(location, raw)
     )
     if not npc:
+        text = (
+            "You can't identify any visible person to address with that action."
+            if language == "en"
+            else "No identificas a ningún interlocutor visible para esa acción."
+        )
         return {
             "status": "INTERACTION_EXECUTED",
             "executed": True,
-            "response_text": "No identificas a ningún interlocutor visible para esa acción.",
+            "response_text": text,
             "knowledge_acquisition": {
                 "status": "NO_SHARED_FACT_IN_NEW_CONVERSATION",
                 "acquired": False,
@@ -167,7 +183,10 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
         or ""
     ).strip()
     if not topic:
-        greeting = str(npc.db.dialogue_greeting or "").strip() or f"{npc.key} te presta atención."
+        authored_greeting = str(npc.db.dialogue_greeting or "").strip()
+        greeting = _same_language_text(authored_greeting, language)
+        if not greeting:
+            greeting = f"{npc.key} gives you their attention." if language == "en" else f"{npc.key} te presta atención."
         before_count = len(_plain_list(getattr(actor.db, "memories", [])))
         _record_conversation(actor, npc, None, outcome="greeting")
         acquisition = acquire_fact_from_new_conversation(
@@ -186,7 +205,11 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
 
     selected = select_best_known_topic_fact(npc, topic)
     if not selected:
-        text = f"{npc.key} no aporta información concreta sobre {topic}."
+        text = (
+            f"{npc.key} offers no concrete information about {topic}."
+            if language == "en"
+            else f"{npc.key} no aporta información concreta sobre {topic}."
+        )
         before_count = len(_plain_list(getattr(actor.db, "memories", [])))
         _record_conversation(actor, npc, topic, outcome="no_information")
         acquisition = acquire_fact_from_new_conversation(
@@ -208,10 +231,15 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
     fact_id = str(selected.get("fact_id") or "")
     gate = evaluate_fact_disclosure_v85(npc, actor, fact)
     if not bool(gate.get("allowed", True)):
+        text = (
+            f"{npc.key} avoids giving details about {topic}."
+            if language == "en"
+            else f"{npc.key} evita dar detalles sobre {topic}."
+        )
         return {
             "status": "INTERACTION_EXECUTED",
             "executed": True,
-            "response_text": f"{npc.key} evita dar detalles sobre {topic}.",
+            "response_text": text,
             "knowledge_acquisition": {
                 "status": "DISCLOSURE_BLOCKED",
                 "acquired": False,
