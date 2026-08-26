@@ -5,10 +5,10 @@ from commands.world_input_v82_commands import present_conversation_result_v82
 from commands.world_input_v83_commands import classify_v83_input
 from commands.world_input_v84_commands import _current_interaction_capability
 from commands.world_input_v85_commands import CmdSizaNoMatchV85, handle_action_proposal_result_v85
-from services.action_proposal_async_runtime import DEFAULT_ACTION_FAILURE_TEXT
 from services.active_perception_proposal_runtime import dispatch_active_perception_proposal_async
 from services.action_resolution_engine import adventure_stats
 from services.interaction_engine import parse_interaction_intent
+from services.player_language_contract import get_actor_turn_language, localize, resolve_turn_language
 from services.ranked_fact_conversation_engine import (
     RANKED_FACT_CONVERSATION_BUILD,
     resolve_ranked_talk_with_disclosure_and_acquisition,
@@ -173,7 +173,7 @@ def handle_action_proposal_result_v861(
 
 def _proposal_failure(actor, failure):
     logger.log_err(f"SIZA v0.86.1 action proposal runtime failure: {failure}")
-    actor.msg("\n" + DEFAULT_ACTION_FAILURE_TEXT)
+    actor.msg("\n" + localize("unsupported", get_actor_turn_language(actor)))
     return failure
 
 
@@ -204,6 +204,10 @@ class CmdSizaNoMatchV861(CmdSizaNoMatchV85):
         raw = (self.args or "").strip()
         if _handle_reserved_combat_input(self.caller, raw):
             return None
+
+        # One language decision per natural-language player turn. Downstream renderers read this contract.
+        resolve_turn_language(self.caller, raw)
+
         classification = classify_v83_input(self.caller, raw)
         if classification.get("route") == "INTERACTION" and classification.get("explicit_talk_precedence"):
             packet = resolve_ranked_talk_with_disclosure_and_acquisition(
