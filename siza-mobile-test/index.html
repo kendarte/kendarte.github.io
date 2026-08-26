@@ -594,7 +594,7 @@ function passResponse(){const R=state.match?.responseWindow;if(R?.responder==='p
 function passPriorityV070(owner){const M=state.match,plan=SizaCardEffects.priorityPassPlan(M?.responseWindow,owner);if(!plan)return;M.responseWindow=plan.responseWindow;M.pendingResolution=plan.pendingResolution;M.active=plan.active;M.phase=plan.phase;save();render()}
 function resolutionGateHtmlV070(){const M=state.match;if(!M?.pendingResolution)return'';const top=cardById(M.stack.at(-1)?.cardId);return `<section class="pendingChoiceV070"><h3>Resolución pendiente</h3><p>${top?`${esc(top.name)} está arriba del Stack.`:'El Stack está listo.'}</p><button class="btn" onclick="SIZA.continueResolutionV070()">TOCAR PARA RESOLVER</button></section>`}
 function continueResolutionV070(){const M=state.match;if(!M?.pendingResolution)return;M.pendingResolution=false;completeStackV070()}
-function resolveStackAll(){const M=state.match;let guard=0;while(M.stack.length&&!M.pendingChoice&&!M.over&&guard++<30)resolveTopStack()}
+function resolveStackAll(){const M=state.match;let resolved=0;while(SizaCardEffects.shouldContinueStackResolution(M,resolved,30)){resolveTopStack();resolved++}}
 function completeStackV070(){const M=state.match;resolveStackAll();const plan=SizaCardEffects.stackCompletionPlan(M);if(plan.kind==='over'){save();return render()}if(plan.kind==='choice'){M.active=plan.active;save();return render()}M.stackReturnOwner=plan.stackReturnOwner;M.active=plan.active;M.phase=plan.phase;save();render();if(plan.scheduleEnemy)setTimeout(enemyChoosePlay,420)}
 function cardHasEffectV1(c,type,event=null){return SizaCardEffects.hasEffect(c,type,event)}
 function bounceTargetsForEffectV1(M,s,entryIndex){return SizaCardEffects.otherPermanentTargets(M,s.owner,entryIndex)}
