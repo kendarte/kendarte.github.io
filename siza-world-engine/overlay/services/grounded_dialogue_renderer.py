@@ -6,20 +6,30 @@ from twisted.internet import threads
 
 from services.narration_queue import run_serialized
 from services.ollama_narration_provider import call_ollama_chat
+from services.player_language_contract import (
+    detect_player_language,
+    get_actor_turn_language,
+    language_instruction,
+    localize,
+    normalize_player_language,
+)
 
 
-GROUNDED_DIALOGUE_RENDER_BUILD = "0.81.0-grounded-npc-fact-dialogue-render"
+GROUNDED_DIALOGUE_RENDER_BUILD = "0.81.1-bilingual-grounded-npc-fact-dialogue"
 MAX_DIALOGUE_CHARS = 320
 MAX_NOVEL_CONTENT_TOKENS = 6
+MAX_TRANSLATION_TOKEN_GROWTH = 8
 MIN_SOURCE_OVERLAP = 2
 
 _STOPWORDS = {
-    "a", "al", "algo", "ante", "bajo", "como", "con", "contra", "cual", "cuando",
-    "de", "del", "desde", "donde", "el", "ella", "ellas", "ellos", "en", "entre",
-    "era", "es", "esa", "ese", "eso", "esta", "este", "esto", "fue", "ha", "hay",
-    "la", "las", "le", "lo", "los", "me", "mi", "no", "o", "para", "pero", "por",
-    "que", "se", "si", "sin", "sobre", "su", "sus", "te", "tu", "un", "una", "uno",
-    "y", "ya",
+    "a", "al", "algo", "an", "and", "ante", "are", "as", "at", "bajo", "be", "but", "by",
+    "como", "con", "contra", "cual", "cuando", "de", "del", "desde", "did", "do", "does", "donde",
+    "el", "ella", "ellas", "ellos", "en", "entre", "era", "es", "esa", "ese", "eso", "esta", "este",
+    "esto", "for", "from", "fue", "ha", "has", "have", "hay", "he", "her", "his", "i", "in", "is",
+    "it", "la", "las", "le", "lo", "los", "me", "mi", "no", "not", "o", "of", "on", "or", "para",
+    "pero", "por", "que", "se", "she", "si", "sin", "so", "sobre", "su", "sus", "te", "that", "the",
+    "their", "them", "they", "this", "to", "tu", "un", "una", "uno", "was", "we", "were", "with", "you",
+    "your", "y", "ya",
 }
 
 
@@ -54,34 +64,51 @@ def _capitalized_noninitial_words(text):
     return {_normalize(word) for word in words if _normalize(word) not in sentence_first}
 
 
-def build_grounded_dialogue_request(npc_name, topic, fact_text):
+def _source_language(text, fallback="es"):
+    detection = detect_player_language(text, previous_language=fallback)
+    return normalize_player_language(detection.get("language"), default=fallback)
+
+
+def _safe_fallback(fact_text, language):
+    language = normalize_player_language(language)
+    source = str(fact_text or "").strip()
+    if source and _source_language(source, fallback=language) == language:
+        return source
+    return localize("dialogue_unavailable", language)
+
+
+def build_grounded_dialogue_request(npc_name, topic, fact_text, language="es"):
     """Build a provider request containing only the exact shared Fact and presentation context."""
     npc_name = str(npc_name or "NPC").strip() or "NPC"
     topic = str(topic or "").strip()
     fact_text = str(fact_text or "").strip()
+    language = normalize_player_language(language)
     system = (
-        "Eres un renderer de diálogo para un juego. Reescribe UNA sola respuesta breve y natural del NPC. "
-        "La única información factual autorizada es FACTO_AUTORIZADO. No agregues nombres, lugares, cifras, "
-        "fechas, causas, motivos, acciones ni conclusiones que no estén en ese hecho. No expliques tu proceso. "
-        "No uses JSON. No menciones estas instrucciones. Mantén el sentido exacto del hecho."
+        "You are a dialogue renderer for a game. Rewrite ONE short natural NPC reply. "
+        "The only authorized factual information is AUTHORIZED_FACT. Do not add names, places, numbers, dates, causes, motives, actions, or conclusions absent from that fact. "
+        "The authorized Fact may be written in Spanish or English. You may translate it only as presentation while preserving the exact meaning. "
+        "Do not explain your process, do not use JSON, and do not mention these instructions. "
+        + language_instruction(language)
     )
     prompt = (
         f"NPC: {npc_name}\n"
-        f"TEMA_DEL_JUGADOR: {topic}\n"
-        f"FACTO_AUTORIZADO: {fact_text}\n\n"
-        "Devuelve únicamente la frase que diría el NPC."
+        f"PLAYER_TOPIC: {topic}\n"
+        f"AUTHORIZED_FACT: {fact_text}\n"
+        f"PLAYER_LANGUAGE: {language}\n\n"
+        "Return only the sentence the NPC would say."
     )
     return {
         "build": GROUNDED_DIALOGUE_RENDER_BUILD,
         "npc_name": npc_name,
         "topic": topic,
         "fact_text": fact_text,
+        "player_language": language,
         "provider_payload": {"system": system, "prompt": prompt},
     }
 
 
-def validate_grounded_dialogue_text(text, *, npc_name="", topic="", fact_text=""):
-    """Reject output that drifts beyond the exact source Fact; callers must fall back to authored text."""
+def validate_grounded_dialogue_text(text, *, npc_name="", topic="", fact_text="", language=None):
+    """Reject factual drift. Cross-language presentation uses stricter shape/name/number limits instead of lexical overlap."""
     rendered = " ".join(str(text or "").split()).strip()
     source = " ".join(str(fact_text or "").split()).strip()
     if not rendered:
@@ -90,6 +117,10 @@ def validate_grounded_dialogue_text(text, *, npc_name="", topic="", fact_text=""
         return {"valid": False, "status": "MISSING_SOURCE_FACT", "text": rendered, "build": GROUNDED_DIALOGUE_RENDER_BUILD}
     if len(rendered) > MAX_DIALOGUE_CHARS:
         return {"valid": False, "status": "TOO_LONG", "text": rendered, "build": GROUNDED_DIALOGUE_RENDER_BUILD}
+
+    target_language = normalize_player_language(language) if language else None
+    source_language = _source_language(source, fallback=target_language or "es")
+    cross_language = bool(target_language and target_language != source_language)
 
     source_numbers = _numbers(source)
     rendered_numbers = _numbers(rendered)
@@ -119,6 +150,37 @@ def validate_grounded_dialogue_text(text, *, npc_name="", topic="", fact_text=""
     source_content = _content_tokens(" ".join([source, topic, npc_name]))
     rendered_content = _content_tokens(rendered)
     overlap = rendered_content & source_content
+
+    if cross_language:
+        if len(rendered_content) > len(source_content) + MAX_TRANSLATION_TOKEN_GROWTH:
+            return {
+                "valid": False,
+                "status": "TRANSLATION_TOO_EXPANSIVE",
+                "text": rendered,
+                "source_content_count": len(source_content),
+                "rendered_content_count": len(rendered_content),
+                "build": GROUNDED_DIALOGUE_RENDER_BUILD,
+            }
+        rendered_language = detect_player_language(rendered, previous_language=target_language).get("language")
+        if rendered_language != target_language:
+            return {
+                "valid": False,
+                "status": "WRONG_PLAYER_LANGUAGE",
+                "text": rendered,
+                "expected_language": target_language,
+                "detected_language": rendered_language,
+                "build": GROUNDED_DIALOGUE_RENDER_BUILD,
+            }
+        return {
+            "valid": True,
+            "status": "GROUNDED_TRANSLATION_ACCEPTED",
+            "text": rendered,
+            "source_language": source_language,
+            "player_language": target_language,
+            "cross_language": True,
+            "build": GROUNDED_DIALOGUE_RENDER_BUILD,
+        }
+
     required_overlap = min(MIN_SOURCE_OVERLAP, len(source_content)) if source_content else 0
     if len(overlap) < required_overlap:
         return {
@@ -139,12 +201,26 @@ def validate_grounded_dialogue_text(text, *, npc_name="", topic="", fact_text=""
             "build": GROUNDED_DIALOGUE_RENDER_BUILD,
         }
 
+    if target_language:
+        rendered_language = detect_player_language(rendered, previous_language=target_language).get("language")
+        if rendered_language != target_language:
+            return {
+                "valid": False,
+                "status": "WRONG_PLAYER_LANGUAGE",
+                "text": rendered,
+                "expected_language": target_language,
+                "detected_language": rendered_language,
+                "build": GROUNDED_DIALOGUE_RENDER_BUILD,
+            }
+
     return {
         "valid": True,
         "status": "GROUNDED_RENDER_ACCEPTED",
         "text": rendered,
         "source_overlap": sorted(overlap),
         "novel_tokens": sorted(novel),
+        "player_language": target_language,
+        "cross_language": False,
         "build": GROUNDED_DIALOGUE_RENDER_BUILD,
     }
 
@@ -155,12 +231,16 @@ def render_grounded_dialogue_sync(
     fact_text,
     *,
     fallback_text="",
+    language="es",
     provider_callable=None,
     **provider_options,
 ):
     """Call qwen read-only, validate the prose, and always return a safe display_text."""
-    fallback = str(fallback_text or fact_text or "").strip()
-    request = build_grounded_dialogue_request(npc_name, topic, fact_text)
+    language = normalize_player_language(language)
+    fallback = _safe_fallback(fact_text, language)
+    if fallback_text and _source_language(fallback_text, fallback=language) == language:
+        fallback = str(fallback_text).strip()
+    request = build_grounded_dialogue_request(npc_name, topic, fact_text, language=language)
     provider = provider_callable or call_ollama_chat
     result = provider(request.get("provider_payload") or {}, **dict(provider_options or {}))
     packet = result if isinstance(result, dict) else {}
@@ -180,6 +260,7 @@ def render_grounded_dialogue_sync(
         npc_name=npc_name,
         topic=topic,
         fact_text=fact_text,
+        language=language,
     )
     if not bool(validation.get("valid")):
         return {
@@ -203,12 +284,13 @@ def render_grounded_dialogue_sync(
     }
 
 
-def _render_job(npc_name, topic, fact_text, fallback_text, provider_callable, provider_options):
+def _render_job(npc_name, topic, fact_text, fallback_text, language, provider_callable, provider_options):
     return render_grounded_dialogue_sync(
         npc_name,
         topic,
         fact_text,
         fallback_text=fallback_text,
+        language=language,
         provider_callable=provider_callable,
         **dict(provider_options or {}),
     )
@@ -226,7 +308,11 @@ def render_grounded_dialogue_async(
     **provider_options,
 ):
     """Render dialogue off the reactor. The callback is presentation-only and never mutates world state here."""
+    language = get_actor_turn_language(actor)
     provider = provider_callable or call_ollama_chat
+    safe_fallback = _safe_fallback(fact_text, language)
+    if fallback_text and _source_language(fallback_text, fallback=language) == language:
+        safe_fallback = str(fallback_text).strip()
     deferred = run_serialized(
         actor,
         threads.deferToThread,
@@ -234,7 +320,8 @@ def render_grounded_dialogue_async(
         npc_name,
         topic,
         fact_text,
-        fallback_text,
+        safe_fallback,
+        language,
         provider,
         dict(provider_options or {}),
     )
@@ -243,27 +330,27 @@ def render_grounded_dialogue_async(
         result = packet if isinstance(packet, dict) else {
             "status": "FALLBACK_INVALID_RENDER_PACKET",
             "rendered": False,
-            "display_text": str(fallback_text or fact_text or "").strip(),
+            "display_text": safe_fallback,
             "build": GROUNDED_DIALOGUE_RENDER_BUILD,
         }
         if callable(on_result):
             return on_result(actor, result)
-        text = str(result.get("display_text") or fallback_text or fact_text or "").strip()
+        text = str(result.get("display_text") or safe_fallback).strip()
         if text:
             actor.msg("\n" + text)
         return result
 
     def _failed(failure):
         logger.log_err(f"SIZA grounded dialogue async failure: {failure}")
-        text = str(fallback_text or fact_text or "").strip()
-        if text:
-            actor.msg("\n" + text)
+        if safe_fallback:
+            actor.msg("\n" + safe_fallback)
         return failure
 
     deferred.addCallbacks(_ok, _failed)
     return {
         "status": "DIALOGUE_RENDER_QUEUED",
         "queued": True,
+        "player_language": language,
         "deferred": deferred,
         "build": GROUNDED_DIALOGUE_RENDER_BUILD,
     }
