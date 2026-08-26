@@ -50,6 +50,7 @@ function makeDom(html,label){const vc=new VirtualConsole();vc.on('jsdomError',e=
   ];
   for(const x of runtimeCases){const OM=setup(o,x.options),NM=setup(n,x.options);o.enemyRespondV070();n.enemyRespondV070();const a=snap(o,OM),b=snap(n,NM);assert(a===b,`${x.name} mismatch :: ${a} / ${b}`);compared++}
 
+  o.setModal(null);n.setModal(null);
   const arena=N.window.SIZA.runArenaCriticalV071();
   for(const r of arena.results.filter(x=>!x.pass))console.error(`ARENA FAIL ${r.name}${r.error?` :: ${r.error}`:''}`);
   assert(arena.passed===arena.total,`Arena ${arena.passed}/${arena.total}`);
