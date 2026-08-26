@@ -13,7 +13,7 @@ for(const name of ['entry-rules.js','creature-rules.js']){
   else if(!html.includes(globalName))throw new Error(`${globalName} unavailable`);
 }
 const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');
-const probe=`window.__PRIORITY_RESPONSE_REGRESSION__={createMatch,setMatch:m=>state.match=m,setModal:v=>state.modal=v,getModal:()=>state.modal,enemyRespondV070};\n`;
+const probe=`window.__PRIORITY_RESPONSE_REGRESSION__={createMatch,setMatch:m=>state.match=m,setModal:v=>state.modal=v,getModal:()=>state.modal,enemyRespondV070,openPriorityV070};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM priority-response]',e.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
 const H=dom.window.__PRIORITY_RESPONSE_REGRESSION__,E=dom.window.SizaCardEffects;
@@ -34,6 +34,11 @@ test('preferredResponseCard ignora no-Instant aunque tenga counter effect',()=>{
 test('preferredResponseCard ignora counter no pagable',()=>{const x=E.preferredResponseCard(['counterA','normalA'],resolve,c=>c.id==='normalA');return x?.i===1&&x.c.id==='normalA'});
 test('preferredResponseCard conserva primer counter entre empates',()=>{const x=E.preferredResponseCard(['counterA','counterB','normalA'],resolve,()=>true);return x?.i===0&&x.c.id==='counterA'});
 test('preferredResponseCard devuelve null sin candidato',()=>E.preferredResponseCard([],resolve,()=>true)===null);
+test('priorityWindowPlan alterna rival y jugador con estados exactos',()=>{const p=E.priorityWindowPlan('player'),e=E.priorityWindowPlan('enemy');return p.responder==='enemy'&&p.active==='enemy-response'&&p.phase==='Prioridad rival'&&e.responder==='player'&&e.active==='response'&&e.phase==='Tu prioridad'});
+test('priorityWindowPlan conserva fallback histórico a jugador',()=>{const x=E.priorityWindowPlan('unexpected');return x.responder==='player'&&x.active==='response'&&x.phase==='Tu prioridad'});
+function priority(owner,cardId,id){const M=H.createMatch(false,'prepare');H.setMatch(M);H.setModal(null);M.responseWindow=null;M.active='player';M.phase='Main';M.log=[];H.openPriorityV070({id,cardId,owner});return M}
+test('openPriority de carta del jugador entrega prioridad al rival',()=>{const M=priority('player','mist','p');return M.responseWindow?.stackId==='p'&&M.responseWindow?.responder==='enemy'&&M.active==='enemy-response'&&M.phase==='Prioridad rival'&&M.log.some(x=>x.t==='Prioridad'&&x.m==='El rival puede responder a Niebla del Rompeolas.')});
+test('openPriority de carta rival entrega prioridad al jugador',()=>{const M=priority('enemy','spark','e');return M.responseWindow?.stackId==='e'&&M.responseWindow?.responder==='player'&&M.active==='response'&&M.phase==='Tu prioridad'&&M.log.some(x=>x.t==='Prioridad'&&x.m==='Puedes responder a Chispa de Fundición.')});
 
 function setup({hand=['mist','counter','spark'],crystals={U:2,R:1,G:0,W:0,B:0},modal=null}={}){
   const M=H.createMatch(false,'prepare');H.setMatch(M);H.setModal(modal);M.enemy.hand=[...hand];M.enemy.battlefield=[];M.enemy.powerCounters=[];M.enemy.summonedOn=[];M.enemy.crystals={...crystals};M.player.hand=[];M.stack=[{id:'target',cardId:'spark',owner:'player'}];M.responseWindow={stackId:'target',responder:'enemy'};M.pendingResolution=false;M.active='enemy-response';M.phase='Prioridad rival';M.log=[];return M;
