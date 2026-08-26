@@ -58,6 +58,8 @@ function normalizeCard(input={}){
   id:text(input.id,'card_'+Date.now()),
   name:text(input.name,'Carta sin nombre'),
   template:text(input.template,'standard'),
+  frameUrl:text(input.frameUrl,''),
+  frameAssetKey:text(input.frameAssetKey,''),
   cardType:type,
   type,
   subtype:text(input.subtype,''),
@@ -109,8 +111,8 @@ function validateCard(input={}){
 
 function cardFromMobileShape(input={}){return normalizeCard(input);}
 function cardToMobileShape(input={}){
- const c=normalizeCard(input),out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),effects:clone(c.effects)};
- if(c.artAssetKey)out.artAssetKey=c.artAssetKey;if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
+ const c=normalizeCard(input),out={id:c.id,name:c.name,template:c.template,frameUrl:c.frameUrl,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),effects:clone(c.effects)};
+ if(c.frameAssetKey)out.frameAssetKey=c.frameAssetKey;if(c.artAssetKey)out.artAssetKey=c.artAssetKey;if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
 }
 
 global.SizaCardSchema=Object.freeze({
