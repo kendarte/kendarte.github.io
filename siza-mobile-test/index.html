@@ -400,6 +400,7 @@ body{min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}
 <script src="adventure-book-shell-v01.js"></script>
 <script src="adventure-book-shell-adapter-v01.js"></script>
 <script src="adventure-book-shell-renderer-v01.js"></script>
+<script src="world-combat-bridge-v01.js"></script>
 <script>
 const NEREIDA_IMG='portraits/nereida_voss.webp?v=0514';
 (function(){
@@ -534,9 +535,25 @@ function attackAll(){const M=state.match;if(!M||!canDeclareCombatV610())return;M
 function resolveDefense(){const M=state.match;if(!M?.combat||M.combat.owner!=='enemy'||M.active!=='defense')return;resolveCombatV600()}
 /* canonicalized physicalAttack: earlier declaration removed */
 /* zero-reference enemyPhysicalStep removed */
-function checkWin(){const M=state.match,winner=SizaCardEffects.matchWinner(M.player.life,M.enemy.life);if(winner){M.over=true;M.winner=winner;addLog('Match',`${M.winner==='player'?'Victoria':'Derrota'}.`);if(M.adventure&&M.winner==='player'){state.adventure.flags.smugglersResolved=true;state.adventure.advance=Math.min(5,state.adventure.advance+2);journal('Siza Encounter','Derrotaste al Magistócrata contrabandista. La escalera inferior quedó abierta.');state.adventure.currentEvent=null;chooseAdventureEvent()}}}
-/* Arena v0.7.0: implementación del contrato REGLAS_ARENA_V070.md. */
-const ENTRY_V070=SizaEntryRules.MODES;
+function checkWin(){
+  const M=state.match,winner=SizaCardEffects.matchWinner(M.player.life,M.enemy.life);
+  if(!winner)return;
+  M.over=true;
+  M.winner=winner;
+  addLog('Match',`${M.winner==='player'?'Victoria':'Derrota'}.`);
+  if(SizaWorldCombatBridgeV01.isWorldMatch(M)){
+    const packet=SizaWorldCombatBridgeV01.emitResult(M);
+    if(!packet.ok)addLog('Bridge','No se pudo producir Combat Result: '+packet.status);
+    return;
+  }
+  if(M.adventure&&M.winner==='player'){
+    state.adventure.flags.smugglersResolved=true;
+    state.adventure.advance=Math.min(5,state.adventure.advance+2);
+    journal('Siza Encounter','Derrotaste al Magistócrata contrabandista. La escalera inferior quedó abierta.');
+    state.adventure.currentEvent=null;
+    chooseAdventureEvent();
+  }
+}
 function crystalReqV070(c){return SizaCrystalRules.crystalReq(c)}
 function spellCostV070(c){return SizaCrystalRules.spellCost(c)}
 function resetCrystalsV070(P){return SizaCrystalRules.resetPool(P)}
@@ -547,10 +564,35 @@ function paymentV070(P,c){return SizaCrystalRules.paymentPlan(P,c,cardById)}
 function spendV070(P,spent){return SizaCrystalRules.spend(P,spent)}
 function spendTextV070(s){return Object.entries(s||{}).flatMap(([k,n])=>Array(n).fill(COLORS[k])).join(' + ')||'ninguno'}
 function makeDuelistV070(lib,human){const aff=human?{...state.player.mag.aff}:{U:2,R:1,G:0},P={life:20,hand:lib.splice(0,7),library:lib,battlefield:[],powerCounters:[],summonedOn:[],artifacts:[],artifactExhausted:[],equipment:[],graveyard:[],exile:[],exhausted:[],combatUsed:false,mf:human?state.player.mag.mf:2,prow:human?state.player.mag.prow:2,eva:human?state.player.mag.eva:2,aff,crystals:{},ownTurn:human?1:0,offeringUsed:false};resetCrystalsV070(P);return P}
-function createMatch(adventure=false,mode='prepare'){const p=makeDuelistV070(makeLibrary(),true),e=makeDuelistV070(makeLibrary(),false),entry=SizaEntryRules.normalizeMode(mode);return{id:'match_'+Date.now(),rulesVersion:RULES_VERSION,rules:{entryMode:entry,offering:true},turn:1,phase:'Main',active:'player',player:p,enemy:e,stack:[],log:[{t:'Reglas',m:`Arena v${RULES_VERSION}. Cristales U/U/R. ${ENTRY_V070[entry].short} está EN PRUEBA.`},{t:'Mano',m:'Cada lado toma siete cartas aleatorias; el primer jugador no roba.'}],pendingEquip:null,pendingChoice:null,combat:null,responseWindow:null,stackReturnOwner:null,enemyStage:null,ui:{hand:-1,creature:-1,attackMode:false,attackers:[],fieldFocus:null},adventure,over:false,winner:null}}
+function createMatch(adventure=false,mode='prepare',worldEncounter=null){
+  const p=makeDuelistV070(makeLibrary(),true),e=makeDuelistV070(makeLibrary(),false),entry=SizaEntryRules.normalizeMode(mode);
+  const M={id:'match_'+Date.now(),rulesVersion:RULES_VERSION,rules:{entryMode:entry,offering:true},turn:1,phase:'Main',active:'player',player:p,enemy:e,stack:[],log:[{t:'Reglas',m:`Arena v${RULES_VERSION}. Cristales U/U/R. ${ENTRY_V070[entry].short} está EN PRUEBA.`},{t:'Mano',m:'Cada lado toma siete cartas aleatorias; el primer jugador no roba.'}],pendingEquip:null,pendingChoice:null,combat:null,responseWindow:null,stackReturnOwner:null,enemyStage:null,ui:{hand:-1,creature:-1,attackMode:false,attackers:[],fieldFocus:null},adventure,over:false,winner:null};
+  if(worldEncounter){
+    const bridge=SizaWorldCombatBridgeV01.attachEncounter(M,worldEncounter);
+    if(!bridge.ok)throw new Error('World Combat Encounter inválido: '+bridge.status+' '+(bridge.errors||[]).join(','));
+    M.log.push({t:'World Engine',m:'Encounter '+bridge.encounter.encounter_id+' autorizado.'});
+  }
+  return M;
+}
 function startPractice(mode){if(!mode){state.match=null;state.pendingAdventureDuel=false;state.route='match';save();return render()}if(totalDeck()!==60){state.route='deck';render();return toast('Completa primero un deck de 60 cartas.','bad')}state.match=createMatch(false,mode);state.route='match';save();render()}
 function startAdventureDuel(mode){if(!mode){state.match=null;state.pendingAdventureDuel=true;state.route='match';save();return render()}if(totalDeck()!==60)state.deck=starterDeck();state.match=createMatch(true,mode);state.match.enemy.life=12;state.match.log.push({t:'Historia',m:'El Contrabandista Carmesí abre su baraja.'});state.pendingAdventureDuel=false;state.route='match';save();render()}
 function startConfiguredV070(mode){return state.pendingAdventureDuel?startAdventureDuel(mode):startPractice(mode)}
+function startWorldEncounter(encounter,mode='prepare'){
+  const validation=SizaWorldCombatBridgeV01.validateEncounter(encounter);
+  if(!validation.valid)return{ok:false,status:validation.status,errors:validation.errors};
+  if(totalDeck()!==60)return{ok:false,status:'INVALID_PLAYER_DECK',errors:['PLAYER_DECK_MUST_HAVE_60_CARDS']};
+  try{
+    state.match=createMatch(false,mode,validation.encounter);
+  }catch(error){
+    return{ok:false,status:'ENCOUNTER_START_FAILED',error:String(error?.message||error)};
+  }
+  state.pendingAdventureDuel=false;
+  state.route='match';
+  save();
+  render();
+  return{ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:validation.encounter.encounter_id,match_id:state.match.id};
+}
+function getWorldCombatResult(){return SizaWorldCombatBridgeV01.getResult(state.match)}
 function counterV070(P,i){return SizaCreatureRules.counter(P,i)}
 function isEquipmentCardV1(c){return SizaCardSchema.isEquipmentCard(c)}
 function equipmentEquipCostV1(c){return SizaCardSchema.equipmentCost(c)}
@@ -640,7 +682,7 @@ function runArenaSelfTestsV070(){const old=state.match,results=[],test=(name,fn)
 function runArenaRegressionV070(){const core=runArenaSelfTestsV070(),old=state.match,extra=[],test=(name,fn)=>{try{extra.push({name,pass:!!fn()})}catch(error){extra.push({name,pass:false,error:error.message})}};try{test('Prioridad jugador → rival',()=>{const M=createMatch(false,'prepare');state.match=M;const o={id:'p',cardId:'mist',owner:'player'};M.stack=[o];openPriorityV070(o);return M.responseWindow.responder==='enemy'&&M.active==='enemy-response'});test('Prioridad rival → jugador',()=>{const M=createMatch(false,'prepare');state.match=M;const o={id:'e',cardId:'spark',owner:'enemy'};M.stack=[o];openPriorityV070(o);return M.responseWindow.responder==='player'&&M.active==='response'});test('Leviatán devuelve una Reliquia una sola vez',()=>{const M=createMatch(false,'prepare');state.match=M;M.enemy.artifacts=['prism'];const before=M.enemy.hand.length;bounceV070({owner:'enemy',zone:'artifacts',index:0,id:'prism'});return M.enemy.artifacts.length===0&&M.enemy.hand.length===before+1&&M.enemy.hand.at(-1)==='prism'});test('Leviatán devuelve Equipo sin duplicarlo',()=>{const M=createMatch(false,'prepare');state.match=M;M.enemy.equipment=[{id:'tideblade',target:null}];const before=M.enemy.hand.length;bounceV070({owner:'enemy',zone:'equipment',index:0,id:'tideblade'});return M.enemy.equipment.length===0&&M.enemy.hand.length===before+1&&M.enemy.hand.at(-1)==='tideblade'});test('Equipar consume el cristal elegido',()=>{const M=createMatch(false,'prepare');state.match=M;M.player.crystals={U:2,R:1};return spendV070(M.player,{R:1})&&M.player.crystals.R===0&&M.player.crystals.U===2});}finally{state.match=old}const results=[...core.results,...extra];return{version:RULES_VERSION,passed:results.filter(x=>x.pass).length,total:results.length,results}}
 function runArenaCriticalV071(){const base=runArenaRegressionV070(),old=state.match,extra=[],test=(name,fn)=>{try{extra.push({name,pass:!!fn()})}catch(error){extra.push({name,pass:false,error:error.message})}};try{test('Jugador paga U/U y todavía puede pagar R',()=>{const M=createMatch(false,'prepare'),P=M.player;state.match=M;P.hand=['counter','spark','dock','dock'];P.crystals={U:2,R:1};openManifest(0,cardById('counter'),'player',false);const conserved=P.crystals.U===0&&P.crystals.R===1;state.modal.roll=6;commitManifest();passPriorityV070('enemy');const gated=M.pendingResolution===true;continueResolutionV070();return conserved&&gated&&M.active==='player'&&directPlanV070(P,cardById('spark'))?.spent?.R===1});test('Una tirada exitosa espera tap',()=>{const M=createMatch(false,'prepare');state.match=M;M.player.hand=['spark'];openManifest(0,cardById('spark'),'player',false);state.modal.roll=6;rollManifest();return !!state.modal&&state.modal.roll===6&&!M.stack.length});test('La IA tampoco supera tres cristales',()=>{const M=createMatch(false,'prepare'),E=M.enemy;state.match=M;E.crystals={U:2,R:1};return spendV070(E,{U:1})&&spendV070(E,{U:1})&&spendV070(E,{R:1})&&!spendV070(E,{R:1})});}finally{state.match=old}const results=[...base.results,...extra];return{version:RULES_VERSION,passed:results.filter(x=>x.pass).length,total:results.length,results}}
 function returnAdventure(){state.match=null;state.route='adventure';save();render();toast('Resultado devuelto al Adventure Engine.','gold')}
-window.SIZA={nav,editCardInGeneratorV1,reset,setFilter,adventureChoice,deckDelta,resetDeck,startPractice,startAdventureDuel,startConfiguredV070,playHand,tapHand,selectHand,playSelectedHand,selectCreature,tapFieldCard,inspectFieldCard,closeFieldFocus,beginAttackSelection,toggleAllAttackers,cancelAttackSelection,confirmAttackSelection,attackCreature,attackAll,rollManifest,cancelManifest,selectBurn,usePrismV070,choosePaymentV070,chooseOfferingV070,commitManifest,failManifest,physicalAttack,endTurn,passResponse,beginEquip,chooseEquipCrystalV070,equipTo,assignBlocker,resolveDefense,continueResolutionV070,continueChoiceV070,discardChoiceV070,bounceChoiceV070,toggleArenaNav,runArenaSelfTestsV070,runArenaRegressionV070,runArenaCriticalV071,returnAdventure};
+window.SIZA={nav,editCardInGeneratorV1,reset,setFilter,adventureChoice,deckDelta,resetDeck,startPractice,startAdventureDuel,startConfiguredV070,startWorldEncounter,getWorldCombatResult,playHand,tapHand,selectHand,playSelectedHand,selectCreature,tapFieldCard,inspectFieldCard,closeFieldFocus,beginAttackSelection,toggleAllAttackers,cancelAttackSelection,confirmAttackSelection,attackCreature,attackAll,rollManifest,cancelManifest,selectBurn,usePrismV070,choosePaymentV070,chooseOfferingV070,commitManifest,failManifest,physicalAttack,endTurn,passResponse,beginEquip,chooseEquipCrystalV070,equipTo,assignBlocker,resolveDefense,continueResolutionV070,continueChoiceV070,discardChoiceV070,bounceChoiceV070,toggleArenaNav,runArenaSelfTestsV070,runArenaRegressionV070,runArenaCriticalV071,returnAdventure};
 render();
 if(state.match&&!state.match.over&&state.match.active==='enemy'&&!state.modal)setTimeout(enemyTurn,650);
 })();
