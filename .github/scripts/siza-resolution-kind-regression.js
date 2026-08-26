@@ -13,7 +13,7 @@ for(const name of ['entry-rules.js','creature-rules.js']){
   else if(!html.includes(globalName))throw new Error(`${globalName} unavailable`);
 }
 const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');
-const probe=`window.__RESOLUTION_KIND_REGRESSION__={createMatch,setMatch:m=>state.match=m,resolveTopStack,resolveStackAll,completeStackV070,TEST_CARD_DB_V1};\n`;
+const probe=`window.__RESOLUTION_KIND_REGRESSION__={createMatch,setMatch:m=>state.match=m,resolveTopStack,resolveStackAll,completeStackV070,checkWin,TEST_CARD_DB_V1};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM resolution-kind]',e.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.__scheduled=[];dom.window.setTimeout=(fn,delay)=>{dom.window.__scheduled.push([fn?.name||'',delay]);return 0};
 const H=dom.window.__RESOLUTION_KIND_REGRESSION__,S=dom.window.SizaCardSchema,E=dom.window.SizaCardEffects;
@@ -49,6 +49,13 @@ test('shouldContinueStackResolution se detiene por Stack vacío elección u over
 test('resolveStackAll resuelve como máximo 30 objetos',()=>{const M=fresh();M.stack=Array.from({length:31},(_,i)=>({id:'w'+i,cardId:'watcher',owner:'player'}));H.resolveStackAll();return M.stack.length===1&&M.player.battlefield.length===30&&M.player.powerCounters.length===30&&M.player.summonedOn.length===30});
 test('resolveStackAll pausa cuando una resolución abre elección',()=>{const M=fresh();M.player.library=['mist'];M.stack=[{id:'below',cardId:'watcher',owner:'player'},{id:'top',cardId:'servitor',owner:'player'}];H.resolveStackAll();return M.stack.length===1&&M.stack[0].id==='below'&&M.pendingChoice?.type==='observe'&&M.player.battlefield.length===1});
 test('resolveStackAll no avanza con elección ya pendiente',()=>{const M=fresh();M.pendingChoice={type:'discard'};M.stack=[{id:'w',cardId:'watcher',owner:'player'}];H.resolveStackAll();return M.stack.length===1&&!M.player.battlefield.length&&M.pendingChoice.type==='discard'});
-test('resolveStackAll se detiene inmediatamente después de lethal',()=>{const M=fresh();M.stack=Array.from({length:11},(_,i)=>({id:'s'+i,cardId:'spark',owner:'player'}));H.resolveStackAll();return M.over===true&&M.enemy.life===0&&M.stack.length===1&&M.player.graveyard.length===10});
+test('resolveStackAll se detiene inmediatamente después de lethal',()=>{const M=fresh();M.stack=Array.from({length:11},(_,i)=>({id:'s'+i,cardId:'spark',owner:'player'}));H.resolveStackAll();return M.over===true&&M.winner==='player'&&M.enemy.life===0&&M.stack.length===1&&M.player.graveyard.length===10});
+test('matchWinner conserva no ganador victoria derrota y empate 0/0',()=>E.matchWinner(20,20)===null&&E.matchWinner(20,0)==='player'&&E.matchWinner(0,20)==='enemy'&&E.matchWinner(0,0)==='enemy');
+test('matchWinner conserva semántica con vida negativa',()=>E.matchWinner(3,-2)==='player'&&E.matchWinner(-2,3)==='enemy'&&E.matchWinner(-1,-1)==='enemy');
+function win(p,e){const M=fresh();M.adventure=false;M.player.life=p;M.enemy.life=e;H.checkWin();return M}
+test('checkWin no muta partida sin lethal',()=>{const M=win(20,20);return !M.over&&M.winner===null&&!M.log.length});
+test('checkWin registra Victoria cuando cae el rival',()=>{const M=win(20,0);return M.over&&M.winner==='player'&&M.log.some(x=>x.t==='Match'&&x.m==='Victoria.')});
+test('checkWin registra Derrota cuando cae el jugador',()=>{const M=win(0,20);return M.over&&M.winner==='enemy'&&M.log.some(x=>x.t==='Match'&&x.m==='Derrota.')});
+test('checkWin conserva empate 0/0 como victoria rival',()=>{const M=win(0,0);return M.over&&M.winner==='enemy'&&M.log.some(x=>x.t==='Match'&&x.m==='Derrota.')});
 
 for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`SIZA resolution kind regression: ${passed}/${results.length}`);dom.window.close();if(passed!==results.length)process.exit(1);
