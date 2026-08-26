@@ -47,24 +47,10 @@
 .sizaCardTemplateQueenV3 .sizaManafestBadgeV3{z-index:12!important}
 .sizaCardTemplateQueenV3 .sizaStatPlateV3{z-index:13!important}
 
-/* Standard frame crystal rail: center the capsules inside the left ornamental channel. */
+/* Standard frame crystal rail: only nudge the existing stack into the ornamental channel. */
 .sizaCardTemplateQueenV3 .sizaCardCrystalRailV3{
-  left:5.25%!important;
-  top:15.6%!important;
-  width:9.15%!important;
-  height:37.9%!important;
-  align-items:center!important;
-}
-.sizaCardTemplateQueenV3 .sizaCardCrystalRailV3 .sizaCrystalV3{
-  width:88%!important;
-}
-.sizaCardTemplateQueenV3 .sizaCardCrystalRailV3[data-crystal-count="3"]{
-  justify-content:center!important;
-  gap:4.8%!important;
-}
-.sizaCardTemplateQueenV3 .sizaCardCrystalRailV3[data-crystal-count="3"] .sizaCrystalV3{
-  flex-basis:28.4%!important;
-  height:28.4%!important;
+  left:5%!important;
+  top:15.2%!important;
 }
 
 /* Art failures never expose a broken-image icon. */
