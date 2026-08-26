@@ -11,7 +11,8 @@ from services.player_language_contract import get_actor_turn_language, localize
 from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
 
 
-DM_FREE_ACTION_PIPELINE_BUILD = "dm-0.1-unsupported-to-authoritative-execution"
+DM_FREE_ACTION_PIPELINE_BUILD = "dm-0.1.1-single-bounded-context-retry"
+MAX_CONTEXT_RETRIES = 1
 
 
 def _plain_dict(value):
@@ -26,6 +27,22 @@ def _plain_list(value):
         return list(value or [])
     except Exception:
         return []
+
+
+def _unique_strings(values):
+    output = []
+    for value in list(values or []):
+        text = str(value or "").strip()
+        if text and text not in output:
+            output.append(text)
+    return output
+
+
+def _schedule_next_reactor_tick(callback):
+    """Schedule a context retry outside the completed serialized provider callback."""
+    from twisted.internet import reactor
+
+    return reactor.callLater(0, callback)
 
 
 def is_valid_unsupported_proposal(proposal_result):
@@ -185,11 +202,13 @@ def handle_dm_interpretation_result(
     *,
     raw_player_input,
     dm_plan,
+    retry_count=0,
+    context_retry_callable=None,
     judge_dispatch_callable=None,
     judge_provider_callable=None,
     judge_provider_options=None,
 ):
-    """Deterministic middle of the pipeline. Only NEEDS_JUDGMENT can invoke the bounded Judge."""
+    """Deterministic middle. Context may be retrieved once; only NEEDS_JUDGMENT can invoke the bounded Judge."""
     packet = _plain_dict(interpreted)
     if packet.get("status") != "INTERPRETED" or packet.get("accepted") is not True:
         text = _safe_pipeline_failure_text(actor, packet.get("status"))
@@ -197,6 +216,7 @@ def handle_dm_interpretation_result(
         return {
             "status": "DM_INTERPRETATION_REJECTED",
             "handled": True,
+            "retry_count": int(retry_count or 0),
             "presentation": {"presented": True, "text": text},
             "build": DM_FREE_ACTION_PIPELINE_BUILD,
         }
@@ -205,6 +225,32 @@ def handle_dm_interpretation_result(
     status = str(adjudication.get("status") or "")
     if status == "ADMISSIBLE" and adjudication.get("admissible") is True:
         return _execute_and_present(actor, adjudication, raw_player_input)
+
+    if status == "NEEDS_CONTEXT":
+        needs = _unique_strings(adjudication.get("context_needs"))
+        can_retry = int(retry_count or 0) < MAX_CONTEXT_RETRIES and bool(needs) and callable(context_retry_callable)
+        if can_retry:
+            retry = context_retry_callable(actor, needs)
+            return {
+                "status": "DM_CONTEXT_RETRY_QUEUED",
+                "handled": True,
+                "retry_count": int(retry_count or 0),
+                "context_needs": needs,
+                "adjudication": adjudication,
+                "retry": retry,
+                "build": DM_FREE_ACTION_PIPELINE_BUILD,
+            }
+        text = _safe_pipeline_failure_text(actor, status)
+        actor.msg("\n" + text)
+        return {
+            "status": "NEEDS_CONTEXT",
+            "handled": True,
+            "retry_count": int(retry_count or 0),
+            "context_needs": needs,
+            "adjudication": adjudication,
+            "presentation": {"presented": True, "text": text},
+            "build": DM_FREE_ACTION_PIPELINE_BUILD,
+        }
 
     if status != "NEEDS_JUDGMENT":
         text = _safe_pipeline_failure_text(actor, status)
@@ -268,8 +314,9 @@ def dispatch_dm_unsupported_action_async(
     judge_dispatch_callable=None,
     judge_provider_callable=None,
     judge_provider_options=None,
+    retry_scheduler_callable=None,
 ):
-    """Escalate a true unsupported player action through Director -> Interpreter -> Adjudicator -> Judge -> World Engine."""
+    """Escalate unsupported input through Director -> Interpreter -> one context retry -> Adjudicator -> Judge -> Engine."""
     prepared = prepare_dm_unsupported_turn(actor, raw_player_input)
     if not prepared.get("prepared"):
         text = _safe_pipeline_failure_text(actor, prepared.get("status"))
@@ -282,20 +329,11 @@ def dispatch_dm_unsupported_action_async(
             "build": DM_FREE_ACTION_PIPELINE_BUILD,
         }
 
-    snapshot = _plain_dict(prepared.get("snapshot"))
+    initial_snapshot = _plain_dict(prepared.get("snapshot"))
     plan = _plain_dict(prepared.get("plan"))
     dispatch_interpreter = interpreter_dispatch_callable or dispatch_dm_free_action_async
-
-    def _interpreted(current_actor, result):
-        return handle_dm_interpretation_result(
-            current_actor,
-            result,
-            raw_player_input=raw_player_input,
-            dm_plan=plan,
-            judge_dispatch_callable=judge_dispatch_callable,
-            judge_provider_callable=judge_provider_callable,
-            judge_provider_options=judge_provider_options,
-        )
+    schedule_retry = retry_scheduler_callable or _schedule_next_reactor_tick
+    interpreter_options = dict(interpreter_provider_options or {})
 
     def _interpreter_failed(current_actor, failure):
         logger.log_err(f"SIZA DM interpretation pipeline failure: {failure}")
@@ -303,21 +341,61 @@ def dispatch_dm_unsupported_action_async(
         current_actor.msg("\n" + text)
         return failure
 
-    options = dict(interpreter_provider_options or {})
-    dispatched = dispatch_interpreter(
-        actor,
-        raw_player_input,
-        plan,
-        snapshot,
-        on_result=_interpreted,
-        on_failure=_interpreter_failed,
-        provider_callable=interpreter_provider_callable,
-        **options,
-    )
+    def _dispatch(current_actor, snapshot, retry_count=0, context_needs=None):
+        requested_needs = _unique_strings(context_needs)
+
+        def _context_retry(retry_actor, needs):
+            next_needs = _unique_strings(needs)
+
+            def _run_retry():
+                fresh_snapshot = build_dm_world_snapshot(retry_actor, raw_player_input=raw_player_input)
+                return _dispatch(
+                    retry_actor,
+                    fresh_snapshot,
+                    retry_count=int(retry_count or 0) + 1,
+                    context_needs=next_needs,
+                )
+
+            scheduled = schedule_retry(_run_retry)
+            return {
+                "status": "SCHEDULED",
+                "context_needs": next_needs,
+                "retry_count": int(retry_count or 0) + 1,
+                "scheduled": scheduled,
+                "build": DM_FREE_ACTION_PIPELINE_BUILD,
+            }
+
+        def _interpreted(current_result_actor, result):
+            return handle_dm_interpretation_result(
+                current_result_actor,
+                result,
+                raw_player_input=raw_player_input,
+                dm_plan=plan,
+                retry_count=retry_count,
+                context_retry_callable=_context_retry,
+                judge_dispatch_callable=judge_dispatch_callable,
+                judge_provider_callable=judge_provider_callable,
+                judge_provider_options=judge_provider_options,
+            )
+
+        return dispatch_interpreter(
+            current_actor,
+            raw_player_input,
+            plan,
+            snapshot,
+            on_result=_interpreted,
+            on_failure=_interpreter_failed,
+            provider_callable=interpreter_provider_callable,
+            context_needs=requested_needs,
+            **interpreter_options,
+        )
+
+    dispatched = _dispatch(actor, initial_snapshot, retry_count=0, context_needs=None)
     return {
         "status": "DM_PIPELINE_QUEUED",
         "handled": True,
         "prepared": prepared,
         "dispatch": dispatched,
+        "max_context_retries": MAX_CONTEXT_RETRIES,
         "build": DM_FREE_ACTION_PIPELINE_BUILD,
     }
