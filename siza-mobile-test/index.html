@@ -534,7 +534,7 @@ function attackAll(){const M=state.match;if(!M||!canDeclareCombatV610())return;M
 function resolveDefense(){const M=state.match;if(!M?.combat||M.combat.owner!=='enemy'||M.active!=='defense')return;resolveCombatV600()}
 /* canonicalized physicalAttack: earlier declaration removed */
 /* zero-reference enemyPhysicalStep removed */
-function checkWin(){const M=state.match;if(M.player.life<=0||M.enemy.life<=0){M.over=true;M.winner=M.player.life>0?'player':'enemy';addLog('Match',`${M.winner==='player'?'Victoria':'Derrota'}.`);if(M.adventure&&M.winner==='player'){state.adventure.flags.smugglersResolved=true;state.adventure.advance=Math.min(5,state.adventure.advance+2);journal('Siza Encounter','Derrotaste al Magistócrata contrabandista. La escalera inferior quedó abierta.');state.adventure.currentEvent=null;chooseAdventureEvent()}}}
+function checkWin(){const M=state.match,winner=SizaCardEffects.matchWinner(M.player.life,M.enemy.life);if(winner){M.over=true;M.winner=winner;addLog('Match',`${M.winner==='player'?'Victoria':'Derrota'}.`);if(M.adventure&&M.winner==='player'){state.adventure.flags.smugglersResolved=true;state.adventure.advance=Math.min(5,state.adventure.advance+2);journal('Siza Encounter','Derrotaste al Magistócrata contrabandista. La escalera inferior quedó abierta.');state.adventure.currentEvent=null;chooseAdventureEvent()}}}
 /* Arena v0.7.0: implementación del contrato REGLAS_ARENA_V070.md. */
 const ENTRY_V070=SizaEntryRules.MODES;
 function crystalReqV070(c){return SizaCrystalRules.crystalReq(c)}
