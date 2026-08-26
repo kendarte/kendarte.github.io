@@ -66,5 +66,15 @@ function aiManifestRollPlan(modal,player,landIndexes=[],bonusSource=null){
     :{bonus,burnSelected:null,aiFailure:true};
 }
 
-global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan});
+function burnSelectionPlan(modal,player,handIndex,isLand){
+  if(!modal||modal.roll==null||modal.ai||!isLand||handIndex===modal.idx)return null;
+  const selected=Array.isArray(modal.burnSelected)?modal.burnSelected.slice():[];
+  const need=Math.max(0,modal.dc-(player.mf+modal.roll+(modal.prismBonus||0)));
+  const at=selected.indexOf(handIndex);
+  if(at>=0)selected.splice(at,1);
+  else if(selected.length<need)selected.push(handIndex);
+  return selected;
+}
+
+global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan,burnSelectionPlan});
 })(window);
