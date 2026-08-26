@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.1.0-world-tcg-browser-transport";
+    var BUILD = "0.2.0-world-tcg-return-to-exploration";
     var activeEncounter = null;
     var lastSubmittedResultId = "";
 
@@ -128,15 +128,45 @@
         return submitCombatResult(event && event.detail);
     }
 
+    function returnToExploration(packet) {
+        var applied = !!(packet && packet.world_consequences_applied === true);
+        var status = applied ? "Resultado aplicado al mundo" : "Resultado aceptado";
+        setTrayStatus(status);
+
+        if (window.SizaBookShellV02 && typeof window.SizaBookShellV02.setCombatTray === "function") {
+            window.SizaBookShellV02.setCombatTray({active: false, status: status});
+        }
+        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.setMode === "function") {
+            window.SizaWorldBookClient.setMode("EXPLORATION");
+        }
+
+        activeEncounter = null;
+        lastSubmittedResultId = "";
+
+        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.sendText === "function") {
+            window.setTimeout(function () {
+                window.SizaWorldBookClient.sendText("look");
+            }, 0);
+        }
+
+        return {
+            ok: true,
+            status: "RETURNED_TO_EXPLORATION",
+            world_consequences_applied: applied,
+            consequence_status: text(packet && packet.consequence_status),
+            build: BUILD
+        };
+    }
+
     function onResultAccepted(args) {
         var packet = args && args[0];
-        if (!packet || typeof packet !== "object") {
+        if (!packet || typeof packet !== "object" || !activeEncounter) {
             return;
         }
-        if (activeEncounter && text(packet.encounter_id) !== text(activeEncounter.encounter_id)) {
+        if (text(packet.encounter_id) !== text(activeEncounter.encounter_id)) {
             return;
         }
-        setTrayStatus("Resultado aceptado · consecuencias pendientes");
+        return returnToExploration(packet);
     }
 
     function init() {
@@ -154,6 +184,8 @@
     window.SizaWorldTcgTransportV01 = Object.freeze({
         BUILD: BUILD,
         onEncounter: onEncounter,
+        onResultAccepted: onResultAccepted,
+        returnToExploration: returnToExploration,
         submitCombatResult: submitCombatResult,
         getActiveEncounter: function () { return clone(activeEncounter); }
     });
