@@ -1,0 +1,63 @@
+name: SIZA Book Battlefield v0.3 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_tcg_battlefield_v03.css'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - '.github/workflows/siza-book-battlefield-v03-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  battlefield-layout-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate clean battlefield layout contract
+        shell: bash
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js
+          python - <<'PY'
+          from pathlib import Path
+
+          css = Path('siza-world-engine/overlay/web/static/webclient/css/siza_tcg_battlefield_v03.css').read_text(encoding='utf-8')
+          js = Path('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js').read_text(encoding='utf-8')
+          template = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
+
+          for token in [
+              '.arenaHalf.enemyHalf',
+              '.arenaHalf.playerHalf',
+              '.arenaHalf .arenaZones',
+              '.arenaHalf .arenaField',
+              '.stackAnchorV5:empty',
+              '.handAreaV5',
+              'object-fit: contain !important',
+          ]:
+              assert token in css, f'missing clean battlefield contract: {token}'
+
+          forbidden = [
+              'SUPPORT · ARTIFACTS',
+              'ENEMY INVOCATIONS / BATTLE SPRITES',
+              'YOUR INVOCATIONS / BATTLE SPRITES',
+              'STACK / EFFECTS',
+              'border: 1px dashed',
+              'object-fit: cover !important',
+          ]
+          for token in forbidden:
+              assert token not in css, f'debug/fake battlefield presentation returned: {token}'
+
+          assert 'siza_tcg_battlefield_v03.css?v=0300' in js
+          assert 'siza-book-battlefield-v02' in js, 'v0.3 must remove stale v0.2 iframe stylesheet'
+          assert 'siza_tcg_battlefield_v03.js' in template
+          assert 'siza_tcg_battlefield_v02.js' not in template
+          assert template.index('siza_tcg_embed_v01.js') < template.index('siza_tcg_battlefield_v03.js')
+
+          print('PASS clean opponent/player battlefield geometry')
+          print('PASS real support and creature zones stay available without debug labels')
+          print('PASS current card renderer is preserved; no fake token crop')
+          print('PASS stale v0.2 battlefield loader cannot remain active')
+          PY
