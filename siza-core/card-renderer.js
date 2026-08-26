@@ -2,13 +2,13 @@
 'use strict';
 
 const RENDERER_SRC=typeof document!=='undefined'&&document.currentScript?.src?document.currentScript.src:'';
-const FRAME_STANDARD_BASE_URL=RENDERER_SRC?new URL('assets/frames/standard/frame_standard_base.svg',RENDERER_SRC).href:'../siza-core/assets/frames/standard/frame_standard_base.svg';
+const FRAME_STANDARD_BASE_URL=RENDERER_SRC?new URL('assets/frames/standard/frame_standard_base.svg?v=094b0ee6',RENDERER_SRC).href:'../siza-core/assets/frames/standard/frame_standard_base.svg?v=094b0ee6';
 
 (function loadSharedCardStyles(){
  if(typeof document==='undefined'||!RENDERER_SRC)return;
  const styles=[
   ['siza-card-template-v4-css','card-template-v4.css'],
-  ['siza-frame-standard-v5-css','frame-standard-v5.css']
+  ['siza-frame-standard-v5-css','frame-standard-v5.css?v=6']
  ];
  for(const[id,path]of styles){
   if(document.getElementById(id))continue;
@@ -20,18 +20,23 @@ const FRAME_STANDARD_BASE_URL=RENDERER_SRC?new URL('assets/frames/standard/frame
  }
 })();
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]));}
+function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must load before SizaCardRenderer.');return global.SizaCardSchema;}
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
 function typeClass(card){return 'type-'+schema().normalizeCard(card).cardType.toLowerCase();}
 function affinityClass(card){const c=schema().normalizeCard(card);return String(c.art||c.affinity||'multi').toLowerCase();}
 function titleLengthClass(value){const n=String(value??'').trim().length;return n>34?'titleXLV4':n>22?'titleLongV4':'';}
+function frameHtml(extraClass=''){return `<img class="sizaFrameStandardBaseV5${extraClass?' '+extraClass:''}" src="${esc(FRAME_STANDARD_BASE_URL)}" alt="" aria-hidden="true" draggable="false">`;}
 
+function artFallbackHtml(c,mobile=false,hidden=false){
+ const attrs=hidden?' hidden':'';
+ if(mobile)return `<span class="sizaArtFallbackV5"${attrs}><span class="artGlyph">${esc(c.glyph||'✦')}</span><span class="artLabel">${esc(c.subtype||c.cardType)}</span></span>`;
+ return `<div class="sizaGeneratedArtFallback sizaArtFallbackV5"${attrs}><span>${esc(c.glyph||'✦')}</span><small>${esc(c.subtype||c.cardType)}</small></div>`;
+}
 function artHtml(card,opts={}){
  const c=schema().normalizeCard(card),t=c.artTransform,mobile=opts.variant==='mobile';
- if(c.artUrl)return `<img class="${mobile?'generatedArtImageV1':'sizaGeneratedArt'}" src="${esc(c.artUrl)}" alt="" draggable="false" style="object-position:${t.x}% ${t.y}%;transform:scale(${t.scale})">`;
- if(mobile)return `<span class="artGlyph">${esc(c.glyph||'✦')}</span><span class="artLabel">${esc(c.subtype||c.cardType)}</span>`;
- return `<div class="sizaGeneratedArtFallback"><span>${esc(c.glyph||'✦')}</span><small>${esc(c.subtype||c.cardType)}</small></div>`;
+ if(c.artUrl)return `<span class="sizaArtHostV5"><img class="${mobile?'generatedArtImageV1':'sizaGeneratedArt'}" src="${esc(c.artUrl)}" alt="" draggable="false" style="object-position:${t.x}% ${t.y}%;transform:scale(${t.scale})" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${artFallbackHtml(c,mobile,true)}</span>`;
+ return artFallbackHtml(c,mobile,false);
 }
 
 function crystalRequirement(card){
@@ -71,7 +76,7 @@ function rulesHtml(c){return `<div class="sizaCardRulesTextV2">${esc(c.rules)}</
 function bodyHtml(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),mobile=opts.variant==='mobile',risk=mobile?(opts.risk??difficultyText(c)):difficultyText(c),hasStats=c.cardType==='Creature'&&s.power!=null,titleClass=titleLengthClass(c.name);
  return `<div class="sizaGeneratedInner sizaCardFrameV2 sizaQueenLayoutV3">
-  <img class="sizaFrameStandardBaseV5" src="${esc(FRAME_STANDARD_BASE_URL)}" alt="" aria-hidden="true" draggable="false">
+  ${frameHtml()}
   <div class="sizaCardTitlePlateV3 sizaGeneratedTitle"><span class="sizaCardNameV2${titleClass?' '+titleClass:''}">${esc(c.name)}</span></div>
   <div class="sizaCardDifficultyV2 sizaManafestBadgeV3 sizaGeneratedDifficulty${mobile?' cardRisk':''}">${esc(risk)}</div>
   ${crystalRailHtml(c)}
@@ -98,7 +103,7 @@ function renderCard(card,opts={}){return opts.variant==='mobile'?renderMobileCar
 
 function thumbBody(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),hasStats=c.cardType==='Creature'&&s.power!=null;
- return `${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}`;
+ return `${frameHtml('sizaFrameStandardThumbV5')}${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}`;
 }
 function renderStandardThumb(card,opts={}){
  const c=schema().normalizeCard(card);return `<div class="sizaGeneratedThumb sizaCardThumbV2 sizaCardThumbQueenV3 affinity-${esc(affinityClass(c))} ${typeClass(c)}" data-card-id="${esc(c.id)}">${thumbBody(c,opts)}</div>`;
