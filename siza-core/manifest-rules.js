@@ -77,8 +77,8 @@ function burnSelectionPlan(modal,player,handIndex,isLand){
 }
 
 function burnConsumptionPlan(modal){
-  const indices=Array.isArray(modal?.burnSelected)?modal.burnSelected.slice().sort((a,b)=>b-a):[];
-  let manifestIndex=modal?.idx;
+  const indices=modal.burnSelected.slice().sort((a,b)=>b-a);
+  let manifestIndex=modal.idx;
   for(const index of indices)if(index<manifestIndex)manifestIndex--;
   return {indices,manifestIndex};
 }
