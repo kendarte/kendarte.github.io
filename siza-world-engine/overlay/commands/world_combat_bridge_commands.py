@@ -69,7 +69,7 @@ class CmdSizaCombatBridgeTest(Command):
             return
         self.caller.msg(
             f"Combat handoff enviado al cliente: {emitted.get('encounter_id')} | "
-            "el World Engine aún no aplicará consecuencias persistentes."
+            "el resultado volverá al World Engine para consecuencias persistentes configuradas."
         )
 
 
@@ -89,17 +89,19 @@ class CmdSizaCombatResult(Command):
         if not accepted.get("accepted"):
             self.caller.msg(f"Combat result rechazado: {accepted.get('status')}")
             return
-        # This acknowledgement is presentation only. Persistent consequences are a later authority step.
+        applied = bool(accepted.get("world_consequences_applied"))
         self.caller.msg(
             f"Resultado de combate recibido: {accepted.get('outcome')} | "
-            f"encounter={accepted.get('encounter_id')}"
+            f"encounter={accepted.get('encounter_id')} | "
+            f"consecuencias={'APLICADAS' if applied else 'SIN REGLA APLICABLE'}"
         )
         self.caller.msg(
             siza_combat_result_accepted=(
                 ({
                     "encounter_id": accepted.get("encounter_id"),
                     "outcome": accepted.get("outcome"),
-                    "world_consequences_applied": False,
+                    "world_consequences_applied": applied,
+                    "consequence_status": accepted.get("consequence_status"),
                     "bridge_build": WORLD_COMBAT_HANDOFF_BUILD,
                 },),
                 {},
