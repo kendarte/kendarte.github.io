@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/siza-effect-targeting-migration.yml'
+      - '.github/scripts/siza-effect-targeting-migration.js'
   workflow_dispatch:
 
 permissions:
