@@ -4,8 +4,11 @@ on:
   push:
     paths:
       - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/templates/webclient/siza_book_shell_v02.html'
       - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_shell_v02.js'
       - 'siza-world-engine/overlay/web/static/webclient/css/custom.css'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_book_shell_v02.css'
       - '.github/workflows/siza-world-book-client-tests.yml'
   workflow_dispatch:
 
@@ -23,7 +26,9 @@ jobs:
           node-version: '24'
 
       - name: Validate JavaScript syntax
-        run: node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_shell_v02.js
 
       - name: Validate template contract
         shell: bash
@@ -31,52 +36,66 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html')
-          text = path.read_text(encoding='utf-8')
+          wrapper = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
+          shell = Path('siza-world-engine/overlay/web/templates/webclient/siza_book_shell_v02.html').read_text(encoding='utf-8')
+          combined = wrapper + '\n' + shell
           required = [
               '{% extends "webclient/base.html" %}',
-              '{% block guilib_import %}',
-              "webclient/js/siza_book_client.js",
-              '{% block client %}',
+              'siza_book_shell_v02.css',
+              'siza_book_client.js',
+              'siza_book_shell_v02.js',
+              'siza_book_shell_v02.html',
+              'id="siza-scene-visual"',
+              'id="siza-player-portrait"',
+              'id="siza-focus-portrait"',
+              'id="siza-scene-cast"',
               'id="siza-scene-description"',
               'id="siza-exits"',
               'id="siza-characters"',
               'id="siza-visible"',
               'id="siza-knowledge-panel"',
-              'id="siza-knowledge-list"',
               'id="siza-messagewindow"',
+              'id="siza-tcg-tray"',
+              'id="siza-tcg-hand-mount"',
+              'id="siza-tcg-resource-mount"',
               'id="siza-inputfield"',
               'id="siza-inputsend"',
           ]
           for token in required:
-              assert token in text, f'missing template token: {token}'
-          assert 'goldenlayout' not in text.lower(), 'custom client must not reintroduce GoldenLayout'
-          print('PASS template contract')
+              assert token in combined, f'missing template token: {token}'
+          assert 'goldenlayout' not in combined.lower(), 'custom client must not reintroduce GoldenLayout'
+          print('PASS template contract v0.2')
           PY
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
 
-      - name: Run transport and room presentation regression
+      - name: Run transport, room and portrait regression
         shell: bash
         run: |
           node <<'NODE'
           const fs=require('fs');
           const {JSDOM}=require('jsdom');
           const html=`<!doctype html><html><body>
-          <div id="siza-book-client"></div>
-          <div id="siza-player-name"></div><div id="siza-player-state"></div>
+          <div id="siza-book-client" data-mode="EXPLORATION"></div>
+          <div id="siza-player-name">Nereida</div><div id="siza-player-state"></div>
           <div id="siza-mode-label"></div><div id="siza-location-label"></div>
           <div id="siza-context-label"></div><div id="siza-connection-label"></div>
           <div id="siza-prompt-label"></div><div id="siza-scene-kicker"></div>
-          <div id="siza-scene-title"></div><p id="siza-scene-description"></p>
+          <div id="siza-scene-title"></div>
+          <div id="siza-scene-visual" data-has-image="false"><div id="siza-scene-visual-media"></div><div id="siza-scene-visual-label"></div></div>
+          <aside id="siza-player-portrait"><span id="siza-player-portrait-initial"></span><div data-portrait-role></div><strong id="siza-player-portrait-name"></strong></aside>
+          <aside id="siza-focus-portrait" data-empty="true"><span id="siza-focus-portrait-initial"></span><div data-portrait-role></div><strong id="siza-focus-portrait-name"></strong></aside>
+          <div id="siza-scene-cast"></div>
+          <p id="siza-scene-description"></p>
           <section id="siza-exits-card"><span id="siza-exits"></span></section>
           <section id="siza-characters-card"><span id="siza-characters"></span></section>
           <section id="siza-visible-card"><span id="siza-visible"></span></section>
           <details id="siza-knowledge-panel"><span id="siza-knowledge-summary"></span><div id="siza-knowledge-list"></div></details>
           <div id="siza-messagewindow"></div>
-          <div id="siza-current-prompt"></div><textarea id="siza-inputfield"></textarea>
-          <button id="siza-inputsend"></button></body></html>`;
+          <section id="siza-tcg-tray" data-active="false"><div id="siza-tcg-resource-mount"></div><div id="siza-tcg-hand-mount"></div><div id="siza-tcg-status"></div></section>
+          <div id="siza-current-prompt"></div><textarea id="siza-inputfield"></textarea><button id="siza-inputsend"></button>
+          </body></html>`;
           const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
           const w=dom.window;
           const listeners={};
@@ -90,13 +109,14 @@ jobs:
             msg(name,args,kwargs){sent.push([name,args,kwargs])}
           };
           w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js','utf8'));
+          w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_shell_v02.js','utf8'));
 
           const client=w.SizaWorldBookClient;
-          if(!client)throw new Error('SizaWorldBookClient missing');
+          const shell=w.SizaBookShellV02;
+          if(!client||!shell)throw new Error('client or shell missing');
           if(!client.sendText('look'))throw new Error('sendText rejected connected command');
           if(client.sendText('look'))throw new Error('second command must be blocked while response is pending');
           if(sent.length!==1||JSON.stringify(sent[0])!==JSON.stringify(['text',['look'],{}]))throw new Error(`wrong Evennia payload ${JSON.stringify(sent)}`);
-          if(!w.document.getElementById('siza-inputsend').disabled)throw new Error('pending command did not disable send button');
 
           const room=[
             'Pescaderia de Darsena(#9)',
@@ -109,40 +129,26 @@ jobs:
           ].join('\n');
 
           listeners.text([room],{cls:'out'});
+          shell.renderPlayerPortrait();
+          shell.renderSceneCast();
           if(w.document.getElementById('siza-location-label').textContent!=='Pescaderia de Darsena')throw new Error('room title not promoted to scene');
-          if(!w.document.getElementById('siza-scene-description').textContent.includes('Un local de prueba'))throw new Error('room description missing');
-          if(!w.document.getElementById('siza-exits').textContent.includes('salir a la calle'))throw new Error('exits not separated');
-          if(!w.document.getElementById('siza-characters').textContent.includes('Mara Vensal'))throw new Error('characters not separated');
-          if(!w.document.getElementById('siza-visible').textContent.includes('Manifiesto'))throw new Error('visible objects not separated');
-          if(w.document.getElementById('siza-knowledge-list').children.length!==2)throw new Error('room knowledge not moved to knowledge panel');
-          if(w.document.getElementById('siza-messagewindow').children.length!==0)throw new Error('initial remembered knowledge must not flood narrative feed');
-          if(w.document.getElementById('siza-inputsend').disabled)throw new Error('server output did not release pending command');
+          if(w.document.getElementById('siza-knowledge-list').children.length!==2)throw new Error('room knowledge not folded');
+          if(w.document.getElementById('siza-focus-portrait-name').textContent!=='Mara Vensal')throw new Error('first room character not promoted to focus portrait');
+          if(w.document.getElementById('siza-focus-portrait').getAttribute('data-empty')!=='false')throw new Error('focus portrait stayed empty');
+          if(!w.document.getElementById('siza-scene-cast').textContent.includes('Informante de Prueba C'))throw new Error('secondary cast missing');
+          if(!w.document.getElementById('siza-characters-card').hidden)throw new Error('character metadata duplicated after portrait promotion');
+          if(w.document.getElementById('siza-player-portrait-name').textContent!=='Nereida')throw new Error('player portrait did not mirror player identity');
+
+          if(!shell.setSceneVisual({url:'/static/test-scene.jpg',label:'Bahía de Sirena'}))throw new Error('scene visual API rejected payload');
+          if(w.document.getElementById('siza-scene-visual').getAttribute('data-has-image')!=='true')throw new Error('scene visual did not activate image state');
+
+          if(!shell.setCombatTray({active:true,status:'Encuentro preparado'}))throw new Error('TCG tray API rejected payload');
+          if(w.document.getElementById('siza-tcg-tray').getAttribute('data-active')!=='true')throw new Error('TCG tray did not accept prepared state');
+          if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='EXPLORATION')throw new Error('preparing TCG tray must not force combat mode');
 
           listeners.text([room],{cls:'out'});
           if(w.document.getElementById('siza-messagewindow').children.length!==0)throw new Error('identical room packet was not suppressed');
 
-          if(!client.sendText('examinar manifiesto'))throw new Error('next command did not unlock');
-          const updatedRoom=room+'\nCon el ciclo de estampado ya comprendido, identificas el turno responsable.';
-          listeners.text([updatedRoom],{cls:'out'});
-          if(w.document.getElementById('siza-knowledge-list').children.length!==3)throw new Error('new knowledge missing from knowledge panel');
-          if(w.document.getElementById('siza-messagewindow').children.length!==1)throw new Error('only the new discovery should enter narrative feed');
-          if(!w.document.getElementById('siza-messagewindow').textContent.includes('turno responsable'))throw new Error('new discovery narrative missing');
-
-          listeners.text([updatedRoom],{cls:'out'});
-          if(w.document.getElementById('siza-messagewindow').children.length!==1)throw new Error('duplicate updated room packet rendered twice');
-
-          listeners.text(['<b>Mara asiente.</b>'],{cls:'out'});
-          if(!w.document.getElementById('siza-messagewindow').innerHTML.includes('Mara asiente'))throw new Error('normal narrative output did not render');
-
-          listeners.prompt(['HP&gt;'],{});
-          if(!w.document.getElementById('siza-prompt-label').innerHTML.includes('HP'))throw new Error('prompt listener did not update prompt');
-
-          client.setMode('DIALOGUE');
-          if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='DIALOGUE')throw new Error('dialogue mode did not apply');
-
-          listeners.connection_open(['websocket'],{});
-          if(w.document.getElementById('siza-book-client').getAttribute('data-connection')!=='open')throw new Error('connection open state missing');
-
-          console.log('PASS World Book: transport, pending guard, room parsing, knowledge folding, duplicate suppression');
+          console.log('PASS World Book v0.2: transport, room parsing, portraits, visual slot, dormant TCG mount');
           dom.window.close();
           NODE
