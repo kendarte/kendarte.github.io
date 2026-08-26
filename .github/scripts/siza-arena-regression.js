@@ -68,8 +68,8 @@ function runStack(){
   const probe=`window.__SIZA_STACK_TEST__={createMatch,setMatch:m=>state.match=m,resolveTopStack,resolveStackAll,TEST_CARD_DB_V1};\n`;
   const dom=makeDom(original.replace(marker,probe+marker),'stack');
   dom.window.setTimeout=()=>0;
-  const H=dom.window.__SIZA_STACK_TEST__;
-  if(!H)throw new Error('Stack test hooks were not exposed');
+  const H=dom.window.__SIZA_STACK_TEST__,E=dom.window.SizaCardEffects;
+  if(!H||!E)throw new Error('Stack test hooks were not exposed');
   const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
   const fresh=()=>{const M=H.createMatch(false,'prepare');H.setMatch(M);return M};
 
@@ -91,6 +91,15 @@ function runStack(){
   test('Carta temporal desconocida ejecuta draw 2 sólo por effects',()=>{
     H.TEST_CARD_DB_V1.push({id:'regression_generated_draw2',name:'Regression Draw Two',type:'Instant',cost:1,difficulty:1,pips:{},text:'Draw two.',art:'multi',glyph:'G',effects:[{event:'resolve',type:'draw',target:'self',amount:2}]});
     const M=fresh();M.player.hand=[];M.player.library=['spark','mist','watcher'];M.player.graveyard=[];M.stack=[{id:'generated',cardId:'regression_generated_draw2',owner:'player'}];H.resolveTopStack();return M.player.hand.join(',')==='spark,mist'&&M.player.graveyard.includes('regression_generated_draw2');
+  });
+  test('Targeting self/opponent respeta default compartido',()=>{
+    const P={tag:'P'},O={tag:'O'};return E.effectSide(null,P,O,'self')===P&&E.effectSide(null,P,O,'opponent')===O&&E.effectSide('self',P,O,'opponent')===P&&E.effectSide('opponent',P,O,'self')===O;
+  });
+  test('Targeting de permanentes excluye sólo el permanente que entra',()=>{
+    const M=fresh();M.player.battlefield=['servitor','leviathan'];M.player.artifacts=['prism'];M.player.equipment=[{id:'tideblade',target:0}];M.enemy.battlefield=['ignimite'];M.enemy.artifacts=['prism'];M.enemy.equipment=[{id:'tideblade',target:0}];const targets=E.otherPermanentTargets(M,'player',1);return !targets.some(x=>x.owner==='player'&&x.zone==='battlefield'&&x.index===1)&&targets.some(x=>x.owner==='player'&&x.zone==='battlefield'&&x.index===0)&&targets.some(x=>x.owner==='player'&&x.zone==='artifacts'&&x.id==='prism')&&targets.some(x=>x.owner==='enemy'&&x.zone==='equipment'&&x.id==='tideblade');
+  });
+  test('Leviatán abre elección con objetivos de battlefield Artifact y Equipment',()=>{
+    const M=fresh();M.player.hand=[];M.enemy.hand=[];M.player.battlefield=[];M.player.powerCounters=[];M.player.summonedOn=[];M.player.artifacts=[];M.player.equipment=[];M.enemy.battlefield=['ignimite'];M.enemy.powerCounters=[0];M.enemy.summonedOn=[0];M.enemy.artifacts=['prism'];M.enemy.equipment=[{id:'tideblade',target:0}];M.stack=[{id:'lev-targets',cardId:'leviathan',owner:'player'}];H.resolveTopStack();const zones=(M.pendingChoice?.targets||[]).map(x=>`${x.owner}:${x.zone}:${x.id}`);return M.player.battlefield[0]==='leviathan'&&M.pendingChoice?.type==='bounce'&&zones.includes('enemy:battlefield:ignimite')&&zones.includes('enemy:artifacts:prism')&&zones.includes('enemy:equipment:tideblade')&&!zones.includes('player:battlefield:leviathan');
   });
   for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.error?` :: ${result.error}`:''}`);
   const passed=results.filter(result=>result.pass).length;
