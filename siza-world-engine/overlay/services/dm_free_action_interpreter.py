@@ -1,9 +1,10 @@
 import json
 
 from services.action_resolution_engine import ADVENTURE_STATS, CHECK_MODES
+from services.player_language_contract import detect_player_language, language_instruction
 
 
-DM_FREE_ACTION_BUILD = "dm-0.1-structured-free-action-intent"
+DM_FREE_ACTION_BUILD = "dm-0.1-structured-free-action-intent-bilingual"
 DM_ACTION_TYPES = (
     "OBSERVE",
     "SEARCH",
@@ -84,12 +85,12 @@ def build_reference_catalog(world_snapshot):
     """Return the only authoritative references Qwen may bind directly."""
     snapshot = _plain_dict(world_snapshot)
     rows = [
-        {"ref": "SELF", "kind": "SELF", "scope": "SELF", "name": "jugador"},
+        {"ref": "SELF", "kind": "SELF", "scope": "SELF", "name": "player"},
         {
             "ref": "ROOM",
             "kind": "ROOM",
             "scope": "LOCAL",
-            "name": str((_plain_dict(snapshot.get("location"))).get("name") or "ubicación actual"),
+            "name": str((_plain_dict(snapshot.get("location"))).get("name") or "current location"),
         },
     ]
     seen = {"SELF", "ROOM"}
@@ -137,8 +138,12 @@ def _safe_known_facts(world_snapshot):
     return output
 
 
-def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot):
+def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot, player_language=None):
     """Build a bounded interpretation request. The request contains no mutation API."""
+    language = str(player_language or "").strip().lower()
+    if language not in {"es", "en"}:
+        language = detect_player_language(raw_player_input).get("language") or "es"
+
     refs = build_reference_catalog(world_snapshot)
     allowed_refs = [row.get("ref") for row in refs]
     plan = _plain_dict(dm_plan)
@@ -201,18 +206,21 @@ def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot):
     }
 
     system = (
-        "Eres el intérprete invisible de acciones libres de SIZA. "
-        "Tu única tarea es traducir literalmente la intención del jugador a un frame estructurado para otros sistemas. "
-        "NO decides si funciona. NO narras. NO produces resultados. NO modificas el mundo. "
-        "NO inventes objetos, NPC, lugares, Facts, IDs, capacidades ni condiciones. "
-        "Solo puedes usar primary_ref/secondary_ref si el ref existe exactamente en REFERENCE CATALOG. "
-        "El campo scope indica si una referencia está LOCAL o en INVENTORY; no ignores esa diferencia. "
-        "Si el jugador menciona algo que no tiene ref, deja el ref vacío y copia una descripción corta en unresolved_target. "
-        "resolution_hint y stat_hint son recomendaciones de clasificación, nunca autoridad. "
-        "Descompón una acción compuesta en un máximo de tres pasos conservando el orden del jugador. "
-        "Usa solamente información incluida en este mensaje. Devuelve exclusivamente JSON válido según el schema."
+        "You are SIZA's invisible free-action interpreter. Translate the player's literal intent into the required structured frame. "
+        "You do NOT decide whether it works. You do NOT narrate. You do NOT produce outcomes. You do NOT mutate the world. "
+        "Do NOT invent objects, NPCs, places, Facts, IDs, capabilities, or conditions. "
+        "Use primary_ref/secondary_ref only when the exact ref exists in REFERENCE CATALOG. "
+        "scope distinguishes LOCAL references from INVENTORY references; preserve that distinction. "
+        "If the player mentions something without a ref, leave the ref empty and copy a short description into unresolved_target. "
+        "resolution_hint and stat_hint are classification suggestions, never authority. "
+        "Split a compound action into at most three ordered steps. "
+        "Keep schema keys, enum values, refs, stat codes, and resolution codes exactly as defined. "
+        "Write only the natural-language string values goal, verb, unresolved_target, and desired_effect in the player's language. "
+        f"{language_instruction(language)} "
+        "Use only information included in this request. Return only valid JSON matching the schema."
     )
     user = {
+        "PLAYER_LANGUAGE": language,
         "PLAYER INPUT": str(raw_player_input or ""),
         "CAMPAIGN": {
             "id": plan.get("campaign_id"),
@@ -232,6 +240,7 @@ def build_dm_free_action_request(raw_player_input, dm_plan, world_snapshot):
     }
     return {
         "raw_player_input": str(raw_player_input or ""),
+        "player_language": language,
         "reference_catalog": refs,
         "allowed_refs": allowed_refs,
         "schema": schema,
