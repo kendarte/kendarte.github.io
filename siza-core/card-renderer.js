@@ -26,7 +26,10 @@ function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||
 function typeClass(card){return 'type-'+schema().normalizeCard(card).cardType.toLowerCase();}
 function affinityClass(card){const c=schema().normalizeCard(card);return String(c.art||c.affinity||'multi').toLowerCase();}
 function titleLengthClass(value){const n=String(value??'').trim().length;return n>34?'titleXLV4':n>22?'titleLongV4':'';}
-function frameHtml(extraClass=''){return `<img class="sizaFrameStandardBaseV5${extraClass?' '+extraClass:''}" src="${esc(FRAME_STANDARD_BASE_URL)}" alt="" aria-hidden="true" draggable="false">`;}
+function frameHtml(card,extraClass=''){
+ const c=schema().normalizeCard(card),src=c.frameUrl||FRAME_STANDARD_BASE_URL;
+ return `<img class="sizaFrameStandardBaseV5${extraClass?' '+extraClass:''}" src="${esc(src)}" alt="" aria-hidden="true" draggable="false" onerror="this.onerror=null;this.src='${esc(FRAME_STANDARD_BASE_URL)}'">`;
+}
 
 function artFallbackHtml(c,mobile=false,hidden=false){
  const attrs=hidden?' hidden':'';
@@ -76,7 +79,7 @@ function rulesHtml(c){return `<div class="sizaCardRulesTextV2">${esc(c.rules)}</
 function bodyHtml(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),mobile=opts.variant==='mobile',risk=mobile?(opts.risk??difficultyText(c)):difficultyText(c),hasStats=c.cardType==='Creature'&&s.power!=null,titleClass=titleLengthClass(c.name);
  return `<div class="sizaGeneratedInner sizaCardFrameV2 sizaQueenLayoutV3">
-  ${frameHtml()}
+  ${frameHtml(c)}
   <div class="sizaCardTitlePlateV3 sizaGeneratedTitle"><span class="sizaCardNameV2${titleClass?' '+titleClass:''}">${esc(c.name)}</span></div>
   <div class="sizaCardDifficultyV2 sizaManafestBadgeV3 sizaGeneratedDifficulty${mobile?' cardRisk':''}">${esc(risk)}</div>
   ${crystalRailHtml(c)}
@@ -91,25 +94,25 @@ function bodyHtml(card,opts={}){
 function renderStandardCard(card,opts={}){
  const c=schema().normalizeCard(card),validation=schema().validateCard(c),classes=['sizaGeneratedCard','sizaCardTemplateV2','sizaCardTemplateQueenV3',`affinity-${esc(affinityClass(c))}`,typeClass(c)];
  if(opts.compact)classes.push('compact');if(!validation.valid)classes.push('invalid');
- return `<article class="${classes.join(' ')}" data-card-id="${esc(c.id)}">${bodyHtml(c,opts)}</article>`;
+ return `<article class="${classes.join(' ')}" data-card-id="${esc(c.id)}" data-template="${esc(c.template)}">${bodyHtml(c,opts)}</article>`;
 }
 
 function renderMobileCard(card,opts={}){
  const c=schema().normalizeCard(card),classes=['sizaCard','generatedCardV1','sizaCardTemplateV2','sizaCardTemplateQueenV3',typeClass(c),esc(affinityClass(c))];
- return `<article class="${classes.join(' ')}" data-card-id="${esc(c.id)}">${bodyHtml(c,{...opts,variant:'mobile'})}</article>`;
+ return `<article class="${classes.join(' ')}" data-card-id="${esc(c.id)}" data-template="${esc(c.template)}">${bodyHtml(c,{...opts,variant:'mobile'})}</article>`;
 }
 
 function renderCard(card,opts={}){return opts.variant==='mobile'?renderMobileCard(card,opts):renderStandardCard(card,opts);}
 
 function thumbBody(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),hasStats=c.cardType==='Creature'&&s.power!=null;
- return `${frameHtml('sizaFrameStandardThumbV5')}${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}`;
+ return `${frameHtml(c,'sizaFrameStandardThumbV5')}${crystalRailHtml(c,'sizaThumbCrystalRailV3')}<div class="sizaCardThumbHeaderV2"><span class="sizaGeneratedThumbName">${esc(c.name)}</span></div><span class="sizaThumbDifficultyV3">${esc(difficultyText(c))}</span><div class="sizaGeneratedThumbArt">${artHtml(c,opts)}</div><div class="sizaGeneratedThumbType">${esc(printedType(c))}</div>${hasStats?`<div class="sizaGeneratedThumbStats">${esc(s.power)}/${esc(s.toughness)}</div>`:''}`;
 }
 function renderStandardThumb(card,opts={}){
- const c=schema().normalizeCard(card);return `<div class="sizaGeneratedThumb sizaCardThumbV2 sizaCardThumbQueenV3 affinity-${esc(affinityClass(c))} ${typeClass(c)}" data-card-id="${esc(c.id)}">${thumbBody(c,opts)}</div>`;
+ const c=schema().normalizeCard(card);return `<div class="sizaGeneratedThumb sizaCardThumbV2 sizaCardThumbQueenV3 affinity-${esc(affinityClass(c))} ${typeClass(c)}" data-card-id="${esc(c.id)}" data-template="${esc(c.template)}">${thumbBody(c,opts)}</div>`;
 }
 function renderMobileThumb(card,opts={}){
- const c=schema().normalizeCard(card);return `<div class="generatedFaceSlotV1"><div class="generatedCardThumbV1 sizaCardThumbV2 sizaCardThumbQueenV3 ${typeClass(c)} ${esc(affinityClass(c))}">${thumbBody(c,{...opts,variant:'mobile'})}</div></div>`;
+ const c=schema().normalizeCard(card);return `<div class="generatedFaceSlotV1"><div class="generatedCardThumbV1 sizaCardThumbV2 sizaCardThumbQueenV3 ${typeClass(c)} ${esc(affinityClass(c))}" data-template="${esc(c.template)}">${thumbBody(c,{...opts,variant:'mobile'})}</div></div>`;
 }
 function renderThumb(card,opts={}){return opts.variant==='mobile'?renderMobileThumb(card,opts):renderStandardThumb(card,opts);}
 function mount(target,card,opts={}){const el=typeof target==='string'?document.querySelector(target):target;if(!el)throw new Error('Renderer target not found.');el.innerHTML=opts.thumb?renderThumb(card,opts):renderCard(card,opts);return el.firstElementChild;}
