@@ -67,6 +67,7 @@ def _local_exits(actor):
         rows.append({
             "name": str(exit_obj.key),
             "aliases": _aliases(exit_obj),
+            "exit_dbref": int(exit_obj.id) if getattr(exit_obj, "id", None) is not None else None,
             "exit_id": str(getattr(exit_obj.db, "exit_id", "") or "") or None,
             "destination_name": str(destination.key) if destination else None,
             "destination_room_id": str(getattr(getattr(destination, "db", None), "room_id", "") or "") if destination else None,
