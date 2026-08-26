@@ -1,23 +1,62 @@
 import json
 import socket
 import time
+from copy import deepcopy
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from evennia.utils import logger
 from twisted.internet import threads
 
+from services.dm_context_broker import build_dm_context_packet
 from services.dm_free_action_judge import (
     DM_JUDGE_BUILD,
     build_dm_judge_request,
     parse_dm_judge_response,
 )
+from services.dm_world_context import build_dm_world_snapshot
 from services.narration_queue import run_serialized
 from services.ollama_narration_provider import DEFAULT_OLLAMA_ENDPOINT, DEFAULT_OLLAMA_MODEL
 
 
-DM_JUDGE_RUNTIME_BUILD = "dm-0.1-async-bounded-judgment"
+DM_JUDGE_RUNTIME_BUILD = "dm-0.1.1-async-contextual-bounded-judgment"
 DEFAULT_TIMEOUT_SECONDS = 30.0
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _attach_dm_context(request_packet, context_packet):
+    """Attach current read-only world/lore context to the Judge without adding outcome authority."""
+    packet = deepcopy(_plain_dict(request_packet))
+    context = deepcopy(_plain_dict(context_packet))
+    payload = deepcopy(_plain_dict(packet.get("ollama_payload")))
+    messages = [deepcopy(_plain_dict(row)) for row in list(payload.get("messages") or [])]
+    if len(messages) >= 2:
+        try:
+            user = json.loads(str(messages[-1].get("content") or "{}"))
+        except (TypeError, ValueError):
+            user = {}
+        user["DM CONTEXT"] = {
+            "world_engine": context.get("world_engine") or [],
+            "world_book": context.get("world_book") or {},
+            "authority": context.get("authority") or {},
+        }
+        messages[-1]["content"] = json.dumps(user, ensure_ascii=False, separators=(",", ":"))
+        messages[0]["content"] = (
+            str(messages[0].get("content") or "")
+            + " DM CONTEXT is read-only evidence you may use only to choose the bounded resolution profile. "
+            + "World Book excerpts describe setting context but are NOT player Knowledge and do not prove that a specific runtime entity or event exists. "
+            + "Never convert DM CONTEXT into an outcome, new Fact, new ref, or world mutation."
+        )
+        payload["messages"] = messages
+    packet["ollama_payload"] = payload
+    packet["dm_context"] = context
+    return packet
 
 
 def call_prebuilt_dm_judge(
@@ -92,7 +131,16 @@ def dispatch_dm_judge_async(
     provider_callable=None,
     **provider_options,
 ):
+    snapshot = build_dm_world_snapshot(actor, raw_player_input=raw_player_input)
+    context_packet = build_dm_context_packet(
+        actor,
+        raw_player_input,
+        dm_plan,
+        snapshot,
+        context_needs=list(_plain_dict(adjudication).get("context_needs") or []),
+    )
     request_packet = build_dm_judge_request(raw_player_input, adjudication, dm_plan=dm_plan)
+    request_packet = _attach_dm_context(request_packet, context_packet)
     provider = provider_callable or call_prebuilt_dm_judge
     deferred = run_serialized(
         actor,
@@ -122,6 +170,7 @@ def dispatch_dm_judge_async(
         "status": "QUEUED",
         "queued": True,
         "request": request_packet,
+        "context": context_packet,
         "deferred": deferred,
         "build": DM_JUDGE_RUNTIME_BUILD,
     }
