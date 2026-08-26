@@ -10,6 +10,24 @@
   user-select:none;
 }
 
+/* The approved frame also belongs to battlefield/deck thumbnails. */
+.sizaCardThumbQueenV3 .sizaFrameStandardBaseV5{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+  z-index:4;
+  pointer-events:none;
+  user-select:none;
+}
+.sizaCardThumbQueenV3 .sizaGeneratedThumbArt{z-index:2!important}
+.sizaCardThumbQueenV3 .sizaCardThumbHeaderV2{z-index:8!important}
+.sizaCardThumbQueenV3 .sizaGeneratedThumbType{z-index:9!important}
+.sizaCardThumbQueenV3 .sizaThumbCrystalRailV3{z-index:10!important}
+.sizaCardThumbQueenV3 .sizaThumbDifficultyV3{z-index:12!important}
+.sizaCardThumbQueenV3 .sizaGeneratedThumbStats{z-index:13!important}
+
 /* The new modular frame replaces the old CSS-drawn border shell only. */
 .sizaCardTemplateQueenV3 .sizaQueenLayoutV3:before,
 .sizaCardTemplateQueenV3 .sizaQueenLayoutV3:after{display:none!important}
@@ -28,3 +46,70 @@
 .sizaCardTemplateQueenV3 .sizaCardFooterV2{z-index:11!important}
 .sizaCardTemplateQueenV3 .sizaManafestBadgeV3{z-index:12!important}
 .sizaCardTemplateQueenV3 .sizaStatPlateV3{z-index:13!important}
+
+/* Art failures never expose a broken-image icon. */
+.sizaArtHostV5{position:absolute;inset:0;display:block;overflow:hidden}
+.sizaArtHostV5>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sizaArtHostV5>.sizaArtFallbackV5{position:absolute;inset:0}
+.sizaArtFallbackV5[hidden]{display:none!important}
+.sizaCardTemplateQueenV3 .sizaArtFallbackV5:not([hidden]){display:grid;place-items:center;align-content:center}
+
+/* A dynamic card is absolutely composed internally; focus must provide its own box. */
+.matchBoardV5 .cardFocusV5.finalCardFocusV59{
+  z-index:74!important;
+  left:50%!important;
+  right:auto!important;
+  top:50%!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(300px,72vw)!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.matchBoardV5 .cardFocusV5.finalCardFocusV59>.sizaCardTemplateQueenV3.generatedCardV1{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:5/7!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+
+/* Battlefield inspection uses the same live renderer, not an image. */
+.fieldCardFocusV610{
+  z-index:74!important;
+  overflow:visible!important;
+}
+.fieldCardFocusV610>.sizaCardTemplateQueenV3.generatedCardV1{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:5/7!important;
+  min-height:0!important;
+  max-height:min(66vh,620px)!important;
+  overflow:hidden!important;
+}
+
+/* Do not fade the rival battlefield itself at the horizontal edges. */
+.arenaHalf.enemyHalf .arenaField{
+  mask-image:none!important;
+  -webkit-mask-image:none!important;
+}
+
+@media(max-width:760px) and (orientation:portrait){
+  .matchBoardV5 .cardFocusV5.finalCardFocusV59{
+    left:50%!important;
+    right:auto!important;
+    top:42%!important;
+    bottom:auto!important;
+    transform:translate(-50%,-50%)!important;
+    width:min(250px,72vw)!important;
+  }
+  .fieldCardFocusV610{
+    top:42%!important;
+    width:min(260px,76vw)!important;
+  }
+}
