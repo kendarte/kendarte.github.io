@@ -14,7 +14,7 @@ function inlineCore(html){
 const original=inlineCore(fs.readFileSync('siza-mobile-test/index.html','utf8'));
 const marker='window.SIZA={';
 if(!original.includes(marker))throw new Error('SIZA export marker not found');
-const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,usePrismV070,selectBurn,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
+const probe=`window.__SIZA_PRISM_TEST__={createMatch,setMatch:m=>state.match=m,setModal:m=>state.modal=m,usePrismV070,selectBurn,consumeBurnV070,enemyResolveManifestRoll,manifestInlineHtml,manifestBonusSourcesV1,applyManifestBonusSourceV1,TEST_CARD_DB_V1};\n`;
 const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',error=>console.error('[JSDOM prism]',error.message));
 const dom=new JSDOM(original.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole});
@@ -139,6 +139,25 @@ test('burnSelectionPlan rechaza no-Land carta fuente y modo IA',()=>{
 test('selectBurn runtime usa el plan compartido',()=>{
   const {modal}=setupBurn({dc:7,mf:3});H.selectBurn(1);H.selectBurn(2);H.selectBurn(1);
   return JSON.stringify(modal.burnSelected)===JSON.stringify([2]);
+});
+
+test('burnConsumptionPlan ordena descendente y rebasa índice manifestado',()=>{
+  const plan=R.burnConsumptionPlan({idx:3,burnSelected:[0,4,2]});
+  return JSON.stringify(plan.indices)===JSON.stringify([4,2,0])&&plan.manifestIndex===1;
+});
+
+test('burnConsumptionPlan conserva rebasing paso a paso con duplicados',()=>{
+  const plan=R.burnConsumptionPlan({idx:3,burnSelected:[2,2]});
+  return JSON.stringify(plan.indices)===JSON.stringify([2,2])&&plan.manifestIndex===2;
+});
+
+test('burnConsumptionPlan conserva error histórico con modal incompleto',()=>{
+  let threw=false;try{R.burnConsumptionPlan({idx:1})}catch{threw=true}return threw;
+});
+
+test('consumeBurn runtime exilia descendente y conserva carta manifestada',()=>{
+  const {M,modal}=setupBurn({hand:['dock','mist','counter','spark','cinder'],idx:2,selected:[0,4]});M.player.exile=[];H.consumeBurnV070(modal,M.player);
+  return JSON.stringify(M.player.hand)===JSON.stringify(['mist','counter','spark'])&&JSON.stringify(M.player.exile)===JSON.stringify(['cinder','dock'])&&modal.idx===1&&M.player.hand[modal.idx]==='counter';
 });
 
 for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.error?` :: ${result.error}`:''}`);
