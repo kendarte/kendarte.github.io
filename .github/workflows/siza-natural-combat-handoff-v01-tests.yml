@@ -202,7 +202,7 @@ jobs:
 
           crate = SimpleNamespace(id=3, key='Cajon', destination=None, db=DB(is_npc=False))
           actor2 = Actor(crate)
-          assert ns['_handle_explicit_combat_input'](actor2, 'Ataco al Cajon.') is True
+          assert ns['_handle_explicit_combat_input'](actor2, 'Ataco a Cajon.') is True
           assert actor2.messages, 'non-character target should be rejected visibly'
 
           assert '_handle_explicit_combat_input(self.caller, raw)' in source
