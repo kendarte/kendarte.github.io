@@ -58,6 +58,7 @@
 .bookSceneV01{position:relative;min-height:390px;overflow:hidden;background:linear-gradient(180deg,#203241,#101a21)}
 .bookSceneV01>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .bookSceneV01:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.42))}
+.bookLegacySceneV01{position:absolute!important;inset:0;min-height:0!important;height:100%}
 
 .bookNarrativeV01{
   position:relative;
@@ -77,13 +78,29 @@
 .bookActionV01:hover{background:rgba(255,255,255,.32)}
 .bookActionV01 span{display:block;margin-top:3px;opacity:.7;font-size:9px}
 
+.bookSupportV01{position:relative;z-index:4;padding:0 12px 12px}
+.bookSupportGridV01{display:grid;grid-template-columns:minmax(260px,1.25fr) minmax(220px,.75fr) minmax(220px,.75fr);gap:8px}
+.bookSupportV01 .panel{border-radius:10px;box-shadow:none}
+.bookSupportV01 .objectiveBox,.bookSupportV01 .masterPulse,.bookSupportV01 .panel.pad{padding:12px}
+.bookSupportV01 .clues{grid-template-columns:repeat(2,minmax(0,1fr))}
+
 .bookShellV01.modeDialogue .bookSceneV01{min-height:320px}
 .bookShellV01.modeDialogue .bookNarrativeTextV01{font-size:17px;line-height:1.65}
 .bookShellV01.modeDialogue .bookActionsV01{grid-template-columns:1fr}
 
-.bookShellV01.modeCombat .bookSceneV01{min-height:0}
-.bookShellV01.modeCombat .bookNarrativeV01{margin-top:0}
+.bookShellV01.modeCombat{width:min(1280px,calc(100vw - 12px));margin:6px auto}
+.bookShellV01.modeCombat .bookSceneV01{min-height:0;overflow:visible;background:#07111b}
+.bookShellV01.modeCombat .bookSceneV01:after{display:none}
+.bookShellV01.modeCombat .bookNarrativeV01{display:none}
 .bookShellV01.modeCombat .bookActionsV01{display:none}
+.bookShellV01.modeCombat .matchShell.v05{min-height:0;padding:6px}
+.bookShellV01.modeCombat .matchHeader{display:none}
+.bookShellV01.modeCombat .arenaNavToggleV600{position:absolute}
+
+@media(max-width:960px){
+  .bookSupportGridV01{grid-template-columns:1fr 1fr}
+  .bookSupportGridV01 .objectiveBox{grid-column:1/-1}
+}
 
 @media(max-width:760px){
   .bookShellV01{width:100%;min-height:100dvh;margin:0;border-radius:0;border-left:0;border-right:0}
@@ -98,4 +115,16 @@
   .bookSceneV01{min-height:46dvh}
   .bookNarrativeV01{margin:0}
   .bookActionsV01{grid-template-columns:1fr}
+  .bookSupportV01{padding:7px}
+  .bookSupportGridV01{grid-template-columns:1fr}
+  .bookSupportGridV01 .objectiveBox{grid-column:auto}
+  .bookSupportV01 .clues{grid-template-columns:1fr}
+
+  .bookShellV01.modeCombat{width:100%;height:100dvh;min-height:100dvh;margin:0;overflow:hidden}
+  .bookShellV01.modeCombat .bookHeaderV01{height:68px;min-height:68px}
+  .bookShellV01.modeCombat .bookBodyV01{height:calc(100dvh - 68px)}
+  .bookShellV01.modeCombat .bookSceneV01{height:100%;min-height:0}
+  .bookShellV01.modeCombat .matchShell.v05{height:100%;padding:3px!important}
+  .bookShellV01.modeCombat .matchBoardV5{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0 0 12px 12px}
+  .bookShellV01.modeCombat .arenaNavToggleV600{top:74px;left:7px}
 }
