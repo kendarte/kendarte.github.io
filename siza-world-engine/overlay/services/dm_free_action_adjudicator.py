@@ -1,7 +1,7 @@
 from services.action_resolution_engine import normalize_check_spec
 
 
-DM_ADJUDICATOR_BUILD = "dm-0.1-free-action-adjudicator"
+DM_ADJUDICATOR_BUILD = "dm-0.1.1-free-action-adjudicator"
 AUTHORED_EXECUTORS = {
     "OBJECT_ACTION",
     "INTERACTION",
@@ -9,6 +9,7 @@ AUTHORED_EXECUTORS = {
     "COMBAT",
     "CHECK_ONLY",
 }
+EXECUTABLE_AUTHORED_CHECK_MODES = {"DIRECT", "CONFRONT"}
 GENERIC_JUDGMENT_ACTIONS = {
     "OBSERVE",
     "SEARCH",
@@ -137,6 +138,8 @@ def _authored_affordance(target, action_type):
             if not checked.get("valid"):
                 continue
             check = checked
+        if executor == "CHECK_ONLY" and not check:
+            continue
         return {
             "id": str(row.get("id") or ""),
             "action_type": wanted,
@@ -248,15 +251,31 @@ def _adjudicate_step(actor, step, index):
     affordance_target = primary or getattr(actor, "location", None)
     affordance = _authored_affordance(affordance_target, action_type)
     if affordance:
+        executor = str(affordance.get("executor") or "").upper().strip()
+        authoritative_check = affordance.get("check")
+        if executor == "CHECK_ONLY":
+            mode = str((_plain_dict(authoritative_check)).get("mode") or "").upper().strip()
+            if mode not in EXECUTABLE_AUTHORED_CHECK_MODES:
+                return {
+                    **base,
+                    "status": "REJECTED",
+                    "admissible": False,
+                    "reason": "AUTHORED_CHECK_MODE_NOT_EXECUTABLE",
+                    "target_dbref": int(affordance_target.id) if getattr(affordance_target, "id", None) is not None else None,
+                    "target_name": str(getattr(affordance_target, "key", "")),
+                    "affordance": affordance,
+                    "authoritative_check": authoritative_check,
+                }
+            executor = "AUTHORED_CHECK"
         return {
             **base,
             "status": "ADMISSIBLE",
             "admissible": True,
-            "executor": affordance.get("executor"),
+            "executor": executor,
             "target_dbref": int(affordance_target.id) if getattr(affordance_target, "id", None) is not None else None,
             "target_name": str(getattr(affordance_target, "key", "")),
             "affordance": affordance,
-            "authoritative_check": affordance.get("check"),
+            "authoritative_check": authoritative_check,
         }
 
     if action_type in GENERIC_JUDGMENT_ACTIONS:
