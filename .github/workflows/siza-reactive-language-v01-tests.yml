@@ -1,0 +1,126 @@
+name: SIZA Reactive Language v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/player_language_contract.py'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - '.github/workflows/siza-reactive-language-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reactive-language-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax checks
+        run: |
+          python -m py_compile siza-world-engine/overlay/services/player_language_contract.py
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js
+
+      - name: Backend language event regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          import sys
+          from types import SimpleNamespace
+          sys.path.insert(0, 'siza-world-engine/overlay')
+          from services.player_language_contract import resolve_turn_language
+
+          class Actor:
+              def __init__(self):
+                  self.db=SimpleNamespace()
+                  self.ndb=SimpleNamespace()
+                  self.messages=[]
+              def msg(self, *args, **kwargs):
+                  self.messages.append((args, kwargs))
+
+          actor=Actor()
+          en=resolve_turn_language(actor, 'I inspect the cargo manifest carefully.')
+          assert en['language']=='en'
+          packet=actor.messages[-1][1]['siza_player_language'][0][0]
+          assert packet['language']=='en'
+
+          es=resolve_turn_language(actor, 'Quiero revisar el manifiesto de carga.')
+          assert es['language']=='es'
+          packet=actor.messages[-1][1]['siza_player_language'][0][0]
+          assert packet['language']=='es'
+
+          inherited=resolve_turn_language(actor, 'ok')
+          assert inherited['language']=='es'
+          print('PASS backend language detection + client event')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Reactive shell ES EN regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          (async()=>{
+            const html=`<!doctype html><html><body>
+            <div id="siza-book-client" data-mode="EXPLORATION">
+              <div class="sizaHeaderCharacterPlayer"><div class="sizaHeaderCharacterCopy"><small>PLAYER</small><strong>Nereida</strong><span id="siza-player-state">Persistent character</span></div></div>
+              <div class="sizaHeaderCharacterFocus"><div class="sizaHeaderCharacterCopy"><small>IN SCENE</small><strong id="siza-focus-portrait-name">No character</strong><span>Interlocutor / companion</span></div></div>
+              <div id="siza-mode-label">EXPLORATION</div><div id="siza-connection-label">Connected</div>
+              <div id="siza-location-label">Pescaderia de Darsena</div>
+              <div id="siza-scene-placeholder"><span>LOCATION IMAGE</span><strong id="siza-scene-placeholder-label">Waiting</strong></div>
+              <div id="siza-scene-cast"></div>
+              <p id="siza-scene-description">Un local de prueba usado para validar comercio, objetos y Knowledge dentro del piloto.</p>
+              <button id="siza-scene-panel-toggle">SCENE</button><button id="siza-stats-panel-toggle">STATS</button><button id="siza-memories-panel-toggle">MEMORIES</button>
+              <aside id="siza-scene-panel" hidden><div class="sizaInfoPanelTitle">SCENE</div>
+                <section id="siza-exits-card" class="sizaBookFact"><small>EXITS</small><span id="siza-exits">salir a la calle and entrar a la trastienda</span><div id="siza-exits-actions"></div></section>
+                <section id="siza-characters-card" class="sizaBookFact"><small>PEOPLE</small><span id="siza-characters">Mara Vensal and Informante de Prueba C</span><div id="siza-characters-actions"></div></section>
+                <section id="siza-visible-card" class="sizaBookFact"><small>IN VIEW</small><span id="siza-visible">a Manifiesto de carga de prueba</span><div id="siza-visible-actions"></div></section>
+              </aside>
+              <aside id="siza-stats-panel" hidden><div class="sizaInfoPanelTitle">CHARACTER STATS</div><div id="siza-stats-grid"><div><span>Strength</span><strong id="siza-stat-FUE">—</strong></div><div><span>Agility</span><strong id="siza-stat-AGI">—</strong></div><div><span>Coordination</span><strong id="siza-stat-COO">—</strong></div><div><span>Intelligence</span><strong id="siza-stat-INT">—</strong></div><div><span>Perception</span><strong id="siza-stat-PER">—</strong></div><div><span>Psyche</span><strong id="siza-stat-PSI">—</strong></div></div><div id="siza-stats-status"></div></aside>
+              <aside id="siza-memories-panel" hidden><div class="sizaInfoPanelTitle">MEMORIES</div><details id="siza-knowledge-panel"><summary><span>KNOWN FACTS</span><strong id="siza-knowledge-summary">0 memories</strong></summary><div id="siza-knowledge-list"></div></details><div id="siza-memories-empty"></div></aside>
+              <div id="siza-current-prompt">What do you do?</div><textarea id="siza-inputfield"></textarea><button id="siza-inputsend">SEND</button><div class="sizaBookInputHint"></div>
+              <div id="siza-tcg-resource-mount">RESOURCES</div><div id="siza-tcg-hand-mount">HAND / CARDS</div><div id="siza-tcg-status">READY</div>
+            </div></body></html>`;
+            const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+            const w=dom.window;
+            const listeners={};
+            w.SizaWorldBookClient={sendText:()=>true};
+            w.Evennia={isConnected:()=>true,msg:()=>{},emitter:{on:(name,fn)=>listeners[name]=fn}};
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            await new Promise(r=>setTimeout(r,0));
+
+            const api=w.SizaBookInteractionV04;
+            api.setLanguage('en',false);
+            await new Promise(r=>setTimeout(r,0));
+            if(w.document.getElementById('siza-location-label').textContent!=='Dockside Fishery')throw new Error('English room name missing');
+            if(w.document.getElementById('siza-current-prompt').textContent!=='What do you do?')throw new Error('English prompt missing');
+            const enExit=w.document.querySelector('#siza-exits-actions button');
+            if(!enExit||enExit.textContent!=='Return to Service Lane')throw new Error('English exit label missing');
+            if(enExit.getAttribute('data-command')!=='salir a la calle')throw new Error('internal exit command was translated');
+
+            api.setLanguage('es',false);
+            await new Promise(r=>setTimeout(r,0));
+            if(w.document.getElementById('siza-location-label').textContent!=='Pescaderia de Darsena')throw new Error('Spanish room name not restored');
+            if(w.document.getElementById('siza-scene-description').textContent.indexOf('Un local de prueba')!==0)throw new Error('Spanish source description not restored');
+            if(w.document.getElementById('siza-current-prompt').textContent!=='¿Qué haces?')throw new Error('Spanish prompt missing');
+            const esExit=w.document.querySelector('#siza-exits-actions button');
+            if(!esExit||esExit.textContent!=='salir a la calle')throw new Error('Spanish exit label missing');
+            if(esExit.getAttribute('data-command')!=='salir a la calle')throw new Error('internal exit command changed');
+
+            listeners.siza_player_language([{language:'en'}]);
+            await new Promise(r=>setTimeout(r,0));
+            if(api.getLanguage()!=='en')throw new Error('server language event did not switch UI');
+            console.log('PASS reactive shell: ES/EN presentation, raw commands preserved');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
