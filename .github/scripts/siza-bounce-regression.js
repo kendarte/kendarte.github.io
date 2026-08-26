@@ -2,10 +2,15 @@ const fs=require('fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 
 let html=fs.readFileSync('siza-mobile-test/index.html','utf8');
-for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js','entry-rules.js','creature-rules.js']){
+for(const name of ['card-effects.js','card-schema.js','cards.js','card-renderer.js','manifest-rules.js','crystal-rules.js']){
   const tag=`<script src="../siza-core/${name}"></script>`;
   if(!html.includes(tag))throw new Error(`Missing shared core tag ${name}`);
   html=html.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
+}
+for(const name of ['entry-rules.js','creature-rules.js']){
+  const tag=`<script src="../siza-core/${name}"></script>`,globalName=name==='entry-rules.js'?'SizaEntryRules':'SizaCreatureRules';
+  if(html.includes(tag))html=html.replace(tag,`<script>${fs.readFileSync(`siza-core/${name}`,'utf8')}</script>`);
+  else if(!html.includes(globalName))throw new Error(`${globalName} unavailable`);
 }
 const marker='window.SIZA={';
 if(!html.includes(marker))throw new Error('SIZA export marker missing');
