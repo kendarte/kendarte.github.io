@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.13.0';
+const VERSION='1.14.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -40,6 +40,11 @@ function preferredResponseCard(hand=[],resolveCard,canPay){
     .filter(entry=>entry.c?.type==='Instant'&&canPay(entry.c))
     .sort((a,b)=>(hasEffect(a.c,'counter-stack-target','resolve')?-1:0)-(hasEffect(b.c,'counter-stack-target','resolve')?-1:0))[0]||null;
 }
+function preferredMainPhaseCard(hand=[],resolveCard,canPay){
+  return hand.map((id,index)=>({i:index,c:resolveCard(id)}))
+    .filter(entry=>entry.c?.type!=='Land'&&!hasEffect(entry.c,'counter-stack-target','resolve')&&canPay(entry.c))
+    .sort((a,b)=>a.c.difficulty-b.c.difficulty)[0];
+}
 function priorityWindowPlan(sourceOwner){
   const responder=sourceOwner==='player'?'enemy':'player';
   return{responder,active:responder==='player'?'response':'enemy-response',phase:responder==='player'?'Tu prioridad':'Prioridad rival'};
@@ -56,5 +61,5 @@ function stackCompletionPlan(match={}){
 }
 function shouldContinueStackResolution(match,resolvedCount,limit=30){return !!(match.stack.length&&!match.pendingChoice&&!match.over&&resolvedCount<limit);}
 function matchWinner(playerLife,enemyLife){return playerLife<=0||enemyLife<=0?(playerLife>0?'player':'enemy'):null;}
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,preferredResponseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,preferredPermanentTarget,bouncePlan,stackTargetIndex,preferredResponseCard,preferredMainPhaseCard,priorityWindowPlan,priorityPassPlan,stackCompletionPlan,shouldContinueStackResolution,matchWinner});
 })(window);
