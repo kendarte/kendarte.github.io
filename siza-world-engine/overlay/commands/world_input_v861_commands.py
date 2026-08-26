@@ -187,12 +187,14 @@ def _handle_reserved_combat_input(actor, raw):
         if not accepted.get("accepted"):
             actor.msg(f"Combat result rechazado: {accepted.get('status')}")
             return True
+        applied = bool(accepted.get("world_consequences_applied"))
         actor.msg(
             siza_combat_result_accepted=(
                 ({
                     "encounter_id": accepted.get("encounter_id"),
                     "outcome": accepted.get("outcome"),
-                    "world_consequences_applied": False,
+                    "world_consequences_applied": applied,
+                    "consequence_status": accepted.get("consequence_status"),
                     "bridge_build": WORLD_COMBAT_HANDOFF_BUILD,
                 },),
                 {},
