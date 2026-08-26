@@ -1,0 +1,160 @@
+name: SIZA Player Language Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/services/player_language_contract.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_interpreter.py'
+      - 'siza-world-engine/overlay/services/grounded_narration_context_engine.py'
+      - 'siza-world-engine/overlay/services/grounded_dialogue_renderer.py'
+      - 'siza-world-engine/overlay/services/styled_grounded_dialogue_renderer.py'
+      - 'siza-world-engine/overlay/services/ollama_narrator.py'
+      - 'siza-world-engine/overlay/services/ranked_fact_conversation_engine.py'
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
+      - '.github/workflows/siza-player-language-tests.yml'
+  pull_request:
+    paths:
+      - 'siza-world-engine/overlay/services/player_language_contract.py'
+      - 'siza-world-engine/overlay/services/dm_free_action_interpreter.py'
+      - 'siza-world-engine/overlay/services/grounded_narration_context_engine.py'
+      - 'siza-world-engine/overlay/services/grounded_dialogue_renderer.py'
+      - 'siza-world-engine/overlay/services/styled_grounded_dialogue_renderer.py'
+      - 'siza-world-engine/overlay/services/ollama_narrator.py'
+      - 'siza-world-engine/overlay/services/ranked_fact_conversation_engine.py'
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
+      - '.github/workflows/siza-player-language-tests.yml'
+
+jobs:
+  bilingual-turn-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile bilingual presentation files
+        run: |
+          python -m py_compile \
+            siza-world-engine/overlay/services/player_language_contract.py \
+            siza-world-engine/overlay/services/dm_free_action_interpreter.py \
+            siza-world-engine/overlay/services/grounded_narration_context_engine.py \
+            siza-world-engine/overlay/services/grounded_dialogue_renderer.py \
+            siza-world-engine/overlay/services/styled_grounded_dialogue_renderer.py \
+            siza-world-engine/overlay/services/ollama_narrator.py \
+            siza-world-engine/overlay/services/ranked_fact_conversation_engine.py \
+            siza-world-engine/overlay/commands/world_input_v861_commands.py
+      - name: Validate English Spanish turn switching
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          from services.player_language_contract import (
+              detect_player_language,
+              get_actor_turn_language,
+              language_instruction,
+              localize,
+              resolve_turn_language,
+          )
+
+          spanish = [
+              'Pateo el cajón hacia Mara para apartarla.',
+              'Quiero preguntarle por el faro.',
+              'Miro alrededor.',
+              'Ahora abro la puerta y busco dentro.',
+          ]
+          english = [
+              'I kick the crate toward Mara to move her aside.',
+              'Ask Mara about the lighthouse.',
+              'Look around.',
+              'Now I open the door and search inside.',
+          ]
+
+          for text in spanish:
+              result = detect_player_language(text)
+              assert result['language'] == 'es', (text, result)
+          for text in english:
+              result = detect_player_language(text)
+              assert result['language'] == 'en', (text, result)
+
+          assert detect_player_language('Mara', previous_language='en')['language'] == 'en'
+          assert detect_player_language('Mara', previous_language='es')['language'] == 'es'
+          assert localize('unsupported', 'es') == 'No entiendo esa acción todavía.'
+          assert localize('unsupported', 'en') == "I don't understand that action yet."
+          assert 'English' in language_instruction('en')
+          assert 'español' in language_instruction('es')
+
+          class Holder:
+              pass
+
+          class Actor:
+              def __init__(self):
+                  self.db = Holder()
+                  self.ndb = Holder()
+
+          actor = Actor()
+          first = resolve_turn_language(actor, 'I search the crate.')
+          assert first['language'] == 'en'
+          assert get_actor_turn_language(actor) == 'en'
+          second = resolve_turn_language(actor, 'Mara')
+          assert second['language'] == 'en' and second['source'] == 'previous'
+          third = resolve_turn_language(actor, 'Ahora le pregunto a Mara por el faro.')
+          assert third['language'] == 'es'
+          assert get_actor_turn_language(actor) == 'es'
+
+          print('SIZA bilingual turn detection: PASS')
+          PY
+      - name: Validate DM and renderer language boundaries
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          overlay = Path('siza-world-engine/overlay').resolve()
+          sys.path.insert(0, str(overlay))
+
+          from services.dm_free_action_interpreter import build_dm_free_action_request
+          from services.grounded_narration_context_engine import _prompt_text, _system_instructions
+
+          snapshot = {
+              'location': {'name': 'Dársena', 'room_id': 'ROOM-1'},
+              'local_entities': [],
+              'local_exits': [],
+              'inventory': [],
+              'active_local_events': [],
+              'player': {'known_facts': []},
+          }
+          plan = {'campaign_id': 'QA', 'objective': {}, 'active_beat': {}, 'selected_cards': []}
+
+          en = build_dm_free_action_request('I kick the crate.', plan, snapshot)
+          es = build_dm_free_action_request('Pateo el cajón.', plan, snapshot)
+          assert en['player_language'] == 'en'
+          assert es['player_language'] == 'es'
+          assert 'PLAYER_LANGUAGE' in en['ollama_payload']['messages'][1]['content']
+          assert 'English' in en['ollama_payload']['messages'][0]['content']
+          assert 'español' in es['ollama_payload']['messages'][0]['content']
+
+          en_system = _system_instructions('en')
+          es_system = _system_instructions('es')
+          assert 'English' in en_system and 'español' not in en_system
+          assert 'español' in es_system
+          en_prompt = _prompt_text({'entity_name': 'Mara', 'location_name': 'Dock'}, 'What do I see?', [], 'en')
+          es_prompt = _prompt_text({'entity_name': 'Mara', 'location_name': 'Dársena'}, '¿Qué veo?', [], 'es')
+          assert 'PLAYER LANGUAGE\nen' in en_prompt
+          assert 'PLAYER LANGUAGE\nes' in es_prompt
+
+          old_english_lock = 'Answer in English.'
+          narration_source = Path('siza-world-engine/overlay/services/grounded_narration_context_engine.py').read_text(encoding='utf-8')
+          assert old_english_lock not in narration_source
+
+          styled = Path('siza-world-engine/overlay/services/styled_grounded_dialogue_renderer.py').read_text(encoding='utf-8')
+          runtime = Path('siza-world-engine/overlay/commands/world_input_v861_commands.py').read_text(encoding='utf-8')
+          assert 'PLAYER_LANGUAGE' in styled
+          assert 'get_actor_turn_language(actor)' in styled
+          assert 'resolve_turn_language(self.caller, raw)' in runtime
+
+          print('SIZA bilingual DM/narration boundary: PASS')
+          PY
