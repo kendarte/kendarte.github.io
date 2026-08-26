@@ -1,4 +1,4 @@
-# QA refresh: World Combat Bridge lifecycle
+# QA refresh: restored ENTRY_V070 after World Combat Bridge integration
 name: Siza Arena Tests
 
 on:
