@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const CARD_SCHEMA_VERSION='1.3.0';
+const CARD_SCHEMA_VERSION='1.4.0';
 const CARD_TYPES=['Instant','Creature','Artifact','Land'];
 const COLORS=['U','R','G','W','B'];
 const TYPE_ALIASES={instant:'Instant',instantaneo:'Instant','instantáneo':'Instant',creature:'Creature',invocacion:'Creature','invocación':'Creature',artifact:'Artifact',artefacto:'Artifact',land:'Land',reserva:'Land',tierra:'Land'};
@@ -69,6 +69,7 @@ function normalizeCard(input={}){
   crystals:pipsToCrystalArray(pips),
   artId:text(input.artId,''),
   artUrl:text(input.artUrl,''),
+  artAssetKey:text(input.artAssetKey,''),
   artTransform:normalizeArtTransform(input.artTransform),
   rules:text(input.rules??input.text,''),
   text:text(input.text??input.rules,''),
@@ -107,7 +108,7 @@ function validateCard(input={}){
 function cardFromMobileShape(input={}){return normalizeCard(input);}
 function cardToMobileShape(input={}){
  const c=normalizeCard(input),out={id:c.id,name:c.name,type:c.cardType,cost:c.cost,difficulty:c.difficulty,pips:clone(c.pips),text:c.rules,flavor:c.flavor,art:c.art,glyph:c.glyph,artUrl:c.artUrl,artTransform:clone(c.artTransform),effects:clone(c.effects)};
- if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
+ if(c.artAssetKey)out.artAssetKey=c.artAssetKey;if(c.subtype)out.subtype=c.subtype;if(c.cardType==='Creature'){out.power=c.power;out.toughness=c.toughness;}if(c.equipCost>0)out.equipCost=c.equipCost;if(c.role)out.role=c.role;if(c.adventureUnlock)out.adventureUnlock=true;return out;
 }
 
 global.SizaCardSchema=Object.freeze({
