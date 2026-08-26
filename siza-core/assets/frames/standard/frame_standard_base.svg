@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 2100" width="1500" height="2100">
+<defs>
+  <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3e474c"/><stop offset=".28" stop-color="#141b1f"/><stop offset=".58" stop-color="#2b3338"/><stop offset="1" stop-color="#0b0f12"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0b964"/><stop offset=".38" stop-color="#98703a"/><stop offset=".72" stop-color="#4a3119"/><stop offset="1" stop-color="#c99a4b"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity=".55"/></filter>
+</defs>
+<g fill="none" filter="url(#shadow)">
+  <rect x="42" y="42" width="1416" height="2016" rx="78" stroke="url(#steel)" stroke-width="74"/>
+  <rect x="70" y="70" width="1360" height="1960" rx="62" stroke="url(#gold)" stroke-width="12"/>
+  <rect x="92" y="92" width="1316" height="1916" rx="50" stroke="#11181c" stroke-width="20"/>
+  <rect x="112" y="112" width="1276" height="1876" rx="44" stroke="url(#gold)" stroke-width="5" opacity=".9"/>
+
+  <!-- subtle ornamental corner sweeps -->
+  <path d="M95 310 C165 178 265 120 420 90 M1080 90 C1235 120 1335 178 1405 310" stroke="url(#gold)" stroke-width="14"/>
+  <path d="M95 1790 C165 1922 265 1980 420 2010 M1080 2010 C1235 1980 1335 1922 1405 1790" stroke="url(#gold)" stroke-width="14"/>
+  <path d="M120 410 C145 310 185 240 255 185 M1380 410 C1355 310 1315 240 1245 185" stroke="#6f7a80" stroke-width="24" opacity=".55"/>
+  <path d="M120 1690 C145 1790 185 1860 255 1915 M1380 1690 C1355 1790 1315 1860 1245 1915" stroke="#6f7a80" stroke-width="24" opacity=".55"/>
+
+  <!-- structural divider between art and lower text area -->
+  <path d="M145 1268 H1355" stroke="#151d21" stroke-width="86"/>
+  <path d="M145 1268 H1355" stroke="url(#gold)" stroke-width="12"/>
+  <path d="M190 1238 H1310 M190 1298 H1310" stroke="#616b70" stroke-width="4" opacity=".5"/>
+
+  <!-- lower rules opening boundary -->
+  <rect x="145" y="1320" width="1210" height="555" rx="72" stroke="#10171a" stroke-width="52"/>
+  <rect x="162" y="1337" width="1176" height="521" rx="58" stroke="url(#gold)" stroke-width="8"/>
+
+  <!-- small neutral ornaments -->
+  <path d="M750 42 l34 46 -34 46 -34-46z M750 1966 l34 46 -34 46 -34-46z" fill="url(#steel)" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M145 1268 l28-30 28 30-28 30z M1355 1268 l-28-30-28 30 28 30z" fill="url(#steel)" stroke="url(#gold)" stroke-width="6"/>
+</g>
+</svg>
