@@ -1,0 +1,19 @@
+.sizaDialogueEvent {
+    font-size: 1.06em;
+    line-height: 1.45;
+    padding: 7px 10px;
+    border-left: 2px solid currentColor;
+    white-space: normal;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookOutput {
+    min-height: 72px;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookSceneDescription {
+    font-size: 0.94em;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] #siza-focus-portrait {
+    transform: translateY(-1px);
+}
