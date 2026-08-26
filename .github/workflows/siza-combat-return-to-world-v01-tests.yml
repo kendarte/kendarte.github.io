@@ -84,6 +84,7 @@ jobs:
           };
 
           w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js','utf8'));
+          w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
 
           const encounter = {
             encounter_id:'COMBAT-RETURN-001',
