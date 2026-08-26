@@ -3,6 +3,7 @@ from uuid import uuid4
 from services.action_intent_proposal_engine import build_local_capability_catalog
 from services.action_proposal_execution_bridge import execute_validated_object_action_proposal
 from services.consequence_engine import emit_world_action
+from services.dm_free_action_check_engine import resolve_judged_dm_auto, resolve_judged_dm_check
 from services.interaction_proposal_execution_bridge import execute_validated_interaction_proposal
 from services.movement_proposal_execution_bridge import execute_validated_movement_proposal
 from services.object_action_input_engine import render_object_action_input_result
@@ -236,11 +237,15 @@ def _execute_one(actor, step, raw_player_input):
         return _execute_object_action(actor, step)
     if executor == "COMBAT":
         return _execute_combat(actor, step)
+    if executor == "DM_CHECK":
+        return resolve_judged_dm_check(actor, step, raw_player_input=raw_player_input)
+    if executor == "DM_AUTO":
+        return resolve_judged_dm_auto(actor, step, raw_player_input=raw_player_input)
     return {"status": "EXECUTOR_NOT_IMPLEMENTED", "executed": False, "executor": executor}
 
 
 def execute_adjudicated_dm_free_action(actor, adjudication, raw_player_input=""):
-    """Execute only routes selected by the deterministic adjudicator; stop after first failed or combat step."""
+    """Execute only routes selected by deterministic adjudication/judgment; stop after first failed or combat step."""
     packet = _plain_dict(adjudication)
     if packet.get("status") != "ADMISSIBLE" or packet.get("admissible") is not True:
         return {
