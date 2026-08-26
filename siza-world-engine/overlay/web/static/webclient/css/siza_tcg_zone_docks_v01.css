@@ -1,0 +1,89 @@
+/* Book-only TCG state piles. Compact card-state docks in the side gutters. */
+.bookTcgZoneDock {
+  position: absolute;
+  z-index: 18;
+  width: 72px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.bookTcgZoneDock-enemy {
+  top: 22px;
+  right: 14px;
+}
+
+.bookTcgZoneDock-player {
+  top: 222px;
+  left: 14px;
+}
+
+.bookTcgPile {
+  position: relative;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 7px 3px 17px;
+  border: 1px solid rgba(106,78,48,.52);
+  border-radius: 4px;
+  background: rgba(24,17,12,.66);
+  box-shadow: 0 4px 11px rgba(0,0,0,.24);
+  color: #d6c29c;
+  backdrop-filter: blur(2px);
+}
+
+.bookTcgPile::before,
+.bookTcgPile::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  width: 7px;
+  height: 10px;
+  border: 1px solid rgba(207,179,126,.48);
+  border-radius: 1px;
+  background: rgba(50,35,24,.8);
+}
+
+.bookTcgPile::before {
+  top: 6px;
+  transform: rotate(-5deg);
+}
+
+.bookTcgPile::after {
+  top: 7px;
+  left: 7px;
+  transform: rotate(4deg);
+}
+
+.bookTcgPileLabel {
+  font: 800 6px/1 system-ui,sans-serif;
+  letter-spacing: .08em;
+  color: rgba(219,198,158,.72);
+}
+
+.bookTcgPileCount {
+  font: 700 10px/1 Georgia,serif;
+  color: #f0ddb4;
+}
+
+@media (max-width:850px) {
+  .bookTcgZoneDock {
+    width: 60px;
+    gap: 3px;
+  }
+  .bookTcgZoneDock-enemy {
+    top: 18px;
+    right: 8px;
+  }
+  .bookTcgZoneDock-player {
+    top: 204px;
+    left: 8px;
+  }
+  .bookTcgPile {
+    height: 23px;
+    padding-left: 15px;
+    padding-right: 5px;
+  }
+}
