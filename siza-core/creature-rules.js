@@ -109,6 +109,12 @@ function combatPlan(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForE
   };
 }
 
+function blockerAssignmentPlan(blockers,slot,blockerIndex,legalIndices){
+  if(!(legalIndices||[]).includes(blockerIndex))return null;
+  const removeSlots=Object.keys(blockers||{}).filter(key=>blockers[key]===blockerIndex);
+  return{removeSlots,slot:String(slot),blockerIndex};
+}
+
 function aiBlockerAssignments(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
@@ -135,6 +141,7 @@ global.SizaCreatureRules=Object.freeze({
   removeAt:removeBattlefieldCreature,
   attackDeclaredDamage,
   combatPlan,
+  blockerAssignmentPlan,
   aiBlockers:aiBlockerAssignments
 });
 })(window);
