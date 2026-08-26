@@ -1,0 +1,153 @@
+name: SIZA Dialogue and Room UI v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_room_identity_guard_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_dialogue_mode_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_dialogue_mode_v01.css'
+      - '.github/workflows/siza-dialogue-room-ui-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dialogue-room-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax and structured event contract
+        shell: bash
+        run: |
+          python -m py_compile siza-world-engine/overlay/commands/world_input_v861_commands.py
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_room_identity_guard_v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_dialogue_mode_v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('siza-world-engine/overlay/commands/world_input_v861_commands.py').read_text(encoding='utf-8')
+          assert 'siza_dialogue=' in source
+          assert '_present_conversation_v861' in source
+          assert 'render_styled_grounded_dialogue_async' in source
+          assert 'resolve_ranked_talk_with_disclosure_and_acquisition' in source
+          print('PASS backend dialogue UI contract remains layered over existing grounded talk route')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Room identity survives reactive localization across movement
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          (async()=>{
+            const dom=new JSDOM(`<!doctype html><html><body>
+              <div id="siza-book-client" data-mode="EXPLORATION">
+                <div id="siza-location-label">Pescaderia de Darsena</div>
+                <div id="siza-mode-label">EXPLORATION</div>
+                <div id="siza-connection-label">Connected</div>
+                <div id="siza-scene-placeholder"><span>LOCATION IMAGE</span><strong id="siza-scene-placeholder-label"></strong></div>
+                <div id="siza-scene-cast"></div>
+                <p id="siza-scene-description">Un local de prueba usado para validar comercio.</p>
+                <div id="siza-current-prompt">What do you do?</div>
+                <textarea id="siza-inputfield"></textarea><button id="siza-inputsend">SEND</button>
+              </div>
+            </body></html>`,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+            const w=dom.window;
+            w.Evennia={isConnected:()=>true,msg:()=>{},emitter:{on:()=>{}}};
+            w.SizaWorldBookClient={sendText:()=>true};
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_room_identity_guard_v01.js','utf8'));
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v04.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            await new Promise(r=>setTimeout(r,0));
+
+            const api=w.SizaBookInteractionV04;
+            api.setLanguage('en',false);
+            await new Promise(r=>setTimeout(r,0));
+            if(w.document.getElementById('siza-location-label').textContent!=='Dockside Fishery')throw new Error('fishery EN presentation missing');
+
+            // Simulate the World Engine rendering a different raw Room in the same synchronous turn.
+            const loc=w.document.getElementById('siza-location-label');
+            const desc=w.document.getElementById('siza-scene-description');
+            loc.textContent='Calle de Servicio';
+            desc.textContent='Una via de servicio conecta la plaza con locales de abastecimiento y dependencias de trabajo.';
+            await new Promise(r=>setTimeout(r,0));
+
+            if(loc.getAttribute('data-raw-room')!=='Calle de Servicio')throw new Error(`stale raw room: ${loc.getAttribute('data-raw-room')}`);
+            if(loc.textContent!=='Service Lane')throw new Error(`new room did not localize: ${loc.textContent}`);
+            if(!desc.textContent.startsWith('A narrow work lane'))throw new Error(`new EN room description missing: ${desc.textContent}`);
+
+            api.setLanguage('es',false);
+            await new Promise(r=>setTimeout(r,0));
+            if(loc.textContent!=='Calle de Servicio')throw new Error('Spanish new room name not restored');
+            if(!desc.textContent.startsWith('Una via de servicio'))throw new Error(`Spanish new room description not restored: ${desc.textContent}`);
+            console.log('PASS room movement: raw identity and ES/EN descriptions follow the new Room');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
+
+      - name: Structured dialogue transforms the same page and de-duplicates terminal copy
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          (async()=>{
+            const dom=new JSDOM(`<!doctype html><html><body>
+              <div id="siza-book-client" data-mode="EXPLORATION"></div>
+              <div id="siza-mode-label">EXPLORATION</div>
+              <div id="siza-scene-title">Pescaderia de Darsena</div>
+              <aside id="siza-focus-portrait" data-empty="true"><span id="siza-focus-portrait-initial">?</span></aside>
+              <strong id="siza-focus-portrait-name">No character</strong>
+              <div id="siza-messagewindow"></div>
+            </body></html>`,{runScripts:'outside-only'});
+            const w=dom.window;
+            const listeners={};
+            w.Evennia={emitter:{on:(name,fn)=>listeners[name]=fn}};
+            w.SizaWorldBookClient={setMode:(mode)=>{
+              w.document.getElementById('siza-book-client').setAttribute('data-mode',mode);
+              w.document.getElementById('siza-mode-label').textContent=mode;
+              return mode;
+            }};
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_dialogue_mode_v01.js','utf8'));
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_narrative_filter_v01.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            await new Promise(r=>setTimeout(r,0));
+
+            listeners.siza_dialogue([{speaker:'Mara Vensal',text:'The second seal was stamped after closing.',language:'en'}]);
+            await new Promise(r=>setTimeout(r,0));
+            const root=w.document.getElementById('siza-book-client');
+            const out=w.document.getElementById('siza-messagewindow');
+            if(root.getAttribute('data-mode')!=='DIALOGUE')throw new Error('dialogue event did not enter DIALOGUE mode');
+            if(w.document.getElementById('siza-focus-portrait-name').textContent!=='Mara Vensal')throw new Error('dialogue speaker not focused');
+            if(out.children.length!==1||!out.textContent.includes('Mara Vensal:'))throw new Error(`structured dialogue missing: ${out.textContent}`);
+
+            // Terminal-compatible duplicate arrives after custom event; filter must remove it.
+            const duplicate=w.document.createElement('div');
+            duplicate.className='sizaBookLine';
+            duplicate.textContent='The second seal was stamped after closing.';
+            out.appendChild(duplicate);
+            await new Promise(r=>setTimeout(r,0));
+            if(out.children.length!==1)throw new Error(`dialogue terminal duplicate remained: ${out.children.length}`);
+
+            // A real Room transition returns the same shell to exploration.
+            w.document.getElementById('siza-scene-title').textContent='Calle de Servicio';
+            await new Promise(r=>setTimeout(r,0));
+            if(root.getAttribute('data-mode')!=='EXPLORATION')throw new Error('room transition did not leave dialogue mode');
+            console.log('PASS dialogue mode: same-page transform, focus speaker, no duplicate, return on movement');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
