@@ -1,6 +1,17 @@
 (function(global){
 'use strict';
 
+(function loadTemplateV4(){
+ if(typeof document==='undefined'||document.getElementById('siza-card-template-v4-css'))return;
+ const script=document.currentScript;
+ if(!script?.src)return;
+ const link=document.createElement('link');
+ link.id='siza-card-template-v4-css';
+ link.rel='stylesheet';
+ link.href=new URL('card-template-v4.css',script.src).href;
+ document.head.appendChild(link);
+})();
+
 function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must load before SizaCardRenderer.');return global.SizaCardSchema;}
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
