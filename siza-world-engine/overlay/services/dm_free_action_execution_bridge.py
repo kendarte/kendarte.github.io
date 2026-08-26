@@ -3,14 +3,19 @@ from uuid import uuid4
 from services.action_intent_proposal_engine import build_local_capability_catalog
 from services.action_proposal_execution_bridge import execute_validated_object_action_proposal
 from services.consequence_engine import emit_world_action
-from services.dm_free_action_check_engine import resolve_judged_dm_auto, resolve_judged_dm_check
+from services.dm_free_action_check_engine import (
+    resolve_authored_dm_check,
+    resolve_judged_dm_auto,
+    resolve_judged_dm_check,
+)
 from services.interaction_proposal_execution_bridge import execute_validated_interaction_proposal
 from services.movement_proposal_execution_bridge import execute_validated_movement_proposal
 from services.object_action_input_engine import render_object_action_input_result
+from services.player_language_contract import get_actor_turn_language
 from services.world_combat_handoff_engine import build_world_combat_encounter, emit_world_combat_encounter
 
 
-DM_EXECUTION_BRIDGE_BUILD = "dm-0.1-authoritative-free-action-execution"
+DM_EXECUTION_BRIDGE_BUILD = "dm-0.1.1-authoritative-free-action-execution"
 
 
 def _plain_dict(value):
@@ -129,6 +134,8 @@ def _execute_take(actor, step):
     if not moved or getattr(obj, "location", None) is not actor:
         return {"status": "TAKE_MOVE_FAILED", "executed": False, "action_id": action_id}
     consequence = emit_world_action(_world_action_packet(actor, "TAKE", obj, action_id))
+    language = get_actor_turn_language(actor)
+    rendered = f"You take {obj.key}." if language == "en" else f"Tomas {obj.key}."
     return {
         "status": "TAKE_EXECUTED",
         "executed": True,
@@ -136,7 +143,7 @@ def _execute_take(actor, step):
         "target_dbref": int(obj.id),
         "target_name": str(obj.key),
         "consequence": consequence,
-        "rendered_text": f"Tomas {obj.key}.",
+        "rendered_text": rendered,
     }
 
 
@@ -150,6 +157,8 @@ def _execute_drop(actor, step):
     if not moved or getattr(obj, "location", None) is not location:
         return {"status": "DROP_MOVE_FAILED", "executed": False, "action_id": action_id}
     consequence = emit_world_action(_world_action_packet(actor, "DROP", obj, action_id))
+    language = get_actor_turn_language(actor)
+    rendered = f"You leave {obj.key} here." if language == "en" else f"Dejas {obj.key} aquí."
     return {
         "status": "DROP_EXECUTED",
         "executed": True,
@@ -157,7 +166,7 @@ def _execute_drop(actor, step):
         "target_dbref": int(obj.id),
         "target_name": str(obj.key),
         "consequence": consequence,
-        "rendered_text": f"Dejas {obj.key} aquí.",
+        "rendered_text": rendered,
     }
 
 
@@ -237,6 +246,8 @@ def _execute_one(actor, step, raw_player_input):
         return _execute_object_action(actor, step)
     if executor == "COMBAT":
         return _execute_combat(actor, step)
+    if executor == "AUTHORED_CHECK":
+        return resolve_authored_dm_check(actor, step, raw_player_input=raw_player_input)
     if executor == "DM_CHECK":
         return resolve_judged_dm_check(actor, step, raw_player_input=raw_player_input)
     if executor == "DM_AUTO":
