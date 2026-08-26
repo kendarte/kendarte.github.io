@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.4-local-worldbook-v18-retrieval"
+WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.5-local-worldbook-v18-retrieval"
 WORLDBOOK_VERSION = "1.8"
 EXPECTED_PAYLOAD_CHARS = 136904
 DEFAULT_MAX_SNIPPETS = 4
@@ -108,6 +108,11 @@ def find_worldbook_content_dir(explicit_dir=None):
     return None
 
 
+def find_worldbook_chunks_dir(explicit_dir=None):
+    """Compatibility alias for the initial DM broker prototype; returns v1.8 content dir."""
+    return find_worldbook_content_dir(explicit_dir=explicit_dir)
+
+
 @lru_cache(maxsize=4)
 def _load_visible_text_cached(directory_text):
     directory = Path(directory_text)
@@ -195,8 +200,18 @@ def _score_window(window_text, query_phrases, query_tokens):
     return score, phrase_matches, overlap
 
 
-def retrieve_worldbook_context(queries, *, content_dir=None, max_snippets=DEFAULT_MAX_SNIPPETS, char_budget=DEFAULT_CHAR_BUDGET):
+def retrieve_worldbook_context(
+    queries,
+    *,
+    content_dir=None,
+    chunks_dir=None,
+    max_snippets=DEFAULT_MAX_SNIPPETS,
+    char_budget=DEFAULT_CHAR_BUDGET,
+):
     """Retrieve bounded World Book v1.8 excerpts for DM-only context; never grants player Knowledge."""
+    if content_dir is None and chunks_dir is not None:
+        content_dir = chunks_dir
+
     query_phrases = []
     for value in list(queries or []):
         clean = str(value or "").strip()
