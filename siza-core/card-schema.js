@@ -52,7 +52,7 @@ function normalizeArtTransform(input={}){
 }
 
 function normalizeCard(input={}){
- const type=normalizeType(input.cardType??input.type),power=input.force??input.power,toughness=input.resistance??input.toughness,pips=normalizePips(input.pips??input.crystals);
+ const type=normalizeType(input.cardType??input.type),power=input.attack??input.force??input.power,toughness=input.defense??input.resistance??input.toughness,pips=normalizePips(input.pips??input.crystals);
  const card={
   schemaVersion:CARD_SCHEMA_VERSION,
   id:text(input.id,'card_'+Date.now()),
@@ -74,6 +74,8 @@ function normalizeCard(input={}){
   rules:text(input.rules??input.text,''),
   text:text(input.text??input.rules,''),
   flavor:text(input.flavor,''),
+  attack:power==null?null:int(power,0),
+  defense:toughness==null?null:int(toughness,0),
   force:power==null?null:int(power,0),
   resistance:toughness==null?null:int(toughness,0),
   power:power==null?null:int(power,0),
@@ -94,9 +96,9 @@ function validateCard(input={}){
  if(!card.id.trim())errors.push('La carta necesita un ID.');
  if(!card.name.trim())errors.push('La carta necesita un nombre.');
  if(!CARD_TYPES.includes(card.cardType))errors.push('Tipo de carta inválido.');
- if(card.cardType!=='Land'&&card.difficulty<=0)warnings.push('La dificultad es 0.');
- if(card.cardType==='Creature'&&(card.power==null||card.toughness==null))errors.push('Una Creature necesita Fuerza y Resistencia.');
- if(card.cardType!=='Creature'&&(card.power!=null||card.toughness!=null))warnings.push('Las estadísticas P/T sólo se muestran en Creature.');
+ if(card.cardType!=='Land'&&card.difficulty<=0)warnings.push('La Manafestación es 0.');
+ if(card.cardType==='Creature'&&(card.power==null||card.toughness==null))errors.push('Una Creature necesita Ataque y Defensa.');
+ if(card.cardType!=='Creature'&&(card.power!=null||card.toughness!=null))warnings.push('Ataque/Defensa sólo se muestran en Creature.');
  if(card.equipCost>0&&card.cardType!=='Artifact')errors.push('equipCost sólo es válido en Artifact.');
  if(card.equipCost>1)errors.push('El runtime actual sólo admite Equipar {1}.');
  if(!card.rules.trim()&&card.cardType!=='Land')warnings.push('La carta no tiene texto de reglas.');
