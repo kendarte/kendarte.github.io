@@ -1,0 +1,23 @@
+name: Siza Bounce Plan Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-bounce-plan-migration.yml'
+      - '.github/scripts/siza-bounce-plan-migration.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-bounce-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save jsdom@24
+      - name: Validate old/new and publish runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/siza-bounce-plan-migration.js
