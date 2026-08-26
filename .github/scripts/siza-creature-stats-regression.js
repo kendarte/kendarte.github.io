@@ -17,11 +17,16 @@ const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA exp
 const probe=`window.__CREATURE_STATS_REGRESSION__={cardById,TEST_CARD_DB_V1,counterV070,equipmentFor,equipmentPowerBonusV1,effectivePower,toughV070};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM creature-stats]',e.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
-const H=dom.window.__CREATURE_STATS_REGRESSION__,R=dom.window.SizaCreatureRules;if(!H||!R)throw new Error('Creature rule hooks unavailable');
+const H=dom.window.__CREATURE_STATS_REGRESSION__,R=dom.window.SizaCreatureRules,E=dom.window.SizaCardEffects;if(!H||!R||!E)throw new Error('Creature rule hooks unavailable');
 H.TEST_CARD_DB_V1.push(
   {id:'reg_stats_body',name:'Stats Body',type:'Creature',cost:1,difficulty:1,pips:{U:1},power:2,toughness:3,text:'Body.',art:'multi',glyph:'B',effects:[]},
   {id:'reg_stats_blade',name:'Stats Blade',type:'Artifact',cost:1,difficulty:1,pips:{},equipCost:1,text:'+3.',art:'multi',glyph:'E',effects:[{event:'equipped',type:'modify-power',amount:3}]},
-  {id:'reg_stats_charm',name:'Stats Charm',type:'Artifact',cost:1,difficulty:1,pips:{},equipCost:1,text:'+1.',art:'multi',glyph:'C',effects:[{event:'equipped',type:'modify-power',amount:1}]}
+  {id:'reg_stats_charm',name:'Stats Charm',type:'Artifact',cost:1,difficulty:1,pips:{},equipCost:1,text:'+1.',art:'multi',glyph:'C',effects:[{event:'equipped',type:'modify-power',amount:1}]},
+  {id:'reg_combat_2_2',name:'Combat 2/2',type:'Creature',power:2,toughness:2,effects:[]},
+  {id:'reg_combat_1_1',name:'Combat 1/1',type:'Creature',power:1,toughness:1,effects:[]},
+  {id:'reg_combat_grow_1_3',name:'Combat Grow 1/3',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:2}]},
+  {id:'reg_combat_grow_1_1',name:'Combat Grow 1/1',type:'Creature',power:1,toughness:1,effects:[{event:'combat-damage',type:'add-power-counter',amount:2}]},
+  {id:'reg_combat_def_grow',name:'Combat Defender Grow',type:'Creature',power:1,toughness:3,effects:[{event:'combat-damage',type:'add-power-counter',amount:1}]}
 );
 const P={battlefield:['reg_stats_body'],powerCounters:[2],equipment:[{id:'reg_stats_blade',target:0},{id:'reg_stats_charm',target:0},{id:'reg_stats_blade',target:null}]};
 const results=[],test=(name,fn)=>{try{results.push({name,pass:!!fn()})}catch(error){results.push({name,pass:false,error:error.message})}};
@@ -40,5 +45,14 @@ test('removeAt elimina y rebasa índices agotados',()=>{const X=statePlayer();R.
 test('Equipment sobre criatura removida queda sin objetivo',()=>{const X=statePlayer();R.removeAt(X,1);return X.equipment[0].target===null});
 test('Equipment posterior a criatura removida rebasa su objetivo',()=>{const X=statePlayer();R.removeAt(X,1);return X.equipment[1].target===1});
 test('Índice inválido no muta estado',()=>{const X=statePlayer(),before=JSON.stringify(X),id=R.removeAt(X,9);return id===null&&JSON.stringify(X)===before});
+
+function combatPlayer(ids,equipment=[]){return{battlefield:[...ids],powerCounters:ids.map(()=>0),summonedOn:ids.map(()=>0),equipment:equipment.map(x=>({...x}))}}
+function plan(attackers,defenders,blockers={},equipment=[]){const A=combatPlayer(attackers,equipment),D=combatPlayer(defenders),combat={attackers:attackers.map((id,index)=>({index,id})),blockers};return R.combatPlan(combat,A,D,H.cardById,E.forEvent)}
+test('combatPlan calcula daño sin bloqueo y counter gain',()=>{const x=plan(['reg_combat_grow_1_3'],[]);return x.damage===1&&JSON.stringify(x.attackerCounterGains)==='[[0,2]]'&&!x.attackerDeaths.length&&!x.defenderDeaths.length});
+test('combatPlan marca muerte simultánea 2/2 contra 2/2',()=>{const x=plan(['reg_combat_2_2'],['reg_combat_2_2'],{'0':0});return JSON.stringify(x.attackerDeaths)==='[0]'&&JSON.stringify(x.defenderDeaths)==='[0]'&&x.damage===0});
+test('combatPlan conserva counter gain sólo si atacante sobrevive',()=>{const survives=plan(['reg_combat_grow_1_3'],['reg_combat_1_1'],{'0':0}),dies=plan(['reg_combat_grow_1_1'],['reg_combat_2_2'],{'0':0});return JSON.stringify(survives.attackerCounterGains)==='[[0,2]]'&&JSON.stringify(dies.attackerCounterGains)==='[]'});
+test('combatPlan incorpora Equipment al daño efectivo',()=>{const x=plan(['reg_combat_2_2'],[],{},[{id:'reg_stats_blade',target:0}]);return x.damage===5});
+test('combatPlan concede counter gain a bloqueador superviviente',()=>{const x=plan(['reg_combat_1_1'],['reg_combat_def_grow'],{'0':0});return JSON.stringify(x.attackerDeaths)==='[0]'&&JSON.stringify(x.defenderCounterGains)==='[[0,1]]'});
+test('combatPlan produce snapshot de intercambio para logs',()=>{const x=plan(['reg_combat_2_2'],['reg_combat_1_1'],{'0':0}),e=x.exchanges[0];return e.attackerName==='Combat 2/2'&&e.defenderName==='Combat 1/1'&&e.attackerPower===2&&e.attackerToughness===2&&e.defenderPower===1&&e.defenderToughness===1});
 
 for(const r of results)console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?` :: ${r.error}`:''}`);const passed=results.filter(r=>r.pass).length;console.log(`SIZA creature rules regression: ${passed}/${results.length}`);dom.window.close();if(passed!==results.length)process.exit(1);
