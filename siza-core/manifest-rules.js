@@ -90,11 +90,10 @@ function manifestOutcome(modal,player){
 }
 
 function manifestStackPlan(modal,player,card,hasEffect){
-  const effectCheck=typeof hasEffect==='function'?hasEffect:()=>false;
   return {
     cardId:player.hand[modal.idx],
     owner:modal.owner,
-    targetStackId:modal.reactive&&effectCheck(card,'counter-stack-target','resolve')?modal.targetStackId:null
+    targetStackId:modal.reactive&&hasEffect(card,'counter-stack-target','resolve')?modal.targetStackId:null
   };
 }
 
