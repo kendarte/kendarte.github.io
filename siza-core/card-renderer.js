@@ -7,7 +7,7 @@ const FALLBACK_TEMPLATE_PART_KEYS=['frame_base','affinity_overlay','crystal_rail
 
 (function loadSharedCardStyles(){
  if(typeof document==='undefined'||!RENDERER_SRC)return;
- const styles=[['siza-card-template-v4-css','card-template-v4.css'],['siza-frame-standard-v5-css','frame-standard-v5.css?v=6']];
+ const styles=[['siza-card-template-v4-css','card-template-v4.css'],['siza-frame-standard-v5-css','frame-standard-v5.css?v=7']];
  for(const[id,path]of styles){if(document.getElementById(id))continue;const link=document.createElement('link');link.id=id;link.rel='stylesheet';link.href=new URL(path,RENDERER_SRC).href;document.head.appendChild(link);}
  if(!document.getElementById('siza-runtime-extra-v6-css')){
   const style=document.createElement('style');style.id='siza-runtime-extra-v6-css';style.textContent=`
