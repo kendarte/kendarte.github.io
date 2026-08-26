@@ -1,0 +1,115 @@
+name: SIZA Book Interaction v0.3 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/templates/webclient/siza_book_shell_v02.html'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v03.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_book_interaction_v03.css'
+      - 'siza-world-engine/overlay/commands/world_input_v861_commands.py'
+      - 'siza-world-engine/overlay/services/ollama_narrator.py'
+      - '.github/workflows/siza-book-interaction-v03-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  interaction-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax checks
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v03.js
+          python -m py_compile siza-world-engine/overlay/commands/world_input_v861_commands.py
+          python -m py_compile siza-world-engine/overlay/services/ollama_narrator.py
+
+      - name: Publisher shell contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          wrapper = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
+          shell = Path('siza-world-engine/overlay/web/templates/webclient/siza_book_shell_v02.html').read_text(encoding='utf-8')
+          bridge = Path('siza-world-engine/overlay/commands/world_input_v861_commands.py').read_text(encoding='utf-8')
+          narrator = Path('siza-world-engine/overlay/services/ollama_narrator.py').read_text(encoding='utf-8')
+          combined = wrapper + '\n' + shell
+          for token in [
+              'siza_book_interaction_v03.css', 'siza_book_interaction_v03.js',
+              'id="siza-scene-placeholder"', 'LOCATION IMAGE',
+              'id="siza-scene-panel-toggle"', 'id="siza-stats-panel-toggle"', 'id="siza-memories-panel-toggle"',
+              'id="siza-exits-actions"', 'id="siza-characters-actions"', 'id="siza-visible-actions"',
+              'id="siza-stats-grid"', 'CHARACTER STATS', 'MEMORIES', 'What do you do?', 'SEND'
+          ]:
+              assert token in combined, f'missing publisher shell token: {token}'
+          assert 'UI_STATS_COMMAND = "siza-ui-stats"' in bridge
+          assert 'siza_character_stats=' in bridge
+          assert bridge.index('if lowered == UI_STATS_COMMAND:') < bridge.index('classification = classify_v83_input') if 'classification = classify_v83_input' in bridge else True
+          assert 'Do not narrate exits, routes, or navigation' in narrator
+          assert 'return f"You enter {destination.key}."' in narrator
+          print('PASS publisher shell contract: English UI, separated panels, stats bridge, relevant narration')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Interactive navigation and stats regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          const html=`<!doctype html><html><body>
+          <div id="siza-mode-label">EXPLORATION</div><div id="siza-connection-label">Connected</div>
+          <div id="siza-current-prompt">What do you do?</div><button id="siza-inputsend">SEND</button>
+          <div id="siza-context-label">World Engine · persistent scene</div><div id="siza-focus-portrait-name">Mara Vensal</div>
+          <div id="siza-location-label">Pescaderia de Darsena</div><p id="siza-scene-description">old</p><strong id="siza-scene-placeholder-label"></strong>
+          <button id="siza-scene-panel-toggle"></button><button id="siza-stats-panel-toggle"></button><button id="siza-memories-panel-toggle"></button>
+          <aside id="siza-scene-panel" hidden></aside><aside id="siza-stats-panel" hidden></aside><aside id="siza-memories-panel" hidden></aside>
+          <section class="sizaBookFact" id="siza-exits-card"><span id="siza-exits">salir a la calle and entrar a la trastienda</span><div id="siza-exits-actions"></div></section>
+          <section class="sizaBookFact" id="siza-characters-card"><span id="siza-characters">Mara Vensal and Informante de Prueba C</span><div id="siza-characters-actions"></div></section>
+          <section class="sizaBookFact" id="siza-visible-card"><span id="siza-visible">a Cajon de reparto de prueba and a Manifiesto de carga de prueba</span><div id="siza-visible-actions"></div></section>
+          <details id="siza-knowledge-panel"><span id="siza-knowledge-summary"></span><div id="siza-knowledge-list"><div>Al comparar las cifras del manifiesto, detectas una discrepancia.</div></div></details><div id="siza-memories-empty"></div>
+          <div id="siza-messagewindow"></div><div id="siza-stats-status"></div>
+          ${['FUE','AGI','COO','INT','PER','PSI'].map(x=>`<strong id="siza-stat-${x}"></strong>`).join('')}
+          </body></html>`;
+          const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+          const w=dom.window, commands=[], wire=[]; const listeners={};
+          w.SizaWorldBookClient={sendText:(cmd)=>{commands.push(cmd);return true;}};
+          w.Evennia={isConnected:()=>true,msg:(name,args,kwargs)=>wire.push([name,args,kwargs]),emitter:{on:(name,fn)=>listeners[name]=fn}};
+          w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_interaction_v03.js','utf8'));
+          w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+
+          const exits=w.document.querySelectorAll('#siza-exits-actions .sizaActionLink');
+          if(exits.length!==2)throw new Error('expected two clickable exits');
+          if(exits[0].textContent!=='Return to Service Lane')throw new Error('exit label not publisher-English');
+          exits[0].click();
+          if(commands[0]!=='salir a la calle')throw new Error('exit click did not preserve real World Engine command');
+
+          const people=w.document.querySelectorAll('#siza-characters-actions .sizaActionLink');
+          if(people.length!==2||people[0].textContent!=='Mara Vensal')throw new Error('people links missing');
+          people[0].click();
+          if(commands[1]!=='hablar con Mara Vensal')throw new Error('person click did not create interaction command');
+
+          const objects=w.document.querySelectorAll('#siza-visible-actions .sizaActionLink');
+          if(objects.length!==2||objects[0].textContent!=='Delivery Crate')throw new Error('object links missing');
+          objects[0].click();
+          if(commands[2]!=='observar Cajon de reparto de prueba')throw new Error('object click did not create observation command');
+
+          if(w.document.getElementById('siza-location-label').textContent!=='Dockside Fishery')throw new Error('pilot room not localized');
+          if(!w.document.getElementById('siza-scene-description').textContent.includes('brine in the air'))throw new Error('publisher description missing');
+          if(!w.document.getElementById('siza-knowledge-list').textContent.includes('manifest figures reveals a discrepancy'))throw new Error('memory not localized');
+
+          w.document.getElementById('siza-stats-panel-toggle').click();
+          if(!wire.length||wire.at(-1)[1][0]!=='siza-ui-stats')throw new Error('Stats did not request persistent values');
+          listeners.siza_character_stats([{stats:{FUE:3,AGI:4,COO:2,INT:5,PER:6,PSI:1}}],{});
+          if(w.document.getElementById('siza-stat-PER').textContent!=='6')throw new Error('Stats event did not render');
+
+          console.log('PASS interactive book: clickable exits/people/objects, English pilot presentation, separate stats/memories');
+          dom.window.close();
+          NODE
