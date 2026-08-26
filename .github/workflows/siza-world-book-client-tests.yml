@@ -1,0 +1,101 @@
+name: SIZA World Book Client Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/custom.css'
+      - '.github/workflows/siza-world-book-client-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  book-client-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate JavaScript syntax
+        run: node --check siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js
+
+      - name: Validate template contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html')
+          text = path.read_text(encoding='utf-8')
+          required = [
+              '{% extends "webclient/base.html" %}',
+              '{% block guilib_import %}',
+              "webclient/js/siza_book_client.js",
+              '{% block client %}',
+              'id="siza-messagewindow"',
+              'id="siza-inputfield"',
+              'id="siza-inputsend"',
+          ]
+          for token in required:
+              assert token in text, f'missing template token: {token}'
+          assert 'goldenlayout' not in text.lower(), 'custom client must not reintroduce GoldenLayout'
+          print('PASS template contract')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Run transport adapter regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          const html=`<!doctype html><html><body>
+          <div id="siza-book-client"></div>
+          <div id="siza-player-name"></div><div id="siza-player-state"></div>
+          <div id="siza-mode-label"></div><div id="siza-location-label"></div>
+          <div id="siza-context-label"></div><div id="siza-connection-label"></div>
+          <div id="siza-prompt-label"></div><div id="siza-scene-kicker"></div>
+          <div id="siza-scene-title"></div><div id="siza-messagewindow"></div>
+          <div id="siza-current-prompt"></div><textarea id="siza-inputfield"></textarea>
+          <button id="siza-inputsend"></button></body></html>`;
+          const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+          const w=dom.window;
+          const listeners={};
+          let sent=null;
+          w.requestAnimationFrame=fn=>fn();
+          w.$=()=>({ready:fn=>fn()});
+          w.Evennia={
+            emitter:null,
+            init(){if(!this.emitter)this.emitter={on:(name,fn)=>{listeners[name]=fn}}},
+            isConnected(){return true},
+            msg(name,args,kwargs){sent=[name,args,kwargs]}
+          };
+          w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_book_client.js','utf8'));
+
+          if(!w.SizaWorldBookClient)throw new Error('SizaWorldBookClient missing');
+          if(!w.SizaWorldBookClient.sendText('look'))throw new Error('sendText rejected connected command');
+          if(JSON.stringify(sent)!==JSON.stringify(['text',['look'],{}]))throw new Error(`wrong Evennia payload ${JSON.stringify(sent)}`);
+
+          listeners.text(['<b>Room output</b>'],{cls:'out'});
+          if(!w.document.getElementById('siza-messagewindow').innerHTML.includes('Room output'))throw new Error('text listener did not render output');
+
+          listeners.prompt(['HP&gt;'],{});
+          if(!w.document.getElementById('siza-prompt-label').innerHTML.includes('HP'))throw new Error('prompt listener did not update prompt');
+
+          w.SizaWorldBookClient.setMode('DIALOGUE');
+          if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='DIALOGUE')throw new Error('dialogue mode did not apply');
+
+          listeners.connection_open(['websocket'],{});
+          if(w.document.getElementById('siza-book-client').getAttribute('data-connection')!=='open')throw new Error('connection open state missing');
+
+          console.log('PASS transport adapter: text input/output, prompt, mode, connection');
+          dom.window.close();
+          NODE
