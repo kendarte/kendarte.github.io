@@ -76,5 +76,12 @@ function burnSelectionPlan(modal,player,handIndex,isLand){
   return selected;
 }
 
-global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan,burnSelectionPlan});
+function burnConsumptionPlan(modal){
+  const indices=Array.isArray(modal?.burnSelected)?modal.burnSelected.slice().sort((a,b)=>b-a):[];
+  let manifestIndex=modal?.idx;
+  for(const index of indices)if(index<manifestIndex)manifestIndex--;
+  return {indices,manifestIndex};
+}
+
+global.SizaManifestRules=Object.freeze({affinityInfo,dcFor,naturalChance,manifestRequirement,deficit,bonusSources,aiManifestRollPlan,burnSelectionPlan,burnConsumptionPlan});
 })(window);
