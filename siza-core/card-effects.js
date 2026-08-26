@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.5.0';
+const VERSION='1.6.0';
 const EVENTS=Object.freeze(['resolve','enter','attack-declared','combat-damage','manifest-roll','equipped']);
 const TYPES=Object.freeze(['draw','damage-character','counter-stack-target','observe-top','bounce-other-permanent','discard','add-power-counter','manifest-bonus','modify-power']);
 const TARGETS=Object.freeze(['self','opponent']);
@@ -26,5 +26,10 @@ function otherPermanentTargets(match,sourceOwner,entryIndex=null){
   }
   return targets;
 }
-global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets});
+function stackTargetIndex(stack,targetStackId){
+  const list=Array.isArray(stack)?stack:[];
+  const index=list.findIndex(entry=>entry?.id===targetStackId);
+  return index>=0?index:list.length-1;
+}
+global.SizaCardEffects=Object.freeze({VERSION,EVENTS,TYPES,TARGETS,COLORS,normalizeEffect,normalizeEffects,validateEffects,forEvent,hasEffect,sumAmount,effectSide,otherPermanentTargets,stackTargetIndex});
 })(window);
