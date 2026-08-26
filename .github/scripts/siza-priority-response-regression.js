@@ -13,7 +13,7 @@ for(const name of ['entry-rules.js','creature-rules.js']){
   else if(!html.includes(globalName))throw new Error(`${globalName} unavailable`);
 }
 const marker='window.SIZA={';if(!html.includes(marker))throw new Error('SIZA export marker missing');
-const probe=`window.__PRIORITY_RESPONSE_REGRESSION__={createMatch,setMatch:m=>state.match=m,setModal:v=>state.modal=v,getModal:()=>state.modal,enemyRespondV070,openPriorityV070};\n`;
+const probe=`window.__PRIORITY_RESPONSE_REGRESSION__={createMatch,setMatch:m=>state.match=m,setModal:v=>state.modal=v,getModal:()=>state.modal,enemyRespondV070,openPriorityV070,passPriorityV070};\n`;
 const vc=new VirtualConsole();vc.on('jsdomError',e=>console.error('[JSDOM priority-response]',e.message));
 const dom=new JSDOM(html.replace(marker,probe+marker),{runScripts:'dangerously',url:'https://siza.local/siza-mobile-test/',virtualConsole:vc});dom.window.setTimeout=()=>0;
 const H=dom.window.__PRIORITY_RESPONSE_REGRESSION__,E=dom.window.SizaCardEffects;
@@ -36,9 +36,14 @@ test('preferredResponseCard conserva primer counter entre empates',()=>{const x=
 test('preferredResponseCard devuelve null sin candidato',()=>E.preferredResponseCard([],resolve,()=>true)===null);
 test('priorityWindowPlan alterna rival y jugador con estados exactos',()=>{const p=E.priorityWindowPlan('player'),e=E.priorityWindowPlan('enemy');return p.responder==='enemy'&&p.active==='enemy-response'&&p.phase==='Prioridad rival'&&e.responder==='player'&&e.active==='response'&&e.phase==='Tu prioridad'});
 test('priorityWindowPlan conserva fallback histórico a jugador',()=>{const x=E.priorityWindowPlan('unexpected');return x.responder==='player'&&x.active==='response'&&x.phase==='Tu prioridad'});
+test('priorityPassPlan produce transición exacta para ambos responders',()=>{const p=E.priorityPassPlan({responder:'player'},'player'),e=E.priorityPassPlan({responder:'enemy'},'enemy');return JSON.stringify(p)===JSON.stringify({responseWindow:null,pendingResolution:true,active:'resolving',phase:'Stack listo'})&&JSON.stringify(e)===JSON.stringify(p)});
+test('priorityPassPlan rechaza owner incorrecto o ventana ausente',()=>E.priorityPassPlan({responder:'player'},'enemy')===null&&E.priorityPassPlan(null,'player')===null);
 function priority(owner,cardId,id){const M=H.createMatch(false,'prepare');H.setMatch(M);H.setModal(null);M.responseWindow=null;M.active='player';M.phase='Main';M.log=[];H.openPriorityV070({id,cardId,owner});return M}
 test('openPriority de carta del jugador entrega prioridad al rival',()=>{const M=priority('player','mist','p');return M.responseWindow?.stackId==='p'&&M.responseWindow?.responder==='enemy'&&M.active==='enemy-response'&&M.phase==='Prioridad rival'&&M.log.some(x=>x.t==='Prioridad'&&x.m==='El rival puede responder a Niebla de Sal.')});
 test('openPriority de carta rival entrega prioridad al jugador',()=>{const M=priority('enemy','spark','e');return M.responseWindow?.stackId==='e'&&M.responseWindow?.responder==='player'&&M.active==='response'&&M.phase==='Tu prioridad'&&M.log.some(x=>x.t==='Prioridad'&&x.m==='Puedes responder a Chispa del Estuario.')});
+function pass(responder,owner){const M=H.createMatch(false,'prepare');H.setMatch(M);H.setModal(null);M.responseWindow={stackId:'x',responder};M.pendingResolution=false;M.active=responder==='player'?'response':'enemy-response';M.phase=responder==='player'?'Tu prioridad':'Prioridad rival';H.passPriorityV070(owner);return M}
+test('passPriority válido entrega el Stack a resolución',()=>{const M=pass('player','player');return M.responseWindow===null&&M.pendingResolution===true&&M.active==='resolving'&&M.phase==='Stack listo'});
+test('passPriority con owner incorrecto conserva la ventana',()=>{const M=pass('player','enemy');return M.responseWindow?.responder==='player'&&M.pendingResolution===false&&M.active==='response'&&M.phase==='Tu prioridad'});
 
 function setup({hand=['mist','counter','spark'],crystals={U:2,R:1,G:0,W:0,B:0},modal=null}={}){
   const M=H.createMatch(false,'prepare');H.setMatch(M);H.setModal(modal);M.enemy.hand=[...hand];M.enemy.battlefield=[];M.enemy.powerCounters=[];M.enemy.summonedOn=[];M.enemy.crystals={...crystals};M.player.hand=[];M.stack=[{id:'target',cardId:'spark',owner:'player'}];M.responseWindow={stackId:'target',responder:'enemy'};M.pendingResolution=false;M.active='enemy-response';M.phase='Prioridad rival';M.log=[];return M;
