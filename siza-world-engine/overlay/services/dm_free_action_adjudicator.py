@@ -9,7 +9,26 @@ AUTHORED_EXECUTORS = {
     "COMBAT",
     "CHECK_ONLY",
 }
-SOCIAL_ACTIONS = {"PERSUADE", "DECEIVE", "THREATEN"}
+GENERIC_JUDGMENT_ACTIONS = {
+    "OBSERVE",
+    "SEARCH",
+    "PERSUADE",
+    "DECEIVE",
+    "THREATEN",
+    "GIVE",
+    "USE",
+    "MOVE_OBJECT",
+    "OPEN",
+    "CLOSE",
+    "BREAK",
+    "DEFEND",
+    "STEAL",
+    "HIDE",
+    "CREATE",
+    "COMBINE",
+    "WAIT",
+    "OTHER",
+}
 
 
 def _plain_dict(value):
@@ -71,6 +90,32 @@ def _is_local(actor, obj):
 
 def _is_inventory(actor, obj):
     return bool(actor and obj and getattr(obj, "location", None) is actor)
+
+
+def _verified_context(obj, actor):
+    if not obj:
+        return None
+    location = getattr(actor, "location", None) if actor else None
+    if obj is actor:
+        kind = "SELF"
+    elif obj is location:
+        kind = "ROOM"
+    elif getattr(obj, "destination", None):
+        kind = "EXIT"
+    elif bool(getattr(obj.db, "is_npc", False)):
+        kind = "NPC"
+    else:
+        kind = "OBJECT"
+    state = _plain_dict(getattr(obj.db, "state", {}))
+    return {
+        "name": str(getattr(obj, "key", "")),
+        "dbref": int(obj.id) if getattr(obj, "id", None) is not None else None,
+        "kind": kind,
+        "is_local": _is_local(actor, obj),
+        "in_inventory": _is_inventory(actor, obj),
+        "portable": bool(getattr(obj.db, "portable", False)),
+        "state": state,
+    }
 
 
 def _authored_affordance(target, action_type):
@@ -136,7 +181,7 @@ def _adjudicate_step(actor, step, index):
     if secondary_ref and not secondary:
         return {**base, "status": "REJECTED", "admissible": False, "reason": "SECONDARY_REF_NOT_CURRENT"}
 
-    if action_type == "MOVE" and primary in (list(getattr(getattr(actor, "location", None), "exits", []) or [])):
+    if action_type == "MOVE" and primary in list(getattr(getattr(actor, "location", None), "exits", []) or []):
         return {
             **base,
             "status": "ADMISSIBLE",
@@ -214,13 +259,22 @@ def _adjudicate_step(actor, step, index):
             "authoritative_check": affordance.get("check"),
         }
 
-    if action_type in SOCIAL_ACTIONS and primary and bool(getattr(primary.db, "is_npc", False)):
+    if action_type in GENERIC_JUDGMENT_ACTIONS:
+        if primary_ref and primary is None:
+            return {**base, "status": "REJECTED", "admissible": False, "reason": "PRIMARY_REF_NOT_CURRENT"}
+        if secondary_ref and secondary is None:
+            return {**base, "status": "REJECTED", "admissible": False, "reason": "SECONDARY_REF_NOT_CURRENT"}
         return {
             **base,
-            "status": "REJECTED",
+            "status": "NEEDS_JUDGMENT",
             "admissible": False,
-            "reason": "NO_AUTHORED_SOCIAL_AFFORDANCE",
-            "target_dbref": int(primary.id),
+            "reason": "REQUIRES_BOUNDED_DM_JUDGMENT",
+            "target_dbref": int(primary.id) if primary and getattr(primary, "id", None) is not None else None,
+            "target_name": str(getattr(primary, "key", "")) if primary else None,
+            "verified_context": {
+                "primary": _verified_context(primary, actor),
+                "secondary": _verified_context(secondary, actor),
+            },
         }
 
     return {
@@ -232,7 +286,7 @@ def _adjudicate_step(actor, step, index):
 
 
 def adjudicate_dm_free_action(actor, interpreted_packet):
-    """Revalidate model references against current world state and choose only authorized executors."""
+    """Revalidate model references against current world state and choose only authorized executors or bounded judgment."""
     packet = _plain_dict(interpreted_packet)
     if packet.get("status") != "INTERPRETED" or packet.get("accepted") is not True:
         return {"status": "NOT_INTERPRETED", "admissible": False, "steps": [], "build": DM_ADJUDICATOR_BUILD}
@@ -245,6 +299,10 @@ def adjudicate_dm_free_action(actor, interpreted_packet):
         return {"status": "NO_STEPS", "admissible": False, "steps": [], "build": DM_ADJUDICATOR_BUILD}
     if any(row.get("status") == "NEEDS_CONTEXT" for row in steps):
         status = "NEEDS_CONTEXT"
+    elif any(row.get("status") == "REJECTED" for row in steps):
+        status = "NOT_ADMISSIBLE"
+    elif any(row.get("status") == "NEEDS_JUDGMENT" for row in steps):
+        status = "NEEDS_JUDGMENT"
     elif all(row.get("admissible") is True for row in steps):
         status = "ADMISSIBLE"
     else:
