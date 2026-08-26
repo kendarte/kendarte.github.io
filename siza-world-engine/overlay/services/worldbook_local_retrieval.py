@@ -8,10 +8,10 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.2-local-worldbook-v08-retrieval"
+WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.3-local-worldbook-v08-retrieval"
 DEFAULT_MAX_SNIPPETS = 4
 DEFAULT_CHAR_BUDGET = 2200
-_CHUNK_RE = re.compile(r'''["'`]([A-Za-z0-9+/=]{64,})["'`]''')
+_CHUNK_RE = re.compile(r"[A-Za-z0-9+/=]{64,}")
 _TOKEN_RE = re.compile(r"[a-z0-9_:-]+")
 _STOPWORDS = {
     "a", "al", "and", "ante", "con", "de", "del", "el", "en", "for", "la", "las", "los",
@@ -106,6 +106,9 @@ def _extract_chunk_payload(path):
     matches = _CHUNK_RE.findall(source)
     if not matches:
         raise ValueError(f"INVALID_WORLDBOOK_CHUNK:{Path(path).name}")
+    # The v0.8 assets are transport fragments rather than trustworthy standalone
+    # JavaScript strings. Use the raw base64 runs and let strict base64+gzip decoding
+    # validate the joined package.
     return "".join(matches)
 
 
