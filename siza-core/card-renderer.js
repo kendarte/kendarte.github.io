@@ -1,18 +1,26 @@
 (function(global){
 'use strict';
 
-(function loadTemplateV4(){
- if(typeof document==='undefined'||document.getElementById('siza-card-template-v4-css'))return;
- const script=document.currentScript;
- if(!script?.src)return;
- const link=document.createElement('link');
- link.id='siza-card-template-v4-css';
- link.rel='stylesheet';
- link.href=new URL('card-template-v4.css',script.src).href;
- document.head.appendChild(link);
+const RENDERER_SRC=typeof document!=='undefined'&&document.currentScript?.src?document.currentScript.src:'';
+const FRAME_STANDARD_BASE_URL=RENDERER_SRC?new URL('assets/frames/standard/frame_standard_base.svg',RENDERER_SRC).href:'../siza-core/assets/frames/standard/frame_standard_base.svg';
+
+(function loadSharedCardStyles(){
+ if(typeof document==='undefined'||!RENDERER_SRC)return;
+ const styles=[
+  ['siza-card-template-v4-css','card-template-v4.css'],
+  ['siza-frame-standard-v5-css','frame-standard-v5.css']
+ ];
+ for(const[id,path]of styles){
+  if(document.getElementById(id))continue;
+  const link=document.createElement('link');
+  link.id=id;
+  link.rel='stylesheet';
+  link.href=new URL(path,RENDERER_SRC).href;
+  document.head.appendChild(link);
+ }
 })();
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function esc(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]));}
 function schema(){if(!global.SizaCardSchema)throw new Error('SizaCardSchema must load before SizaCardRenderer.');return global.SizaCardSchema;}
 function stats(card,opts={}){const c=schema().normalizeCard(card),s=opts.stats||{};return{power:s.power??opts.power??c.power,toughness:s.toughness??opts.toughness??c.toughness};}
 function typeClass(card){return 'type-'+schema().normalizeCard(card).cardType.toLowerCase();}
@@ -63,6 +71,7 @@ function rulesHtml(c){return `<div class="sizaCardRulesTextV2">${esc(c.rules)}</
 function bodyHtml(card,opts={}){
  const c=schema().normalizeCard(card),s=stats(c,opts),mobile=opts.variant==='mobile',risk=mobile?(opts.risk??difficultyText(c)):difficultyText(c),hasStats=c.cardType==='Creature'&&s.power!=null,titleClass=titleLengthClass(c.name);
  return `<div class="sizaGeneratedInner sizaCardFrameV2 sizaQueenLayoutV3">
+  <img class="sizaFrameStandardBaseV5" src="${esc(FRAME_STANDARD_BASE_URL)}" alt="" aria-hidden="true" draggable="false">
   <div class="sizaCardTitlePlateV3 sizaGeneratedTitle"><span class="sizaCardNameV2${titleClass?' '+titleClass:''}">${esc(c.name)}</span></div>
   <div class="sizaCardDifficultyV2 sizaManafestBadgeV3 sizaGeneratedDifficulty${mobile?' cardRisk':''}">${esc(risk)}</div>
   ${crystalRailHtml(c)}
