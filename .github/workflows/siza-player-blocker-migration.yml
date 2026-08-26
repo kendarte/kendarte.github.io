@@ -1,0 +1,22 @@
+name: Siza Player Blocker Migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/siza-player-blocker-migration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-player-blocker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save jsdom@24
+      - name: Validate old/new and publish runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/siza-player-blocker-migration.js
