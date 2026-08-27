@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.2.0-world-tcg-return-to-exploration";
+    var BUILD = "0.2.1-world-tcg-combat-transition";
     var activeEncounter = null;
     var lastSubmittedResultId = "";
 
@@ -82,6 +82,14 @@
             setTrayStatus("Encounter inválido");
             return {ok: false, status: "INVALID_ENCOUNTER_PACKET"};
         }
+
+        /* Presentation must begin before the Book switches to COMBAT. The animation
+           layer also listens to the encounter as a fallback, but the transport owns
+           the guaranteed handoff that actually activates the Arena. */
+        if (window.SizaCombatAnimationV02 && typeof window.SizaCombatAnimationV02.playBookTransition === "function") {
+            window.SizaCombatAnimationV02.playBookTransition();
+        }
+
         activeEncounter = clone(encounter);
         lastSubmittedResultId = "";
         activateCombatShell(activeEncounter);
