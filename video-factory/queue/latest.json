@@ -1,9 +1,9 @@
 {
-  "id": "bootstrap-001",
-  "autoRun": false,
+  "id": "looks-legit-002-bill-pay",
+  "autoRun": true,
   "project": {
     "version": 2,
-    "name": "looks_legit",
+    "name": "looks_legit_002_bill_pay",
     "brand": "LOOKS LEGIT",
     "format": "9:16",
     "voice": "am_michael",
@@ -12,30 +12,50 @@
     "fps": 24,
     "scenes": [
       {
-        "type": "chat",
-        "voice": "You already got scammed once. Then the F.B.I. says they recovered your money.",
-        "caption": "THE ‘FBI’ RECOVERED YOUR MONEY.",
-        "sender": "FBI Recovery Unit",
-        "sub": "Government service",
-        "message": "Good news. We recovered funds connected to your fraud case.",
-        "amount": "$18,740",
-        "fee": "$495 recovery fee",
-        "stamp": "SCAM #2"
+        "type": "headline",
+        "voice": "The first result on Google can be the wrong place to pay your bill.",
+        "caption": "THE FIRST RESULT CAN BE WRONG.",
+        "title": "YOU SEARCHED FOR THE RIGHT COMPANY.",
+        "body": "The top result can still send you somewhere else."
+      },
+      {
+        "type": "split",
+        "voice": "A paid ad can use the company's name and look like the official payment page.",
+        "caption": "PAID AD ≠ OFFICIAL SITE",
+        "leftLabel": "WHAT YOU THINK",
+        "left": "Official payment page",
+        "rightLabel": "WHAT IT IS",
+        "right": "A paid search ad"
       },
       {
         "type": "evidence",
-        "voice": "There is only one problem. That's not the F.B.I.",
-        "caption": "THAT'S NOT THE FBI.",
-        "sourceUrl": "https://www.ic3.gov/PSA/2026/PSA260720",
-        "sourceLabel": "FBI / IC3 · JUL 20, 2026",
-        "focus": "IC3 will never ask for payment to recover lost funds."
+        "voice": "The F.T.C. warned about this on August seventeenth. Dishonest companies can use paid search ads to impersonate the payment channel you were looking for.",
+        "caption": "THE FTC JUST WARNED ABOUT THIS.",
+        "sourceUrl": "https://consumer.ftc.gov/consumer-alerts/2026/08/searching-online-bill-pay-impersonators",
+        "sourceLabel": "FTC · AUG 17, 2026",
+        "focus": "dishonest companies sometimes use paid search ads to trick you into paying them instead of the company or agency you're looking for"
+      },
+      {
+        "type": "stat",
+        "voice": "The trap works because being first in search feels like being official. It isn't.",
+        "caption": "FIRST DOESN'T MEAN OFFICIAL.",
+        "number": "#1",
+        "label": "SEARCH RESULT ≠ VERIFIED"
+      },
+      {
+        "type": "evidence",
+        "voice": "The safer move is simple. Scroll past paid results, or type the company's real website address yourself.",
+        "caption": "CONTROL THE DESTINATION.",
+        "sourceUrl": "https://consumer.ftc.gov/consumer-alerts/2026/08/searching-online-bill-pay-impersonators",
+        "sourceLabel": "FTC · CONSUMER ADVICE",
+        "focus": "Scroll past the paid search results to help make sure you have the right website or contact info."
       },
       {
         "type": "headline",
-        "voice": "It's scam number two.",
-        "caption": "SCAM #2",
-        "title": "SCAM #2",
-        "body": "The recovery offer is the second attack."
+        "voice": "If an ad chooses where you pay, verify before you pay.",
+        "caption": "VERIFY BEFORE YOU PAY.",
+        "title": "LOOKS LEGIT.",
+        "body": "That's exactly why you check."
       }
     ]
   }
