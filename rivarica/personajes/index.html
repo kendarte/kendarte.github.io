@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Personajes — Rivarica</title>
+<meta name="description" content="Archivo público consolidado de personajes de Rivarica: Trinasty, Darkhaven, Summoners y material legado.">
+<style>
+:root{color-scheme:dark;--bg:#0d1112;--panel:#141a1c;--panel2:#101516;--ink:#eee9df;--muted:#aaa79f;--gold:#d4b16c;--line:#34302a;--red:#8f3f3f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 50% -10%,#23211d 0,#0d1112 36rem);color:var(--ink);font:16px/1.62 Georgia,"Times New Roman",serif}a{color:var(--gold)}header{position:sticky;top:0;z-index:10;background:rgba(13,17,18,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}.top{max-width:1100px;margin:auto;padding:14px 22px;display:flex;gap:18px;align-items:center;justify-content:space-between}.brand{font:700 15px/1.2 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase}.brand b{color:var(--gold)}.back{font:600 13px system-ui,sans-serif;text-decoration:none;border:1px solid var(--line);padding:8px 12px;border-radius:999px}.hero{max-width:1100px;margin:auto;padding:70px 22px 32px}.eyebrow{color:var(--gold);font:700 12px system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase}.hero h1{font-size:clamp(42px,8vw,82px);line-height:.92;margin:.15em 0}.hero p{max-width:780px;color:#c8c4bb;font-size:18px}.tools{max-width:1100px;margin:auto;padding:0 22px 28px;display:flex;gap:10px;flex-wrap:wrap}.tools input{flex:1;min-width:240px;background:#0b0f10;color:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:15px system-ui,sans-serif}.tools button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:9px 13px;cursor:pointer;font:600 12px system-ui,sans-serif}.tools button:hover{border-color:var(--gold)}main{max-width:1100px;margin:auto;padding:0 22px 80px}#archive{background:linear-gradient(180deg,rgba(20,26,28,.9),rgba(13,17,18,.96));border:1px solid var(--line);border-radius:18px;padding:clamp(22px,5vw,52px);box-shadow:0 22px 80px rgba(0,0,0,.25)}#archive h2{font-size:clamp(30px,5vw,50px);margin-top:0;border-bottom:1px solid var(--line);padding-bottom:.35em}#archive h3{margin-top:2.4em;color:var(--gold);font:700 20px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-top:1px solid var(--line);padding-top:1.6em}#archive h4{font-size:24px;margin:1.8em 0 .25em}#archive h4 small{display:inline-block;color:var(--muted);font:600 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}#archive p,#archive li{max-width:900px}#archive ul{padding-left:1.25em}#archive li{margin:.45em 0}#archive code{background:#090c0d;border:1px solid var(--line);padding:.1em .35em;border-radius:4px}.loading,.error{padding:50px;text-align:center;color:var(--muted);font-family:system-ui,sans-serif}.hidden-by-search{display:none!important}footer{max-width:1100px;margin:auto;padding:0 22px 50px;color:var(--muted);font:12px system-ui,sans-serif}
+@media(max-width:620px){.top{align-items:flex-start}.hero{padding-top:45px}#archive{border-radius:12px;padding:22px 18px}#archive h4{font-size:21px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div class="brand"><b>Rivarica</b> / Archivo de Personajes</div><a class="back" href="../">Volver al World Book</a></div></header>
+<section class="hero"><div class="eyebrow">Trinasty · Darkhaven · Summoners · Legacy</div><h1>Personajes</h1><p>Un solo archivo para el elenco vivo de Rivarica, sus versiones históricas, conceptos visuales todavía sin bautizar y personajes de prototipo. Sin mezclar borradores con canon a escondidas.</p></section>
+<div class="tools"><input id="search" type="search" placeholder="Buscar nombre, casa, rol, invocación…" autocomplete="off"><button type="button" data-term="Trinasty">Trinasty</button><button type="button" data-term="Darkhaven">Darkhaven</button><button type="button" data-term="Summoners">Summoners</button><button type="button" data-term="legado">Legado</button><button type="button" data-term="">Todo</button></div>
+<main><div id="archive" class="loading">Cargando archivo de personajes…</div></main>
+<footer>Rivarica · archivo público de personajes · fuente consolidada en <code>source/worldbook/personajes-publicos-v1.html</code></footer>
+<script>
+(async()=>{
+ const host=document.getElementById('archive');
+ const search=document.getElementById('search');
+ try{
+  const r=await fetch('../source/worldbook/personajes-publicos-v1.html?v=char1',{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  host.className=''; host.innerHTML=await r.text();
+  const apply=()=>{
+   const q=search.value.trim().toLocaleLowerCase('es');
+   const section=host.querySelector('section'); if(!section)return;
+   section.querySelectorAll('h3,h4,p,ul').forEach(n=>n.classList.remove('hidden-by-search'));
+   if(!q)return;
+   const blocks=[...section.querySelectorAll('h4')];
+   blocks.forEach(h=>{
+    const nodes=[h]; let n=h.nextElementSibling;
+    while(n&&n.tagName!=='H4'&&n.tagName!=='H3'){nodes.push(n);n=n.nextElementSibling}
+    const hit=nodes.some(x=>(x.textContent||'').toLocaleLowerCase('es').includes(q));
+    nodes.forEach(x=>x.classList.toggle('hidden-by-search',!hit));
+   });
+   section.querySelectorAll('h3').forEach(h=>{
+    let n=h.nextElementSibling,visible=false;
+    while(n&&n.tagName!=='H3'){if(!n.classList.contains('hidden-by-search'))visible=true;n=n.nextElementSibling}
+    h.classList.toggle('hidden-by-search',!visible && !(h.textContent||'').toLocaleLowerCase('es').includes(q));
+   });
+  };
+  search.addEventListener('input',apply);
+  document.querySelectorAll('[data-term]').forEach(b=>b.addEventListener('click',()=>{search.value=b.dataset.term;apply();search.focus()}));
+ }catch(e){host.className='error';host.textContent='No se pudo cargar el archivo de personajes: '+e.message}
+})();
+</script>
+</body>
+</html>
