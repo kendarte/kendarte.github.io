@@ -1,12 +1,12 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.3.3-book-battlefield-enemy-hand";
+    var BUILD = "0.3.4-book-battlefield-non-overlap";
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-book-battlefield-v03";
-    var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0320";
+    var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0340";
     var DOCK_STYLE_ID = "siza-book-zone-docks-v01";
-    var DOCK_STYLE_HREF = "/static/webclient/css/siza_tcg_zone_docks_v01.css?v=0110";
+    var DOCK_STYLE_HREF = "/static/webclient/css/siza_tcg_zone_docks_v01.css?v=0120";
     var SNAPSHOT_ID = "siza-book-zone-snapshot-v01";
     var SNAPSHOT_SRC = "/static/webclient/tcg/siza-mobile-test/book-zone-snapshot-v01.js?v=0110";
     var childObserver = null;
