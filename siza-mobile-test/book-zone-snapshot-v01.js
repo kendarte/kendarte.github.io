@@ -4,6 +4,7 @@
   function sideSnapshot(side) {
     if (!side) return null;
     return {
+      hand: Array.isArray(side.hand) ? side.hand.length : 0,
       library: Array.isArray(side.library) ? side.library.length : 0,
       graveyard: Array.isArray(side.graveyard) ? side.graveyard.length : 0,
       exile: Array.isArray(side.exile) ? side.exile.length : 0
