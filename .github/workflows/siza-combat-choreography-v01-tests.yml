@@ -1,0 +1,148 @@
+name: SIZA Combat Choreography v0.1 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_combat_choreography_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_combat_choreography_v01.css'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - '.github/workflows/siza-combat-choreography-v01-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  combat-choreography-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Static choreography contract
+        shell: bash
+        run: |
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_combat_choreography_v01.js
+          python - <<'PY'
+          from pathlib import Path
+          js=Path('siza-world-engine/overlay/web/static/webclient/js/siza_combat_choreography_v01.js').read_text(encoding='utf-8')
+          css=Path('siza-world-engine/overlay/web/static/webclient/css/siza_combat_choreography_v01.css').read_text(encoding='utf-8')
+          tpl=Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
+
+          for token in [
+              'data-combat-transition',
+              'sizaCombatStateHudV01',
+              'sizaCombatPhaseCueV01',
+              'sizaCombatDecisionV01',
+              'responseWindowV53',
+              'defensePanelV600',
+              'pendingChoiceV070',
+          ]:
+              assert token in js, token
+
+          for token in [
+              'data-combat-transition="entering"',
+              'data-combat-transition="arming"',
+              'data-combat-transition="deploy"',
+              '.sizaCombatPhaseCueV01',
+              '.sizaCombatDecisionV01',
+              '.sizaCombatActionV01',
+          ]:
+              assert token in css, token
+
+          assert 'siza_combat_choreography_v01.css' in tpl
+          assert 'siza_combat_choreography_v01.js' in tpl
+          assert tpl.index('siza_combat_choreography_v01.js') < tpl.index('siza_world_tcg_transport_v01.js')
+          print('PASS choreography loaded before combat transport')
+          print('PASS transition + turn/phase/decision visual contract')
+          PY
+
+      - name: Install JSDOM
+        run: npm install --no-save jsdom@24
+
+      - name: Browser transition and phase readability regression
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+          (async()=>{
+            const dom=new JSDOM(`<!doctype html><html><body>
+              <div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION">
+                <div class="sizaBookBody"><div class="sizaStoryPage"></div></div>
+              </div>
+              <iframe id="siza-tcg-embed-frame"></iframe>
+            </body></html>`,{runScripts:'outside-only',url:'http://localhost:4001/webclient/'});
+            const w=dom.window;
+            const listeners={};
+            w.localStorage.setItem('siza_player_language','es');
+            w.Evennia={init:()=>{},emitter:{on:(name,fn)=>listeners[name]=fn}};
+
+            const frame=w.document.getElementById('siza-tcg-embed-frame');
+            const d=frame.contentDocument;
+            d.body.innerHTML=`
+              <div class="matchBoardV5">
+                <div class="phaseBannerV600"><b>TU TURNO</b> · Main</div>
+                <div class="topMatchChip">TU TURNO · 1</div>
+                <div class="matchLog"><div class="logItem"><strong>Reglas</strong> · Arena lista.</div></div>
+              </div>`;
+
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_combat_choreography_v01.js','utf8'));
+            w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+            frame.dispatchEvent(new w.Event('load'));
+            await wait(80);
+
+            if(!listeners.siza_combat_encounter) throw new Error('combat encounter choreography listener missing');
+            listeners.siza_combat_encounter([{encounter_id:'CHOREO-1'}]);
+            const client=w.document.getElementById('siza-book-client');
+            if(client.getAttribute('data-combat-transition')!=='entering') throw new Error('entry did not start at entering');
+            await wait(310);
+            if(client.getAttribute('data-combat-transition')!=='arming') throw new Error('entry did not advance to arming');
+            await wait(280);
+            if(client.getAttribute('data-combat-transition')!=='deploy') throw new Error('entry did not advance to deploy');
+            await wait(470);
+            if(client.hasAttribute('data-combat-transition')) throw new Error('entry transition did not finish near 1 second');
+
+            const hud=()=>d.getElementById('siza-combat-state-hud-v01');
+            if(!hud()) throw new Error('persistent combat state HUD missing');
+            if(!hud().textContent.includes('TURNO 1')||!hud().textContent.includes('TU TURNO')||!hud().textContent.includes('FASE PRINCIPAL')) {
+              throw new Error('initial player Main state is not readable: '+hud().textContent);
+            }
+
+            d.querySelector('.phaseBannerV600').innerHTML='<b>TU RESPUESTA</b> · Respuesta';
+            d.querySelector('.topMatchChip').textContent='TU RESPUESTA · 1';
+            const response=d.createElement('div');
+            response.className='responseWindowV53';
+            response.textContent='TU RESPUESTA · Puedes responder a la carta.';
+            d.querySelector('.matchBoardV5').appendChild(response);
+            await wait(90);
+            const decision=()=>d.getElementById('siza-combat-decision-v01');
+            if(!decision()||decision().getAttribute('data-visible')!=='true'||!decision().textContent.includes('TU RESPUESTA')) throw new Error('response decision cue missing');
+            if(!hud().textContent.includes('TU TURNO')) throw new Error('response incorrectly changed turn owner: '+hud().textContent);
+
+            response.remove();
+            d.querySelector('.phaseBannerV600').innerHTML='<b>TURNO RIVAL</b> · Main rival';
+            d.querySelector('.topMatchChip').textContent='TURNO RIVAL · 1';
+            await wait(90);
+            if(!hud().textContent.includes('RIVAL')||!hud().textContent.includes('FASE PRINCIPAL RIVAL')) throw new Error('rival turn is not readable: '+hud().textContent);
+
+            d.querySelector('.phaseBannerV600').innerHTML='<b>TU DEFENSA</b> · Tu Defensa';
+            d.querySelector('.topMatchChip').textContent='TU DEFENSA · 1';
+            const defense=d.createElement('div');
+            defense.className='defensePanelV600';
+            defense.innerHTML='<h3>Tu Defensa</h3><p>Elige bloqueadores.</p>';
+            d.querySelector('.matchBoardV5').appendChild(defense);
+            await wait(90);
+            if(!decision().textContent.includes('TU DEFENSA')||decision().getAttribute('data-visible')!=='true') throw new Error('defense decision cue missing');
+            if(!hud().textContent.includes('RIVAL')) throw new Error('your defense incorrectly changed actual turn owner: '+hud().textContent);
+
+            console.log('PASS exploration -> combat staged transition ~1s');
+            console.log('PASS persistent turn owner survives response/defense subphases');
+            console.log('PASS response and defense are explicit player-decision states');
+            dom.window.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
