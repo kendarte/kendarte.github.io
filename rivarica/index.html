@@ -68,16 +68,24 @@ a{color:#d4b16c}
       }
       document.documentElement.dataset.darkhavenCanon='v1';
 
-      const charResponse=await fetch('source/worldbook/personajes-publicos-v1.html?v=char1',{cache:'no-store'});
-      if(!charResponse.ok)throw new Error('Archivo de personajes '+charResponse.status);
-      if(!document.getElementById('personajes-publicos-v1')){
-        const charTemplate=document.createElement('template');
-        charTemplate.innerHTML=(await charResponse.text()).trim();
-        const finalHeading=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6')).find(el=>String(el.textContent||'').trim().toUpperCase().startsWith('XXIV. LEY FINAL DEL MUNDO'));
-        if(finalHeading)finalHeading.parentNode.insertBefore(charTemplate.content,finalHeading);
-        else document.body.appendChild(charTemplate.content);
+      const characterSources=[
+        'source/worldbook/personajes-publicos-v1.html?v=char1',
+        'source/worldbook/personajes-publicos-anexo-v1.html?v=char2'
+      ];
+      for(const path of characterSources){
+        const charResponse=await fetch(path,{cache:'no-store'});
+        if(!charResponse.ok)throw new Error('Archivo de personajes '+charResponse.status+' '+path);
+        const charHtml=await charResponse.text();
+        const template=document.createElement('template');
+        template.innerHTML=charHtml.trim();
+        const section=template.content.querySelector('section');
+        if(section && !document.getElementById(section.id)){
+          const finalHeading=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6')).find(el=>String(el.textContent||'').trim().toUpperCase().startsWith('XXIV. LEY FINAL DEL MUNDO'));
+          if(finalHeading)finalHeading.parentNode.insertBefore(template.content,finalHeading);
+          else document.body.appendChild(template.content);
+        }
       }
-      document.documentElement.dataset.characterArchive='v1';
+      document.documentElement.dataset.characterArchive='v2';
 
       if(!document.getElementById('rivarica-character-shortcut')){
         const shortcut=document.createElement('a');
