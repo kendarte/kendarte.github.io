@@ -8,11 +8,14 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.5-local-worldbook-v18-retrieval"
+WORLDBOOK_RETRIEVAL_BUILD = "dm-0.1.6-local-worldbook-v18-darkhaven-canon-v1"
 WORLDBOOK_VERSION = "1.8"
 EXPECTED_PAYLOAD_CHARS = 136904
 DEFAULT_MAX_SNIPPETS = 4
 DEFAULT_CHAR_BUDGET = 2200
+DARKHAVEN_CANON_FILE = "darkhaven-canon-v1.html"
+DARKHAVEN_START_MARKER = "XIV. DARKHAVEN"
+DARKHAVEN_END_MARKER = "XXIV. LEY FINAL DEL MUNDO"
 CONTENT_FILES = (
     "wb18-00.txt", "wb18-01.txt", "wb18-02.txt", "wb18-03.txt", "wb18-04.txt",
     "wb18-05a.txt", "wb18-05b.txt", "wb18-05c.txt", "wb18-05d.txt",
@@ -76,6 +79,13 @@ class _VisibleTextParser(HTMLParser):
         return "\n".join(lines)
 
 
+def _visible_text_from_html(html_text):
+    parser = _VisibleTextParser()
+    parser.feed(str(html_text or ""))
+    parser.close()
+    return parser.text()
+
+
 def _candidate_content_dirs(explicit_dir=None):
     seen = set()
     values = []
@@ -101,6 +111,31 @@ def _candidate_content_dirs(explicit_dir=None):
         yield resolved
 
 
+def _candidate_darkhaven_canon_files(content_dir=None):
+    seen = set()
+    values = []
+    env_file = str(os.environ.get("SIZA_DARKHAVEN_CANON", "") or "").strip()
+    if env_file:
+        values.append(Path(env_file))
+    if content_dir:
+        directory = Path(content_dir)
+        values.append(directory.parent / "source" / "worldbook" / DARKHAVEN_CANON_FILE)
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        values.append(parent / "rivarica" / "source" / "worldbook" / DARKHAVEN_CANON_FILE)
+
+    for value in values:
+        try:
+            resolved = value.expanduser().resolve()
+        except Exception:
+            continue
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield resolved
+
+
 def find_worldbook_content_dir(explicit_dir=None):
     for directory in _candidate_content_dirs(explicit_dir=explicit_dir):
         if all((directory / filename).is_file() for filename in CONTENT_FILES):
@@ -111,6 +146,37 @@ def find_worldbook_content_dir(explicit_dir=None):
 def find_worldbook_chunks_dir(explicit_dir=None):
     """Compatibility alias for the initial DM broker prototype; returns v1.8 content dir."""
     return find_worldbook_content_dir(explicit_dir=explicit_dir)
+
+
+def _load_darkhaven_canon_text(content_dir=None):
+    for filename in _candidate_darkhaven_canon_files(content_dir=content_dir):
+        if not filename.is_file():
+            continue
+        try:
+            visible = _visible_text_from_html(filename.read_text(encoding="utf-8")).strip()
+        except Exception:
+            continue
+        if "Darkhaven" in visible and "nunca ha sido una “policía mágica”" in visible:
+            return visible
+    return ""
+
+
+def _apply_darkhaven_canon(text, content_dir=None):
+    source = str(text or "")
+    canon = _load_darkhaven_canon_text(content_dir=content_dir)
+    if not canon:
+        return source
+
+    start = source.find(DARKHAVEN_START_MARKER)
+    end = source.find(DARKHAVEN_END_MARKER, start + 1 if start >= 0 else 0)
+    if start >= 0 and end > start:
+        before = source[:start].rstrip()
+        after = source[end:].lstrip()
+        return "\n".join(part for part in (before, canon, after) if part)
+
+    if canon not in source:
+        return source.rstrip() + "\n" + canon
+    return source
 
 
 @lru_cache(maxsize=4)
@@ -124,10 +190,8 @@ def _load_visible_text_cached(directory_text):
     html_text = html_bytes.decode("utf-8")
     if "Rivarica World Book v1.8" not in html_text:
         raise ValueError("INVALID_WORLDBOOK_V18_CONTENT")
-    parser = _VisibleTextParser()
-    parser.feed(html_text)
-    parser.close()
-    return parser.text()
+    visible = _visible_text_from_html(html_text)
+    return _apply_darkhaven_canon(visible, content_dir=directory)
 
 
 def load_worldbook_visible_text(content_dir=None):
