@@ -1,26 +1,49 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.1.0-combat-choreography";
+    var BUILD = "0.1.1-combat-choreography";
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-combat-choreography-v01";
-    var STYLE_HREF = "/static/webclient/css/siza_combat_choreography_v01.css?v=0100";
+    var STYLE_HREF = "/static/webclient/css/siza_combat_choreography_v01.css?v=0110";
     var parentObserver = null;
     var childObserver = null;
     var childFrame = null;
     var updateTimer = null;
-    var cueTimer = null;
     var cueQueue = [];
     var cueBusy = false;
+    var actionToken = 0;
     var lastStateSignature = "";
     var lastTurn = "";
-    var lastSide = "";
+    var lastTurnOwner = "";
     var lastPhase = "";
     var lastDecision = "";
     var lastLog = "";
+    var currentTurnOwner = "player";
 
     function text(value) {
         return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+    }
+
+    function setText(node, value) {
+        if (!node) return false;
+        var next = String(value == null ? "" : value);
+        if (node.textContent === next) return false;
+        node.textContent = next;
+        return true;
+    }
+
+    function setAttr(node, name, value) {
+        if (!node) return false;
+        var next = String(value);
+        if (node.getAttribute(name) === next) return false;
+        node.setAttribute(name, next);
+        return true;
+    }
+
+    function removeAttr(node, name) {
+        if (!node || !node.hasAttribute(name)) return false;
+        node.removeAttribute(name);
+        return true;
     }
 
     function language() {
@@ -59,25 +82,25 @@
         var client = bookClient();
         if (!client) return false;
         var cue = ensureParentTransitionCue();
-        client.setAttribute("data-combat-transition", "entering");
+        setAttr(client, "data-combat-transition", "entering");
         if (cue) {
-            cue.querySelector("strong").textContent = tr("COMBATE", "COMBAT");
-            cue.querySelector("small").textContent = tr("El escenario se convierte en campo de batalla", "The scene becomes the battlefield");
+            setText(cue.querySelector("strong"), tr("COMBATE", "COMBAT"));
+            setText(cue.querySelector("small"), tr("El escenario se convierte en campo de batalla", "The scene becomes the battlefield"));
         }
         window.setTimeout(function () {
             if (client.getAttribute("data-combat-transition") === "entering") {
-                client.setAttribute("data-combat-transition", "arming");
+                setAttr(client, "data-combat-transition", "arming");
             }
         }, 260);
         window.setTimeout(function () {
             var stage = client.getAttribute("data-combat-transition");
             if (stage === "entering" || stage === "arming") {
-                client.setAttribute("data-combat-transition", "deploy");
+                setAttr(client, "data-combat-transition", "deploy");
             }
         }, 520);
         window.setTimeout(function () {
             if (client.getAttribute("data-combat-transition") === "deploy") {
-                client.removeAttribute("data-combat-transition");
+                removeAttr(client, "data-combat-transition");
             }
         }, 980);
         return true;
@@ -182,12 +205,20 @@
         return "neutral";
     }
 
+    function updateTurnOwner(side, phase) {
+        var s = text(side).toLowerCase();
+        var p = text(phase).toLowerCase();
+        if (/turno rival|rival turn/.test(s) || /inicio rival|main rival/.test(p)) currentTurnOwner = "enemy";
+        else if (/tu turno|your turn/.test(s) || (/^main$|fase principal$|main phase$/.test(p) && !/rival/.test(p))) currentTurnOwner = "player";
+        return currentTurnOwner;
+    }
+
     function friendlyPhase(side, phase) {
         var value = text(phase).toLowerCase();
-        var sideValue = sideKey(side);
+        var activeSide = sideKey(side);
         if (/inicio rival/.test(value)) return tr("INICIO DEL RIVAL", "RIVAL START");
         if (/main rival/.test(value)) return tr("FASE PRINCIPAL RIVAL", "RIVAL MAIN PHASE");
-        if (/main/.test(value)) return sideValue === "enemy" ? tr("FASE PRINCIPAL RIVAL", "RIVAL MAIN PHASE") : tr("FASE PRINCIPAL", "MAIN PHASE");
+        if (/main/.test(value)) return activeSide === "enemy" ? tr("FASE PRINCIPAL RIVAL", "RIVAL MAIN PHASE") : tr("FASE PRINCIPAL", "MAIN PHASE");
         if (/defensa rival/.test(value)) return tr("DEFENSA RIVAL", "RIVAL DEFENSE");
         if (/tu defensa/.test(value)) return tr("TU DEFENSA", "YOUR DEFENSE");
         if (/respuesta rival/.test(value)) return tr("RESPUESTA RIVAL", "RIVAL RESPONSE");
@@ -197,12 +228,9 @@
         return text(phase || side) || tr("COMBATE", "COMBAT");
     }
 
-    function friendlyTurn(side, turn) {
-        var key = sideKey(side);
+    function friendlyTurn(owner, turn) {
         var prefix = turn ? tr("TURNO ", "TURN ") + turn + " · " : "";
-        if (key === "enemy") return prefix + tr("RIVAL", "RIVAL");
-        if (key === "player") return prefix + tr("TU TURNO", "YOUR TURN");
-        return prefix + tr("COMBATE", "COMBAT");
+        return prefix + (owner === "enemy" ? tr("RIVAL", "RIVAL") : tr("TU TURNO", "YOUR TURN"));
     }
 
     function decisionState(doc) {
@@ -245,11 +273,13 @@
     function showAction(ui, packet) {
         if (!ui || !packet) return;
         var node = ui.action;
-        node.querySelector("strong").textContent = packet.heading;
-        node.querySelector("span").textContent = packet.detail;
-        node.setAttribute("data-visible", "true");
+        actionToken += 1;
+        var token = actionToken;
+        setText(node.querySelector("strong"), packet.heading);
+        setText(node.querySelector("span"), packet.detail);
+        setAttr(node, "data-visible", "true");
         window.setTimeout(function () {
-            if (node) node.removeAttribute("data-visible");
+            if (node && token === actionToken) removeAttr(node, "data-visible");
         }, 760);
     }
 
@@ -277,13 +307,13 @@
         var packet = cueQueue.shift();
         cueBusy = true;
         var cue = ui.cue;
-        cue.setAttribute("data-kind", packet.kind || "phase");
-        cue.querySelector("small").textContent = packet.kicker || "";
-        cue.querySelector("strong").textContent = packet.title;
-        cue.setAttribute("data-visible", "true");
+        setAttr(cue, "data-kind", packet.kind || "phase");
+        setText(cue.querySelector("small"), packet.kicker || "");
+        setText(cue.querySelector("strong"), packet.title);
+        setAttr(cue, "data-visible", "true");
         var duration = packet.duration || 380;
-        cueTimer = window.setTimeout(function () {
-            cue.removeAttribute("data-visible");
+        window.setTimeout(function () {
+            removeAttr(cue, "data-visible");
             window.setTimeout(function () {
                 cueBusy = false;
                 playNextCue();
@@ -301,35 +331,35 @@
 
         var banner = parseBanner(doc);
         var turn = parseTurn(doc);
+        var turnOwner = updateTurnOwner(banner.side, banner.phase);
         var phaseTitle = friendlyPhase(banner.side, banner.phase);
-        var turnTitle = friendlyTurn(banner.side, turn);
+        var turnTitle = friendlyTurn(turnOwner, turn);
         var decision = decisionState(doc);
         var decisionKey = decision ? decision.key : "";
-        var signature = [turn,banner.side,banner.phase,decisionKey].join("|");
+        var signature = [turn,turnOwner,banner.side,banner.phase,decisionKey].join("|");
 
-        ui.hud.querySelector(".sizaCombatTurnV01").textContent = turnTitle;
-        ui.hud.querySelector(".sizaCombatPhaseV01").textContent = phaseTitle;
-        ui.hud.setAttribute("data-side", sideKey(banner.side));
+        setText(ui.hud.querySelector(".sizaCombatTurnV01"), turnTitle);
+        setText(ui.hud.querySelector(".sizaCombatPhaseV01"), phaseTitle);
+        setAttr(ui.hud, "data-side", turnOwner);
 
         if (decision) {
-            ui.board.setAttribute("data-siza-decision", decision.key);
-            ui.decision.querySelector("strong").textContent = decision.title;
-            ui.decision.querySelector("span").textContent = decision.detail;
-            ui.decision.setAttribute("data-visible", "true");
+            setAttr(ui.board, "data-siza-decision", decision.key);
+            setText(ui.decision.querySelector("strong"), decision.title);
+            setText(ui.decision.querySelector("span"), decision.detail);
+            setAttr(ui.decision, "data-visible", "true");
         } else {
-            ui.board.removeAttribute("data-siza-decision");
-            ui.decision.removeAttribute("data-visible");
+            removeAttr(ui.board, "data-siza-decision");
+            removeAttr(ui.decision, "data-visible");
         }
 
         if (signature !== lastStateSignature) {
-            var side = sideKey(banner.side);
             var turnChanged = !!lastTurn && turn !== lastTurn;
-            var sideChanged = !!lastSide && side !== lastSide && side !== "neutral";
+            var turnOwnerChanged = !!lastTurnOwner && turnOwner !== lastTurnOwner;
             var phaseChanged = !!lastPhase && banner.phase !== lastPhase;
             var decisionChanged = decisionKey && decisionKey !== lastDecision;
 
-            if (!lastStateSignature || turnChanged || sideChanged) {
-                enqueueCue({kind:"turn",kicker:turn ? tr("TURNO ", "TURN ") + turn : "",title:side === "enemy" ? tr("TURNO RIVAL", "RIVAL TURN") : tr("TU TURNO", "YOUR TURN"),duration:650,signature:"turn|"+turn+"|"+side});
+            if (!lastStateSignature || turnChanged || turnOwnerChanged) {
+                enqueueCue({kind:"turn",kicker:turn ? tr("TURNO ", "TURN ") + turn : "",title:turnOwner === "enemy" ? tr("TURNO RIVAL", "RIVAL TURN") : tr("TU TURNO", "YOUR TURN"),duration:650,signature:"turn|"+turn+"|"+turnOwner});
             } else if (decisionChanged) {
                 enqueueCue({kind:"decision",kicker:tr("SE NECESITA TU DECISIÓN", "YOUR DECISION REQUIRED"),title:decision.title,duration:500,signature:"decision|"+decisionKey+"|"+turn});
             } else if (phaseChanged) {
@@ -338,7 +368,7 @@
 
             lastStateSignature = signature;
             lastTurn = turn;
-            lastSide = side;
+            lastTurnOwner = turnOwner;
             lastPhase = banner.phase;
             lastDecision = decisionKey;
         }
@@ -369,10 +399,11 @@
             childFrame = frame;
             lastStateSignature = "";
             lastTurn = "";
-            lastSide = "";
+            lastTurnOwner = "";
             lastPhase = "";
             lastDecision = "";
             lastLog = "";
+            currentTurnOwner = "player";
             cueQueue = [];
             cueBusy = false;
             frame.addEventListener("load", function () {
