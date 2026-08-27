@@ -1,0 +1,55 @@
+name: SIZA Combat Animation v0.2 Tests
+
+on:
+  push:
+    paths:
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_combat_animation_v02.css'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - '.github/workflows/siza-combat-animation-v02-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  animation-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: node --check siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js
+      - name: Static animation contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          js = Path('siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js').read_text()
+          css = Path('siza-world-engine/overlay/web/static/webclient/css/siza_combat_animation_v02.css').read_text()
+          tpl = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text()
+          required_js = [
+              'siza_combat_encounter',
+              '.manifestInlineV5',
+              '.handV5 .handCardV5',
+              '.enemyHalf .arenaField .arenaMiniCard',
+              '.playerHalf .arenaField .arenaMiniCard',
+              '.stackAnchorV5 .stackObj',
+              'data-siza-v02-result',
+              'data-siza-v02-enter',
+          ]
+          required_css = [
+              'sizaCombatBookTransitionV02',
+              '@keyframes sizaV02CommittedCard',
+              '@keyframes sizaV02DieEnter',
+              '@keyframes sizaV02ResultEnter',
+              '@keyframes sizaV02Draw',
+              '@keyframes sizaV02EnemyDeploy',
+              '@keyframes sizaV02PlayerDeploy',
+              '@keyframes sizaV02StackEnter',
+              'data-siza-v02-focus="manifest"',
+          ]
+          for token in required_js:
+              assert token in js, token
+          for token in required_css:
+              assert token in css, token
+          assert "siza_combat_animation_v02.css" in tpl
+          assert "siza_combat_animation_v02.js" in tpl
+          assert tpl.index("siza_combat_choreography_v01.js") < tpl.index("siza_combat_animation_v02.js") < tpl.index("siza_world_tcg_transport_v01.js")
+          print('PASS real combat animation contract')
+          PY
