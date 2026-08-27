@@ -45,9 +45,9 @@ a{color:#d4b16c}
     let text=window.pako.ungzip(bin,{to:'string'});
     if(!text || !text.includes('Rivarica World Book v1.8')) throw new Error('El World Book reconstruido no es válido');
 
-    const darkhavenPatch=`<script>
+    const rivaricaPatches=`<script>
 (function(){
-  async function applyDarkhavenCanon(){
+  async function applyRivaricaPatches(){
     try{
       const response=await fetch('source/worldbook/darkhaven-canon-v1.html?v=dh1',{cache:'no-store'});
       if(!response.ok)throw new Error('Darkhaven canon '+response.status);
@@ -67,16 +67,37 @@ a{color:#d4b16c}
         document.body.insertBefore(template.content,document.body.firstChild);
       }
       document.documentElement.dataset.darkhavenCanon='v1';
+
+      const charResponse=await fetch('source/worldbook/personajes-publicos-v1.html?v=char1',{cache:'no-store'});
+      if(!charResponse.ok)throw new Error('Archivo de personajes '+charResponse.status);
+      if(!document.getElementById('personajes-publicos-v1')){
+        const charTemplate=document.createElement('template');
+        charTemplate.innerHTML=(await charResponse.text()).trim();
+        const finalHeading=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6')).find(el=>String(el.textContent||'').trim().toUpperCase().startsWith('XXIV. LEY FINAL DEL MUNDO'));
+        if(finalHeading)finalHeading.parentNode.insertBefore(charTemplate.content,finalHeading);
+        else document.body.appendChild(charTemplate.content);
+      }
+      document.documentElement.dataset.characterArchive='v1';
+
+      if(!document.getElementById('rivarica-character-shortcut')){
+        const shortcut=document.createElement('a');
+        shortcut.id='rivarica-character-shortcut';
+        shortcut.href='personajes/';
+        shortcut.textContent='PERSONAJES';
+        shortcut.setAttribute('aria-label','Abrir archivo de personajes de Rivarica');
+        shortcut.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9999;padding:10px 14px;border:1px solid #6c5b39;border-radius:999px;background:rgba(13,17,18,.92);color:#d4b16c;text-decoration:none;font:700 12px system-ui,sans-serif;letter-spacing:.12em;box-shadow:0 8px 30px rgba(0,0,0,.35)';
+        document.body.appendChild(shortcut);
+      }
     }catch(error){
-      console.error('No se pudo aplicar el canon actualizado de Darkhaven',error);
+      console.error('No se pudieron aplicar los parches públicos de Rivarica',error);
     }
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyDarkhavenCanon,{once:true});
-  else applyDarkhavenCanon();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyRivaricaPatches,{once:true});
+  else applyRivaricaPatches();
 })();
 <\/script>`;
     const closeBody=text.toLowerCase().lastIndexOf('</body>');
-    text=closeBody>=0?text.slice(0,closeBody)+darkhavenPatch+text.slice(closeBody):text+darkhavenPatch;
+    text=closeBody>=0?text.slice(0,closeBody)+rivaricaPatches+text.slice(closeBody):text+rivaricaPatches;
 
     document.open();
     document.write(text);
