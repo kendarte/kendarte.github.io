@@ -3,13 +3,64 @@ name: SIZA exact patch deploy
 on:
   push:
     branches:
-      - siza-patch-ready-never
+      - siza-patch-helper-20260827
 
 permissions:
   contents: write
 
 jobs:
-  wait:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - run: echo staged
+      - name: Checkout helper payload
+        uses: actions/checkout@v4
+        with:
+          ref: siza-patch-helper-20260827
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Reconstruct exact uploaded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .tmp/siza_patch.part1 .tmp/siza_patch.part2 .tmp/siza_patch.part3 .tmp/siza_patch.part4 > /tmp/SIZA_COMBAT.patch.gz.b64
+          base64 -d /tmp/SIZA_COMBAT.patch.gz.b64 | gzip -d > /tmp/SIZA_COMBAT.patch
+          echo '62db7c76dd1177c39ea3e49c3bb5cf4fcd21f6639d3536b02dc7f03b0a43fb0  /tmp/SIZA_COMBAT.patch' | sha256sum -c -
+
+      - name: Apply exact SIZA commit and publish main
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='7e919af716fb14502439c1cffa69b75835c85592'
+          CURRENT_REMOTE="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$CURRENT_REMOTE" = "$BASE"
+          git fetch --no-tags --depth=1 origin "$BASE"
+          git checkout --detach "$BASE"
+          git apply --check /tmp/SIZA_COMBAT.patch
+          git apply /tmp/SIZA_COMBAT.patch
+          test "$(git hash-object siza-mobile-test/adventure-book-shell-adapter-v01.js | cut -c1-7)" = '5b78e07'
+          test "$(git hash-object siza-mobile-test/index.html | cut -c1-7)" = 'd54c86c'
+          test "$(git hash-object siza-world-engine/overlay/web/static/webclient/css/siza_combat_animation_v02.css | cut -c1-7)" = '6d49854'
+          test "$(git hash-object siza-world-engine/overlay/web/static/webclient/css/siza_tcg_battlefield_v03.css | cut -c1-7)" = 'd2f2c18'
+          test "$(git hash-object siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js | cut -c1-7)" = 'b14eaaa'
+          test "$(git hash-object siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js | cut -c1-7)" = 'e46d3ee'
+          git diff --check
+          git config user.name kendarte
+          git config user.email kendarte@gmail.com
+          git add siza-mobile-test/adventure-book-shell-adapter-v01.js \
+                  siza-mobile-test/index.html \
+                  siza-world-engine/overlay/web/static/webclient/css/siza_combat_animation_v02.css \
+                  siza-world-engine/overlay/web/static/webclient/css/siza_tcg_battlefield_v03.css \
+                  siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js \
+                  siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          git commit -m 'Improve contextual TCG battlefield presentation'
+          git push origin HEAD:main
+          echo "PUBLISHED_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Verify published main
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$REMOTE" = "$PUBLISHED_SHA"
+          echo "Published main: $REMOTE"
