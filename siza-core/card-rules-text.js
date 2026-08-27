@@ -125,8 +125,6 @@ function effectBody(input={}){
   case'add-mana':return`Genera ${plural(amount,'recurso','recursos')} ${color(e.requiresPip)}`;
   case'mana-filter':return`Convierte ${plural(amount,'recurso','recursos')} ${color(e.fromColor)} en la misma cantidad de recurso ${color(e.toColor)}`;
   case'manifest-bonus':return`Una tirada de Manafestación que use un cristal ${color(e.requiresPip)} obtiene +${amount}${e.exhaustSource?'; agota esta carta':''}`;
-  case'cost-reduction':return`Las cartas que sean ${filter(e)} cuestan ${amount} menos${duration(e)}`;
-  case'cost-increase':return`Las cartas que sean ${filter(e)} cuestan ${amount} más${duration(e)}`;
   case'search-basic-land':return`Busca en ${owner} Library ${plural(amount,'Land básica','Lands básicas')}, pon ${amount===1?'esa carta':'esas cartas'} ${destination(e)} y luego baraja`;
   case'play-additional-land':return`Puedes jugar ${plural(amount,'Land adicional','Lands adicionales')} este turno`;
 

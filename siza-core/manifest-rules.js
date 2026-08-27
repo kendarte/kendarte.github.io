@@ -15,8 +15,9 @@ function affinityInfo(card,mag){
 function dcFor(card,mag){
   const info=affinityInfo(card,mag);
   if(info.unsupported.length)return Infinity;
-  const cost=card?.cost||0;
-  return card?.difficulty??(4+Math.ceil((cost+1)/2));
+  if(card?.type==='Land')return 0;
+  const difficulty=Number(card?.difficulty);
+  return Number.isFinite(difficulty)&&difficulty>0?difficulty:Infinity;
 }
 
 function naturalChance(card,mag){

@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 
-const VERSION='1.20.0';
+const VERSION='1.21.0';
 const EVENTS=Object.freeze(['resolve','enter','leave','dies','cast','attack-declared','block-declared','becomes-blocked','combat-damage','upkeep','draw-step','end-step','card-drawn','card-discarded','life-gained','life-lost','permanent-tapped','permanent-untapped','manifest-roll','equipped']);
 const TARGETS=Object.freeze(['self','opponent']);
 const COLORS=Object.freeze(['U','R','G','W','B']);
@@ -83,8 +83,6 @@ const EDITOR_DEFINITIONS=Object.freeze({
  'add-mana':def('Generar mana / recurso','Mana y coste','Añade recurso temporal de un color.','resolve',[{key:'requiresPip',kind:'color',label:'Color'},numField('amount','Cantidad',1,20)],{requiresPip:'U',amount:1}),
  'mana-filter':def('Filtrar mana','Mana y coste','Convierte recurso de un color en otro.','resolve',[{key:'fromColor',kind:'color',label:'Color origen'},{key:'toColor',kind:'color',label:'Color destino'},numField('amount','Cantidad',1,20)],{fromColor:'U',toColor:'R',amount:1}),
  'manifest-bonus':def('Bonificación de Manafestación','Mana y coste','Suma un bono a una tirada de Manafestación.','manifest-roll',[numField('amount','Bonificación',1,20),{key:'requiresPip',kind:'color',label:'Requiere cristal'},{key:'exhaustSource',kind:'boolean',label:'Agotar la fuente'}],{amount:1,requiresPip:'U',exhaustSource:true},{type:'manifest-bonus',lockedEvent:true}),
- 'cost-reduction':def('Reducir coste','Mana y coste','Reduce el coste de cartas que cumplan un filtro.','resolve',[filterField(),numField('amount','Reducción',1,20),durationField()],{cardFilter:'any',amount:1,duration:'end-of-turn'}),
- 'cost-increase':def('Aumentar coste','Mana y coste','Aumenta el coste de cartas que cumplan un filtro.','resolve',[filterField(),numField('amount','Aumento',1,20),durationField()],{cardFilter:'any',amount:1,duration:'end-of-turn'}),
  'search-basic-land':def('Buscar Land básica','Mana y coste','Busca Lands básicas y las mueve al destino.','resolve',[targetField('Library de'),zoneField('destination','Destino'),numField('amount','Cantidad',1,10)],{target:'self',destination:'battlefield',amount:1}),
  'play-additional-land':def('Jugar Land adicional','Mana y coste','Permite una cantidad extra de Lands este turno.','resolve',[numField('amount','Lands adicionales',1,10)],{amount:1}),
 
@@ -128,7 +126,7 @@ function forEvent(card,event){return normalizeEffects(card?.effects).filter(effe
 function hasEffect(card,type,event=null){const list=event?forEvent(card,event):normalizeEffects(card?.effects);return list.some(effect=>effect.type===type);}
 function sumAmount(card,event,type){return forEvent(card,event).filter(effect=>effect.type===type).reduce((sum,effect)=>sum+(effect.amount||0),0);}
 function effectSide(target,selfSide,opponentSide,defaultTarget='self'){return(target||defaultTarget)==='opponent'?opponentSide:selfSide;}
-function otherPermanentTargets(match,sourceOwner,entryIndex=null){const targets=[];for(const owner of ['player','enemy']){const player=match[owner];player.battlefield.forEach((id,index)=>{if(!(owner===sourceOwner&&index===entryIndex))targets.push({owner,zone:'battlefield',index,id});});player.artifacts.forEach((id,index)=>targets.push({owner,zone:'artifacts',index,id}));player.equipment.forEach((entry,index)=>targets.push({owner,zone:'equipment',index,id:entry.id}));}return targets;}
+function otherPermanentTargets(match,sourceOwner,entryIndex=null,sourceZone=null,sourceIndex=null){const targets=[];for(const owner of ['player','enemy']){const player=match[owner];player.battlefield.forEach((id,index)=>{if(!(owner===sourceOwner&&index===entryIndex))targets.push({owner,zone:'battlefield',index,id});});player.artifacts.forEach((id,index)=>{if(!(owner===sourceOwner&&sourceZone==='artifacts'&&index===sourceIndex))targets.push({owner,zone:'artifacts',index,id})});player.equipment.forEach((entry,index)=>{if(!(owner===sourceOwner&&sourceZone==='equipment'&&index===sourceIndex))targets.push({owner,zone:'equipment',index,id:entry.id})});}return targets;}
 function preferredPermanentTarget(targets=[],preferredOwner='player'){return targets.find(target=>target.owner===preferredOwner)||targets[0]||null;}
 function bouncePlan(target={}){const zone=target.zone||'battlefield';return{owner:target.owner,zone,index:target.index,destination:'hand',zoneLabel:zone==='equipment'?'Equipo':zone==='artifacts'?'Reliquias':'Invocaciones'};}
 function stackTargetIndex(stack,targetStackId){const index=stack.findIndex(entry=>entry.id===targetStackId);return index>=0?index:stack.length-1;}
@@ -138,7 +136,7 @@ function runtimePlan(effect,context={}){
  if(effect.type==='draw')return{kind:'draw',terminal:false,targetOwner:targetOwner('self'),amount:effect.amount||1,logResolve:effect.event==='resolve'};
  if(effect.type==='damage-character')return{kind:'damage-character',terminal:false,targetOwner:targetOwner('opponent'),amount:effect.amount||1};
  if(effect.type==='observe-top'){const owner=targetOwner('self'),topCardId=match[owner].library[0];return{kind:'observe-top',terminal:false,targetOwner:owner,topCardId,action:topCardId?(sourceOwner==='player'&&owner===sourceOwner?'choice':'log'):'none'};}
- if(effect.type==='bounce-other-permanent'){const targets=otherPermanentTargets(match,sourceOwner,context.entryIndex),action=!targets.length?'none':sourceOwner==='player'?'choice':'bounce';return{kind:'bounce-other-permanent',terminal:false,targets,action,preferredTarget:action==='bounce'?preferredPermanentTarget(targets,'player'):null};}
+ if(effect.type==='bounce-other-permanent'){const targets=otherPermanentTargets(match,sourceOwner,context.entryIndex,context.sourceZone,context.sourceIndex),action=!targets.length?'none':sourceOwner==='player'?'choice':'bounce';return{kind:'bounce-other-permanent',terminal:false,targets,action,preferredTarget:action==='bounce'?preferredPermanentTarget(targets,'player'):null};}
  if(effect.type==='discard'){const owner=targetOwner('self'),target=match[owner],action=effect.amount!==1?'none':sourceOwner==='player'&&owner===sourceOwner?'choice':target.hand.length?'discard-last':'none';return{kind:'discard',terminal:false,targetOwner:owner,amount:effect.amount,action};}
  return{kind:effect.type,terminal:false,unsupported:!WIRED_TYPES.has(effect.type),effect:normalizeEffect(effect)};
 }
