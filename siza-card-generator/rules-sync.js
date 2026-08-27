@@ -47,10 +47,10 @@ window.SizaRulesSync=Object.freeze({refresh:syncRules});
 
 (function(){
  const starter=document.createElement('script');
- starter.src='./starter-decks.js?v=darkhaven-v01';
+ starter.src='./starter-decks.js?v=darkhaven-v02-colors';
  starter.onload=()=>{
   const script=document.createElement('script');
-  script.src='./deck-generator.js?v=darkhaven-v01';
+  script.src='./deck-generator.js?v=darkhaven-v02-colors';
   document.body.appendChild(script);
  };
  document.body.appendChild(starter);
