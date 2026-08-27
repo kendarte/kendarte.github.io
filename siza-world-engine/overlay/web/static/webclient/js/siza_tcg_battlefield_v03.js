@@ -1,14 +1,14 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.3.2-book-battlefield-rpg-tcg-zones";
+    var BUILD = "0.3.3-book-battlefield-enemy-hand";
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-book-battlefield-v03";
     var STYLE_HREF = "/static/webclient/css/siza_tcg_battlefield_v03.css?v=0320";
     var DOCK_STYLE_ID = "siza-book-zone-docks-v01";
-    var DOCK_STYLE_HREF = "/static/webclient/css/siza_tcg_zone_docks_v01.css?v=0100";
+    var DOCK_STYLE_HREF = "/static/webclient/css/siza_tcg_zone_docks_v01.css?v=0110";
     var SNAPSHOT_ID = "siza-book-zone-snapshot-v01";
-    var SNAPSHOT_SRC = "/static/webclient/tcg/siza-mobile-test/book-zone-snapshot-v01.js?v=0100";
+    var SNAPSHOT_SRC = "/static/webclient/tcg/siza-mobile-test/book-zone-snapshot-v01.js?v=0110";
     var childObserver = null;
     var parentObserver = null;
     var applyTimer = null;
@@ -107,6 +107,61 @@
         });
     }
 
+    function ensureEnemyHand(doc, board) {
+        var hand = board.querySelector(".bookEnemyHandV03");
+        if (!hand) {
+            hand = doc.createElement("div");
+            hand.className = "bookEnemyHandV03";
+            hand.setAttribute("aria-label", "Mano rival");
+
+            var cards = doc.createElement("div");
+            cards.className = "bookEnemyHandCardsV03";
+            hand.appendChild(cards);
+
+            var count = doc.createElement("b");
+            count.className = "bookEnemyHandCountV03";
+            count.textContent = "0";
+            hand.appendChild(count);
+
+            board.appendChild(hand);
+        }
+        return hand;
+    }
+
+    function updateEnemyHand(doc, board, snapshot) {
+        var hand = ensureEnemyHand(doc, board);
+        var count = Math.max(0, Number(snapshot && snapshot.hand || 0));
+        var previous = Number(hand.getAttribute("data-count") || 0);
+        var countNode = hand.querySelector(".bookEnemyHandCountV03");
+        var cards = hand.querySelector(".bookEnemyHandCardsV03");
+
+        if (countNode) countNode.textContent = String(count);
+        if (previous === count && cards && cards.children.length === Math.min(count, 10)) return;
+
+        hand.setAttribute("data-count", String(count));
+        if (previous || count) {
+            hand.setAttribute("data-change", count > previous ? "draw" : "play");
+            window.setTimeout(function () {
+                if (hand) hand.removeAttribute("data-change");
+            }, 520);
+        }
+
+        if (!cards) return;
+        while (cards.firstChild) cards.removeChild(cards.firstChild);
+
+        var visible = Math.min(count, 10);
+        for (var i = 0; i < visible; i += 1) {
+            var back = doc.createElement("i");
+            back.className = "bookEnemyCardBackV03";
+            var center = (visible - 1) / 2;
+            var offset = i - center;
+            back.style.setProperty("--enemy-card-rot", (offset * 2.7) + "deg");
+            back.style.setProperty("--enemy-card-rise", (Math.abs(offset) * 0.8) + "px");
+            back.style.setProperty("--enemy-card-delay", (i * 24) + "ms");
+            cards.appendChild(back);
+        }
+    }
+
     function ensureZoneDocks() {
         var doc = childDocument();
         var win = childWindow();
@@ -125,6 +180,7 @@
 
         updateDock(ensureDock(doc, board, "enemy"), snapshot.enemy);
         updateDock(ensureDock(doc, board, "player"), snapshot.player);
+        updateEnemyHand(doc, board, snapshot.enemy);
         return true;
     }
 
