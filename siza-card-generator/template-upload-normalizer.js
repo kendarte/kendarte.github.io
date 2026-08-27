@@ -2,7 +2,7 @@
 'use strict';
 
 const TEMPLATE_LIBRARY_KEY='siza_card_generator_templates_v2';
-const SYSTEM_TEMPLATE_VERSION=2;
+const SYSTEM_TEMPLATE_VERSION=3;
 const FRAME_BASE='../siza-core/assets/frames/standard/frame_standard_base.svg?v=094b0ee6';
 const SYSTEM_TEMPLATES=[
  {id:'standard_white',name:'Standard · Blanco',key:'white',accent:'#d8c99b',accent2:'#fff4c9',dark:'#514a3a',paper:'#f1e7cf'},
@@ -25,13 +25,9 @@ function defs(spec){
 function svg(spec,body){return `<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="2100" viewBox="0 0 1500 2100">${defs(spec)}${body}</svg>`;}
 function ringRect(x,y,w,h,rx,fill='none',stroke='url(#gold)',sw=10,extra=''){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${extra}/>`;}
 function diamond(x,y,size){const h=size/2;return `<path d="M ${x} ${y-h} L ${x+h} ${y} L ${x} ${y+h} L ${x-h} ${y} Z" fill="url(#theme)" stroke="url(#gold)" stroke-width="8"/>`;}
-function filigreePath(spec){
- const stroke=spec.multicolor?'url(#theme)':escXml(spec.accent);
- return `<g fill="none" stroke="${stroke}" stroke-width="11" stroke-linecap="round" opacity=".72"><path d="M90 260 C150 175 205 185 255 115 C205 235 180 310 165 410 C142 335 120 305 90 260Z"/><path d="M1410 260 C1350 175 1295 185 1245 115 C1295 235 1320 310 1335 410 C1358 335 1380 305 1410 260Z"/><path d="M105 1760 C170 1835 210 1905 275 1980 C190 1940 135 1910 88 1840"/><path d="M1395 1760 C1330 1835 1290 1905 1225 1980 C1310 1940 1365 1910 1412 1840"/></g><g fill="none" stroke="url(#gold)" stroke-width="5" opacity=".9"><path d="M83 270 C160 225 205 190 260 115"/><path d="M1417 270 C1340 225 1295 190 1240 115"/><path d="M96 1840 C170 1885 220 1930 278 1990"/><path d="M1404 1840 C1330 1885 1280 1930 1222 1990"/></g>`;
-}
 function partSvg(spec,slot){
  switch(slot){
-  case'affinity_overlay':return svg(spec,`<g opacity=".16" filter="url(#glow)" fill="url(#theme)"><ellipse cx="750" cy="610" rx="590" ry="510"/><ellipse cx="750" cy="1570" rx="520" ry="370"/></g><g opacity=".22">${filigreePath(spec)}</g>`);
+  case'affinity_overlay':return svg(spec,`<g opacity=".16" filter="url(#glow)" fill="url(#theme)"><ellipse cx="750" cy="610" rx="590" ry="510"/><ellipse cx="750" cy="1570" rx="520" ry="370"/></g>`);
   case'crystal_rail':return svg(spec,`${ringRect(91,303,185,842,92,'rgba(4,16,24,.76)','url(#gold)',9,'filter="url(#shadow)"')}<rect x="111" y="324" width="145" height="800" rx="72" fill="none" stroke="url(#theme)" stroke-width="7" opacity=".9"/>${diamond(184,333,40)}${diamond(184,1114,36)}`);
   case'title_plate':return svg(spec,`${ringRect(238,92,982,196,98,'url(#paper)','url(#gold)',12,'filter="url(#shadow)"')}<rect x="258" y="112" width="942" height="156" rx="78" fill="none" stroke="url(#theme)" stroke-width="8" opacity=".82"/>${diamond(252,190,46)}${diamond(1206,190,46)}`);
   case'difficulty_badge':return svg(spec,`<g filter="url(#shadow)"><circle cx="1337" cy="187" r="121" fill="#07141d" stroke="url(#gold)" stroke-width="13"/><circle cx="1337" cy="187" r="101" fill="url(#theme)" stroke="#122634" stroke-width="10"/><circle cx="1337" cy="187" r="84" fill="#071722" fill-opacity=".42" stroke="#fff" stroke-opacity=".2" stroke-width="4"/>${diamond(1337,83,40)}</g>`);
@@ -41,7 +37,7 @@ function partSvg(spec,slot){
   case'stat_left':return svg(spec,`<g filter="url(#shadow)"><circle cx="169" cy="1920" r="137" fill="#071722" stroke="url(#gold)" stroke-width="13"/><circle cx="169" cy="1920" r="115" fill="url(#theme)" fill-opacity=".78" stroke="#123348" stroke-width="8"/><circle cx="169" cy="1920" r="94" fill="#0c3650" fill-opacity=".64" stroke="#fff" stroke-opacity=".16" stroke-width="4"/></g>`);
   case'stat_right':return svg(spec,`<g filter="url(#shadow)"><circle cx="1331" cy="1920" r="137" fill="#071722" stroke="url(#gold)" stroke-width="13"/><circle cx="1331" cy="1920" r="115" fill="url(#theme)" fill-opacity=".78" stroke="#482018" stroke-width="8"/><circle cx="1331" cy="1920" r="94" fill="#571c18" fill-opacity=".58" stroke="#fff" stroke-opacity=".16" stroke-width="4"/></g>`);
   case'footer':return svg(spec,`${ringRect(500,1918,500,116,58,'#071722','url(#gold)',10,'filter="url(#shadow)"')}<rect x="518" y="1936" width="464" height="80" rx="40" fill="url(#theme)" fill-opacity=".48" stroke="#fff" stroke-opacity=".14" stroke-width="3"/>`);
-  case'ornament_overlay':return svg(spec,`${filigreePath(spec)}<g opacity=".72">${diamond(750,58,46)}${diamond(750,2040,44)}</g>`);
+  case'ornament_overlay':return svg(spec,`<g opacity=".72">${diamond(750,58,46)}${diamond(750,2040,44)}</g>`);
   default:return'';
  }
 }
