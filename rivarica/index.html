@@ -12,9 +12,9 @@ a{color:#d4b16c}
 </head>
 <body>
 <div id="load">Cargando Rivarica World Book v1.8…</div>
-<script src="chunks/pako-00.js?v=18fix3"></script>
-<script src="chunks/pako-01.js?v=18fix3"></script>
-<script src="chunks/pako-02.js?v=18fix3"></script>
+<script src="chunks/pako-00.js?v=18fix4"></script>
+<script src="chunks/pako-01.js?v=18fix4"></script>
+<script src="chunks/pako-02.js?v=18fix4"></script>
 <script>
 (async function(){
   const load=document.getElementById('load');
@@ -32,7 +32,7 @@ a{color:#d4b16c}
     ];
 
     const parts=await Promise.all(files.map(async path=>{
-      const url=path+'?v=18fix3';
+      const url=path+'?v=18fix4';
       const response=await fetch(url,{cache:'no-store'});
       if(!response.ok) throw new Error(`No se pudo cargar ${path} (${response.status})`);
       return (await response.text()).trim();
@@ -42,8 +42,41 @@ a{color:#d4b16c}
     if(b64.length!==136904) throw new Error(`Payload incompleto: ${b64.length}/136904`);
 
     const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-    const text=window.pako.ungzip(bin,{to:'string'});
+    let text=window.pako.ungzip(bin,{to:'string'});
     if(!text || !text.includes('Rivarica World Book v1.8')) throw new Error('El World Book reconstruido no es válido');
+
+    const darkhavenPatch=`<script>
+(function(){
+  async function applyDarkhavenCanon(){
+    try{
+      const response=await fetch('source/worldbook/darkhaven-canon-v1.html?v=dh1',{cache:'no-store'});
+      if(!response.ok)throw new Error('Darkhaven canon '+response.status);
+      const canonHtml=await response.text();
+      const headings=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+      const start=headings.find(el=>String(el.textContent||'').trim().toUpperCase().startsWith('XIV. DARKHAVEN'));
+      const end=headings.find(el=>String(el.textContent||'').trim().toUpperCase().startsWith('XXIV. LEY FINAL DEL MUNDO'));
+      const template=document.createElement('template');
+      template.innerHTML=canonHtml.trim();
+      if(start&&end&&start.compareDocumentPosition(end)&Node.DOCUMENT_POSITION_FOLLOWING){
+        const range=document.createRange();
+        range.setStartBefore(start);
+        range.setEndBefore(end);
+        range.deleteContents();
+        end.parentNode.insertBefore(template.content,end);
+      }else{
+        document.body.insertBefore(template.content,document.body.firstChild);
+      }
+      document.documentElement.dataset.darkhavenCanon='v1';
+    }catch(error){
+      console.error('No se pudo aplicar el canon actualizado de Darkhaven',error);
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyDarkhavenCanon,{once:true});
+  else applyDarkhavenCanon();
+})();
+<\/script>`;
+    const closeBody=text.toLowerCase().lastIndexOf('</body>');
+    text=closeBody>=0?text.slice(0,closeBody)+darkhavenPatch+text.slice(closeBody):text+darkhavenPatch;
 
     document.open();
     document.write(text);
