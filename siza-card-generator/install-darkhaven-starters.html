@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Siza · Instalando Darkhaven Starters</title>
+<style>
+html,body{margin:0;min-height:100%;background:#06111a;color:#dbe7ee;font-family:Arial,sans-serif}body{display:grid;place-items:center}.box{max-width:620px;margin:24px;padding:28px;border:1px solid #29465a;border-radius:12px;background:#071722}.eyebrow{font-size:10px;letter-spacing:.16em;color:#a98b57;font-weight:900}.box h1{font:500 28px Georgia,serif;margin:8px 0 12px}.box p{color:#9db2c0;line-height:1.5}.status{margin-top:18px;padding:12px;border:1px solid #355f4b;border-radius:8px;color:#e9d59d}
+</style>
+</head>
+<body>
+<div class="box">
+ <div class="eyebrow">SIZA · DECK GENERATOR</div>
+ <h1>Instalando Darkhaven Starter Decks</h1>
+ <p>Esta página guarda los starters en la misma biblioteca local usada por Card Creator y Deck Generator.</p>
+ <div class="status" id="status">Guardando cartas y decks…</div>
+</div>
+<script src="./starter-decks.js?v=darkhaven-install-v02"></script>
+<script>
+(function(){
+ const CARD_KEY='siza_card_generator_library_v2';
+ const DECK_KEY='siza_card_generator_decks_v1';
+ const expected=['starter_darkhaven_vigilancia_v01','starter_darkhaven_ruptura_v01','starter_darkhaven_contencion_v01'];
+ function total(deck){return Object.values(deck?.cards||{}).reduce((a,b)=>a+(Number(b)||0),0)}
+ function verify(){
+  let cards={},decks={};
+  try{cards=JSON.parse(localStorage.getItem(CARD_KEY)||'{}')}catch(e){}
+  try{decks=JSON.parse(localStorage.getItem(DECK_KEY)||'{}')}catch(e){}
+  const ok=expected.every(id=>decks[id]&&total(decks[id])===60);
+  if(!ok){document.getElementById('status').textContent='No se pudieron verificar los tres decks. Recargando el instalador…';setTimeout(()=>location.reload(),250);return;}
+  document.getElementById('status').textContent=`Listo: ${Object.keys(cards).length} cartas en biblioteca; Vigilancia, Ruptura y Contención guardados con 60 cartas cada uno.`;
+  setTimeout(()=>location.replace('./?v=darkhaven-installed-v02'),650);
+ }
+ setTimeout(verify,120);
+})();
+</script>
+</body>
+</html>
