@@ -44,3 +44,9 @@ if(previous?.get&&previous?.set){
 queueMicrotask(syncRules);
 window.SizaRulesSync=Object.freeze({refresh:syncRules});
 })();
+
+(function(){
+ const script=document.createElement('script');
+ script.src='./deck-generator.js';
+ document.body.appendChild(script);
+})();
