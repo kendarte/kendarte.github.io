@@ -1,0 +1,76 @@
+name: SIZA Combat Presentation v0.3 Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'siza-mobile-test/book-zone-snapshot-v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_tcg_zone_docks_v01.css'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js'
+      - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
+      - '.github/workflows/siza-combat-presentation-v03-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  combat-presentation-v03:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript syntax
+        run: |
+          node --check siza-mobile-test/book-zone-snapshot-v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js
+
+      - name: Enemy hand uses authoritative hidden count
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          snapshot = Path('siza-mobile-test/book-zone-snapshot-v01.js').read_text(encoding='utf-8')
+          battle = Path('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_battlefield_v03.js').read_text(encoding='utf-8')
+          css = Path('siza-world-engine/overlay/web/static/webclient/css/siza_tcg_zone_docks_v01.css').read_text(encoding='utf-8')
+          assert 'hand: Array.isArray(side.hand) ? side.hand.length : 0' in snapshot
+          assert 'snapshot.enemy' in battle
+          assert 'bookEnemyHandV03' in battle
+          assert 'bookEnemyCardBackV03' in battle
+          assert 'Math.min(count, 10)' in battle
+          assert '.bookEnemyCardBackV03' in css
+          assert '.bookEnemyHandCountV03' in css
+          assert 'cardName' not in battle[battle.index('function updateEnemyHand'):battle.index('function ensureZoneDocks')], 'Enemy hand must not expose card identities'
+          print('PASS enemy hand backs use real count without revealing identities')
+          PY
+
+      - name: Encounter transition fires before combat shell activation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          transport = Path('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js').read_text(encoding='utf-8')
+          start = transport.index('function onEncounter')
+          end = transport.index('function utf8Base64Url')
+          block = transport[start:end]
+          transition = block.index('playBookTransition')
+          shell = block.index('activateCombatShell')
+          arena = block.index('startArena')
+          assert transition < shell < arena
+          print('PASS transition -> shell -> Arena order')
+          PY
+
+      - name: Parent and child animation CSS are wired
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          template = Path('siza-world-engine/overlay/web/templates/webclient/webclient.html').read_text(encoding='utf-8')
+          animation = Path('siza-world-engine/overlay/web/static/webclient/js/siza_combat_animation_v02.js').read_text(encoding='utf-8')
+          css = Path('siza-world-engine/overlay/web/static/webclient/css/siza_combat_animation_v02.css').read_text(encoding='utf-8')
+          assert "siza_combat_animation_v02.css" in template
+          assert "siza_combat_animation_v02.js" in template
+          assert 'sizaCombatBookTransitionV02' in animation
+          assert '.sizaCombatBookTransitionV02[data-state]' in css
+          assert 'sizaV02CommittedCard' in css
+          assert 'sizaV02EnemyDeploy' in css
+          assert 'sizaV02StackEnter' in css
+          print('PASS parent curtain and child action animations are wired')
+          PY
