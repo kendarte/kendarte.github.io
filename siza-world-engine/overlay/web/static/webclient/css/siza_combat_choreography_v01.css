@@ -1,0 +1,311 @@
+/* SIZA combat choreography v0.1
+   Presentation only: no combat rules or world-state semantics live here.
+*/
+
+/* ===== Book transition: EXPLORATION -> COMBAT ===== */
+.sizaCombatEntryCueV01 {
+  position:absolute;
+  z-index:90;
+  left:50%;
+  top:43%;
+  transform:translate(-50%,-50%) scale(.96);
+  width:min(520px,72%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  opacity:0;
+  pointer-events:none;
+  color:#f0dfbd;
+  text-align:center;
+  text-shadow:0 2px 8px rgba(0,0,0,.75);
+  transition:opacity .16s ease,transform .28s cubic-bezier(.2,.8,.2,1);
+}
+.sizaCombatEntryCueV01 strong {
+  display:block;
+  flex:0 0 auto;
+  font:700 27px/1 Georgia,serif;
+  letter-spacing:.16em;
+}
+.sizaCombatEntryCueV01 small {
+  position:absolute;
+  top:37px;
+  left:0;
+  right:0;
+  color:#d0b98d;
+  font:700 8px/1.2 system-ui,sans-serif;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.sizaCombatEntryRuleV01 {
+  display:block;
+  width:120px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,#c49b5c);
+  box-shadow:0 0 12px rgba(196,155,92,.26);
+}
+.sizaCombatEntryRuleV01:last-child {
+  background:linear-gradient(90deg,#c49b5c,transparent);
+}
+
+.sizaBookClient[data-combat-transition] .sizaBookBody::after {
+  content:"";
+  position:absolute;
+  z-index:70;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(ellipse at center,transparent 38%,rgba(12,7,4,.52) 100%),
+    linear-gradient(180deg,rgba(81,47,24,.06),rgba(21,11,6,.16));
+  transition:opacity .25s ease;
+}
+.sizaBookClient[data-combat-transition="entering"] .sizaBookBody::after,
+.sizaBookClient[data-combat-transition="arming"] .sizaBookBody::after {
+  opacity:1;
+}
+.sizaBookClient[data-combat-transition="deploy"] .sizaBookBody::after {
+  opacity:.25;
+}
+
+.sizaBookClient[data-combat-transition="entering"] .sizaCombatEntryCueV01,
+.sizaBookClient[data-combat-transition="arming"] .sizaCombatEntryCueV01 {
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+.sizaBookClient[data-combat-transition="deploy"] .sizaCombatEntryCueV01 {
+  opacity:0;
+  transform:translate(-50%,-53%) scale(1.025);
+}
+
+/* Keep the exploration composition visible long enough to read the mode change. */
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="entering"] .sizaStoryPage,
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="arming"] .sizaStoryPage {
+  display:block !important;
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:none;
+}
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="arming"] .sizaStoryPage {
+  opacity:0;
+  transform:translateY(18px);
+  transition:opacity .22s ease,transform .26s ease;
+}
+
+.sizaBookClient[data-combat-transition="entering"] .sizaBookSceneVisualMedia,
+.sizaBookClient[data-combat-transition="arming"] .sizaBookSceneVisualMedia {
+  transform:scale(1.012);
+  filter:saturate(.86) contrast(1.04) brightness(.88);
+  transition:transform .78s cubic-bezier(.2,.8,.2,1),filter .55s ease;
+}
+.sizaBookClient[data-combat-transition="deploy"] .sizaBookSceneVisualMedia {
+  transform:scale(1);
+  filter:none;
+  transition:transform .35s ease,filter .35s ease;
+}
+
+/* Arena is allowed to prepare behind the scene before it becomes readable. */
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="entering"] .sizaTcgTray[data-embed-mounted="true"] {
+  opacity:0 !important;
+  transform:translateY(24px) scale(.995);
+  pointer-events:none;
+}
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="arming"] .sizaTcgTray[data-embed-mounted="true"] {
+  opacity:.08 !important;
+  transform:translateY(18px) scale(.997);
+  pointer-events:none;
+}
+.sizaBookClient[data-mode="COMBAT"][data-combat-transition="deploy"] .sizaTcgTray[data-embed-mounted="true"] {
+  opacity:1 !important;
+  transform:translateY(0) scale(1);
+  transition:opacity .34s ease,transform .42s cubic-bezier(.18,.8,.2,1);
+}
+
+.sizaBookClient[data-combat-transition="entering"] .sizaBookChapter,
+.sizaBookClient[data-combat-transition="arming"] .sizaBookChapter {
+  box-shadow:inset 0 -2px 0 rgba(128,59,29,.28),inset 0 0 22px rgba(111,47,24,.08);
+  transition:box-shadow .3s ease;
+}
+
+/* ===== Child Arena: state communication ===== */
+.phaseBannerV600 {
+  display:none !important;
+}
+
+.sizaCombatStateHudV01 {
+  position:absolute;
+  z-index:62;
+  left:50%;
+  top:8px;
+  transform:translateX(-50%);
+  min-width:218px;
+  padding:5px 16px 6px;
+  border:1px solid rgba(91,61,34,.74);
+  border-radius:999px;
+  background:rgba(31,20,13,.84);
+  box-shadow:0 7px 18px rgba(0,0,0,.24),inset 0 0 0 1px rgba(226,196,139,.08);
+  backdrop-filter:blur(5px);
+  text-align:center;
+  pointer-events:none;
+}
+.sizaCombatStateHudV01::before {
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,#bb8a4c,transparent);
+  opacity:.52;
+}
+.sizaCombatTurnV01 {
+  display:block;
+  color:#a98c65;
+  font:800 7px/1 system-ui,sans-serif;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+.sizaCombatPhaseV01 {
+  display:block;
+  margin-top:3px;
+  color:#f0ddba;
+  font:700 12px/1 Georgia,serif;
+  letter-spacing:.06em;
+}
+.sizaCombatStateHudV01[data-side="enemy"] {
+  border-color:rgba(121,62,54,.78);
+  background:rgba(42,19,18,.86);
+}
+.sizaCombatStateHudV01[data-side="player"] {
+  border-color:rgba(82,82,56,.78);
+}
+
+.sizaCombatPhaseCueV01 {
+  position:absolute;
+  z-index:78;
+  left:50%;
+  top:44%;
+  transform:translate(-50%,-50%) scale(.94);
+  width:min(520px,68%);
+  padding:13px 24px 15px;
+  opacity:0;
+  pointer-events:none;
+  text-align:center;
+  color:#f4e2c1;
+  border-top:1px solid rgba(213,177,112,.5);
+  border-bottom:1px solid rgba(213,177,112,.5);
+  background:linear-gradient(90deg,transparent,rgba(24,15,10,.72) 17%,rgba(24,15,10,.82) 50%,rgba(24,15,10,.72) 83%,transparent);
+  text-shadow:0 2px 8px rgba(0,0,0,.8);
+  transition:opacity .13s ease,transform .2s cubic-bezier(.2,.8,.2,1);
+}
+.sizaCombatPhaseCueV01[data-visible="true"] {
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+.sizaCombatPhaseCueV01 small {
+  display:block;
+  color:#b79b72;
+  font:800 7px/1 system-ui,sans-serif;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+}
+.sizaCombatPhaseCueV01 strong {
+  display:block;
+  margin-top:5px;
+  color:#f4e0bb;
+  font:700 22px/1 Georgia,serif;
+  letter-spacing:.09em;
+}
+.sizaCombatPhaseCueV01[data-kind="turn"] strong {
+  font-size:25px;
+}
+.sizaCombatPhaseCueV01[data-kind="decision"] {
+  border-color:rgba(226,195,120,.82);
+}
+
+/* Persistent instruction only while the engine is genuinely waiting on the player. */
+.sizaCombatDecisionV01 {
+  position:absolute;
+  z-index:67;
+  left:50%;
+  top:42px;
+  transform:translateX(-50%) translateY(-7px);
+  min-width:300px;
+  max-width:62%;
+  padding:7px 15px;
+  opacity:0;
+  pointer-events:none;
+  border:1px solid rgba(205,165,94,.72);
+  border-radius:5px;
+  background:rgba(39,27,16,.9);
+  box-shadow:0 9px 20px rgba(0,0,0,.28);
+  text-align:center;
+  transition:opacity .16s ease,transform .18s ease;
+}
+.sizaCombatDecisionV01[data-visible="true"] {
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+.sizaCombatDecisionV01 strong {
+  color:#f0d28f;
+  font:800 9px/1 system-ui,sans-serif;
+  letter-spacing:.12em;
+}
+.sizaCombatDecisionV01 span {
+  display:block;
+  margin-top:3px;
+  color:#e4d5ba;
+  font:11px/1.15 Georgia,serif;
+}
+
+/* The newest meaningful action gets its own short cue; history remains in the log. */
+.sizaCombatActionV01 {
+  position:absolute;
+  z-index:64;
+  right:13px;
+  top:50px;
+  width:min(300px,31%);
+  padding:7px 10px;
+  opacity:0;
+  transform:translateX(10px);
+  pointer-events:none;
+  border-left:2px solid rgba(190,142,75,.72);
+  background:linear-gradient(90deg,rgba(28,18,12,.88),rgba(28,18,12,.5),transparent);
+  text-shadow:0 1px 4px rgba(0,0,0,.7);
+  transition:opacity .15s ease,transform .18s ease;
+}
+.sizaCombatActionV01[data-visible="true"] {
+  opacity:1;
+  transform:translateX(0);
+}
+.sizaCombatActionV01 strong {
+  display:block;
+  color:#d6b47e;
+  font:800 7px/1 system-ui,sans-serif;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.sizaCombatActionV01 span {
+  display:block;
+  margin-top:3px;
+  color:#eadcc4;
+  font:10px/1.22 Georgia,serif;
+}
+
+/* During decisions, emphasize only the controls that matter instead of freezing the whole game. */
+.matchBoardV5[data-siza-decision="response"] .handAreaV5,
+.matchBoardV5[data-siza-decision="response"] .responseWindowV53,
+.matchBoardV5[data-siza-decision="defense"] .defensePanelV600,
+.matchBoardV5[data-siza-decision="defense"] .playerHalf .arenaField,
+.matchBoardV5[data-siza-decision="choice"] .pendingChoiceV070,
+.matchBoardV5[data-siza-decision="equip"] .equipPanelV600 {
+  filter:drop-shadow(0 0 10px rgba(220,181,105,.22));
+}
+
+@media (max-width:850px) {
+  .sizaCombatStateHudV01 { min-width:184px; top:6px; }
+  .sizaCombatPhaseV01 { font-size:10px; }
+  .sizaCombatDecisionV01 { min-width:230px; max-width:72%; top:38px; }
+  .sizaCombatActionV01 { right:8px; width:34%; }
+  .sizaCombatPhaseCueV01 strong { font-size:18px; }
+}
