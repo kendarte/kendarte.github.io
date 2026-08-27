@@ -514,3 +514,233 @@
     width: 58px !important;
   }
 }
+
+/* v0.3.5 — Battlefield ownership map.
+   Keep the runtime DOM intact, but give each real zone a stable place in the
+   Arena-like board: rival above the interaction lane, player below it. */
+.matchBoardV5 {
+  --siza-side-gutter: 112px;
+  --siza-command-height: 44px;
+}
+
+.arenaHalf.enemyHalf {
+  top: 17% !important;
+  height: 30% !important;
+}
+
+.arenaHalf.playerHalf {
+  top: 52% !important;
+  height: 25% !important;
+}
+
+.arenaHalf .arenaZones,
+.arenaHalf .arenaField {
+  left: var(--siza-side-gutter) !important;
+  right: var(--siza-side-gutter) !important;
+}
+
+.enemyHalf .arenaZones {
+  top: 0 !important;
+}
+
+.enemyHalf .arenaField {
+  top: 15% !important;
+  height: 85% !important;
+}
+
+.playerHalf .arenaField {
+  top: 0 !important;
+  height: 78% !important;
+}
+
+.playerHalf .arenaZones {
+  top: 78% !important;
+}
+
+/* The middle remains empty unless the runtime puts Stack / resolution there. */
+.stackAnchorV5,
+.manifestInlineV5,
+.manifestInlineV5.manifestStageV600,
+.damageRibbonV600,
+.responseWindowV53 {
+  left: 50% !important;
+  top: 50% !important;
+}
+
+.sizaCombatTurnCurtainV02 {
+  left: var(--siza-side-gutter) !important;
+  right: var(--siza-side-gutter) !important;
+  top: 50% !important;
+}
+
+/* Hands explicitly own the top and bottom edges of the board. */
+.bookEnemyHandV03 {
+  left: 24% !important;
+  right: 24% !important;
+  top: 3px !important;
+}
+
+.handAreaV5 {
+  left: 15% !important;
+  right: 15% !important;
+  bottom: var(--siza-command-height) !important;
+  height: 19% !important;
+}
+
+.handV5,
+.handCardV5,
+.handCardV5 .sizaCard {
+  height: 100% !important;
+}
+
+/* Library, graveyard and exile sit beside their owner, never in a command rail. */
+.bookTcgZoneDock-enemy {
+  top: 12% !important;
+  right: 12px !important;
+  width: 96px !important;
+}
+
+.bookTcgZoneDock-player {
+  top: 69% !important;
+  left: 12px !important;
+  width: 96px !important;
+}
+
+/* History is reference-only; the board carries the primary narration. */
+.matchBoardV5 .matchLog {
+  left: 12px !important;
+  right: auto !important;
+  top: 31% !important;
+  width: 152px !important;
+  height: 86px !important;
+  max-height: 86px !important;
+  opacity: .72 !important;
+}
+
+.matchLog .logItem {
+  font-size: 8px !important;
+}
+
+/* Persistent controls form the bottom bar and leave the battlefield unobstructed. */
+.resourceRailV610 {
+  left: 12px !important;
+  bottom: 7px !important;
+  width: 148px !important;
+  height: 30px !important;
+  display: flex !important;
+  grid-template-columns: none !important;
+}
+
+.resourceRailV610 .mfActionsBadgeV600,
+.resourceRailV610 .burnAvailableBadgeV600 {
+  width: auto !important;
+  min-height: 30px !important;
+}
+
+.creatureCommandDockV610 {
+  right: 98px !important;
+  bottom: 7px !important;
+  width: min(360px, 38%) !important;
+  min-height: 30px !important;
+  max-height: 36px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.endTurnV5 {
+  right: 12px !important;
+  bottom: 7px !important;
+  width: 78px !important;
+  height: 34px !important;
+}
+
+/* Exactly one runtime-backed resource HUD per participant. */
+.participantHudV035 {
+  position: absolute;
+  z-index: 38;
+  width: 104px;
+  padding: 5px 7px;
+  border: 1px solid rgba(169,121,66,.72);
+  border-radius: 5px;
+  background: rgba(25,17,12,.88);
+  box-shadow: 0 7px 18px rgba(0,0,0,.32);
+  color: #ead9b7;
+  pointer-events: none;
+}
+
+.enemyHalf .participantHudV035 { right: 0; top: 0; }
+.playerHalf .participantHudV035 { left: 0; bottom: 0; }
+.participantHudV035 b { display: block; font: 700 11px/1 Georgia,serif; }
+.participantHudV035 span { display: inline-block; margin: 4px 7px 0 0; font: 700 8px/1 system-ui,sans-serif; }
+.participantHudV035 .crystalPoolV070 { margin-top: 4px; }
+
+/* Manafestation is owned spatially: no shared neutral dice table. */
+.manifestInlineV5.manifestStageV600[data-owner="enemy"] {
+  left: 50% !important;
+  top: 32% !important;
+}
+
+.manifestInlineV5.manifestStageV600[data-owner="player"] {
+  left: 50% !important;
+  top: 65% !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .manifestInlineV5[data-owner="enemy"] {
+  filter: drop-shadow(0 -4px 20px rgba(177,105,84,.28)) !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .manifestInlineV5[data-owner="player"] {
+  filter: drop-shadow(0 4px 20px rgba(77,159,216,.32)) !important;
+}
+
+.participantHudV035 .crystalV070.spent {
+  animation: sizaCrystalSpentV035 .46s ease-out both;
+}
+
+@keyframes sizaCrystalSpentV035 {
+  0% { filter: brightness(2.2) saturate(1.35); opacity: 1; transform: scale(1.18); }
+  100% { filter: grayscale(1) brightness(.42); opacity: .62; transform: scale(1); }
+}
+
+/* Runtime combat state becomes an explicit attack line, block and impact. */
+.arenaMiniCard.attackingV035 {
+  z-index: 24 !important;
+  outline: 2px solid rgba(238,192,96,.95);
+  box-shadow: 0 0 0 4px rgba(238,192,96,.18), 0 0 24px rgba(238,192,96,.52) !important;
+  animation: sizaAttackAdvanceV035 .82s cubic-bezier(.18,.82,.24,1) infinite alternate;
+}
+
+.enemyHalf .arenaMiniCard.attackingV035 {
+  --siza-attack-shift: 26px;
+}
+
+.playerHalf .arenaMiniCard.attackingV035 {
+  --siza-attack-shift: -26px;
+}
+
+.arenaMiniCard.blockingV035 {
+  z-index: 25 !important;
+  outline: 2px solid rgba(112,184,223,.92);
+  box-shadow: 0 0 0 4px rgba(112,184,223,.18), 0 0 22px rgba(112,184,223,.48) !important;
+  animation: sizaBlockBraceV035 .48s ease-in-out infinite alternate;
+}
+
+@keyframes sizaAttackAdvanceV035 {
+  from { transform: translateY(0) scale(1.02); }
+  to { transform: translateY(var(--siza-attack-shift)) scale(1.11); }
+}
+
+@keyframes sizaBlockBraceV035 {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+
+@media (max-width: 850px) {
+  .matchBoardV5 { --siza-side-gutter: 76px; }
+  .bookEnemyHandV03 { left: 21% !important; right: 21% !important; }
+  .bookTcgZoneDock-enemy,
+  .bookTcgZoneDock-player { width: 64px !important; }
+  .matchBoardV5 .matchLog { width: 104px !important; }
+  .resourceRailV610 { width: 112px !important; }
+  .creatureCommandDockV610 { right: 74px !important; width: 34% !important; }
+  .endTurnV5 { width: 56px !important; }
+}

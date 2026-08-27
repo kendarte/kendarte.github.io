@@ -91,8 +91,8 @@
         condition: meta.condition
       },
       player: {
-        id: mag.id,
-        name: mag.name,
+        id: source.playerId || mag.id,
+        name: source.playerName || mag.name,
         title: mag.title,
         portrait: source.playerPortrait,
         life: player.life,

@@ -21,6 +21,25 @@
         if (node) node.textContent = text(label);
     }
 
+    function applyEncounterContext(encounter) {
+        var player = encounter && encounter.initiator || {};
+        var rival = encounter && encounter.opponents && encounter.opponents[0] || {};
+        var site = encounter && encounter.site || {};
+        var playerName = text(player.name);
+        var rivalName = text(rival.name);
+        var location = text(site.name || site.room_id);
+
+        var set = function (id, value) {
+            var node = byId(id);
+            if (node && value) node.textContent = value;
+        };
+        set("siza-player-name", playerName);
+        set("siza-player-portrait-name", playerName);
+        set("siza-focus-portrait-name", rivalName);
+        set("siza-location-label", location);
+        set("siza-mode-label", "COMBATE");
+    }
+
     function host() {
         var tray = byId("siza-tcg-tray");
         if (!tray) return null;
@@ -266,6 +285,7 @@ html,body,#app{
         }
         lastResultId = "";
         pendingEncounter = {encounter:clone(encounter), mode:mode || "prepare"};
+        applyEncounterContext(pendingEncounter.encounter);
         ensureFrame();
         return startInChild(pendingEncounter.encounter, pendingEncounter.mode);
     }

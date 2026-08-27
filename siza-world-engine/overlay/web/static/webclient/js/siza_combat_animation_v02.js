@@ -1,10 +1,10 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.2.0-real-combat-transitions";
+    var BUILD = "0.2.1-real-combat-transitions";
     var FRAME_ID = "siza-tcg-embed-frame";
     var STYLE_ID = "siza-combat-animation-v02";
-    var STYLE_HREF = "/static/webclient/css/siza_combat_animation_v02.css?v=0200";
+    var STYLE_HREF = "/static/webclient/css/siza_combat_animation_v02.css?v=0201";
     var childFrame = null;
     var childObserver = null;
     var parentObserver = null;
@@ -20,7 +20,10 @@
         hand: Object.create(null),
         enemyField: Object.create(null),
         playerField: Object.create(null),
-        stack: Object.create(null)
+        stack: Object.create(null),
+        positions: null,
+        enemyHand: 0,
+        life: {player:null, enemy:null}
     };
 
     function text(value) {
@@ -143,7 +146,16 @@
             board.appendChild(impact);
         }
 
-        return {board:board, readout:readout, curtain:curtain, decision:decision, impact:impact};
+        var phases = doc.getElementById("siza-combat-phase-track-v035");
+        if (!phases) {
+            phases = doc.createElement("div");
+            phases.id = "siza-combat-phase-track-v035";
+            phases.className = "sizaCombatPhaseTrackV035";
+            phases.innerHTML = '<span data-phase="main">MAIN</span><span data-phase="combat">COMBATE</span><span data-phase="end">END</span><b></b>';
+            board.appendChild(phases);
+        }
+
+        return {board:board, readout:readout, curtain:curtain, decision:decision, impact:impact, phases:phases};
     }
 
     function parseTurn(doc) {
@@ -233,6 +245,134 @@
         });
     }
 
+    function phaseKey(value) {
+        var raw = text(value).toLowerCase();
+        if (/defensa|combat|ataque/.test(raw)) return "combat";
+        if (/fin|end/.test(raw)) return "end";
+        return "main";
+    }
+
+    function syncPhaseTrack(ui, phase, owner) {
+        var key = phaseKey(phase);
+        ui.phases.setAttribute("data-phase", key);
+        ui.phases.setAttribute("data-owner", owner);
+        Array.prototype.forEach.call(ui.phases.querySelectorAll("[data-phase]"), function (node) {
+            node.setAttribute("data-active", node.getAttribute("data-phase") === key ? "true" : "false");
+        });
+        var ownerNode = ui.phases.querySelector("b");
+        if (ownerNode) ownerNode.textContent = owner === "enemy" ? tr("RIVAL", "RIVAL") : tr("TÚ", "YOU");
+    }
+
+    function cardNodes(doc, selector, nameSelector) {
+        return Array.prototype.map.call(doc.querySelectorAll(selector), function (node) {
+            var label = text(nameSelector ? node.querySelector(nameSelector) && node.querySelector(nameSelector).textContent : node.textContent) || "?";
+            var rect = node.getBoundingClientRect();
+            return {key:label, node:node, html:node.outerHTML, rect:{left:rect.left, top:rect.top, width:rect.width, height:rect.height}};
+        });
+    }
+
+    function pointFor(doc, selector) {
+        var node = doc.querySelector(selector);
+        if (!node) return null;
+        var rect = node.getBoundingClientRect();
+        return {node:node, html:node.outerHTML, rect:{left:rect.left, top:rect.top, width:rect.width, height:rect.height}};
+    }
+
+    function withoutMatches(next, previous) {
+        var used = Object.create(null);
+        (previous || []).forEach(function (row) { used[row.key] = (used[row.key] || 0) + 1; });
+        return (next || []).filter(function (row) {
+            if (!used[row.key]) return true;
+            used[row.key] -= 1;
+            return false;
+        });
+    }
+
+    function disappeared(previous, next) {
+        return withoutMatches(previous, next);
+    }
+
+    function firstByKey(rows, key) {
+        return (rows || []).find(function (row) { return row.key === key; }) || null;
+    }
+
+    function flyCard(doc, from, to, kind) {
+        if (!from || !to || !from.rect || !to.rect || !from.rect.width || !to.rect.width) return;
+        var ghost = doc.createElement("div");
+        ghost.className = "sizaCombatCardFlightV02 sizaCombatCardFlightV02-" + kind;
+        ghost.innerHTML = from.html || to.html || "";
+        ghost.style.left = from.rect.left + "px";
+        ghost.style.top = from.rect.top + "px";
+        ghost.style.width = from.rect.width + "px";
+        ghost.style.height = from.rect.height + "px";
+        doc.body.appendChild(ghost);
+        var dx = to.rect.left - from.rect.left;
+        var dy = to.rect.top - from.rect.top;
+        var scale = Math.max(.45, Math.min(1.35, to.rect.width / from.rect.width));
+        window.requestAnimationFrame(function () {
+            ghost.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + scale + ")";
+            ghost.style.opacity = "0";
+        });
+        window.setTimeout(function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, 720);
+    }
+
+    function physicalTransfers(doc, positions) {
+        var current = {
+            hand: cardNodes(doc, ".handV5 .handCardV5", ".cardName"),
+            enemyField: cardNodes(doc, ".enemyHalf .arenaField .arenaMiniCard", ".mName"),
+            playerField: cardNodes(doc, ".playerHalf .arenaField .arenaMiniCard", ".mName"),
+            stack: cardNodes(doc, ".stackAnchorV5 .stackObj", null)
+        };
+        var enemyBacks = doc.querySelectorAll(".bookEnemyCardBackV03");
+        if (!positions) {
+            state.positions = current;
+            state.enemyHand = enemyBacks.length;
+            return;
+        }
+        var playerLibrary = pointFor(doc, '.bookTcgZoneDock-player [data-book-zone="library"]');
+        var enemyLibrary = pointFor(doc, '.bookTcgZoneDock-enemy [data-book-zone="library"]');
+        var playerGraveyard = pointFor(doc, '.bookTcgZoneDock-player [data-book-zone="graveyard"]');
+        var enemyGraveyard = pointFor(doc, '.bookTcgZoneDock-enemy [data-book-zone="graveyard"]');
+        var manifest = pointFor(doc, ".manifestInlineV5");
+
+        if (manifest) {
+            disappeared(positions.hand, current.hand).forEach(function (card) {
+                flyCard(doc, card, manifest, "manifest");
+            });
+        }
+
+        withoutMatches(current.hand, positions.hand).forEach(function (card) { flyCard(doc, playerLibrary, card, "draw"); });
+        withoutMatches(current.enemyField, positions.enemyField).forEach(function (card) {
+            var source = firstByKey(positions.stack, card.key) || manifest;
+            flyCard(doc, source, card, "deploy");
+        });
+        withoutMatches(current.playerField, positions.playerField).forEach(function (card) {
+            var source = firstByKey(positions.stack, card.key) || manifest;
+            flyCard(doc, source, card, "deploy");
+        });
+        withoutMatches(current.stack, positions.stack).forEach(function (card) {
+            var source = firstByKey(positions.hand, card.key) || manifest;
+            flyCard(doc, source, card, "stack");
+        });
+
+        disappeared(positions.stack, current.stack).forEach(function (card) {
+            var target = firstByKey(current.enemyField, card.key) || firstByKey(current.playerField, card.key) || (card.key && enemyGraveyard);
+            flyCard(doc, card, target, "resolve");
+        });
+        disappeared(positions.playerField, current.playerField).forEach(function (card) {
+            flyCard(doc, card, firstByKey(current.hand, card.key) || playerGraveyard, "leave");
+        });
+        disappeared(positions.enemyField, current.enemyField).forEach(function (card) {
+            flyCard(doc, card, enemyGraveyard, "leave");
+        });
+
+        if (enemyBacks.length > state.enemyHand && enemyLibrary) {
+            flyCard(doc, enemyLibrary, {node:enemyBacks[enemyBacks.length - 1], html:enemyBacks[enemyBacks.length - 1].outerHTML, rect:enemyBacks[enemyBacks.length - 1].getBoundingClientRect()}, "enemy-draw");
+        }
+        state.enemyHand = enemyBacks.length;
+        state.positions = current;
+    }
+
     function syncSemanticAnimations(doc) {
         var handNodes = doc.querySelectorAll(".handV5 .handCardV5");
         var enemyNodes = doc.querySelectorAll(".enemyHalf .arenaField .arenaMiniCard");
@@ -250,6 +390,7 @@
         state.enemyField = countByName(enemyNodes, ".mName");
         state.playerField = countByName(playerNodes, ".mName");
         state.stack = countByName(stackNodes, null);
+        physicalTransfers(doc, state.positions);
     }
 
     function syncManifest(doc, ui) {
@@ -285,6 +426,67 @@
         state.manifestActive = active;
     }
 
+    function readLife(doc, owner) {
+        var node = doc.querySelector("." + owner + "Half .participantHudV035");
+        var match = text(node && node.textContent).match(/VIDA\s+(\d+)/i);
+        return match ? Number(match[1]) : null;
+    }
+
+    function showDamage(ui, owner, amount) {
+        if (!amount) return;
+        var marker = ui.board.ownerDocument.createElement("div");
+        marker.className = "sizaCombatDamageV035";
+        marker.setAttribute("data-owner", owner);
+        marker.textContent = "−" + amount;
+        ui.board.appendChild(marker);
+        window.setTimeout(function () { if (marker.parentNode) marker.parentNode.removeChild(marker); }, 950);
+    }
+
+    function syncLife(doc, ui) {
+        ["player", "enemy"].forEach(function (owner) {
+            var next = readLife(doc, owner);
+            var previous = state.life[owner];
+            if (state.ready && next !== null && previous !== null && next < previous) {
+                showDamage(ui, owner, previous - next);
+                pulseImpact(ui, "bad");
+            }
+            state.life[owner] = next;
+        });
+    }
+
+    function syncCombatTargeting(doc, ui) {
+        var attacker = doc.querySelector(".arenaMiniCard.attackingV035");
+        var line = doc.getElementById("siza-combat-target-line-v035");
+        if (!attacker) {
+            if (line) line.remove();
+            return;
+        }
+        var owner = attacker.closest(".enemyHalf") ? "enemy" : "player";
+        var blocker = doc.querySelector(".arenaMiniCard.blockingV035");
+        var target = blocker || doc.querySelector("." + (owner === "enemy" ? "player" : "enemy") + "Half .participantHudV035");
+        if (!target) return;
+        if (!line) {
+            line = doc.createElement("i");
+            line.id = "siza-combat-target-line-v035";
+            line.className = "sizaCombatTargetLineV035";
+            ui.board.appendChild(line);
+        }
+        var board = ui.board.getBoundingClientRect();
+        var from = attacker.getBoundingClientRect();
+        var to = target.getBoundingClientRect();
+        var x1 = from.left + from.width / 2 - board.left;
+        var y1 = from.top + from.height / 2 - board.top;
+        var x2 = to.left + to.width / 2 - board.left;
+        var y2 = to.top + to.height / 2 - board.top;
+        var dx = x2 - x1;
+        var dy = y2 - y1;
+        line.style.left = x1 + "px";
+        line.style.top = y1 + "px";
+        line.style.width = Math.sqrt(dx * dx + dy * dy) + "px";
+        line.style.transform = "rotate(" + Math.atan2(dy, dx) + "rad)";
+        line.setAttribute("data-blocked", blocker ? "true" : "false");
+    }
+
     function scan() {
         scanTimer = null;
         var doc = childDocument();
@@ -303,6 +505,7 @@
         setText(ui.readout.querySelector(".owner"), (turn ? tr("TURNO ", "TURN ") + turn + " · " : "") + (owner === "enemy" ? tr("RIVAL", "RIVAL") : tr("JUGADOR", "PLAYER")));
         setText(ui.readout.querySelector(".phase"), phase);
         ui.readout.setAttribute("data-owner", owner);
+        syncPhaseTrack(ui, banner.phase || banner.side, owner);
 
         if (decision) {
             ui.board.setAttribute("data-siza-v02-decision", decision.key);
@@ -316,9 +519,9 @@
 
         if (state.ready) {
             if (turn && turn !== state.lastTurn) {
-                showCurtain(ui, tr("CAMBIO DE TURNO", "TURN CHANGE"), owner === "enemy" ? tr("TURNO RIVAL", "RIVAL TURN") : tr("TU TURNO", "YOUR TURN"), 900);
+                showCurtain(ui, tr("TURNO", "TURN"), owner === "enemy" ? tr("RIVAL ACTÚA", "RIVAL ACTS") : tr("TÚ ACTÚAS", "YOU ACT"), 720);
             } else if (phase && phase !== state.lastPhase && !decision) {
-                showCurtain(ui, tr("FASE", "PHASE"), phase, 680);
+                showCurtain(ui, tr("FASE", "PHASE"), phase, 420);
             }
             if (decisionKey && decisionKey !== state.lastDecision) {
                 showCurtain(ui, tr("SE REQUIERE TU ACCIÓN", "YOUR ACTION REQUIRED"), decision.title, 820);
@@ -327,6 +530,8 @@
 
         syncManifest(doc, ui);
         syncSemanticAnimations(doc);
+        syncLife(doc, ui);
+        syncCombatTargeting(doc, ui);
 
         state.lastTurn = turn;
         state.lastPhase = phase;
@@ -361,6 +566,9 @@
         state.enemyField = Object.create(null);
         state.playerField = Object.create(null);
         state.stack = Object.create(null);
+        state.positions = null;
+        state.enemyHand = 0;
+        state.life = {player:null, enemy:null};
     }
 
     function attachFrame() {
