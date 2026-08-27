@@ -56,10 +56,10 @@ jobs:
           for selector in ['.arenaHalf .arenaMag', '.arenaHalf .arenaMagSlot', '.arenaHalfLabelV610', '.emptyFieldV5']:
               assert selector in css, f'missing suppression selector: {selector}'
 
-          for token in ['.bookTcgZoneDock-enemy', '.bookTcgZoneDock-player', '.bookTcgPile', '.bookTcgPileCount']:
-              assert token in docks, f'missing compact deck-state dock styling: {token}'
+          for token in ['.bookTcgZoneDock-enemy', '.bookTcgZoneDock-player', '.bookTcgPile', '.bookTcgPileCount', '.bookEnemyHandV03', '.bookEnemyCardBackV03', '.bookEnemyHandCountV03']:
+              assert token in docks, f'missing compact TCG state styling: {token}'
 
-          for token in ['library', 'graveyard', 'exile']:
+          for token in ['hand', 'library', 'graveyard', 'exile']:
               assert token in snap, f'missing read-only Arena zone snapshot: {token}'
 
           forbidden = [
@@ -73,10 +73,13 @@ jobs:
           for token in forbidden:
               assert token not in css, f'fake/debug card-table presentation returned: {token}'
 
-          assert '0.3.2-book-battlefield-rpg-tcg-zones' in js
+          assert '0.3.3-book-battlefield-enemy-hand' in js
           assert 'siza_tcg_battlefield_v03.css?v=0320' in js
-          assert 'siza_tcg_zone_docks_v01.css?v=0100' in js
-          assert 'book-zone-snapshot-v01.js?v=0100' in js
+          assert 'siza_tcg_zone_docks_v01.css?v=0110' in js
+          assert 'book-zone-snapshot-v01.js?v=0110' in js
+          assert 'bookEnemyHandV03' in js
+          assert 'snapshot.enemy' in js
+          assert 'Math.min(count, 10)' in js
           assert 'siza-book-battlefield-v02' in js
           assert 'siza_tcg_battlefield_v03.js' in template
           assert 'siza_tcg_battlefield_v02.js' not in template
@@ -85,6 +88,7 @@ jobs:
           print('PASS duplicate field portraits and debug lane labels are suppressed')
           print('PASS real permanent and creature planes use RPG-scene depth')
           print('PASS Library/Graveyard/Exile piles occupy the reserved side gutters')
+          print('PASS rival hand uses authoritative hidden card backs and count')
           print('PASS Stack is transient and hand/log/HUD remain separate')
           print('PASS current full card renderer remains uncropped')
           PY
