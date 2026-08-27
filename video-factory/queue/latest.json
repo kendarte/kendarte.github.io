@@ -1,0 +1,42 @@
+{
+  "id": "bootstrap-001",
+  "autoRun": false,
+  "project": {
+    "version": 2,
+    "name": "looks_legit",
+    "brand": "LOOKS LEGIT",
+    "format": "9:16",
+    "voice": "am_michael",
+    "voiceSpeed": 1.05,
+    "accent": "#ff354b",
+    "fps": 24,
+    "scenes": [
+      {
+        "type": "chat",
+        "voice": "You already got scammed once. Then the F.B.I. says they recovered your money.",
+        "caption": "THE ‘FBI’ RECOVERED YOUR MONEY.",
+        "sender": "FBI Recovery Unit",
+        "sub": "Government service",
+        "message": "Good news. We recovered funds connected to your fraud case.",
+        "amount": "$18,740",
+        "fee": "$495 recovery fee",
+        "stamp": "SCAM #2"
+      },
+      {
+        "type": "evidence",
+        "voice": "There is only one problem. That's not the F.B.I.",
+        "caption": "THAT'S NOT THE FBI.",
+        "sourceUrl": "https://www.ic3.gov/PSA/2026/PSA260720",
+        "sourceLabel": "FBI / IC3 · JUL 20, 2026",
+        "focus": "IC3 will never ask for payment to recover lost funds."
+      },
+      {
+        "type": "headline",
+        "voice": "It's scam number two.",
+        "caption": "SCAM #2",
+        "title": "SCAM #2",
+        "body": "The recovery offer is the second attack."
+      }
+    ]
+  }
+}
