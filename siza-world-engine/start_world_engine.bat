@@ -13,6 +13,13 @@ if not exist "runtime\server\conf\settings.py" (
   exit /b 1
 )
 
+call "%~dp0sync_siza_arena.bat"
+if errorlevel 1 (
+  echo ERROR: No se pudo sincronizar Siza Arena.
+  pause
+  exit /b 1
+)
+
 call ".venv\Scripts\activate.bat"
 pushd runtime
 
