@@ -21,6 +21,14 @@ from commands.decision_commands import (
     CmdSizaDecisionStep,
     CmdSizaGoalToggle,
 )
+from commands.dm_commands import (
+    CmdSizaDMAdvance,
+    CmdSizaDMPlan,
+    CmdSizaDMSignal,
+    CmdSizaDMStart,
+    CmdSizaDMStatus,
+    CmdSizaValidateDMV01,
+)
 from commands.engine_validation_commands import CmdSizaValidateEngine
 from commands.event_commands import (
     CmdSizaEventRefresh,
@@ -274,6 +282,12 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaTimeRate())
         self.add(CmdSizaTimeAdvance())
         self.add(CmdSizaRollV55())
+        self.add(CmdSizaDMStart())
+        self.add(CmdSizaDMStatus())
+        self.add(CmdSizaDMPlan())
+        self.add(CmdSizaDMSignal())
+        self.add(CmdSizaDMAdvance())
+        self.add(CmdSizaValidateDMV01())
         self.add(CmdSizaNoMatchV861())
 
 
