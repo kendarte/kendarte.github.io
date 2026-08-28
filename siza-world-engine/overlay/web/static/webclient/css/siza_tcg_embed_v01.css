@@ -1,10 +1,12 @@
-/* SIZA book combat composition — Arena runtime stays embedded, but the World scene remains the battlefield. */
+/* SIZA World Engine -> canonical Arena handoff.
+   Exploration belongs to the World Engine. During COMBAT the synchronized
+   /siza-mobile-test runtime owns the entire viewport and its own presentation. */
 .sizaTcgEmbedHost {
     width:100%;
     height:100%;
     min-height:0;
     overflow:hidden;
-    background:transparent;
+    background:#07111b;
 }
 
 .sizaTcgEmbedFrame {
@@ -13,99 +15,58 @@
     height:100%;
     min-height:0;
     border:0;
-    background:transparent;
+    background:#07111b;
 }
 
-/* COMBAT is the same book page, not a replacement screen. */
-.sizaBookClient[data-mode="COMBAT"] .sizaBookBody {
-    position:relative;
-    display:block !important;
-    min-height:0;
-    overflow:hidden;
-    background:#0c0907;
+.sizaBookClient[data-mode="COMBAT"] {
+    grid-template-rows:minmax(0,1fr) !important;
+    background:#07111b !important;
 }
 
-/* Keep the current World Engine location visible as the combat scene. */
-.sizaBookClient[data-mode="COMBAT"] .sizaBookScene {
-    display:block !important;
-    position:absolute;
-    inset:4px 8px 8px;
-    min-height:0;
-    margin:0 !important;
-    overflow:hidden;
-    border:3px solid #3c291b;
-    border-radius:5px;
-    background:#101010;
-}
-
-.sizaBookClient[data-mode="COMBAT"] .sizaBookSceneVisual {
-    position:absolute;
-    inset:0;
-    min-height:0;
-    height:100%;
-}
-
-.sizaBookClient[data-mode="COMBAT"] .sizaBookSceneVisualMedia::after {
-    background:
-        linear-gradient(180deg,rgba(7,8,8,.18),rgba(7,8,8,.04) 43%,rgba(7,8,8,.20) 58%,rgba(7,8,8,.48));
-}
-
-/* The Arena supplies the combat narrative/hand/HUD while the exploration parchment is dormant. */
+/* Once the encounter transition finishes, the World book chrome/scene must not
+   remain visible around or underneath the Arena. */
+.sizaBookClient[data-mode="COMBAT"] .sizaBookHeader,
+.sizaBookClient[data-mode="COMBAT"] .sizaBookScene,
 .sizaBookClient[data-mode="COMBAT"] .sizaStoryPage,
 .sizaBookClient[data-mode="COMBAT"] .sizaSceneCast {
     display:none !important;
 }
 
+.sizaBookClient[data-mode="COMBAT"] .sizaBookBody {
+    position:fixed !important;
+    z-index:190 !important;
+    inset:0 !important;
+    display:block !important;
+    width:100vw !important;
+    height:100vh !important;
+    min-height:100vh !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    background:#07111b !important;
+}
+
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] {
     display:block !important;
-    position:absolute;
-    z-index:20;
-    inset:4px 8px 8px;
-    min-height:0;
-    height:auto;
-    margin:0;
-    padding:0;
-    overflow:hidden;
-    border:3px solid #3c291b;
-    border-radius:5px;
-    background:transparent;
-    box-shadow:inset 0 0 0 1px rgba(140,101,58,.58),0 8px 24px rgba(0,0,0,.34);
+    position:absolute !important;
+    z-index:200 !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:#07111b !important;
+    box-shadow:none !important;
 }
 
+/* These are World-shell placeholders. The embedded canonical Arena provides its
+   own hand, resources, combat controls and status presentation. */
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgResources,
-.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgHand {
-    display:none !important;
-}
-
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgHand,
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgStatus {
-    position:absolute;
-    z-index:40;
-    right:10px;
-    top:8px;
-    min-height:0;
-    padding:3px 7px;
-    border:1px solid rgba(217,181,109,.34);
-    border-radius:999px;
-    color:#d9c398;
-    background:rgba(24,16,11,.74);
-    font:700 7px/1.2 system-ui,sans-serif;
-    pointer-events:none;
-}
-
-/* Header stays the same book header; only the center label changes to COMBAT via the existing mode contract. */
-.sizaBookClient[data-mode="COMBAT"] .sizaBookHeader {
-    box-shadow:inset 0 -1px 0 #8a6338,0 3px 12px rgba(0,0,0,.28);
-}
-
-.sizaBookClient[data-mode="COMBAT"] .sizaBookChapter {
-    background:
-        linear-gradient(90deg,rgba(112,51,28,.10),transparent 14%,transparent 86%,rgba(112,51,28,.10)),
-        linear-gradient(180deg,#eadab8,#cdb489);
-}
-
-@media (max-width:760px) {
-    .sizaBookClient[data-mode="COMBAT"] .sizaBookScene,
-    .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] {
-        inset:3px 4px 4px;
-    }
+    display:none !important;
 }
