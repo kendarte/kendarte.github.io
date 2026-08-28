@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.3.0-canonical-arena-embed";
+    var BUILD = "0.4.0-fullscreen-canonical-arena";
     var FRAME_SRC = "/static/webclient/tcg/siza-mobile-test/index.html?siza_world_embed=1";
     var frame = null;
     var frameReady = false;
@@ -61,9 +61,9 @@
 
     /*
        The embedded runtime is a synchronized copy of /siza-mobile-test and /siza-core.
-       World Engine only removes the standalone navigation/chrome required outside an
-       iframe. It must not reposition the hand, battlefield, stack, combat controls,
-       cards, decisions or animations. Those belong to the canonical Arena runtime.
+       World Engine is only the transport and viewport host. It may remove the standalone
+       website navigation, but it must not restyle Arena's book header, battlefield, hand,
+       stack, combat controls, decisions, cards or animations.
     */
     function injectEmbedStyle() {
         var child = childWindow();
@@ -73,12 +73,10 @@
         var style = child.document.createElement("style");
         style.id = "siza-world-embed-style";
         style.textContent = `
-html,body,#app{width:100%!important;height:100%!important;min-height:0!important;margin:0!important;overflow:hidden!important}
-#bootFallback,.sidebar,.topbar,.arenaNavToggleV600,.arenaNavPanelV600,.arenaNavVeilV600,.bookHeaderV01,.bookNarrativeV01{display:none!important}
-.shell,.main,.bookShellV01,.bookBodyV01,.bookSceneV01{width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important}
-.shell,.main,.bookShellV01,.bookBodyV01,.bookSceneV01{display:block!important;grid-column:auto!important}
-.bookBodyV01,.bookSceneV01{overflow:hidden!important}
-.matchShell.v05{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important}
+html,body,#app{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:hidden!important;background:#07111b!important}
+#bootFallback,.sidebar,.topbar,.arenaNavToggleV600,.arenaNavPanelV600,.arenaNavVeilV600{display:none!important}
+.shell{display:block!important;width:100%!important;min-height:100vh!important;margin:0!important;background:#07111b!important}
+.main{display:block!important;width:100%!important;min-height:100vh!important;margin:0!important;padding:0!important;grid-column:auto!important}
 `;
         child.document.head.appendChild(style);
         return true;
@@ -167,7 +165,6 @@ html,body,#app{width:100%!important;height:100%!important;min-height:0!important
         frame.title = "Siza Arena";
         frame.setAttribute("loading", "eager");
         frame.setAttribute("allow", "autoplay");
-        frame.setAttribute("allowtransparency", "true");
         frame.src = FRAME_SRC;
         frame.addEventListener("load", onFrameLoad);
         mount.appendChild(frame);
