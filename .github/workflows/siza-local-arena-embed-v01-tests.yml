@@ -37,6 +37,7 @@ jobs:
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
+          node --check siza-mobile-test/world-combat-bridge-v01.js
           test -f siza-mobile-test/index.html
           test -f siza-mobile-test/world-combat-bridge-v01.js
           test -f siza-core/cards.js
@@ -57,7 +58,35 @@ jobs:
           ! grep -Fq '.arenaField' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           ! grep -Fq '.handAreaV5' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           ! grep -Fq '.matchLog' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
-          echo 'PASS canonical Arena static mount contract'
+          ! grep -Fq '.bookHeaderV01' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq '.bookNarrativeV01' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq 'allowtransparency' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq 'World scene remains the battlefield' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
+          grep -Fq 'position:fixed !important' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
+          grep -Fq '.sizaBookClient[data-mode="COMBAT"] .sizaBookHeader,' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
+          grep -Fq 'background:#07111b !important' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
+          echo 'PASS canonical Arena full-screen mount contract'
+
+      - name: Canonical Arena identity contract
+        shell: bash
+        run: |
+          node <<'NODE'
+          require('./siza-mobile-test/world-combat-bridge-v01.js');
+          const bridge=globalThis.SizaWorldCombatBridgeV01;
+          const match={player:{name:'Nereida',life:20},enemy:{name:'Rival',life:20}};
+          const attached=bridge.attachEncounter(match,{
+            encounter_id:'IDENTITY-001',
+            encounter_type:'COMBAT_CONFRONTATION',
+            site:{room_id:'ROOM:1',name:'Pescaderia de Darsena'},
+            initiator:{entity_id:'PLAYER:1',name:'admin'},
+            opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]
+          });
+          if(!attached.ok)throw new Error('encounter did not attach');
+          const meta=bridge.presentationMeta(match);
+          if(meta.player_name!=='Nereida')throw new Error(`World account name replaced Arena identity: ${meta.player_name}`);
+          if(meta.opponent_name!=='Mara Vensal')throw new Error(`World opponent identity was lost: ${meta.opponent_name}`);
+          console.log('PASS canonical Arena player identity survives World encounter metadata');
+          NODE
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
@@ -100,7 +129,7 @@ jobs:
             const encounter={
               encounter_id:'WEB-EMBED-001',encounter_type:'COMBAT_CONFRONTATION',
               site:{room_id:'CAR-KAL-DAR-TEST',name:'Dockside Fishery'},
-              initiator:{entity_id:'PLAYER:1',name:'Nereida'},
+              initiator:{entity_id:'PLAYER:1',name:'admin'},
               opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]
             };
             listeners.siza_combat_encounter([encounter]);
@@ -109,6 +138,7 @@ jobs:
             const frame=w.document.getElementById('siza-tcg-embed-frame');
             if(!frame)throw new Error('local Arena iframe was not mounted');
             if(!frame.getAttribute('src').includes('/static/webclient/tcg/siza-mobile-test/index.html'))throw new Error(`wrong local Arena src: ${frame.getAttribute('src')}`);
+            if(frame.hasAttribute('allowtransparency'))throw new Error('canonical Arena iframe is still transparent');
             if(w.document.getElementById('siza-tcg-tray').getAttribute('data-arena-source')!=='siza-mobile-test')throw new Error('embed is not marked as canonical siza-mobile-test source');
 
             let startedEncounter=null;
@@ -129,7 +159,7 @@ jobs:
             const resultSend=sent.find(row=>row.name==='text'&&String(row.args&&row.args[0]).startsWith('siza-combat-result '));
             if(!resultSend)throw new Error('child CombatResult did not return through Evennia transport');
 
-            console.log('PASS World encounter -> canonical local Arena -> CombatResult -> Evennia transport');
+            console.log('PASS World encounter -> canonical full-screen Arena -> CombatResult -> Evennia transport');
             dom.window.close();
           })().catch(error=>{console.error(error);process.exit(1)});
           NODE
