@@ -167,6 +167,11 @@ jobs:
             if(startedEncounter.packet.initiator.name!=='Nereida')throw new Error(`World login leaked into Arena identity: ${startedEncounter.packet.initiator.name}`);
             if(!String(startedEncounter.packet.initiator.portrait||'').includes('nereida_voss.webp'))throw new Error('canonical Nereida portrait was not supplied to Arena');
 
+            /* JSDOM can replace an iframe's synthetic document around a manually dispatched load.
+               Exercise the real injection function directly against the surviving child document. */
+            const childDoc=frame.contentWindow.document;
+            if(!childDoc.head)childDoc.documentElement.innerHTML='<head></head><body></body>';
+            if(!w.SizaTcgEmbedV01.injectEmbedStyle())throw new Error('child Arena embed style could not be installed');
             const childStyle=frame.contentWindow.document.getElementById('siza-world-embed-style');
             if(!childStyle)throw new Error('child Arena embed style was not installed');
             if(!childStyle.textContent.includes('.bookShellV01.modeCombat>.bookHeaderV01{display:none!important}'))throw new Error('duplicate child book header is still enabled');
