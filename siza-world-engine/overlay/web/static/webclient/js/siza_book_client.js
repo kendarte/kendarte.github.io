@@ -61,7 +61,7 @@
         if (!output) {
             return;
         }
-        while (output.children.length > 8) {
+        while (output.children.length > 50) {
             output.removeChild(output.firstChild);
         }
     }
