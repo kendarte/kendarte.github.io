@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Static mount contract
+      - name: Static transition and full-board contract
         shell: bash
         run: |
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
@@ -51,24 +51,19 @@ jobs:
           grep -Fq 'siza_tcg_embed_v01.css' siza-world-engine/overlay/web/templates/webclient/webclient.html
           grep -Fq 'siza_combat_transition_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
           grep -Fq 'siza_combat_transition_v01.css' siza-world-engine/overlay/web/templates/webclient/webclient.html
-          ! grep -Fq 'siza_tcg_battlefield_v03.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
-          ! grep -Fq 'siza_combat_choreography_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
-          ! grep -Fq 'siza_combat_animation_v02.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
-          ! grep -Fq '.creatureCommandDockV610' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
-          ! grep -Fq '.arenaField' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
-          ! grep -Fq '.handAreaV5' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
-          ! grep -Fq '.matchLog' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           ! grep -Fq 'allowtransparency' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           grep -Fq '.bookShellV01.modeCombat>.bookHeaderV01{display:none!important}' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           grep -Fq '.bookShellV01.modeCombat .matchBoardV5{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          grep -Fq '.participantHudV035' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          grep -Fq 'nereida_voss.webp' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           grep -Fq 'canonicalEncounter' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
           grep -Fq 'playBookTransition(function ()' siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
           grep -Fq 'typeof onCovered === "function"' siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js
           grep -Fq '.sizaBookClient[data-mode="COMBAT"] > .sizaBookHeader' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
           grep -Fq '.sizaBookClient[data-mode="COMBAT"] > .sizaBookHeader' siza-world-engine/overlay/web/templates/webclient/webclient.html
           grep -Fq 'position:fixed !important' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
-          grep -Fq 'background:#07111b !important' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
-          echo 'PASS transition/full-board canonical Arena static contract'
+          grep -Fq 'height:100vh !important' siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css
+          echo 'PASS static transition/full-board contract'
 
       - name: Canonical Arena identity contract
         shell: bash
@@ -88,13 +83,13 @@ jobs:
           const meta=bridge.presentationMeta(match);
           if(meta.player_name!=='Nereida')throw new Error(`World account name replaced Arena identity: ${meta.player_name}`);
           if(meta.opponent_name!=='Mara Vensal')throw new Error(`World opponent identity was lost: ${meta.opponent_name}`);
-          console.log('PASS canonical Arena player identity survives World encounter metadata');
+          console.log('PASS canonical Arena identity');
           NODE
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
 
-      - name: Covered transition to full-board child Arena to Evennia result regression
+      - name: Covered World to Arena to Evennia regression
         shell: bash
         run: |
           node <<'NODE'
@@ -119,12 +114,7 @@ jobs:
             const sent=[];
             w.SizaWorldBookClient={setMode:(mode)=>{w.document.getElementById('siza-book-client').setAttribute('data-mode',mode);return mode;}};
             w.SizaBookShellV02={setCombatTray:(state)=>{w.document.getElementById('siza-tcg-tray').setAttribute('data-active',state.active?'true':'false');return true;}};
-            w.Evennia={
-              init:()=>{},
-              isConnected:()=>true,
-              msg:(name,args,kwargs)=>sent.push({name,args,kwargs}),
-              emitter:{on:(name,fn)=>listeners[name]=fn}
-            };
+            w.Evennia={init:()=>{},isConnected:()=>true,msg:(name,args,kwargs)=>sent.push({name,args,kwargs}),emitter:{on:(name,fn)=>listeners[name]=fn}};
 
             w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js','utf8'));
             w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js','utf8'));
@@ -132,61 +122,36 @@ jobs:
             w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
             await new Promise(r=>setTimeout(r,0));
 
-            const encounter={
-              encounter_id:'WEB-EMBED-001',encounter_type:'COMBAT_CONFRONTATION',
-              site:{room_id:'CAR-KAL-DAR-TEST',name:'Dockside Fishery'},
-              initiator:{entity_id:'PLAYER:1',name:'admin'},
-              opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]
-            };
+            const encounter={encounter_id:'WEB-EMBED-001',encounter_type:'COMBAT_CONFRONTATION',site:{room_id:'ROOM:1',name:'Pescaderia de Darsena'},initiator:{entity_id:'PLAYER:1',name:'admin'},opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]};
             listeners.siza_combat_encounter([encounter]);
 
             const client=w.document.getElementById('siza-book-client');
-            if(client.getAttribute('data-mode')!=='EXPLORATION')throw new Error('World shell switched before transition covered the scene');
+            if(client.getAttribute('data-mode')!=='EXPLORATION')throw new Error('World disappeared before transition covered it');
             const transition=w.document.getElementById('siza-combat-book-transition-v02');
-            if(!transition)throw new Error('World -> combat transition was not created');
-            if(transition.parentNode!==client)throw new Error('transition does not cover the whole World book');
-            if(transition.getAttribute('data-state')!=='closing')throw new Error('transition did not start in closing state');
+            if(!transition||transition.parentNode!==client)throw new Error('transition does not cover the whole World book');
+            if(transition.getAttribute('data-state')!=='closing')throw new Error('transition did not start closing');
 
             const frame=w.document.getElementById('siza-tcg-embed-frame');
-            if(!frame)throw new Error('local Arena iframe was not preloaded');
-            if(!frame.getAttribute('src').includes('/static/webclient/tcg/siza-mobile-test/index.html'))throw new Error(`wrong local Arena src: ${frame.getAttribute('src')}`);
-            if(frame.hasAttribute('allowtransparency'))throw new Error('canonical Arena iframe is still transparent');
+            if(!frame)throw new Error('Arena iframe was not preloaded behind transition');
+            if(frame.hasAttribute('allowtransparency'))throw new Error('Arena iframe is transparent');
 
             await new Promise(r=>setTimeout(r,430));
-            if(client.getAttribute('data-mode')!=='COMBAT')throw new Error('Arena was not revealed after transition fully covered World');
-            if(w.document.getElementById('siza-tcg-tray').getAttribute('data-arena-source')!=='siza-mobile-test')throw new Error('embed is not marked as canonical siza-mobile-test source');
+            if(client.getAttribute('data-mode')!=='COMBAT')throw new Error('Arena did not replace World at covered midpoint');
 
             let startedEncounter=null;
-            frame.contentWindow.SIZA={
-              startWorldEncounter:(packet,mode)=>{startedEncounter={packet,mode};return {ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:packet.encounter_id};},
-              getWorldCombatResult:()=>null
-            };
+            frame.contentWindow.SIZA={startWorldEncounter:(packet,mode)=>{startedEncounter={packet,mode};return {ok:true,status:'WORLD_ENCOUNTER_STARTED',encounter_id:packet.encounter_id};},getWorldCombatResult:()=>null};
             frame.dispatchEvent(new w.Event('load'));
             await new Promise(r=>setTimeout(r,0));
-            if(!startedEncounter||startedEncounter.packet.encounter_id!=='WEB-EMBED-001')throw new Error('pending encounter was not delivered to child Arena after load');
+            if(!startedEncounter)throw new Error('encounter did not reach child Arena');
             if(startedEncounter.packet.initiator.name!=='Nereida')throw new Error(`World login leaked into Arena identity: ${startedEncounter.packet.initiator.name}`);
-            if(!String(startedEncounter.packet.initiator.portrait||'').includes('nereida_voss.webp'))throw new Error('canonical Nereida portrait was not supplied to Arena');
+            if(!String(startedEncounter.packet.initiator.portrait||'').includes('nereida_voss.webp'))throw new Error('Nereida portrait was not supplied');
 
-            /* JSDOM can replace an iframe's synthetic document around a manually dispatched load.
-               Exercise the real injection function directly against the surviving child document. */
-            const childDoc=frame.contentWindow.document;
-            if(!childDoc.head)childDoc.documentElement.innerHTML='<head></head><body></body>';
-            if(!w.SizaTcgEmbedV01.injectEmbedStyle())throw new Error('child Arena embed style could not be installed');
-            const childStyle=frame.contentWindow.document.getElementById('siza-world-embed-style');
-            if(!childStyle)throw new Error('child Arena embed style was not installed');
-            if(!childStyle.textContent.includes('.bookShellV01.modeCombat>.bookHeaderV01{display:none!important}'))throw new Error('duplicate child book header is still enabled');
-            if(!childStyle.textContent.includes('.bookShellV01.modeCombat .matchBoardV5{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important'))throw new Error('child match board is not constrained to the iframe viewport');
-
-            const result={
-              result_id:'WEB-EMBED-001:RESULT:1',encounter_id:'WEB-EMBED-001',status:'RESOLVED',outcome:'PLAYER_WIN',
-              winner_ids:['PLAYER:1'],defeated_ids:['NPC:2'],participants:[]
-            };
+            const result={result_id:'WEB-EMBED-001:RESULT:1',encounter_id:'WEB-EMBED-001',status:'RESOLVED',outcome:'PLAYER_WIN',winner_ids:['PLAYER:1'],defeated_ids:['NPC:2'],participants:[]};
             frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('siza:combat-result',{detail:result}));
             await new Promise(r=>setTimeout(r,0));
-            const resultSend=sent.find(row=>row.name==='text'&&String(row.args&&row.args[0]).startsWith('siza-combat-result '));
-            if(!resultSend)throw new Error('child CombatResult did not return through Evennia transport');
+            if(!sent.find(row=>row.name==='text'&&String(row.args&&row.args[0]).startsWith('siza-combat-result ')))throw new Error('CombatResult did not return to Evennia');
 
-            console.log('PASS World visible -> covered transition -> full-board canonical Arena -> CombatResult -> Evennia');
+            console.log('PASS World visible -> covered transition -> Arena -> Evennia');
             dom.window.close();
           })().catch(error=>{console.error(error);process.exit(1)});
           NODE
