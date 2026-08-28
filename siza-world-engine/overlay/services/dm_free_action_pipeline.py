@@ -1,6 +1,7 @@
 from evennia.utils import logger
 
-from services.dm_campaign_director import build_dm_turn_plan, get_campaign_state, start_campaign
+from services.dm_campaign_director import build_dm_turn_plan
+from services.dm_campaign_registry import get_active_campaign_definition
 from services.dm_free_action_adjudicator import adjudicate_dm_free_action
 from services.dm_free_action_execution_bridge import execute_adjudicated_dm_free_action
 from services.dm_free_action_judge_runtime import dispatch_dm_judge_async
@@ -8,7 +9,6 @@ from services.dm_free_action_judgment_bridge import apply_dm_judgment
 from services.dm_free_action_runtime import dispatch_dm_free_action_async
 from services.dm_world_context import build_dm_world_snapshot
 from services.player_language_contract import get_actor_turn_language, localize
-from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
 
 
 DM_FREE_ACTION_PIPELINE_BUILD = "dm-0.1.1-single-bounded-context-retry"
@@ -58,18 +58,19 @@ def is_valid_unsupported_proposal(proposal_result):
 
 
 def _campaign_ready(actor):
-    state = get_campaign_state(actor)
-    wanted = str(FARO_AHOGADO_CAMPAIGN.get("id") or "")
+    active = get_active_campaign_definition(actor)
+    state = _plain_dict(active.get("state"))
+    definition = active.get("definition")
+    wanted = str(active.get("campaign_id") or "")
     if not state:
-        started = start_campaign(actor, FARO_AHOGADO_CAMPAIGN, force=False)
-        state = _plain_dict(started.get("state")) or get_campaign_state(actor)
-    if str(state.get("campaign_id") or "") != wanted:
         return {
-            "status": "OTHER_CAMPAIGN_ACTIVE",
+            "status": "NO_ACTIVE_CAMPAIGN",
             "ready": False,
-            "campaign_id": state.get("campaign_id"),
+            "campaign_id": wanted,
             "build": DM_FREE_ACTION_PIPELINE_BUILD,
         }
+    if not definition:
+        return {"status": "ACTIVE_CAMPAIGN_NOT_REGISTERED", "ready": False, "campaign_id": wanted, "build": DM_FREE_ACTION_PIPELINE_BUILD}
     if str(state.get("status") or "") == "COMPLETED":
         return {
             "status": "CAMPAIGN_COMPLETED",
@@ -81,6 +82,7 @@ def _campaign_ready(actor):
         "status": "READY",
         "ready": True,
         "campaign_id": wanted,
+        "definition": definition,
         "state": state,
         "build": DM_FREE_ACTION_PIPELINE_BUILD,
     }
@@ -99,7 +101,7 @@ def prepare_dm_unsupported_turn(actor, raw_player_input):
     snapshot = build_dm_world_snapshot(actor, raw_player_input=raw_player_input)
     plan = build_dm_turn_plan(
         actor,
-        FARO_AHOGADO_CAMPAIGN,
+        ready.get("definition"),
         raw_player_input,
         world_snapshot=snapshot,
     )

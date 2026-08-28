@@ -364,6 +364,16 @@ def accept_world_combat_result(actor, result):
 
     encounter = _plain_dict(validation.get("encounter"))
     consequence = apply_world_combat_consequences(actor, encounter, result)
+    from services.dm_campaign_registry import observe_active_campaign_evidence
+    campaign_observation = observe_active_campaign_evidence(actor, {
+        "authority": "WORLD_ENGINE",
+        "source": "TCG_COMBAT_RESULT",
+        "action_types": ["COMBAT_RESOLVED", "TCG_COMBAT_RESOLVED"],
+        "outcome": _text(result.get("outcome")),
+        "winner_ids": [_text(value) for value in _plain_list(result.get("winner_ids"))],
+        "defeated_ids": [_text(value) for value in _plain_list(result.get("defeated_ids"))],
+        "result": _clone(result),
+    })
 
     pending = _plain_dict(getattr(actor.db, "pending_tcg_encounter", {}))
     pending["status"] = RESOLVED_STATUS
@@ -393,6 +403,7 @@ def accept_world_combat_result(actor, result):
         "world_consequences_applied": bool(consequence.get("world_consequences_applied")),
         "consequence_status": consequence.get("status"),
         "world_consequence": _clone(consequence),
+        "campaign_observation": _clone(campaign_observation),
         "build": WORLD_COMBAT_HANDOFF_BUILD,
     }
 

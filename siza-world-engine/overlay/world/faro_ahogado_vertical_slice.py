@@ -14,31 +14,40 @@ FARO_AHOGADO_CAMPAIGN = {
             "name": "Indicio fiable",
             "state_goal": "El jugador obtiene una pista verificable que abre una vía real para la expedición.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
+            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "KNOWLEDGE_FACT_SHARED"}],
         },
         {
             "id": "FA-BEAT-ROUTE",
             "name": "Ruta viable",
             "state_goal": "El jugador identifica al menos una ruta, procedimiento o cadena de acceso viable para continuar.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
+            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"}],
         },
         {
             "id": "FA-BEAT-MEANS",
             "name": "Medios para partir",
             "state_goal": "El jugador consigue los medios, permisos, aliados o recursos que hagan ejecutable la ruta elegida.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
+            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"}],
         },
         {
             "id": "FA-BEAT-CROSSING",
             "name": "Tramo peligroso",
             "state_goal": "El jugador supera el tramo de riesgo que separa la preparación del objetivo final de la expedición.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
+            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "COMBAT_RESOLVED"}],
         },
         {
             "id": "FA-BEAT-CLIMAX",
             "name": "Resolución de la expedición",
             "state_goal": "El estado del mundo confirma que el objetivo final de la campaña fue resuelto.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
+            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "WORLD_ACTION_RESOLVED"}],
         },
+    ],
+    "signal_projections": [
+        {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"}},
+        {"signal": "route", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"}},
     ],
     "deck": [
         {
@@ -210,3 +219,8 @@ FARO_AHOGADO_CAMPAIGN = {
         },
     ],
 }
+
+# The vertical slice opts into the generic registry; the DM pipeline never imports it.
+from services.dm_campaign_registry import register_campaign
+
+register_campaign(FARO_AHOGADO_CAMPAIGN)

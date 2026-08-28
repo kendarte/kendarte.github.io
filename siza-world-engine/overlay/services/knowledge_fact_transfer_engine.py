@@ -166,6 +166,17 @@ def transfer_knowledge_fact(source, target, fact_id):
         "recipient_ids": [target_npc_id] if target_npc_id else [],
     }
     consequence = emit_world_action(action_packet)
+    campaign_observation = None
+    if bool(target_state.get("known")):
+        from services.dm_campaign_registry import observe_active_campaign_evidence
+        campaign_observation = observe_active_campaign_evidence(target, {
+            "authority": "WORLD_ENGINE",
+            "source": "KNOWLEDGE_FACT_TRANSFER",
+            "action_types": ["KNOWLEDGE_FACT_SHARED"],
+            "fact_ids": [wanted_fact_id],
+            "knowledge_keys": [knowledge_key] if knowledge_key else [],
+            "result": {"target_known": True, "fact_id": wanted_fact_id},
+        })
 
     return {
         "success": True,
@@ -185,6 +196,7 @@ def transfer_knowledge_fact(source, target, fact_id):
         "transfer_history_count": len(_plain_list((stored or {}).get("transfer_history"))),
         "fact": stored,
         "action_consequence": consequence,
+        "campaign_observation": campaign_observation,
         "build": FACT_TRANSFER_BUILD,
         "provenance_build": TRANSFER_PROVENANCE_BUILD,
     }

@@ -275,10 +275,22 @@ def execute_adjudicated_dm_free_action(actor, adjudication, raw_player_input="")
             break
     all_executed = bool(results) and all(bool(row.get("executed")) for row in results)
     rendered = [str(row.get("rendered_text") or "").strip() for row in results if str(row.get("rendered_text") or "").strip()]
+    campaign_observation = None
+    if all_executed:
+        # The execution bridge is after deterministic world resolution; no model output is accepted here.
+        from services.dm_campaign_registry import observe_active_campaign_evidence
+        evidence = {
+            "authority": "WORLD_ENGINE",
+            "source": "DM_FREE_ACTION_EXECUTION",
+            "action_types": [str(row.get("status") or "") for row in results],
+            "results": results,
+        }
+        campaign_observation = observe_active_campaign_evidence(actor, evidence)
     return {
         "status": "EXECUTED" if all_executed else "PARTIAL_OR_REJECTED",
         "executed": all_executed,
         "results": results,
         "rendered_text": "\n".join(rendered),
+        "campaign_observation": campaign_observation,
         "build": DM_EXECUTION_BRIDGE_BUILD,
     }

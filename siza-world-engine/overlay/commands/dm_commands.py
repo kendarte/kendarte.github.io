@@ -7,11 +7,13 @@ from services.dm_campaign_director import (
     build_dm_turn_plan,
     complete_active_beat,
     get_campaign_state,
+    project_campaign_evidence,
     set_campaign_signal,
     start_campaign,
     validate_campaign_definition,
 )
 from services.dm_world_context import build_dm_world_snapshot
+from services.dm_campaign_registry import get_active_campaign_definition, start_registered_campaign
 from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
 
 
@@ -44,8 +46,9 @@ class CmdSizaDMStart(Command):
     locks = "cmd:all()"
 
     def func(self):
-        result = start_campaign(self.caller, FARO_AHOGADO_CAMPAIGN, force=False)
-        self.caller.msg(f"DM Faro Ahogado: {result.get('status')}")
+        campaign_id = str(self.args or "").strip() or str(FARO_AHOGADO_CAMPAIGN.get("id"))
+        result = start_registered_campaign(self.caller, campaign_id, force=False)
+        self.caller.msg(f"DM campaign {campaign_id}: {result.get('status')}")
         _show_status(self.caller)
 
 
@@ -66,12 +69,14 @@ class CmdSizaDMPlan(Command):
         if not raw:
             self.caller.msg("Uso: siza-dm-plan <acción libre del jugador>")
             return
-        if not get_campaign_state(self.caller):
-            start_campaign(self.caller, FARO_AHOGADO_CAMPAIGN)
+        active = get_active_campaign_definition(self.caller)
+        if not active.get("definition"):
+            self.caller.msg("DM PLAN | NO_ACTIVE_CAMPAIGN")
+            return
         snapshot = build_dm_world_snapshot(self.caller, raw_player_input=raw)
         plan = build_dm_turn_plan(
             self.caller,
-            FARO_AHOGADO_CAMPAIGN,
+            active["definition"],
             raw,
             world_snapshot=snapshot,
         )
@@ -194,10 +199,10 @@ class CmdSizaValidateDMV01(Command):
                 str(attention_ids),
             )
 
-            advanced = complete_active_beat(
+            advanced = project_campaign_evidence(
                 self.caller,
                 FARO_AHOGADO_CAMPAIGN,
-                evidence={"source": "QA", "fact_id": "FA-QA-LEAD"},
+                {"authority": "WORLD_ENGINE", "source": "QA", "action_types": ["KNOWLEDGE_FACT_SHARED"]},
             )
             route_plan = build_dm_turn_plan(
                 self.caller,
@@ -208,8 +213,8 @@ class CmdSizaValidateDMV01(Command):
             route_ids = [str(card.get("id") or "") for card in list(route_plan.get("selected_cards") or [])]
             check(
                 "authoritative-beat-evidence-advances-to-route-deck",
-                advanced.get("active_beat_id") == "FA-BEAT-ROUTE" and "FA-CARD-ROUTE-EVIDENCE" in route_ids,
-                f"active={advanced.get('active_beat_id')} cards={route_ids}",
+                (advanced.get("advancement") or {}).get("active_beat_id") == "FA-BEAT-ROUTE" and "FA-CARD-ROUTE-EVIDENCE" in route_ids,
+                f"active={(advanced.get('advancement') or {}).get('active_beat_id')} cards={route_ids}",
             )
         finally:
             self.caller.db.dm_campaign_state = original

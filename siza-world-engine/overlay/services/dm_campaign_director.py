@@ -43,6 +43,10 @@ def validate_campaign_definition(definition):
             continue
         if beat_id in beat_ids:
             errors.append(f"DUPLICATE_BEAT:{beat_id}")
+        for condition in _plain_list(row.get("completion_conditions")):
+            condition_row = _plain_dict(condition)
+            if not str(condition_row.get("path") or "").strip():
+                errors.append(f"INVALID_COMPLETION_CONDITION:{beat_id}")
         beat_ids.append(beat_id)
 
     card_ids = []
@@ -132,7 +136,7 @@ def _beat_ids(definition):
 
 
 def complete_active_beat(actor, definition, evidence=None):
-    """Advance campaign bookkeeping only after an external authoritative system supplies evidence."""
+    """Advance only when a World Engine evidence packet satisfies authored conditions."""
     state = get_campaign_state(actor)
     if not state:
         return {"status": "NO_ACTIVE_CAMPAIGN", "advanced": False, "build": DM_DIRECTOR_BUILD}
@@ -142,6 +146,14 @@ def complete_active_beat(actor, definition, evidence=None):
     ids = _beat_ids(definition)
     if current not in ids:
         return {"status": "UNKNOWN_ACTIVE_BEAT", "advanced": False, "active_beat_id": current, "build": DM_DIRECTOR_BUILD}
+
+    beat = next((_plain_dict(row) for row in _plain_list(definition.get("beats")) if str(_plain_dict(row).get("id") or "") == current), {})
+    packet = _plain_dict(evidence)
+    if packet.get("authority") != "WORLD_ENGINE":
+        return {"status": "AUTHORITATIVE_EVIDENCE_REQUIRED", "advanced": False, "build": DM_DIRECTOR_BUILD}
+    conditions = _plain_list(beat.get("completion_conditions"))
+    if conditions and not all(_condition_matches(condition, state, {"evidence": packet}) for condition in conditions):
+        return {"status": "BEAT_CONDITIONS_NOT_MET", "advanced": False, "active_beat_id": current, "build": DM_DIRECTOR_BUILD}
 
     completed = [str(value) for value in _plain_list(state.get("completed_beats"))]
     if current not in completed:
@@ -164,6 +176,32 @@ def complete_active_beat(actor, definition, evidence=None):
         "state": deepcopy(state),
         "build": DM_DIRECTOR_BUILD,
     }
+
+
+def project_campaign_evidence(actor, definition, evidence):
+    """Observe authoritative evidence, project declared signals, then check the active beat."""
+    packet = _plain_dict(evidence)
+    if packet.get("authority") != "WORLD_ENGINE":
+        return {"status": "AUTHORITATIVE_EVIDENCE_REQUIRED", "projected": [], "advanced": False, "build": DM_DIRECTOR_BUILD}
+    state = get_campaign_state(actor)
+    if not state or str(state.get("campaign_id") or "") != str(definition.get("id") or ""):
+        return {"status": "CAMPAIGN_NOT_ACTIVE", "projected": [], "advanced": False, "build": DM_DIRECTOR_BUILD}
+    projected = []
+    for raw in _plain_list(definition.get("signal_projections")):
+        rule = _plain_dict(raw)
+        signal = str(rule.get("signal") or "").strip()
+        when = _plain_dict(rule.get("when"))
+        if signal and when and _condition_matches(when, state, {"evidence": packet}):
+            current = _plain_dict(get_campaign_state(actor).get("signals")).get(signal, 0)
+            value = rule.get("value", 1)
+            if str(rule.get("mode") or "INCREMENT").upper() == "INCREMENT":
+                try:
+                    value = current + value
+                except TypeError:
+                    continue
+            projected.append(set_campaign_signal(actor, signal, value))
+    advancement = complete_active_beat(actor, definition, evidence=packet)
+    return {"status": "OBSERVED", "projected": projected, "advanced": bool(advancement.get("advanced")), "advancement": advancement, "build": DM_DIRECTOR_BUILD}
 
 
 def _read_path(source, path):
