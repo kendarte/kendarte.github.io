@@ -180,7 +180,7 @@
       encounter_id:encounter.encounter_id,
       location:encounter.site?.name||encounter.site?.room_id||'',
       opponent_name:encounter.opponents?.[0]?.name||'Rival',
-      player_name:encounter.initiator?.name||'',
+      player_name:text(match?.player?.name)||encounter.initiator?.name||'',
       world_context_tags:clone(encounter.world_context_tags||[])
     };
   }
