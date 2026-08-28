@@ -3,13 +3,17 @@ name: SIZA Local Arena Embed v0.1 Tests
 on:
   push:
     paths:
+      - 'siza-world-engine/sync_siza_arena.bat'
+      - 'siza-world-engine/start_world_engine.bat'
+      - 'siza-world-engine/play_siza_world.bat'
       - 'siza-world-engine/update_world_engine.bat'
       - 'siza-world-engine/overlay/web/templates/webclient/webclient.html'
       - 'siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js'
       - 'siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js'
       - 'siza-world-engine/overlay/web/static/webclient/css/siza_tcg_embed_v01.css'
-      - 'siza-mobile-test/index.html'
-      - 'siza-mobile-test/world-combat-bridge-v01.js'
+      - 'siza-world-engine/overlay/web/static/webclient/css/siza_combat_transition_v01.css'
+      - 'siza-mobile-test/**'
       - 'siza-core/**'
       - '.github/workflows/siza-local-arena-embed-v01-tests.yml'
   workflow_dispatch:
@@ -31,15 +35,29 @@ jobs:
         shell: bash
         run: |
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          node --check siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js
           node --check siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js
           test -f siza-mobile-test/index.html
           test -f siza-mobile-test/world-combat-bridge-v01.js
           test -f siza-core/cards.js
-          grep -Fq 'siza-mobile-test" "runtime\web\static\webclient\tcg\siza-mobile-test' siza-world-engine/update_world_engine.bat
-          grep -Fq 'siza-core" "runtime\web\static\webclient\tcg\siza-core' siza-world-engine/update_world_engine.bat
+          test -f siza-world-engine/sync_siza_arena.bat
+          grep -Fq '..\siza-mobile-test" "runtime\web\static\webclient\tcg\siza-mobile-test" /MIR' siza-world-engine/sync_siza_arena.bat
+          grep -Fq '..\siza-core" "runtime\web\static\webclient\tcg\siza-core" /MIR' siza-world-engine/sync_siza_arena.bat
+          grep -Fq 'sync_siza_arena.bat' siza-world-engine/start_world_engine.bat
+          grep -Fq 'sync_siza_arena.bat' siza-world-engine/play_siza_world.bat
+          grep -Fq 'sync_siza_arena.bat' siza-world-engine/update_world_engine.bat
           grep -Fq 'siza_tcg_embed_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
           grep -Fq 'siza_tcg_embed_v01.css' siza-world-engine/overlay/web/templates/webclient/webclient.html
-          echo 'PASS local Arena static mount contract'
+          grep -Fq 'siza_combat_transition_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          grep -Fq 'siza_combat_transition_v01.css' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          ! grep -Fq 'siza_tcg_battlefield_v03.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          ! grep -Fq 'siza_combat_choreography_v01.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          ! grep -Fq 'siza_combat_animation_v02.js' siza-world-engine/overlay/web/templates/webclient/webclient.html
+          ! grep -Fq '.creatureCommandDockV610' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq '.arenaField' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq '.handAreaV5' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          ! grep -Fq '.matchLog' siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js
+          echo 'PASS canonical Arena static mount contract'
 
       - name: Install JSDOM
         run: npm install --no-save jsdom@24
@@ -53,6 +71,7 @@ jobs:
           (async()=>{
             const dom=new JSDOM(`<!doctype html><html><body>
               <div id="siza-book-client" data-mode="EXPLORATION">
+                <div class="sizaBookBody"></div>
                 <div id="siza-tcg-tray" data-active="false">
                   <div id="siza-tcg-resource-mount"></div>
                   <div id="siza-tcg-hand-mount"></div>
@@ -73,6 +92,7 @@ jobs:
             };
 
             w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_tcg_embed_v01.js','utf8'));
+            w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_combat_transition_v01.js','utf8'));
             w.eval(fs.readFileSync('siza-world-engine/overlay/web/static/webclient/js/siza_world_tcg_transport_v01.js','utf8'));
             w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
             await new Promise(r=>setTimeout(r,0));
@@ -83,11 +103,13 @@ jobs:
               initiator:{entity_id:'PLAYER:1',name:'Nereida'},
               opponents:[{entity_id:'NPC:2',name:'Mara Vensal'}]
             };
-            const initial=listeners.siza_combat_encounter([encounter]);
+            listeners.siza_combat_encounter([encounter]);
             if(w.document.getElementById('siza-book-client').getAttribute('data-mode')!=='COMBAT')throw new Error('encounter did not switch shell to COMBAT');
+            if(!w.document.getElementById('siza-combat-book-transition-v02'))throw new Error('World -> combat transition was not preserved');
             const frame=w.document.getElementById('siza-tcg-embed-frame');
             if(!frame)throw new Error('local Arena iframe was not mounted');
             if(!frame.getAttribute('src').includes('/static/webclient/tcg/siza-mobile-test/index.html'))throw new Error(`wrong local Arena src: ${frame.getAttribute('src')}`);
+            if(w.document.getElementById('siza-tcg-tray').getAttribute('data-arena-source')!=='siza-mobile-test')throw new Error('embed is not marked as canonical siza-mobile-test source');
 
             let startedEncounter=null;
             frame.contentWindow.SIZA={
@@ -97,6 +119,11 @@ jobs:
             frame.dispatchEvent(new w.Event('load'));
             await new Promise(r=>setTimeout(r,0));
             if(!startedEncounter||startedEncounter.packet.encounter_id!=='WEB-EMBED-001')throw new Error('pending encounter was not delivered to child Arena after load');
+            const childStyle=frame.contentWindow.document.getElementById('siza-world-embed-style');
+            if(!childStyle)throw new Error('minimal iframe integration style was not installed');
+            for(const forbidden of ['creatureCommandDockV610','arenaField','handAreaV5','matchLog']){
+              if(childStyle.textContent.includes(forbidden))throw new Error(`World Engine still overrides Arena UI: ${forbidden}`);
+            }
 
             const result={
               result_id:'WEB-EMBED-001:RESULT:1',encounter_id:'WEB-EMBED-001',status:'RESOLVED',outcome:'PLAYER_WIN',
@@ -107,7 +134,7 @@ jobs:
             const resultSend=sent.find(row=>row.name==='text'&&String(row.args&&row.args[0]).startsWith('siza-combat-result '));
             if(!resultSend)throw new Error('child CombatResult did not return through Evennia transport');
 
-            console.log('PASS browser World encounter -> local Arena -> CombatResult -> Evennia transport');
+            console.log('PASS World encounter -> canonical local Arena -> CombatResult -> Evennia transport');
             dom.window.close();
           })().catch(error=>{console.error(error);process.exit(1)});
           NODE
