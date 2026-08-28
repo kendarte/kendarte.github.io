@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.2.1-world-tcg-combat-transition";
+    var BUILD = "0.3.0-world-tcg-canonical-arena";
     var activeEncounter = null;
     var lastSubmittedResultId = "";
 
@@ -83,11 +83,10 @@
             return {ok: false, status: "INVALID_ENCOUNTER_PACKET"};
         }
 
-        /* Presentation must begin before the Book switches to COMBAT. The animation
-           layer also listens to the encounter as a fallback, but the transport owns
-           the guaranteed handoff that actually activates the Arena. */
-        if (window.SizaCombatAnimationV02 && typeof window.SizaCombatAnimationV02.playBookTransition === "function") {
-            window.SizaCombatAnimationV02.playBookTransition();
+        /* Preserve the useful World -> combat transition, but leave every in-match
+           visual decision to the canonical siza-mobile-test runtime. */
+        if (window.SizaCombatTransitionV01 && typeof window.SizaCombatTransitionV01.playBookTransition === "function") {
+            window.SizaCombatTransitionV01.playBookTransition();
         }
 
         activeEncounter = clone(encounter);
