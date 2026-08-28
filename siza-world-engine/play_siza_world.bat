@@ -47,5 +47,5 @@ if errorlevel 1 (
 )
 
 popd
-start "" http://localhost:4001
+start "" http://localhost:4001/webclient/
 exit /b 0
