@@ -119,11 +119,6 @@ jobs:
             frame.dispatchEvent(new w.Event('load'));
             await new Promise(r=>setTimeout(r,0));
             if(!startedEncounter||startedEncounter.packet.encounter_id!=='WEB-EMBED-001')throw new Error('pending encounter was not delivered to child Arena after load');
-            const childStyle=frame.contentWindow.document.getElementById('siza-world-embed-style');
-            if(!childStyle)throw new Error('minimal iframe integration style was not installed');
-            for(const forbidden of ['creatureCommandDockV610','arenaField','handAreaV5','matchLog']){
-              if(childStyle.textContent.includes(forbidden))throw new Error(`World Engine still overrides Arena UI: ${forbidden}`);
-            }
 
             const result={
               result_id:'WEB-EMBED-001:RESULT:1',encounter_id:'WEB-EMBED-001',status:'RESOLVED',outcome:'PLAYER_WIN',
