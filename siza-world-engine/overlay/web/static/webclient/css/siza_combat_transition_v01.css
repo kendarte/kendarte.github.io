@@ -1,0 +1,65 @@
+/* World Engine -> Siza Arena transition. Presentation only. */
+.sizaCombatBookTransitionV02{
+  position:absolute;
+  z-index:220;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+}
+.sizaCombatBookTransitionV02[data-state]{opacity:1;visibility:visible}
+.sizaCombatBladeV02{
+  position:absolute;
+  top:-12%;
+  bottom:-12%;
+  width:62%;
+  background:
+    linear-gradient(135deg,rgba(15,8,5,.98),rgba(43,22,12,.98)),
+    repeating-linear-gradient(0deg,transparent 0 8px,rgba(198,151,82,.04) 8px 9px);
+  box-shadow:0 0 45px rgba(0,0,0,.72);
+  transition:transform .34s cubic-bezier(.65,.02,.35,1);
+}
+.sizaCombatBladeV02.bladeA{left:-12%;clip-path:polygon(0 0,100% 0,82% 100%,0 100%);transform:translateX(-108%)}
+.sizaCombatBladeV02.bladeB{right:-12%;clip-path:polygon(18% 0,100% 0,100% 100%,0 100%);transform:translateX(108%)}
+.sizaCombatBookTransitionV02[data-state="closing"] .bladeA,
+.sizaCombatBookTransitionV02[data-state="locked"] .bladeA{transform:translateX(0)}
+.sizaCombatBookTransitionV02[data-state="closing"] .bladeB,
+.sizaCombatBookTransitionV02[data-state="locked"] .bladeB{transform:translateX(0)}
+.sizaCombatBookTransitionV02[data-state="opening"] .bladeA{transform:translateX(-108%);transition-duration:.46s}
+.sizaCombatBookTransitionV02[data-state="opening"] .bladeB{transform:translateX(108%);transition-duration:.46s}
+.sizaCombatBookTitleV02{
+  position:absolute;
+  z-index:3;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.72);
+  opacity:0;
+  text-align:center;
+  color:#f2dfb6;
+  text-shadow:0 5px 18px #000;
+  transition:opacity .16s ease,transform .28s cubic-bezier(.16,.88,.26,1.12);
+}
+.sizaCombatBookTitleV02::before,.sizaCombatBookTitleV02::after{
+  content:"";
+  display:block;
+  width:240px;
+  max-width:35vw;
+  height:1px;
+  margin:10px auto;
+  background:linear-gradient(90deg,transparent,#d2a55e,transparent)
+}
+.sizaCombatBookTitleV02 small{display:block;font:800 8px/1 system-ui,sans-serif;letter-spacing:.28em;color:#b7925f}
+.sizaCombatBookTitleV02 strong{display:block;margin-top:7px;font:700 38px/1 Georgia,serif;letter-spacing:.22em}
+.sizaCombatBookTransitionV02[data-state="locked"] .sizaCombatBookTitleV02{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1)
+}
+.sizaCombatBookTransitionV02[data-state="opening"] .sizaCombatBookTitleV02{
+  opacity:0;
+  transform:translate(-50%,-50%) scale(1.18)
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sizaCombatBladeV02,.sizaCombatBookTitleV02{transition-duration:.01ms!important}
+}
