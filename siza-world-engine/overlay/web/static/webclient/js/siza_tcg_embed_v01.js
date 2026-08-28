@@ -1,8 +1,10 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.4.0-fullscreen-canonical-arena";
+    var BUILD = "0.5.0-full-board-canonical-arena";
     var FRAME_SRC = "/static/webclient/tcg/siza-mobile-test/index.html?siza_world_embed=1";
+    var CANONICAL_PLAYER_FALLBACK = "Nereida";
+    var CANONICAL_PLAYER_PORTRAIT = "/static/webclient/tcg/siza-mobile-test/portraits/nereida_voss.webp?v=0514";
     var frame = null;
     var frameReady = false;
     var pendingEncounter = null;
@@ -19,6 +21,37 @@
     function setStatus(label) {
         var node = byId("siza-tcg-status");
         if (node) node.textContent = text(label);
+    }
+
+    function childWindow() {
+        try { return frame && frame.contentWindow ? frame.contentWindow : null; }
+        catch (error) { return null; }
+    }
+
+    function canonicalPlayerName() {
+        var stores = [];
+        var child = childWindow();
+        try { if (child && child.localStorage) stores.push(child.localStorage); } catch (error) {}
+        try { if (window.localStorage) stores.push(window.localStorage); } catch (error) {}
+        for (var i = 0; i < stores.length; i += 1) {
+            try {
+                var raw = stores[i].getItem("siza_work_state_v1");
+                if (!raw) continue;
+                var saved = JSON.parse(raw);
+                var name = text(saved && saved.player && saved.player.mag && saved.player.mag.name);
+                if (name && !/^(admin|administrator)$/i.test(name)) return name;
+            } catch (error) {}
+        }
+        return CANONICAL_PLAYER_FALLBACK;
+    }
+
+    function canonicalEncounter(encounter) {
+        var packet = clone(encounter);
+        if (!packet || typeof packet !== "object") return packet;
+        packet.initiator = packet.initiator && typeof packet.initiator === "object" ? packet.initiator : {};
+        packet.initiator.name = canonicalPlayerName();
+        if (!text(packet.initiator.portrait)) packet.initiator.portrait = CANONICAL_PLAYER_PORTRAIT;
+        return packet;
     }
 
     function applyEncounterContext(encounter) {
@@ -54,17 +87,11 @@
         return node;
     }
 
-    function childWindow() {
-        try { return frame && frame.contentWindow ? frame.contentWindow : null; }
-        catch (error) { return null; }
-    }
-
-    /*
-       The embedded runtime is a synchronized copy of /siza-mobile-test and /siza-core.
-       World Engine is only the transport and viewport host. It may remove the standalone
-       website navigation, but it must not restyle Arena's book header, battlefield, hand,
-       stack, combat controls, decisions, cards or animations.
-    */
+    /* The iframe hosts the canonical Arena. The embed adaptation is limited to:
+       - removing duplicate standalone/book chrome,
+       - making the Arena consume the iframe height exactly,
+       - keeping the canonical player identity visible.
+       It does not replace battlefield interaction or card logic. */
     function injectEmbedStyle() {
         var child = childWindow();
         if (!child || !child.document || !child.document.head) return false;
@@ -73,10 +100,25 @@
         var style = child.document.createElement("style");
         style.id = "siza-world-embed-style";
         style.textContent = `
-html,body,#app{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:hidden!important;background:#07111b!important}
+html,body,#app{width:100%!important;height:100%!important;min-height:0!important;margin:0!important;overflow:hidden!important;background:#07111b!important}
 #bootFallback,.sidebar,.topbar,.arenaNavToggleV600,.arenaNavPanelV600,.arenaNavVeilV600{display:none!important}
-.shell{display:block!important;width:100%!important;min-height:100vh!important;margin:0!important;background:#07111b!important}
-.main{display:block!important;width:100%!important;min-height:100vh!important;margin:0!important;padding:0!important;grid-column:auto!important}
+.shell,.main{display:block!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;grid-column:auto!important;background:#07111b!important;overflow:hidden!important}
+.bookShellV01.modeCombat{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
+.bookShellV01.modeCombat>.bookHeaderV01{display:none!important}
+.bookShellV01.modeCombat>.bookBodyV01{width:100%!important;height:100%!important;min-height:0!important;margin:0!important;overflow:hidden!important}
+.bookShellV01.modeCombat .bookSceneV01{width:100%!important;height:100%!important;min-height:0!important;margin:0!important;overflow:hidden!important;background:#07111b!important}
+.bookShellV01.modeCombat .bookNarrativeV01{display:none!important}
+.bookShellV01.modeCombat .matchShell.v05{display:block!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
+.bookShellV01.modeCombat .matchBoardV5{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;border-radius:0!important}
+.participantHudV035{display:flex!important;flex-direction:column!important;gap:3px!important;align-items:flex-start!important;justify-content:center!important;min-width:104px!important;line-height:1.15!important}
+.participantHudV035>b,.participantHudV035>span{display:block!important;margin:0!important}
+.arenaHalf.playerHalf .participantHudV035::before{content:"";display:block;width:86px;height:100px;margin:0 auto 7px;border:1px solid #8b6b36;border-radius:10px;background:url("${CANONICAL_PLAYER_PORTRAIT}") 50% 18%/cover no-repeat;box-shadow:0 9px 20px rgba(0,0,0,.42)}
+@media(max-height:700px) and (min-width:761px){
+  .arenaHalf{height:calc(50% - 62px)!important;min-height:0!important;padding-top:6px!important;padding-bottom:6px!important}
+  .arenaHalf.playerHalf{padding-bottom:6px!important}
+  .handAreaV5{height:178px!important}
+  .handV5{height:176px!important}
+}
 `;
         child.document.head.appendChild(style);
         return true;
@@ -177,10 +219,11 @@ html,body,#app{width:100%!important;height:100%!important;min-height:100%!import
             return {ok:false,status:"INVALID_ENCOUNTER",build:BUILD};
         }
         lastResultId = "";
-        pendingEncounter = {encounter:clone(encounter), mode:mode || "prepare"};
-        applyEncounterContext(pendingEncounter.encounter);
+        var packet = canonicalEncounter(encounter);
+        pendingEncounter = {encounter:packet, mode:mode || "prepare"};
+        applyEncounterContext(packet);
         ensureFrame();
-        return startInChild(pendingEncounter.encounter, pendingEncounter.mode);
+        return startInChild(packet, pendingEncounter.mode);
     }
 
     function getWorldCombatResult() {
@@ -204,7 +247,8 @@ html,body,#app{width:100%!important;height:100%!important;min-height:100%!import
         startWorldEncounter:startWorldEncounter,
         getWorldCombatResult:getWorldCombatResult,
         forwardResult:forwardResult,
-        injectEmbedStyle:injectEmbedStyle
+        injectEmbedStyle:injectEmbedStyle,
+        canonicalEncounter:canonicalEncounter
     });
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

@@ -10,6 +10,7 @@
 <style id="siza-compact-header-inline-v04">
 /* Served inline on purpose: this must win even when static CSS is stale/cached. */
 .sizaBookClient {
+    position:relative !important;
     grid-template-rows: 58px minmax(0, 1fr) !important;
 }
 .sizaBookHeader {
@@ -89,6 +90,60 @@
     .sizaPortraitSlot { width:36px !important; height:42px !important; }
     .sizaHeaderCharacterPlayer { grid-template-columns:40px minmax(0,1fr) !important; }
     .sizaHeaderCharacterFocus { grid-template-columns:minmax(0,1fr) 40px !important; }
+}
+
+/* Critical COMBAT handoff stays inline so stale static CSS cannot resurrect World chrome. */
+.sizaBookClient[data-mode="COMBAT"] {
+    position:fixed !important;
+    z-index:180 !important;
+    inset:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-width:none !important;
+    max-height:none !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    grid-template-rows:minmax(0,1fr) !important;
+    background:#07111b !important;
+    box-shadow:none !important;
+}
+.sizaBookClient[data-mode="COMBAT"] > .sizaBookHeader {
+    display:none !important;
+}
+.sizaBookClient[data-mode="COMBAT"] > .sizaBookBody {
+    position:relative !important;
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    background:#07111b !important;
+}
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] {
+    display:block !important;
+    position:absolute !important;
+    z-index:200 !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    overflow:hidden !important;
+    background:#07111b !important;
+}
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgEmbedHost,
+.sizaBookClient[data-mode="COMBAT"] .sizaTcgEmbedFrame {
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
 }
 </style>
 <script src="{% static 'webclient/js/siza_book_client.js' %}" type="text/javascript" charset="utf-8"></script>

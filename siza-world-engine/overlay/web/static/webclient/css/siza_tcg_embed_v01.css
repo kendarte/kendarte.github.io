@@ -1,45 +1,51 @@
 /* SIZA World Engine -> canonical Arena handoff.
    Exploration belongs to the World Engine. During COMBAT the synchronized
-   /siza-mobile-test runtime owns the entire viewport and its own presentation. */
-.sizaTcgEmbedHost {
-    width:100%;
-    height:100%;
-    min-height:0;
-    overflow:hidden;
-    background:#07111b;
-}
-
+   /siza-mobile-test runtime owns the entire viewport. */
+.sizaTcgEmbedHost,
 .sizaTcgEmbedFrame {
     display:block;
     width:100%;
     height:100%;
     min-height:0;
+    margin:0;
     border:0;
+    overflow:hidden;
     background:#07111b;
 }
 
 .sizaBookClient[data-mode="COMBAT"] {
+    position:fixed !important;
+    z-index:180 !important;
+    inset:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-width:none !important;
+    max-height:none !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
     grid-template-rows:minmax(0,1fr) !important;
     background:#07111b !important;
+    box-shadow:none !important;
 }
 
-/* Once the encounter transition finishes, the World book chrome/scene must not
-   remain visible around or underneath the Arena. */
-.sizaBookClient[data-mode="COMBAT"] .sizaBookHeader,
+/* World chrome is exploration-only. Do not leave a second header around Arena. */
+.sizaBookClient[data-mode="COMBAT"] > .sizaBookHeader,
 .sizaBookClient[data-mode="COMBAT"] .sizaBookScene,
 .sizaBookClient[data-mode="COMBAT"] .sizaStoryPage,
 .sizaBookClient[data-mode="COMBAT"] .sizaSceneCast {
     display:none !important;
 }
 
-.sizaBookClient[data-mode="COMBAT"] .sizaBookBody {
-    position:fixed !important;
+.sizaBookClient[data-mode="COMBAT"] > .sizaBookBody {
+    position:relative !important;
     z-index:190 !important;
-    inset:0 !important;
     display:block !important;
-    width:100vw !important;
-    height:100vh !important;
-    min-height:100vh !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
     margin:0 !important;
     padding:0 !important;
     overflow:hidden !important;
@@ -63,8 +69,7 @@
     box-shadow:none !important;
 }
 
-/* These are World-shell placeholders. The embedded canonical Arena provides its
-   own hand, resources, combat controls and status presentation. */
+/* World-shell placeholders are not part of the match presentation. */
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgResources,
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgHand,
 .sizaBookClient[data-mode="COMBAT"] .sizaTcgTray[data-embed-mounted="true"] > .sizaTcgStatus {

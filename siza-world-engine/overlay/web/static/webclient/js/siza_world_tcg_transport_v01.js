@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.3.0-world-tcg-canonical-arena";
+    var BUILD = "0.4.0-covered-arena-handoff";
     var activeEncounter = null;
     var lastSubmittedResultId = "";
 
@@ -76,6 +76,21 @@
         return {ok: true, status: "ARENA_STARTED", packet: started};
     }
 
+    function enterArena(encounter) {
+        if (!activeEncounter || text(activeEncounter.encounter_id) !== text(encounter && encounter.encounter_id)) {
+            return {ok:false,status:"ENCOUNTER_SUPERSEDED",build:BUILD};
+        }
+        activateCombatShell(encounter);
+        return startArena(encounter);
+    }
+
+    function preloadArenaFrame() {
+        if (window.SizaTcgEmbedV01 && typeof window.SizaTcgEmbedV01.ensureFrame === "function") {
+            try { window.SizaTcgEmbedV01.ensureFrame(); }
+            catch (error) { /* The covered handoff still attempts a normal start. */ }
+        }
+    }
+
     function onEncounter(args) {
         var encounter = args && args[0];
         if (!encounter || typeof encounter !== "object" || !text(encounter.encounter_id)) {
@@ -83,16 +98,22 @@
             return {ok: false, status: "INVALID_ENCOUNTER_PACKET"};
         }
 
-        /* Preserve the useful World -> combat transition, but leave every in-match
-           visual decision to the canonical siza-mobile-test runtime. */
-        if (window.SizaCombatTransitionV01 && typeof window.SizaCombatTransitionV01.playBookTransition === "function") {
-            window.SizaCombatTransitionV01.playBookTransition();
-        }
-
         activeEncounter = clone(encounter);
         lastSubmittedResultId = "";
-        activateCombatShell(activeEncounter);
-        return startArena(activeEncounter);
+        var entering = clone(activeEncounter);
+
+        /* Load the iframe while the World scene is still visible. The shell itself does
+           not switch to COMBAT until the transition blades fully cover the book. */
+        preloadArenaFrame();
+
+        if (window.SizaCombatTransitionV01 && typeof window.SizaCombatTransitionV01.playBookTransition === "function") {
+            window.SizaCombatTransitionV01.playBookTransition(function () {
+                enterArena(entering);
+            });
+            return {ok:true,status:"TRANSITIONING_TO_ARENA",build:BUILD};
+        }
+
+        return enterArena(entering);
     }
 
     function utf8Base64Url(value) {
