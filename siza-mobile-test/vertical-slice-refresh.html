@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Siza Vertical Slice Refresh</title>
+<style>html,body{margin:0;min-height:100%;background:#07111b;color:#f3ead5;font-family:Arial,sans-serif}body{display:grid;place-items:center}.box{max-width:560px;padding:28px;border:1px solid #765b31;border-radius:14px;background:#0e1d2e;text-align:center}.box b{display:block;font:500 24px Georgia,serif;color:#f2d997;margin-bottom:10px}.box span{color:#9fb2c7;font-size:13px;line-height:1.5}</style>
+</head>
+<body>
+<div class="box"><b>Updating Siza Vertical Slice</b><span>Refreshing the shared card/deck catalog and assigning Dragon Thunder Classic…</span></div>
+<script src="../siza-core/card-effects.js?v=vertical-slice-dtc-20260828"></script>
+<script src="../siza-core/card-schema.js?v=vertical-slice-dtc-20260828"></script>
+<script src="../siza-core/cards.js?v=vertical-slice-dtc-20260828"></script>
+<script src="../siza-core/decks.js?v=vertical-slice-dtc-20260828"></script>
+<script>
+(async function(){
+ const DECK_ID='vertical_dragon_thunder_classic';
+ try{
+  const raw=localStorage.getItem('siza_work_state_v1');
+  const state=raw?JSON.parse(raw):{};
+  state.player=state.player||{};
+  state.player.mag=state.player.mag||{};
+  state.player.mag.mf=3;
+  state.player.mag.aff={...(state.player.mag.aff||{}),U:1,R:2,G:0};
+  if(window.SizaDeckCatalog?.get(DECK_ID)) state.deck=window.SizaDeckCatalog.copy(DECK_ID);
+  state.match=null;
+  localStorage.setItem('siza_work_state_v1',JSON.stringify(state));
+  const refresh=['../siza-core/cards.js','../siza-core/decks.js'];
+  for(const url of refresh){try{await fetch(url,{cache:'reload'});}catch(e){}}
+ }catch(e){console.error(e);}
+ location.replace('./?v=vertical-slice-dtc-20260828');
+})();
+</script>
+</body>
+</html>
