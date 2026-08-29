@@ -1,0 +1,10 @@
+{
+  "showLegacyProcessAtlas": true,
+  "showLegacyGalleryAtlas": true,
+  "process": [
+    {"slot":"Line Art","src":"","title":"Line Art"},
+    {"slot":"Color Pass","src":"","title":"Color Pass"},
+    {"slot":"Final Lighting","src":"","title":"Final Lighting"}
+  ],
+  "gallery": []
+}
