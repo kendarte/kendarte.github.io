@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Commercial Production — Shampoo Arcade</title>
+<meta name="description" content="Commercial and advertising video work by Shampoo Arcade.">
+<style>
+:root{color-scheme:dark;--bg:#08090b;--panel:#111318;--line:#242832;--text:#f5f7fb;--muted:#9ba3b1;--accent:#e7ff4f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,92vw);margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:28px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;letter-spacing:.04em}.back{color:var(--muted)}.hero{padding:80px 0 44px}.kicker{color:var(--accent);text-transform:uppercase;letter-spacing:.14em;font-size:.78rem;font-weight:800}.hero h1{font-size:clamp(3rem,8vw,7.2rem);line-height:.9;margin:16px 0 24px;max-width:980px;letter-spacing:-.055em}.hero p{max-width:720px;color:var(--muted);font-size:1.15rem;line-height:1.6}.work{padding:20px 0 90px}.card{display:grid;grid-template-columns:minmax(260px,420px) 1fr;gap:42px;padding:28px;border:1px solid var(--line);background:var(--panel);border-radius:24px}.video-shell{position:relative;aspect-ratio:9/16;background:#000;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center}.video-shell video{width:100%;height:100%;object-fit:contain;background:#000}.loading{position:absolute;color:var(--muted);font-size:.9rem}.meta{align-self:center}.meta .type{color:var(--accent);font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.meta h2{font-size:clamp(2rem,5vw,4.2rem);line-height:.95;margin:12px 0 18px;letter-spacing:-.045em}.meta p{color:var(--muted);line-height:1.65;max-width:620px}.tags{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.tag{border:1px solid var(--line);padding:8px 12px;border-radius:999px;color:#cbd1dc;font-size:.82rem}.footer{border-top:1px solid var(--line);padding:28px 0 44px;color:var(--muted);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}@media(max-width:760px){.hero{padding-top:56px}.card{grid-template-columns:1fr}.video-shell{max-width:390px;margin:auto}.meta{padding:6px 2px 10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><a class="brand" href="/">SHAMPOO ARCADE</a><a class="back" href="/">← Portfolio</a></header>
+<section class="hero"><div class="kicker">Commercial production</div><h1>Advertising built to move.</h1><p>Selected commercial, branded and social video work produced through Shampoo Arcade.</p></section>
+<section class="work">
+<article class="card">
+<div class="video-shell"><div class="loading" id="loading">Loading Santa Gráfica commercial…</div><video id="santaVideo" controls playsinline preload="metadata" aria-label="Santa Gráfica commercial"></video></div>
+<div class="meta"><div class="type">Featured commercial</div><h2>Santa Gráfica</h2><p>Promotional campaign video for Santa Gráfica's creative AI workshops.</p><div class="tags"><span class="tag">Advertising</span><span class="tag">Vertical video</span><span class="tag">Social campaign</span></div></div>
+</article>
+</section>
+<footer class="footer"><span>© 2026 Shampoo Arcade</span><a href="mailto:Kendarte@gmail.com">Kendarte@gmail.com ↗</a></footer>
+</div>
+<script>
+(async()=>{
+ const video=document.getElementById('santaVideo');
+ const loading=document.getElementById('loading');
+ const parts=['part-00.b64','part-01.b64','part-02.b64','part-03.b64','part-04.b64','part-05.b64'];
+ try{
+   const texts=await Promise.all(parts.map(p=>fetch('./video/santa-grafica-webm/'+p,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(p);return r.text()})));
+   const b64=texts.join('').replace(/\s+/g,'');
+   const bin=atob(b64);const bytes=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+   video.src=URL.createObjectURL(new Blob([bytes],{type:'video/webm'}));
+   loading.remove();
+ }catch(e){loading.textContent='Video failed to load.';console.error(e)}
+})();
+</script>
+</body>
+</html>
