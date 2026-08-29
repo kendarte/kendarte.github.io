@@ -41,17 +41,40 @@ function deficit(modal,player){
   return Math.max(0,modal.dc-(player.mf+(modal.roll||0)+(modal.prismBonus||0)+(modal.burnSelected?.length||0)));
 }
 
+function subtypeMatches(card,required){
+  if(!required)return true;
+  return String(card?.subtype||'').toLowerCase().includes(String(required).toLowerCase());
+}
+
+function colorMatches(card,colors=[]){
+  const list=Array.isArray(colors)?colors:[colors];
+  return list.some(color=>(card?.pips?.[String(color).toUpperCase()]||0)>0);
+}
+
 function bonusSources(player,card,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
   const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
-  const spent=new Set(player?.artifactExhausted||[]),out=[];
+  const spent=new Set(player?.artifactExhausted||[]),exhausted=new Set(player?.exhausted||[]),out=[];
   (player?.artifacts||[]).forEach((id,index)=>{
     if(spent.has(index))return;
     const source=cardResolver(id);
     for(const effect of effectResolver(source,'manifest-roll')){
       if(effect.type!=='manifest-bonus'||!(effect.amount>0))continue;
       if(effect.requiresPip&&!(card?.pips?.[effect.requiresPip]>0))continue;
-      out.push({index,id,source,effect});
+      out.push({index,id,zone:'artifacts',source,effect});
+    }
+  });
+  (player?.battlefield||[]).forEach((id,index)=>{
+    if(exhausted.has(index))return;
+    const source=cardResolver(id);
+    for(const effect of effectResolver(source,'manifest-roll')){
+      if(!(effect.amount>0))continue;
+      if(effect.type==='dragon-manifest-bonus'&&!subtypeMatches(card,effect.requiresSubtype||'Dragon'))continue;
+      if(effect.type==='storm-manifest-bonus'&&!colorMatches(card,effect.requiresColors||['R','U']))continue;
+      if(effect.type!=='dragon-manifest-bonus'&&effect.type!=='storm-manifest-bonus')continue;
+      /* Negative markers remain compatible with the Arena's artifactExhausted
+         channel; crystal-rules bridges them to battlefield exhaustion. */
+      out.push({index:-(index+1),battlefieldIndex:index,id,zone:'battlefield',source,effect});
     }
   });
   return out;
@@ -90,11 +113,39 @@ function manifestOutcome(modal,player){
   return {burn,total,success:total>=modal.dc};
 }
 
+function readyManifestSources(player,card,effectsForEvent){
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  (player?.battlefield||[]).forEach((id,index)=>{
+    const source=global.SizaCardCatalog?.get?.(id);
+    for(const effect of effectResolver(source,'manifest-success')){
+      if(effect.type!=='ready-source')continue;
+      if(!subtypeMatches(card,effect.requiresSubtype))continue;
+      if((Number(card?.difficulty)||0)<(Number(effect.minDifficulty)||0))continue;
+      player.exhausted=(player.exhausted||[]).filter(i=>i!==index);
+      player.artifactExhausted=(player.artifactExhausted||[]).filter(marker=>marker!==-(index+1));
+    }
+  });
+}
+
+function createManifestTokens(player,card,burn,effectsForEvent){
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  for(const effect of effectResolver(card,'manifest-success')){
+    if(effect.type!=='burn-create-token'||burn<(Number(effect.minBurn)||0))continue;
+    const amount=Math.max(1,Number(effect.amount)||1),id=effect.tokenId||'dtc_dragon_token';
+    for(let i=0;i<amount;i++)global.SizaCreatureRules?.addCreature?.(player,id);
+  }
+}
+
 function manifestStackPlan(modal,player,card,hasEffect){
+  const burn=Array.isArray(modal?.burnSelected)?modal.burnSelected.length:0;
+  global.SizaDragonThunderRuntime?.queueBurn?.(player,card?.id,burn);
+  readyManifestSources(player,card,global.SizaCardEffects?.forEvent);
+  createManifestTokens(player,card,burn,global.SizaCardEffects?.forEvent);
   return {
     cardId:player.hand[modal.idx],
     owner:modal.owner,
-    targetStackId:modal.reactive&&hasEffect(card,'counter-stack-target','resolve')?modal.targetStackId:null
+    targetStackId:modal.reactive&&hasEffect(card,'counter-stack-target','resolve')?modal.targetStackId:null,
+    burnUsed:burn
   };
 }
 
