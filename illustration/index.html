@@ -14,25 +14,24 @@
     .ill-hero h1 em{font-style:normal;color:var(--acid)}
     .ill-hero p:not(.eyebrow){max-width:650px;color:var(--muted);font-size:18px;line-height:1.7}
     .hero-panel,.art-panel{margin:0;border:1px solid var(--line);background:#090b0c;overflow:hidden;cursor:zoom-in}
-    .hero-panel img,.art-panel img{display:block;width:100%;height:auto}
+    .hero-panel img,.art-panel img{display:block;width:100%;height:auto;object-fit:contain}
     .ill-section{padding-block:clamp(82px,10vw,150px);border-top:1px solid var(--line)}
-    .stage-labels{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-top:0}
-    .stage-labels span{padding:13px 15px;border-right:1px solid var(--line);font-family:var(--font-geist-mono),monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase}
-    .stage-labels span:last-child{border-right:0}
+    .process-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .process-card,.gallery-card{margin:0;border:1px solid var(--line);background:var(--panel);overflow:hidden;cursor:zoom-in}
+    .process-card img,.gallery-card img{display:block;width:100%;height:100%;max-height:720px;object-fit:contain;background:#090b0c}
+    .process-card figcaption,.gallery-card figcaption{display:flex;justify-content:space-between;gap:18px;padding:14px 16px}
+    .process-card figcaption span,.gallery-card figcaption span{color:var(--muted);font-size:11px}
     .gallery-note{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
     .gallery-note span{padding:8px 10px;border:1px solid var(--line);font-size:10px;color:#c3cbc7}
     .gallery-additions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}
-    .gallery-card{margin:0;border:1px solid var(--line);background:var(--panel);overflow:hidden;cursor:zoom-in}
-    .gallery-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
-    .gallery-card figcaption{display:flex;justify-content:space-between;gap:18px;padding:14px 16px}
-    .gallery-card figcaption span{color:var(--muted);font-size:11px}
     .owner-tools{position:fixed;right:18px;bottom:18px;z-index:80;display:none;padding:11px 14px;border:1px solid var(--acid);background:#0b0d0e;color:var(--acid);font:700 11px var(--font-geist-mono),monospace;letter-spacing:.08em;text-transform:uppercase}
     .owner-tools.on{display:block}
     .lightbox{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.95);padding:28px}
     .lightbox.open{display:grid}
     .lightbox img{max-width:96vw;max-height:88vh;width:auto;height:auto;object-fit:contain}
     .lightbox button{position:absolute;right:18px;top:18px;border:1px solid rgba(255,255,255,.4);background:#111;color:white;padding:10px 13px;cursor:pointer}
-    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.gallery-additions{grid-template-columns:1fr}.stage-labels span{font-size:8px;padding:10px 6px}}
+    .empty{border:1px dashed var(--line);padding:28px;color:var(--muted);font-size:13px}
+    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.process-grid,.gallery-additions{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -45,33 +44,53 @@
 
   <main id="main-content">
     <section class="ill-hero section-shell">
-      <div><p class="eyebrow"><span></span> Illustration · visual development</p><h1>Visual Development — <em>Character Illustration.</em></h1><p>This is the dedicated illustration page: process documentation first, followed by the rest of the selected illustration work.</p></div>
-      <figure class="hero-panel zoomable"><img src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development gallery"></figure>
+      <div><p class="eyebrow"><span></span> Illustration · visual development</p><h1>Visual Development — <em>Character Illustration.</em></h1><p>Process documentation followed by selected illustration and visual-development work.</p></div>
+      <figure class="hero-panel zoomable"><img id="heroImage" src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development gallery"></figure>
     </section>
 
     <section class="ill-section section-shell" id="process">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Process documentation</p><h2>From line work to final presentation.</h2></div><p>The three stages are shown at full width instead of being squeezed into the homepage card.</p></div>
-      <figure class="art-panel zoomable"><img src="/media/illustration/process-atlas.webp" alt="Line art, color pass and final lighting stages"></figure>
-      <div class="stage-labels"><span>01 · Line Art</span><span>02 · Color Pass</span><span>03 · Final Lighting</span></div>
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Process documentation</p><h2>From line work to final presentation.</h2></div></div>
+      <div id="processContent"></div>
     </section>
 
     <section class="ill-section section-shell" id="gallery">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Selected illustration gallery</p><h2>The rest of the visual-development work.</h2></div><p>Dársena Fish, Faro Ahogado, FF-01 Faro de Caza, character studies and Servidor Ahogado pieces are all shown here.</p></div>
-      <figure class="art-panel zoomable"><img src="/media/illustration/gallery-atlas.webp" alt="Seven selected illustration and visual development pieces"></figure>
-      <div class="gallery-note"><span>Dársena Fish</span><span>Faro Ahogado</span><span>FF-01 Faro de Caza</span><span>Port Characters</span><span>Servidor Ahogado</span><span>Nereida Voss</span><span>Character Studies</span></div>
-      <div class="gallery-additions" id="owner-additions"><!-- OWNER: paste additional generated gallery-card blocks here. --></div>
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Selected illustration gallery</p><h2>Visual-development work.</h2></div></div>
+      <div id="legacyGallery"></div>
+      <div class="gallery-additions" id="galleryGrid"></div>
     </section>
   </main>
 
   <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Illustration · visual development</span><a href="#main-content">Back to top ↑</a></footer>
   <a class="owner-tools" id="ownerTools" href="/admin/">Owner Admin</a>
   <div class="lightbox" id="lightbox" aria-hidden="true"><button id="closeLightbox" type="button">Close ×</button><img id="lightboxImg" alt=""></div>
+
   <script>
-    if(localStorage.getItem('kaPortfolioOwner')==='1') document.getElementById('ownerTools').classList.add('on');
-    const lb=document.getElementById('lightbox'), li=document.getElementById('lightboxImg');
-    document.querySelectorAll('.zoomable').forEach(el=>el.addEventListener('click',()=>{const im=el.querySelector('img');li.src=im.src;li.alt=im.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false')}));
-    function closeLB(){lb.classList.remove('open');lb.setAttribute('aria-hidden','true');li.src=''}
-    document.getElementById('closeLightbox').addEventListener('click',closeLB);lb.addEventListener('click',e=>{if(e.target===lb)closeLB()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
+    const fallback={showLegacyProcessAtlas:true,showLegacyGalleryAtlas:true,process:[],gallery:[]};
+    const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    function zoomable(el){el.addEventListener('click',()=>{const im=el.querySelector('img');if(!im)return;const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');li.src=im.src;li.alt=im.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false')})}
+    function render(data){
+      const process=document.getElementById('processContent');
+      const activeProcess=(data.process||[]).filter(x=>x&&x.src);
+      if(activeProcess.length){
+        process.innerHTML='<div class="process-grid">'+activeProcess.map((x,i)=>`<figure class="process-card zoomable"><img src="${esc(x.src)}" alt="${esc(x.title||x.slot||'Process image')}"><figcaption><strong>${esc(x.title||x.slot||'Process')}</strong><span>${String(i+1).padStart(2,'0')}</span></figcaption></figure>`).join('')+'</div>';
+      }else if(data.showLegacyProcessAtlas!==false){
+        process.innerHTML='<figure class="art-panel zoomable"><img src="/media/illustration/process-atlas.webp" alt="Line art, color pass and final lighting stages"></figure>';
+      }else process.innerHTML='<div class="empty">No process images selected.</div>';
+
+      const legacy=document.getElementById('legacyGallery');
+      legacy.innerHTML=data.showLegacyGalleryAtlas!==false?'<figure class="art-panel zoomable"><img src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development pieces"></figure>':'';
+
+      const grid=document.getElementById('galleryGrid');
+      const items=(data.gallery||[]).filter(x=>x&&x.src);
+      grid.innerHTML=items.map((x,i)=>`<figure class="gallery-card zoomable"><img src="${esc(x.src)}" alt="${esc(x.title||'Illustration')}"><figcaption><strong>${esc(x.title||'Untitled')}</strong><span>${esc(x.category||'Illustration')}</span></figcaption></figure>`).join('');
+      if(!items.length && data.showLegacyGalleryAtlas===false) grid.innerHTML='<div class="empty">No gallery images selected.</div>';
+      const hero=items[0]?.src||activeProcess[2]?.src||activeProcess[0]?.src||'/media/illustration/gallery-atlas.webp';document.getElementById('heroImage').src=hero;
+      document.querySelectorAll('.zoomable').forEach(zoomable);
+    }
+    fetch('/illustration/content.json?'+Date.now()).then(r=>r.ok?r.json():fallback).then(render).catch(()=>render(fallback));
+    if(sessionStorage.getItem('kaPortfolioOwner')==='1') document.getElementById('ownerTools').classList.add('on');
+    function closeLB(){const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');li.src=''}
+    document.getElementById('closeLightbox').addEventListener('click',closeLB);document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox')closeLB()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
   </script>
 </body>
 </html>
