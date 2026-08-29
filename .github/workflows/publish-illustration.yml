@@ -1,0 +1,25 @@
+name: Publish illustration portfolio
+on:
+  push:
+    paths:
+      - '.tmp_illustration/page-trigger.txt'
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Build illustration page and homepage card
+        run: python scripts/publish_illustration.py
+      - name: Commit published illustration portfolio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add illustration/index.html media/illustration/hero.webp index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Publish illustration portfolio and link visual development card"
+          git push
