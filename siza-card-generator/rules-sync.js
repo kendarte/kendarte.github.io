@@ -47,10 +47,10 @@ window.SizaRulesSync=Object.freeze({refresh:syncRules});
 
 (function(){
  const starter=document.createElement('script');
- starter.src='./starter-decks.js?v=darkhaven-v03-balance';
+ starter.src='./starter-decks.js?v=dragon-thunder-v01';
  starter.onload=()=>{
   const script=document.createElement('script');
-  script.src='./deck-generator.js?v=darkhaven-v03-balance';
+  script.src='./deck-generator.js?v=dragon-thunder-v01';
   document.body.appendChild(script);
  };
  document.body.appendChild(starter);
