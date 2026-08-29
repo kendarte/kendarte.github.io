@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from copy import deepcopy
 from datetime import datetime, timezone
 
@@ -209,7 +210,7 @@ def _read_path(source, path):
     for part in str(path or "").split("."):
         if not part:
             continue
-        if not isinstance(current, dict) or part not in current:
+        if not isinstance(current, Mapping) or part not in current:
             return None
         current = current[part]
     return current
