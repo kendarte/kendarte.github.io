@@ -68,16 +68,26 @@ function copy(id='vertical_dragon_thunder_classic'){const source=get(id)||get('v
 function validate(input,resolveCard){const errors=[],counts=input?.counts||{},total=Object.values(counts).reduce((sum,value)=>sum+(Number(value)||0),0);if(total!==60)errors.push('DECK_MUST_HAVE_60_CARDS');for(const[id,raw]of Object.entries(counts)){const quantity=Number(raw)||0,card=resolveCard(id);if(!card){errors.push(`UNKNOWN_CARD:${id}`);continue}if(quantity<0||!Number.isInteger(quantity))errors.push(`INVALID_QUANTITY:${id}`);if(card.type!=='Land'&&quantity>4)errors.push(`COPY_LIMIT:${id}`);if(card.type!=='Land'&&!(Number(card.difficulty)>0))errors.push(`INVALID_DIFFICULTY:${id}`)}return{valid:errors.length===0,total,errors}}
 global.SizaDeckCatalog=Object.freeze({VERSION,FORMAT,decks,get,all,copy,validate});
 
-/* Marea Carmesí stays selectable, but the vertical-slice player is migrated to Dragon Thunder Classic. */
+/* Marea Carmesí stays selectable, but the vertical-slice player is assigned
+   Dragon Thunder Classic with its R/R/U profile and MF 3. */
 try{
  const key='siza_work_state_v1',raw=global.localStorage?.getItem(key);
  if(raw){
-  const state=JSON.parse(raw);
-  if(state?.deck?.id==='deck_tide_crimson'){
+  const state=JSON.parse(raw),isCrimson=state?.deck?.id==='deck_tide_crimson',isDragon=state?.deck?.id==='vertical_dragon_thunder_classic';
+  if(isCrimson||isDragon){
    state.deck=copy('vertical_dragon_thunder_classic');
-   state.match=null;
+   state.player=state.player||{};
+   state.player.mag=state.player.mag||{};
+   state.player.mag.mf=3;
+   state.player.mag.aff={...(state.player.mag.aff||{}),U:1,R:2,G:0};
+   if(isCrimson)state.match=null;
    global.localStorage.setItem(key,JSON.stringify(state));
   }
+ }else{
+  global.localStorage?.setItem(key,JSON.stringify({
+   deck:copy('vertical_dragon_thunder_classic'),
+   player:{mag:{mf:3,aff:{U:1,R:2,G:0}}}
+  }));
  }
 }catch(e){}
 })(window);
