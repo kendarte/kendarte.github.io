@@ -12,24 +12,15 @@ let lastGenerated='';
 function readEffects(){
  try{const parsed=JSON.parse(effectsField.value||'[]');return Array.isArray(parsed)?parsed:[];}catch(e){return[];}
 }
-function emitRulesInput(){rulesField.dispatchEvent(new Event('input',{bubbles:true}));}
 function syncRules(){
  const effects=readEffects();
- if(effects.length){
-  const generated=rulesCore.rulesText(effects);
-  lastGenerated=generated;
-  rulesField.dataset.rulesMode='effects';
-  rulesField.readOnly=true;
-  if(rulesLabel)rulesLabel.textContent='Reglas · automáticas desde efectos';
-  if(rulesField.value!==generated){rulesField.value=generated;emitRulesInput();}
-  return;
- }
- const wasAuto=rulesField.dataset.rulesMode==='effects';
+ /* Structured effects are the executable contract. Printed rules remain an
+    editable presentation layer so English vertical-slice copy is not replaced
+    by the Spanish fallback renderer. */
  rulesField.readOnly=false;
  delete rulesField.dataset.rulesMode;
- if(rulesLabel)rulesLabel.textContent='Reglas';
- if(wasAuto&&rulesField.value===lastGenerated){rulesField.value='';emitRulesInput();}
- lastGenerated='';
+ lastGenerated=effects.length?rulesCore.rulesText(effects):'';
+ if(rulesLabel)rulesLabel.textContent=effects.length?'Rules · structured effects attached':'Rules';
 }
 
 effectsField.addEventListener('input',syncRules);
@@ -42,15 +33,15 @@ if(previous?.get&&previous?.set){
  });
 }
 queueMicrotask(syncRules);
-window.SizaRulesSync=Object.freeze({refresh:syncRules});
+window.SizaRulesSync=Object.freeze({refresh:syncRules,getGeneratedFallback:()=>lastGenerated});
 })();
 
 (function(){
  const starter=document.createElement('script');
- starter.src='./starter-decks.js?v=core-decks-v02';
+ starter.src='./starter-decks.js?v=dragon-thunder-effects-v02';
  starter.onload=()=>{
   const script=document.createElement('script');
-  script.src='./deck-generator.js?v=core-decks-v02';
+  script.src='./deck-generator.js?v=dragon-thunder-effects-v02';
   document.body.appendChild(script);
  };
  document.body.appendChild(starter);
