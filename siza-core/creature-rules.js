@@ -20,23 +20,29 @@ function equipmentPowerBonusValue(player,index,resolveCard,effectsForEvent){
   },0);
 }
 
+function tribalBonusValue(player,card){
+  return global.SizaDragonThunderRuntime?.tribalBonus?.(player,card)||{power:0,toughness:0};
+}
+
 function effectivePowerValue(player,index,resolveCard,effectsForEvent){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
-  const card=cardResolver(player?.battlefield?.[index]);
-  return (card?.power||0)+counterValue(player,index)+equipmentPowerBonusValue(player,index,cardResolver,effectsForEvent);
+  const card=cardResolver(player?.battlefield?.[index]),tribal=tribalBonusValue(player,card);
+  return (card?.power||0)+counterValue(player,index)+equipmentPowerBonusValue(player,index,cardResolver,effectsForEvent)+(tribal.power||0);
 }
 
 function toughnessValue(player,index,resolveCard){
   const cardResolver=typeof resolveCard==='function'?resolveCard:()=>null;
-  const card=cardResolver(player?.battlefield?.[index]);
-  return (card?.toughness||0)+counterValue(player,index);
+  const card=cardResolver(player?.battlefield?.[index]),tribal=tribalBonusValue(player,card);
+  return (card?.toughness||0)+counterValue(player,index)+(tribal.toughness||0);
 }
 
 function addBattlefieldCreature(player,id){
   player.battlefield.push(id);
   player.powerCounters.push(0);
   player.summonedOn.push(player.ownTurn);
-  return player.battlefield.length-1;
+  const index=player.battlefield.length-1;
+  global.SizaDragonThunderRuntime?.onCreatureEnter?.(player,index,id);
+  return index;
 }
 
 function removeBattlefieldCreature(player,index,dest='graveyard'){
@@ -50,6 +56,7 @@ function removeBattlefieldCreature(player,index,dest='graveyard'){
     if(equipment.target===index)equipment.target=null;
     else if(equipment.target>index)equipment.target--;
   }
+  if(dest==='graveyard')global.SizaDragonThunderRuntime?.onCreatureDies?.(player,id);
   return id;
 }
 
@@ -58,6 +65,11 @@ function combatCounterGain(card,effectsForEvent){
   return effectResolver(card,'combat-damage')
     .filter(effect=>effect.type==='add-power-counter')
     .reduce((sum,effect)=>sum+(effect.amount||0),0);
+}
+
+function hasKeyword(card,keyword,effectsForEvent){
+  const effectResolver=typeof effectsForEvent==='function'?effectsForEvent:()=>[];
+  return effectResolver(card,'static').some(effect=>effect.type==='grant-keyword'&&effect.keyword===keyword);
 }
 
 function attackDeclaredDamage(player,indices,resolveCard,effectsForEvent){
@@ -73,6 +85,7 @@ function attackDeclaredDamage(player,indices,resolveCard,effectsForEvent){
       sources.push(card?.name);
     }
   }
+  global.SizaDragonThunderRuntime?.attackDeclaredExtras?.(player,indices);
   return{amount,source:sources.length&&sources.every(name=>name===sources[0])?sources[0]:'Efectos de ataque'};
 }
 
@@ -89,6 +102,7 @@ function combatPlan(combat,attackerPlayer,defenderPlayer,resolveCard,effectsForE
       const blockerPower=effectivePowerValue(defenderPlayer,blockerIndex,cardResolver,effectResolver),blockerToughness=toughnessValue(defenderPlayer,blockerIndex,cardResolver);
       if(attackerPower>=blockerToughness)defenderDeaths.add(blockerIndex);
       if(blockerPower>=attackerToughness)attackerDeaths.add(attacker.index);
+      if(hasKeyword(attackerCard,'trample',effectResolver)&&attackerPower>blockerToughness)damage+=attackerPower-blockerToughness;
       const attackerGain=attackerPower>0?combatCounterGain(attackerCard,effectResolver):0,defenderGain=blockerPower>0?combatCounterGain(blockerCard,effectResolver):0;
       if(attackerGain)attackerGains.set(attacker.index,(attackerGains.get(attacker.index)||0)+attackerGain);
       if(defenderGain)defenderGains.set(blockerIndex,(defenderGains.get(blockerIndex)||0)+defenderGain);
