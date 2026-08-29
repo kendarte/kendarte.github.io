@@ -52,7 +52,31 @@ function paymentPlan(player,card,resolveCard){
   return directPlan(player,card)||offeringPlan(player,card,resolveCard);
 }
 
+function ensureExhaustBridge(player){
+  if(!player||player.__dtcExhaustBridge)return;
+  let store=Array.isArray(player.artifactExhausted)?player.artifactExhausted:[];
+  Object.defineProperty(player,'artifactExhausted',{
+    enumerable:true,
+    configurable:true,
+    get(){return store},
+    set(value){
+      store=Array.isArray(value)?value:[];
+      const exhausted=new Set(player.exhausted||[]);
+      for(const marker of store){
+        if(!Number.isInteger(marker)||marker>=0)continue;
+        const index=-marker-1;
+        if(index>=0&&index<(player.battlefield||[]).length)exhausted.add(index);
+      }
+      player.exhausted=[...exhausted];
+    }
+  });
+  Object.defineProperty(player,'__dtcExhaustBridge',{value:true,writable:true,configurable:true,enumerable:false});
+  player.artifactExhausted=store;
+}
+
 function resetPool(player){
+  ensureExhaustBridge(player);
+  global.SizaDragonThunderRuntime?.registerPlayer?.(player);
   player.crystals={};
   for(const [key,count] of Object.entries(player?.aff||{}))if(count>0)player.crystals[key]=count;
   player.offeringUsed=false;
