@@ -7,11 +7,11 @@
 <style>html,body{margin:0;min-height:100%;background:#07111b;color:#f3ead5;font-family:Arial,sans-serif}body{display:grid;place-items:center}.box{max-width:560px;padding:28px;border:1px solid #765b31;border-radius:14px;background:#0e1d2e;text-align:center}.box b{display:block;font:500 24px Georgia,serif;color:#f2d997;margin-bottom:10px}.box span{color:#9fb2c7;font-size:13px;line-height:1.5}</style>
 </head>
 <body>
-<div class="box"><b>Updating Siza Vertical Slice</b><span>Refreshing the shared card/deck catalog and assigning Dragon Thunder Classic…</span></div>
-<script src="../siza-core/card-effects.js?v=vertical-slice-dtc-20260828"></script>
-<script src="../siza-core/card-schema.js?v=vertical-slice-dtc-20260828"></script>
-<script src="../siza-core/cards.js?v=vertical-slice-dtc-20260828"></script>
-<script src="../siza-core/decks.js?v=vertical-slice-dtc-20260828"></script>
+<div class="box"><b>Updating Siza Vertical Slice</b><span>Refreshing Dragon Thunder Classic cards, structured effects and Arena runtime…</span></div>
+<script src="../siza-core/card-effects.js?v=dragon-thunder-effects-v02"></script>
+<script src="../siza-core/card-schema.js?v=dragon-thunder-effects-v02"></script>
+<script src="../siza-core/cards.js?v=dragon-thunder-effects-v02"></script>
+<script src="../siza-core/decks.js?v=dragon-thunder-effects-v02"></script>
 <script>
 (async function(){
  const DECK_ID='vertical_dragon_thunder_classic';
@@ -25,10 +25,10 @@
   if(window.SizaDeckCatalog?.get(DECK_ID)) state.deck=window.SizaDeckCatalog.copy(DECK_ID);
   state.match=null;
   localStorage.setItem('siza_work_state_v1',JSON.stringify(state));
-  const refresh=['../siza-core/cards.js','../siza-core/decks.js'];
+  const refresh=['../siza-core/card-effects.js','../siza-core/decks.js','../siza-core/manifest-rules.js','../siza-core/crystal-rules.js','../siza-core/creature-rules.js'];
   for(const url of refresh){try{await fetch(url,{cache:'reload'});}catch(e){}}
  }catch(e){console.error(e);}
- location.replace('./?v=vertical-slice-dtc-20260828');
+ location.replace('./?v=dragon-thunder-effects-v02');
 })();
 </script>
 </body>
