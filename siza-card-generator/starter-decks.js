@@ -3,7 +3,7 @@
 
 const CARD_KEY='siza_card_generator_library_v2';
 const DECK_KEY='siza_card_generator_decks_v1';
-const SESSION_RELOAD_KEY='siza_generator_seeded_reload_core_decks_v02';
+const SESSION_RELOAD_KEY='siza_generator_seeded_reload_dragon_thunder_effects_v03';
 const now=()=>new Date().toISOString();
 
 function loadObject(key){
@@ -22,9 +22,8 @@ function generatorCard(source,index){
  return SizaCardSchema.normalizeCard({...source,cardType:source.type,affinity,template,rules:source.text,setCode,cardNumber:String(index+1).padStart(3,'0')});
 }
 
-/* The generator now mirrors the shared Siza catalogs instead of maintaining a
-   second copy. This makes Marea Carmesí and Dragon Thunder Classic both appear
-   in Deck Generator with the same card IDs used by Siza Web. */
+/* Generator mirrors the executable shared catalogs. Structured effects are
+   copied with the cards, so editing Dragon Thunder never degrades to text-only. */
 const cards=SizaCardCatalog.all().map(generatorCard);
 const decks=SizaDeckCatalog.all().map(deck=>({
  id:deck.id,
