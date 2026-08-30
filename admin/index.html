@@ -1,91 +1,34 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Kendall Angulo — Visual Portfolio Editor</title>
-  <link rel="stylesheet" href="/styles.css">
-  <style>
-    body{background:#07090a}.admin{width:min(1180px,calc(100% - 34px));margin:auto;padding:42px 0 100px}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:28px}.top h1{margin:0;font-size:clamp(42px,7vw,76px);letter-spacing:-.05em}.top p{max-width:680px;color:var(--muted);line-height:1.65}.toolbar,.actions{display:flex;flex-wrap:wrap;gap:10px}.btn,.file-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border:1px solid var(--line);background:#0c0f10;color:var(--paper);font:700 11px var(--font-geist-mono),monospace;letter-spacing:.05em;cursor:pointer;text-decoration:none}.btn.primary,.file-btn.primary{border-color:var(--acid);background:var(--acid);color:var(--ink)}.btn.danger{border-color:#8e4040;color:#ffb2b2}.btn:disabled{opacity:.45;cursor:not-allowed}.status{margin:18px 0;padding:12px 14px;border:1px solid var(--line);color:var(--muted);font:12px var(--font-geist-mono),monospace}.status.ok{border-color:var(--acid);color:var(--acid)}.status.err{border-color:#8e4040;color:#ffb2b2}.panel{border:1px solid var(--line);background:var(--panel);padding:20px;margin-top:18px}.panel h2{margin:0 0 6px;font-size:24px}.help{margin:0 0 18px;color:var(--muted);line-height:1.5}.locked{opacity:.42;pointer-events:none}.process-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);background:#090b0c;overflow:hidden}.thumb{height:250px;background:#111;display:grid;place-items:center;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:contain;background:#fff}.empty{color:var(--muted);font-size:12px}.card-body{padding:12px}.card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.fields{display:grid;gap:8px}.fields input{width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);background:#080a0b;color:var(--paper)}.card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.file-btn input{display:none}.dropzone{border:1px dashed var(--line);padding:34px;text-align:center;cursor:pointer}.dropzone.drag{border-color:var(--acid);background:#0d1511}.toggles{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}.toggles label{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}.publish-box{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}.publish-box code{font-size:12px;color:var(--acid)}.dragging{opacity:.35}.tiny{font-size:11px;color:var(--muted)}
-    @media(max-width:900px){.top{display:block}.process-grid,.gallery-grid{grid-template-columns:1fr 1fr}.publish-box{grid-template-columns:1fr}}
-    @media(max-width:620px){.process-grid,.gallery-grid{grid-template-columns:1fr}.thumb{height:220px}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kendall Angulo — Portfolio Editor</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+body{background:#07090a}.admin{width:min(1040px,calc(100% - 34px));margin:auto;padding:56px 0 100px}.hero{padding:44px;border:1px solid var(--line);background:var(--panel)}.hero h1{margin:0;font-size:clamp(48px,8vw,92px);line-height:.92;letter-spacing:-.06em}.hero p{max-width:760px;color:var(--muted);font-size:17px;line-height:1.7}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 16px;border:1px solid var(--line);background:#0d1011;color:var(--paper);font:700 12px var(--font-geist-mono),monospace;text-decoration:none;cursor:pointer}.btn.primary{background:var(--acid);border-color:var(--acid);color:var(--ink)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:18px}.steps article{background:#0c0f10;padding:24px}.steps strong{display:block;font-size:18px;margin-bottom:8px}.steps span{color:var(--muted);line-height:1.6}.note{margin-top:18px;border:1px solid var(--line);padding:16px;color:var(--muted)}code{color:var(--acid)}@media(max-width:760px){.hero{padding:28px}.steps{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <main class="admin">
-  <div class="top">
-    <div><p class="eyebrow"><span></span> Owner visual editor</p><h1>Portfolio Editor</h1><p>Edit the illustration portfolio visually from the browser. No GitHub token is used here. The editor writes the real image files and <code>content.json</code> directly into your local <strong>kendarte.github.io</strong> folder.</p></div>
-    <div class="toolbar"><a class="btn" href="/illustration/" target="_blank">Open live portfolio</a><a class="btn" href="/">Main portfolio</a></div>
-  </div>
+  <section class="hero">
+    <p class="eyebrow"><span></span> Owner editor</p>
+    <h1>Visual Portfolio Editor</h1>
+    <p>The old browser folder-picker editor has been removed. This version runs locally on your PC, edits the actual portfolio visually, keeps image bytes untouched, and publishes with your existing Git login. No GitHub token field.</p>
+    <div class="actions">
+      <a class="btn primary" href="/OPEN_PORTFOLIO_EDITOR.cmd" download>Download / Open Visual Editor</a>
+      <a class="btn" href="/illustration/" target="_blank">Open Illustration Portfolio</a>
+      <a class="btn" href="/3d/" target="_blank">Open 3D Portfolio</a>
+    </div>
+  </section>
 
-  <div class="toolbar">
-    <button class="btn primary" id="openFolder">Open portfolio folder</button>
-    <button class="btn" id="setupBtn">First time: download setup</button>
-  </div>
-  <div class="status" id="status">Choose the local <strong>kendarte.github.io</strong> folder to start editing.</div>
+  <section class="steps">
+    <article><strong>1. Run it</strong><span>Double-click <code>OPEN_PORTFOLIO_EDITOR.cmd</code>. It updates or clones the portfolio automatically.</span></article>
+    <article><strong>2. Edit visually</strong><span>The editor opens in your browser at <code>127.0.0.1:8765</code>. Drag images in, replace, delete and reorder them.</span></article>
+    <article><strong>3. Publish</strong><span>Press <strong>Publish changes</strong> inside the editor. It commits and pushes the illustration changes to <code>main</code>.</span></article>
+  </section>
 
-  <div id="editor" class="locked">
-    <section class="panel">
-      <h2>Process</h2><p class="help">Replace each stage visually. The original file is copied as-is; the editor does not convert or recompress it.</p>
-      <div class="process-grid" id="processGrid"></div>
-      <div class="toggles"><label><input type="checkbox" id="legacyProcess"> Use old process atlas when no individual process images exist</label></div>
-    </section>
-
-    <section class="panel">
-      <h2>Add illustrations</h2><p class="help">Drop several PNG/JPG/WEBP files here or click the area. They are copied directly into the portfolio.</p>
-      <div class="dropzone" id="dropzone"><strong>Drop images here</strong><br><span class="tiny">or click to choose files</span></div>
-      <input id="galleryFiles" type="file" accept="image/*" multiple hidden>
-    </section>
-
-    <section class="panel">
-      <h2>Gallery</h2><p class="help">Edit names, remove images, and drag cards to change their order. Changes save automatically to the local portfolio folder.</p>
-      <div class="gallery-grid" id="galleryGrid"></div>
-      <div class="toggles"><label><input type="checkbox" id="legacyGallery"> Use old gallery atlas when the managed gallery is empty</label></div>
-    </section>
-
-    <section class="panel publish-box">
-      <div><h2>Publish</h2><p class="help">Your edits are already saved locally. To send them to the website, double-click <code>PUBLISH_PORTFOLIO.cmd</code> inside the portfolio folder. The editor creates that file automatically.</p></div>
-      <button class="btn primary" id="refreshPublisher">Refresh publish file</button>
-    </section>
-  </div>
+  <div class="note">The editor server binds only to <code>127.0.0.1</code>, so the editing interface itself is local to your computer. The public <code>/admin/</code> page is only the launcher.</div>
 </main>
-
-<script>
-const DEFAULT_MANIFEST={showLegacyProcessAtlas:true,showLegacyGalleryAtlas:true,process:[{slot:'Line Art',src:'',title:'Line Art'},{slot:'Color Pass',src:'',title:'Color Pass'},{slot:'Final Lighting',src:'',title:'Final Lighting'}],gallery:[]};
-let root=null,manifest=null,saveTimer=null,dragFrom=null,objectUrls=[];
-const $=s=>document.querySelector(s),status=$('#status'),editor=$('#editor');
-function setStatus(text,type=''){status.textContent=text;status.className='status'+(type?' '+type:'')}
-function safeFileName(name){const p=name.lastIndexOf('.'),ext=p>=0?name.slice(p).toLowerCase():'';const raw=p>=0?name.slice(0,p):name;const stem=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'image';return stem+ext}
-async function getDir(parts,create=false){let d=root;for(const part of parts)d=await d.getDirectoryHandle(part,{create});return d}
-async function readText(path){const parts=path.split('/'),name=parts.pop(),d=await getDir(parts);const f=await (await d.getFileHandle(name)).getFile();return f.text()}
-async function writeText(path,text){const parts=path.split('/'),name=parts.pop(),d=await getDir(parts,true),h=await d.getFileHandle(name,{create:true}),w=await h.createWritable();await w.write(text);await w.close()}
-async function writeBinary(path,file){const parts=path.split('/'),name=parts.pop(),d=await getDir(parts,true),h=await d.getFileHandle(name,{create:true}),w=await h.createWritable();await w.write(file);await w.close()}
-async function removePath(path){const parts=path.split('/'),name=parts.pop(),d=await getDir(parts);await d.removeEntry(name)}
-function localPath(src){return String(src||'').replace(/^\//,'')}
-async function localImageUrl(src){if(!src)return '';try{const parts=localPath(src).split('/'),name=parts.pop(),d=await getDir(parts),f=await (await d.getFileHandle(name)).getFile(),url=URL.createObjectURL(f);objectUrls.push(url);return url}catch{return ''}}
-function clearUrls(){objectUrls.forEach(URL.revokeObjectURL);objectUrls=[]}
-async function saveManifest(message='Saved locally.'){await writeText('illustration/content.json',JSON.stringify(manifest,null,2)+'\n');setStatus(message,'ok')}
-function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveManifest().catch(e=>setStatus(e.message,'err')),250)}
-async function uploadOriginal(file,prefix){const ext=safeFileName(file.name),name=`${Date.now()}-${Math.random().toString(36).slice(2,6)}-${prefix}-${ext}`,path=`media/illustration/uploads/${name}`;await writeBinary(path,file);return '/'+path}
-async function removeManaged(src){if(String(src).startsWith('/media/illustration/uploads/')){try{await removePath(localPath(src))}catch{}}}
-async function ensurePublisher(){const cmd=`@echo off\r\nsetlocal\r\ncd /d "%~dp0"\r\necho.\r\necho Publishing portfolio...\r\ngit add -A illustration/content.json media/illustration/uploads\r\ngit diff --cached --quiet\r\nif errorlevel 1 git commit -m "Update illustration portfolio"\r\ngit pull --rebase origin main\r\nif errorlevel 1 goto error\r\ngit push origin main\r\nif errorlevel 1 goto error\r\necho.\r\necho DONE - portfolio pushed to main.\r\npause\r\nexit /b 0\r\n:error\r\necho.\r\necho Publish failed. Read the Git message above.\r\npause\r\nexit /b 1\r\n`;await writeText('PUBLISH_PORTFOLIO.cmd',cmd)}
-async function openFolder(){if(!window.showDirectoryPicker){setStatus('This visual editor requires Chrome or Edge on desktop.','err');return}try{const h=await window.showDirectoryPicker({mode:'readwrite'});root=h;await getDir(['illustration']);await getDir(['media']);let text;try{text=await readText('illustration/content.json')}catch{text=JSON.stringify(DEFAULT_MANIFEST)}manifest=JSON.parse(text);manifest.process=manifest.process||structuredClone(DEFAULT_MANIFEST.process);manifest.gallery=manifest.gallery||[];while(manifest.process.length<3)manifest.process.push(structuredClone(DEFAULT_MANIFEST.process[manifest.process.length]));await ensurePublisher();editor.classList.remove('locked');await renderAll();setStatus('Portfolio folder connected. Visual editing is active.','ok')}catch(e){root=null;editor.classList.add('locked');setStatus('Could not open that folder. Choose the root kendarte.github.io folder.','err')}}
-async function renderAll(){clearUrls();$('#legacyProcess').checked=manifest.showLegacyProcessAtlas!==false;$('#legacyGallery').checked=manifest.showLegacyGalleryAtlas!==false;await renderProcess();await renderGallery()}
-async function renderProcess(){const labels=['Line Art','Color Pass','Final Lighting'],html=[];for(let i=0;i<3;i++){const item=manifest.process[i]||DEFAULT_MANIFEST.process[i],url=await localImageUrl(item.src);html.push(`<article class="card"><div class="thumb">${url?`<img src="${url}" alt="${labels[i]}">`:'<span class="empty">No image</span>'}</div><div class="card-body"><div class="card-title"><strong>${labels[i]}</strong></div><div class="card-actions"><label class="file-btn primary">Replace image<input type="file" accept="image/*" data-process="${i}"></label>${item.src?`<button class="btn danger" data-clear-process="${i}">Remove</button>`:''}</div></div></article>`)}$('#processGrid').innerHTML=html.join('')}
-async function renderGallery(){const html=[];for(let i=0;i<manifest.gallery.length;i++){const item=manifest.gallery[i],url=await localImageUrl(item.src);html.push(`<article class="card gallery-card" draggable="true" data-index="${i}"><div class="thumb">${url?`<img src="${url}" alt="${escapeHtml(item.title||'Illustration')}">`:'<span class="empty">Image file missing</span>'}</div><div class="card-body"><div class="fields"><input data-title="${i}" value="${escapeAttr(item.title||'')}" placeholder="Title"><input data-category="${i}" value="${escapeAttr(item.category||'Illustration')}" placeholder="Category"></div><div class="card-actions"><button class="btn" data-up="${i}">←</button><button class="btn" data-down="${i}">→</button><button class="btn danger" data-remove="${i}">Remove</button></div></div></article>`)}$('#galleryGrid').innerHTML=html.length?html.join(''):'<p class="tiny">No managed images yet. Drop images above.</p>';bindDrag()}
-function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}function escapeAttr(s){return escapeHtml(s).replace(/"/g,'&quot;')}
-$('#openFolder').addEventListener('click',openFolder);
-$('#legacyProcess').addEventListener('change',e=>{manifest.showLegacyProcessAtlas=e.target.checked;queueSave()});
-$('#legacyGallery').addEventListener('change',e=>{manifest.showLegacyGalleryAtlas=e.target.checked;queueSave()});
-$('#processGrid').addEventListener('change',async e=>{if(!e.target.matches('[data-process]')||!e.target.files[0])return;const i=Number(e.target.dataset.process),file=e.target.files[0],old=manifest.process[i].src;setStatus('Copying original image…');try{const src=await uploadOriginal(file,'process');manifest.process[i]={slot:DEFAULT_MANIFEST.process[i].slot,title:DEFAULT_MANIFEST.process[i].title,src};await saveManifest('Process image saved locally.','ok');await removeManaged(old);await renderProcess()}catch(err){setStatus(err.message,'err')}});
-$('#processGrid').addEventListener('click',async e=>{const b=e.target.closest('[data-clear-process]');if(!b)return;const i=Number(b.dataset.clearProcess),old=manifest.process[i].src;manifest.process[i].src='';await saveManifest('Process image removed.');await removeManaged(old);await renderProcess()});
-const drop=$('#dropzone'),files=$('#galleryFiles');drop.addEventListener('click',()=>files.click());files.addEventListener('change',()=>addFiles(files.files));drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');addFiles(e.dataTransfer.files)});
-async function addFiles(list){const imgs=[...list].filter(f=>f.type.startsWith('image/'));if(!imgs.length)return;setStatus(`Adding ${imgs.length} image${imgs.length===1?'':'s'}…`);try{for(const file of imgs){const src=await uploadOriginal(file,'gallery');manifest.gallery.push({src,title:file.name.replace(/\.[^.]+$/,''),category:'Illustration'})}await saveManifest('Images saved locally.');files.value='';await renderGallery()}catch(e){setStatus(e.message,'err')}}
-$('#galleryGrid').addEventListener('input',e=>{if(e.target.dataset.title!==undefined)manifest.gallery[Number(e.target.dataset.title)].title=e.target.value;if(e.target.dataset.category!==undefined)manifest.gallery[Number(e.target.dataset.category)].category=e.target.value;queueSave()});
-$('#galleryGrid').addEventListener('click',async e=>{let b=e.target.closest('[data-remove]');if(b){const i=Number(b.dataset.remove),item=manifest.gallery[i];manifest.gallery.splice(i,1);await saveManifest('Image removed.');await removeManaged(item.src);await renderGallery();return}b=e.target.closest('[data-up]');if(b){const i=Number(b.dataset.up);if(i>0){[manifest.gallery[i-1],manifest.gallery[i]]=[manifest.gallery[i],manifest.gallery[i-1]];await saveManifest('Order saved.');await renderGallery()}return}b=e.target.closest('[data-down]');if(b){const i=Number(b.dataset.down);if(i<manifest.gallery.length-1){[manifest.gallery[i+1],manifest.gallery[i]]=[manifest.gallery[i],manifest.gallery[i+1]];await saveManifest('Order saved.');await renderGallery()}}});
-function bindDrag(){document.querySelectorAll('.gallery-card').forEach(card=>{card.addEventListener('dragstart',()=>{dragFrom=Number(card.dataset.index);card.classList.add('dragging')});card.addEventListener('dragend',()=>card.classList.remove('dragging'));card.addEventListener('dragover',e=>e.preventDefault());card.addEventListener('drop',async e=>{e.preventDefault();const to=Number(card.dataset.index);if(dragFrom===null||dragFrom===to)return;const [m]=manifest.gallery.splice(dragFrom,1);manifest.gallery.splice(to,0,m);dragFrom=null;await saveManifest('Order saved.');await renderGallery()})})}
-$('#refreshPublisher').addEventListener('click',async()=>{try{await ensurePublisher();setStatus('PUBLISH_PORTFOLIO.cmd refreshed in the portfolio folder.','ok')}catch(e){setStatus(e.message,'err')}});
-$('#setupBtn').addEventListener('click',()=>{const text=`@echo off\r\ncd /d "%USERPROFILE%\\Desktop"\r\nif not exist "kendarte.github.io" git clone https://github.com/kendarte/kendarte.github.io.git\r\ncd /d "%USERPROFILE%\\Desktop\\kendarte.github.io"\r\ngit pull origin main\r\nstart "" "https://kendarte.github.io/admin/"\r\necho Select this folder in the visual editor:\r\necho %USERPROFILE%\\Desktop\\kendarte.github.io\r\npause\r\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download='SETUP_PORTFOLIO_EDITOR.cmd';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-</script>
 </body>
 </html>
