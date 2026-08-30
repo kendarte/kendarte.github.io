@@ -26,6 +26,12 @@
     .art-hero-media { position:relative; overflow:hidden; aspect-ratio:1/1; border:1px solid var(--line); background:radial-gradient(circle at 50% 30%,rgba(155,124,255,.15),transparent 52%),#080a0c; }
     .art-hero-media img { width:100%; height:100%; object-fit:cover; }
     .art-hero-media::after { content:"SELECTED CHARACTER WORK"; position:absolute; left:18px; bottom:18px; padding:8px 10px; border:1px solid var(--line); background:rgba(11,13,14,.78); color:#d7d1ff; font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.12em; }
+    .image-lightbox { position:fixed; inset:0; z-index:999; display:none; place-items:center; padding:28px; background:rgba(0,0,0,.96); }
+    .image-lightbox.open { display:grid; }
+    .image-lightbox img { max-width:96vw; max-height:90vh; width:auto; height:auto; object-fit:contain; }
+    .image-lightbox button { position:absolute; top:18px; right:18px; padding:10px 14px; border:1px solid rgba(255,255,255,.45); background:#111; color:#fff; cursor:pointer; }
+    main img { cursor:zoom-in; }
+
     .art-page .button-primary { border-color:var(--art-violet); background:var(--art-violet); }
     .art-page .button-primary:hover { background:#b6a5ff; }
     .art-page .text-link { border-bottom-color:var(--art-violet); }
@@ -245,5 +251,18 @@
   </main>
 
   <footer><span>© 2026 Kendall Angulo Jhonson</span><span>3D characters · costumes · armor · props</span><a href="#main-content">Back to top ↑</a></footer>
+  <div class="image-lightbox" id="imageLightbox" aria-hidden="true"><button type="button" id="closeImageLightbox" aria-label="Close enlarged image">Close ×</button><img id="imageLightboxImage" alt=""></div>
+  <script>
+    (() => {
+      const lightbox=document.getElementById('imageLightbox');
+      const image=document.getElementById('imageLightboxImage');
+      const close=document.getElementById('closeImageLightbox');
+      const hide=()=>{lightbox.classList.remove('open');lightbox.setAttribute('aria-hidden','true');image.src='';};
+      document.querySelectorAll('main img').forEach(img=>img.addEventListener('click',()=>{image.src=img.currentSrc||img.src;image.alt=img.alt;lightbox.classList.add('open');lightbox.setAttribute('aria-hidden','false');}));
+      close.addEventListener('click',hide);
+      lightbox.addEventListener('click',event=>{if(event.target===lightbox)hide();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});
+    })();
+  </script>
 </body>
 </html>
