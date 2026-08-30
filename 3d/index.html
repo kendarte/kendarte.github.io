@@ -60,6 +60,22 @@
     .video-card video { display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; }
     .video-card figcaption { padding:14px 16px; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
 
+    .cinematic-section { padding-block:clamp(90px,11vw,150px); border-top:1px solid var(--line); }
+    .cinematic-hero { margin:42px 0 0; border:1px solid var(--line); background:#050708; }
+    .cinematic-hero img { display:block; width:100%; max-height:min(1000px,82vh); object-fit:contain; }
+    .cinematic-hero figcaption { display:flex; justify-content:space-between; gap:24px; padding:16px 18px; border-top:1px solid var(--line); color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+    .cinematic-main { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px; }
+    .cinematic-piece { margin:0; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
+    .cinematic-piece img { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; }
+    .cinematic-piece figcaption { padding:17px 18px 20px; }
+    .cinematic-piece strong { display:block; font-size:15px; }
+    .cinematic-piece span { display:block; margin-top:6px; color:var(--muted); font-size:13px; }
+    .sequence-heading { margin-top:68px; }
+    .sequence-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:28px; }
+    .sequence-frame { margin:0; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
+    .sequence-frame img { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; }
+    .sequence-frame figcaption { padding:12px 14px; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+
     .motion-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
     .motion-step { margin:0; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
     .motion-step img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; }
@@ -88,7 +104,7 @@
     .ai-video video { display:block; width:min(720px,100%); margin:auto; aspect-ratio:1/1; object-fit:cover; background:#000; }
     .ai-video-label { width:min(720px,100%); margin:12px auto 0; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
     @media (max-width:900px) {
-      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid,.motion-steps,.motion-final{grid-template-columns:1fr;}
+      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid,.motion-steps,.motion-final,.cinematic-main,.sequence-grid{grid-template-columns:1fr;}
       .art-project:nth-of-type(even) .art-project-media{order:0;}
       .art-hero{min-height:auto;}
       .art-hero-media{max-width:720px;}
@@ -110,7 +126,7 @@
       <span class="brand-copy"><strong>Kendall Angulo</strong><small>3D Art</small></span>
     </a>
     <nav aria-label="3D portfolio navigation">
-      <a href="#work">Selected Work</a><a href="#video-work">3D Video</a><a href="#ai-workflow">Render to Motion</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
+      <a href="#work">Selected Work</a><a href="#cinematic">Cinematic</a><a href="#video-work">3D Video</a><a href="#ai-workflow">Render to Motion</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
     </nav>
     <a class="header-cta" href="mailto:Kendarte@gmail.com">Contact</a>
   </header>
@@ -160,6 +176,23 @@
       </article>
     </section>
 
+
+    <section class="cinematic-section section-shell" id="cinematic">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Cinematic visual storytelling</p><h2>3D staging, action composition, effects and sequential storytelling.</h2></div><p>Characters are directed as complete scenes: staging, light, weather, impact, movement and visual continuity.</p></div>
+      <figure class="cinematic-hero"><img src="/media/3d/cinematic/01-sword-clash.jpg" alt="Cinematic sword clash in a lightning storm"><figcaption><span>Hero composition</span><span>Impact · lighting · action direction</span></figcaption></figure>
+      <div class="cinematic-main">
+        <figure class="cinematic-piece"><img src="/media/3d/cinematic/02-rider-water.jpg" alt="Armored rider moving through crashing water"><figcaption><strong>Rider in the water</strong><span>Movement, scale and environmental force.</span></figcaption></figure>
+        <figure class="cinematic-piece"><img src="/media/3d/cinematic/03-dragon-storm.jpg" alt="Rider and dragon in a lightning storm"><figcaption><strong>Dragon in the storm</strong><span>Character staging inside a complete fantasy event.</span></figcaption></figure>
+      </div>
+      <div class="section-heading sequence-heading"><div><p class="eyebrow"><span></span> Action sequence development</p><h2>Beat-by-beat visual progression.</h2></div><p>Sequential compositions developed to carry action, escalation and readable story beats across a scene.</p></div>
+      <div class="sequence-grid">
+        <figure class="sequence-frame"><img src="/media/3d/cinematic/04-sequence-01.jpg" alt="Action sequence development panel one"><figcaption>Sequence · 01</figcaption></figure>
+        <figure class="sequence-frame"><img src="/media/3d/cinematic/05-sequence-02.jpg" alt="Action sequence development panel two"><figcaption>Sequence · 02</figcaption></figure>
+        <figure class="sequence-frame"><img src="/media/3d/cinematic/06-sequence-03.jpg" alt="Action sequence development panel three"><figcaption>Sequence · 03</figcaption></figure>
+        <figure class="sequence-frame"><img src="/media/3d/cinematic/07-sequence-04.jpg" alt="Action sequence development panel four"><figcaption>Sequence · 04</figcaption></figure>
+        <figure class="sequence-frame"><img src="/media/3d/cinematic/08-sequence-05.jpg" alt="Action sequence development panel five"><figcaption>Sequence · 05</figcaption></figure>
+      </div>
+    </section>
 
     <section class="video-showcase section-shell" id="video-work">
       <div class="section-heading"><div><p class="eyebrow"><span></span> 3D video</p><h2>Animated character work.</h2></div><p>Selected motion studies and presentation clips.</p></div>
