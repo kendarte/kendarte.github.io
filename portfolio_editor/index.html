@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portfolio Visual Editor</title>
+<style>
+:root{--bg:#090b0c;--panel:#111416;--panel2:#171b1d;--line:#2b3134;--text:#f3f5f4;--muted:#98a19c;--acid:#b7ff53;--danger:#ff8f8f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}.wrap{width:min(1280px,calc(100% - 32px));margin:auto;padding:28px 0 80px}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:20px}.top h1{font-size:clamp(38px,6vw,72px);line-height:.95;margin:0;letter-spacing:-.055em}.top p{max-width:620px;color:var(--muted)}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:11px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--acid);border-color:var(--acid);color:#0b0d0e}.btn.danger{color:var(--danger)}.btn:disabled{opacity:.45;cursor:not-allowed}.status{border:1px solid var(--line);padding:12px 14px;color:var(--muted);margin:14px 0 20px;white-space:pre-wrap}.status.ok{color:var(--acid);border-color:#557c27}.status.err{color:var(--danger);border-color:#7c3b3b}.panel{border:1px solid var(--line);background:var(--panel);padding:18px;margin-top:18px}.panel h2{margin:0 0 5px;font-size:25px}.help{color:var(--muted);margin:0 0 16px}.process,.gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);background:#0d1011;overflow:hidden}.thumb{height:260px;background:#070809;display:grid;place-items:center;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:contain;background:#fff}.card-body{padding:12px}.card-title{font-weight:800;margin-bottom:10px}.fields{display:grid;gap:8px}.fields input{width:100%;padding:10px;border:1px solid var(--line);background:#090b0c;color:var(--text)}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.file{position:relative;overflow:hidden}.file input{position:absolute;inset:0;opacity:0;cursor:pointer}.drop{border:1px dashed #596166;padding:34px;text-align:center;background:#0b0e0f;cursor:pointer}.drop.drag{border-color:var(--acid);background:#10170c}.tiny{font-size:12px;color:var(--muted)}.toggles{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;color:var(--muted)}.gallery-card{cursor:grab}.gallery-card.dragging{opacity:.4}.publish{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}.log{max-height:220px;overflow:auto;background:#060708;border:1px solid var(--line);padding:12px;white-space:pre-wrap;color:#cfd6d2;font:12px/1.45 Consolas,monospace;display:none}.empty{color:var(--muted)}
+@media(max-width:900px){.top{display:block}.process,.gallery{grid-template-columns:1fr 1fr}.publish{grid-template-columns:1fr}}
+@media(max-width:620px){.process,.gallery{grid-template-columns:1fr}.thumb{height:220px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="tiny">LOCAL OWNER EDITOR</div><h1>Portfolio Visual Editor</h1><p>Add, replace, remove and reorder images visually. Files are written as their original bytes; nothing is converted or recompressed.</p></div>
+    <div class="actions"><button class="btn" id="openLive">Open live portfolio</button><button class="btn primary" id="publishTop">Publish changes</button></div>
+  </div>
+  <div class="status" id="status">Loading portfolio…</div>
+
+  <section class="panel">
+    <h2>Process</h2><p class="help">Replace Line Art, Color Pass and Final Lighting directly.</p>
+    <div class="process" id="process"></div>
+    <div class="toggles"><label><input type="checkbox" id="legacyProcess"> Use old process atlas when no managed process images exist</label></div>
+  </section>
+
+  <section class="panel">
+    <h2>Add illustrations</h2><p class="help">Drop PNG, JPG, WEBP or GIF files here. Multiple files are supported.</p>
+    <div class="drop" id="drop"><strong>DROP IMAGES HERE</strong><br><span class="tiny">or click to choose files</span></div>
+    <input id="files" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+  </section>
+
+  <section class="panel">
+    <h2>Gallery</h2><p class="help">Edit titles, remove images, use the arrows, or drag cards to reorder.</p>
+    <div class="gallery" id="gallery"></div>
+    <div class="toggles"><label><input type="checkbox" id="legacyGallery"> Use old gallery atlas when the managed gallery is empty</label></div>
+  </section>
+
+  <section class="panel publish">
+    <div><h2>Publish</h2><p class="help">This commits only the illustration manifest and editor-managed image uploads, then pulls and pushes <strong>main</strong>.</p></div>
+    <button class="btn primary" id="publish">Publish changes</button>
+  </section>
+  <pre class="log" id="log"></pre>
+</div>
+<script>
+const DEFAULT={showLegacyProcessAtlas:true,showLegacyGalleryAtlas:true,process:[{slot:'Line Art',src:'',title:'Line Art'},{slot:'Color Pass',src:'',title:'Color Pass'},{slot:'Final Lighting',src:'',title:'Final Lighting'}],gallery:[]};
+let data=null,dragFrom=null,saveTimer=null;
+const $=s=>document.querySelector(s),status=$('#status'),gallery=$('#gallery'),process=$('#process'),log=$('#log');
+function msg(t,type=''){status.textContent=t;status.className='status'+(type?' '+type:'')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+async function api(path,options={}){const r=await fetch(path,{cache:'no-store',...options});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||j.log||('HTTP '+r.status));return j}
+async function load(){try{data=await api('/api/content');data.process=Array.isArray(data.process)?data.process:structuredClone(DEFAULT.process);data.gallery=Array.isArray(data.gallery)?data.gallery:[];while(data.process.length<3)data.process.push(structuredClone(DEFAULT.process[data.process.length]));render();msg('Editor ready. Changes save locally as you make them.','ok')}catch(e){msg(e.message,'err')}}
+function image(src,alt){return src?`<img src="${esc(src)}?v=${Date.now()}" alt="${esc(alt)}">`:'<span class="empty">No image</span>'}
+function render(){
+ $('#legacyProcess').checked=data.showLegacyProcessAtlas!==false;$('#legacyGallery').checked=data.showLegacyGalleryAtlas!==false;
+ const names=['Line Art','Color Pass','Final Lighting'];process.innerHTML=names.map((name,i)=>{const item=data.process[i]||DEFAULT.process[i];return `<article class="card"><div class="thumb">${image(item.src,name)}</div><div class="card-body"><div class="card-title">${name}</div><div class="row"><label class="btn primary file">${item.src?'Replace':'Add image'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-process="${i}"></label>${item.src?`<button class="btn danger" data-clear="${i}">Remove</button>`:''}</div></div></article>`}).join('');
+ gallery.innerHTML=data.gallery.length?data.gallery.map((item,i)=>`<article class="card gallery-card" draggable="true" data-index="${i}"><div class="thumb">${image(item.src,item.title||'Illustration')}</div><div class="card-body"><div class="fields"><input data-title="${i}" value="${esc(item.title||'')}" placeholder="Title"><input data-category="${i}" value="${esc(item.category||'Illustration')}" placeholder="Category"></div><div class="row"><button class="btn" data-up="${i}">←</button><button class="btn" data-down="${i}">→</button><button class="btn danger" data-remove="${i}">Remove</button></div></div></article>`).join(''):'<div class="tiny">No managed images yet.</div>';
+ bindDrag();
+}
+async function save(text='Saved locally.'){await api('/api/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});msg(text,'ok')}
+function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>save().catch(e=>msg(e.message,'err')),250)}
+async function upload(file,prefix){const r=await fetch(`/api/upload?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name)}`,{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||'Upload failed');return j.src}
+async function del(src){if(!src||!src.startsWith('/media/illustration/uploads/'))return;await api('/api/file?src='+encodeURIComponent(src),{method:'DELETE'})}
+process.addEventListener('change',async e=>{if(!e.target.matches('[data-process]')||!e.target.files[0])return;const i=Number(e.target.dataset.process),old=data.process[i].src,file=e.target.files[0];msg('Copying original image…');try{const src=await upload(file,'process');data.process[i]={slot:DEFAULT.process[i].slot,title:DEFAULT.process[i].title,src};await save('Process image saved.');await del(old);render()}catch(err){msg(err.message,'err')}});
+process.addEventListener('click',async e=>{const b=e.target.closest('[data-clear]');if(!b)return;const i=Number(b.dataset.clear),old=data.process[i].src;data.process[i].src='';await save('Process image removed.');await del(old);render()});
+const drop=$('#drop'),files=$('#files');drop.onclick=()=>files.click();files.onchange=()=>addFiles(files.files);drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');addFiles(e.dataTransfer.files)};
+async function addFiles(list){const imgs=[...list].filter(f=>/^image\//.test(f.type));if(!imgs.length)return;msg(`Adding ${imgs.length} image${imgs.length===1?'':'s'}…`);try{for(const f of imgs){const src=await upload(f,'gallery');data.gallery.push({src,title:f.name.replace(/\.[^.]+$/,''),category:'Illustration'})}data.showLegacyGalleryAtlas=false;await save('Images added.');files.value='';render()}catch(e){msg(e.message,'err')}}
+gallery.addEventListener('input',e=>{if(e.target.dataset.title!==undefined)data.gallery[Number(e.target.dataset.title)].title=e.target.value;if(e.target.dataset.category!==undefined)data.gallery[Number(e.target.dataset.category)].category=e.target.value;queueSave()});
+gallery.addEventListener('click',async e=>{let b=e.target.closest('[data-remove]');if(b){const i=Number(b.dataset.remove),old=data.gallery[i].src;data.gallery.splice(i,1);await save('Image removed.');await del(old);render();return}b=e.target.closest('[data-up]');if(b){const i=Number(b.dataset.up);if(i>0){[data.gallery[i-1],data.gallery[i]]=[data.gallery[i],data.gallery[i-1]];await save('Order saved.');render()}return}b=e.target.closest('[data-down]');if(b){const i=Number(b.dataset.down);if(i<data.gallery.length-1){[data.gallery[i+1],data.gallery[i]]=[data.gallery[i],data.gallery[i+1]];await save('Order saved.');render()}}});
+function bindDrag(){document.querySelectorAll('.gallery-card').forEach(c=>{c.ondragstart=()=>{dragFrom=Number(c.dataset.index);c.classList.add('dragging')};c.ondragend=()=>c.classList.remove('dragging');c.ondragover=e=>e.preventDefault();c.ondrop=async e=>{e.preventDefault();const to=Number(c.dataset.index);if(dragFrom===null||dragFrom===to)return;const [x]=data.gallery.splice(dragFrom,1);data.gallery.splice(to,0,x);dragFrom=null;await save('Order saved.');render()}})}
+$('#legacyProcess').onchange=e=>{data.showLegacyProcessAtlas=e.target.checked;queueSave()};$('#legacyGallery').onchange=e=>{data.showLegacyGalleryAtlas=e.target.checked;queueSave()};
+async function publish(){const buttons=[...document.querySelectorAll('#publish,#publishTop')];buttons.forEach(b=>b.disabled=true);log.style.display='block';log.textContent='Publishing…';msg('Publishing to GitHub…');try{await save('Saved locally. Publishing…');const r=await api('/api/publish',{method:'POST'});log.textContent=r.log||'Done.';msg('Published to main. GitHub Pages will update shortly.','ok')}catch(e){log.textContent=e.message;msg('Publish failed. Read the log below.','err')}finally{buttons.forEach(b=>b.disabled=false)}}
+$('#publish').onclick=publish;$('#publishTop').onclick=publish;$('#openLive').onclick=()=>window.open('https://kendarte.github.io/illustration/','_blank');
+load();
+</script>
+</body>
+</html>
