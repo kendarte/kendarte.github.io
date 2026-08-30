@@ -53,6 +53,10 @@
     .art-meta div { padding:18px; background:var(--panel-2); }
     .art-meta span { display:block; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:8px; letter-spacing:.12em; text-transform:uppercase; }
     .art-meta strong { display:block; margin-top:7px; font-size:13px; font-weight:650; }
+    .faro-footer-gallery { grid-column:1/-1; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:1px; padding:1px; border-top:1px solid var(--line); background:var(--line); }
+    .faro-footer-gallery img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; background:#080a0c; }
+    .faro-footer-gallery img.faro-banner { grid-column:1/-1; aspect-ratio:auto; max-height:180px; object-fit:contain; }
+
     .faro-gallery { display:grid; grid-template-columns:minmax(0,1fr) .38fr; height:100%; background:#080a0c; }
     .faro-gallery > img,.faro-gallery > video { width:100%; height:100%; object-fit:cover; background:#000; }
     .faro-stages { display:grid; grid-template-rows:repeat(3,minmax(0,1fr)); gap:1px; padding:1px; background:var(--line); }
@@ -120,7 +124,7 @@
     .ai-video video { display:block; width:min(720px,100%); margin:auto; aspect-ratio:1/1; object-fit:cover; background:#000; }
     .ai-video-label { width:min(720px,100%); margin:12px auto 0; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
     @media (max-width:900px) {
-      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid,.motion-steps,.motion-final,.cinematic-main,.sequence-grid{grid-template-columns:1fr;}
+      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid,.motion-steps,.motion-final,.cinematic-main,.sequence-grid{grid-template-columns:1fr;}.faro-footer-gallery{grid-template-columns:repeat(3,minmax(0,1fr));}
       .art-project:nth-of-type(even) .art-project-media{order:0;}
       .art-hero{min-height:auto;}
       .art-hero-media{max-width:720px;}
@@ -142,7 +146,7 @@
       <span class="brand-copy"><strong>Kendall Angulo</strong><small>3D Art</small></span>
     </a>
     <nav aria-label="3D portfolio navigation">
-      <a href="#work">Selected Work</a><a href="#cinematic">Cinematic</a><a href="#video-work">3D Video</a><a href="#ai-workflow">Render to Motion</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
+      <a href="#work">Selected Work</a><a href="#cinematic">Cinematic</a><a href="#video-work">3D Video</a><a href="#ai-workflow">Render to Motion</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">← Portfolio Home</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
     </nav>
     <a class="header-cta" href="mailto:Kendarte@gmail.com">Contact</a>
   </header>
@@ -189,7 +193,16 @@
           <p>Faro Ahogado is an audiovisual development project that combines 3D character work, scene composition and AI-assisted animation. The presentation moves from the original 3D render through illustrated treatment and final environmental composition into an animated shot.</p>
           <div class="art-meta"><div><span>Focus</span><strong>3D · Visual development · AI animation</strong></div><div><span>Presentation</span><strong>Render-to-motion pipeline</strong></div></div>
         </div>
-      </article>
+              <div class="faro-footer-gallery" aria-label="Faro Ahogado character studies">
+          <img src="/media/3d/faro-ahogado/characters/rox-01.jpg?v=1" alt="Rox character study one" loading="lazy">
+          <img src="/media/3d/faro-ahogado/characters/rox-02.jpg?v=1" alt="Rox character study two" loading="lazy">
+          <img src="/media/3d/faro-ahogado/characters/rox-03.jpg?v=1" alt="Rox character study three" loading="lazy">
+          <img src="/media/3d/faro-ahogado/characters/axel-01.jpg?v=1" alt="Axel character study one" loading="lazy">
+          <img src="/media/3d/faro-ahogado/characters/axel-02.jpg?v=1" alt="Axel character study two" loading="lazy">
+          <img src="/media/3d/faro-ahogado/characters/axel-03.jpg?v=1" alt="Axel character study three" loading="lazy">
+          <img class="faro-banner" src="/media/3d/faro-ahogado/characters/group-banner.jpg?v=1" alt="Faro Ahogado character lineup" loading="lazy">
+        </div>
+</article>
     </section>
 
 
@@ -255,7 +268,7 @@
     </section>
   </main>
 
-  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>3D characters · costumes · armor · props</span><a href="#main-content">Back to top ↑</a></footer>
+  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>3D characters · costumes · armor · props</span><a href="/">← Portfolio Home</a><a href="#main-content">Back to top ↑</a></footer>
   <div class="image-lightbox" id="imageLightbox" aria-hidden="true"><button type="button" id="closeImageLightbox" aria-label="Close enlarged image">Close ×</button><img id="imageLightboxImage" alt=""></div>
   <script>
     (() => {
