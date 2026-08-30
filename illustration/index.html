@@ -2,95 +2,86 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Kendall Angulo — Illustration & Visual Development</title>
-  <meta name="description" content="Character illustration, visual development, environment studies and technical design work by Kendall Angulo.">
+  <meta name="description" content="Character illustration and visual development by Kendall Angulo.">
   <link rel="canonical" href="https://kendarte.github.io/illustration/">
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    .ill-hero{padding-block:clamp(70px,9vw,140px);display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(36px,7vw,95px);align-items:center}
-    .ill-hero h1{margin:0;font-size:clamp(52px,7vw,106px);line-height:.91;letter-spacing:-.065em;font-weight:560}
+    .ill-hero{padding-block:clamp(70px,9vw,140px);display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(36px,7vw,90px);align-items:center}
+    .ill-hero h1{margin:0;font-size:clamp(50px,7vw,100px);line-height:.92;letter-spacing:-.06em;font-weight:560}
     .ill-hero h1 em{font-style:normal;color:var(--acid)}
     .ill-hero p:not(.eyebrow){max-width:650px;color:var(--muted);font-size:18px;line-height:1.7}
-    .hero-panel,.art-panel{margin:0;border:1px solid var(--line);background:#090b0c;overflow:hidden;cursor:zoom-in}
-    .hero-panel img,.art-panel img{display:block;width:100%;height:auto;object-fit:contain}
-    .ill-section{padding-block:clamp(82px,10vw,150px);border-top:1px solid var(--line)}
-    .process-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-    .process-card,.gallery-card{margin:0;border:1px solid var(--line);background:var(--panel);overflow:hidden;cursor:zoom-in}
-    .process-card img,.gallery-card img{display:block;width:100%;height:100%;max-height:720px;object-fit:contain;background:#090b0c}
-    .process-card figcaption,.gallery-card figcaption{display:flex;justify-content:space-between;gap:18px;padding:14px 16px}
-    .process-card figcaption span,.gallery-card figcaption span{color:var(--muted);font-size:11px}
-    .gallery-note{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-    .gallery-note span{padding:8px 10px;border:1px solid var(--line);font-size:10px;color:#c3cbc7}
-    .gallery-additions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}
-    .owner-tools{position:fixed;right:18px;bottom:18px;z-index:80;display:none;padding:11px 14px;border:1px solid var(--acid);background:#0b0d0e;color:var(--acid);font:700 11px var(--font-geist-mono),monospace;letter-spacing:.08em;text-transform:uppercase}
-    .owner-tools.on{display:block}
-    .lightbox{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.95);padding:28px}
-    .lightbox.open{display:grid}
-    .lightbox img{max-width:96vw;max-height:88vh;width:auto;height:auto;object-fit:contain}
-    .lightbox button{position:absolute;right:18px;top:18px;border:1px solid rgba(255,255,255,.4);background:#111;color:white;padding:10px 13px;cursor:pointer}
-    .empty{border:1px dashed var(--line);padding:28px;color:var(--muted);font-size:13px}
-    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.process-grid,.gallery-additions{grid-template-columns:1fr}}
+    .ill-section{padding-block:clamp(72px,9vw,130px);border-top:1px solid var(--line)}
+    .hero-panel,.art-panel,.work-card{margin:0;border:1px solid var(--line);background:#090b0c;overflow:hidden}
+    .hero-panel img,.art-panel img,.work-card img{display:block;width:100%;height:auto}
+    .zoomable{cursor:zoom-in}
+    .process-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+    .work-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
+    .work-card img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff}
+    .work-card figcaption{display:flex;justify-content:space-between;gap:20px;padding:14px 16px;border-top:1px solid var(--line)}
+    .work-card figcaption strong{font-size:13px}.work-card figcaption span{color:var(--muted);font-size:11px}
+    .legacy{margin-top:28px}
+    .lightbox{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.96);padding:28px}
+    .lightbox.open{display:grid}.lightbox img{max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain}.lightbox button{position:absolute;right:18px;top:18px;border:1px solid rgba(255,255,255,.4);background:#111;color:#fff;padding:10px 13px;cursor:pointer}
+    .empty-note{padding:30px;border:1px solid var(--line);color:var(--muted)}
+    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.process-grid,.work-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="/illustration/" aria-label="Kendall Angulo illustration portfolio"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Illustration &amp; visual development</small></span></a>
+    <a class="brand" href="/illustration/" aria-label="Illustration portfolio"><span class="brand-mark">KA</span><span class="brand-copy"><strong>Kendall Angulo</strong><small>Illustration &amp; visual development</small></span></a>
     <nav aria-label="Illustration navigation"><a href="#process">Process</a><a href="#gallery">Gallery</a><a href="/3d/">3D</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a></nav>
     <a class="header-cta" href="mailto:Kendarte@gmail.com">Contact</a>
   </header>
 
   <main id="main-content">
     <section class="ill-hero section-shell">
-      <div><p class="eyebrow"><span></span> Illustration · visual development</p><h1>Visual Development — <em>Character Illustration.</em></h1><p>Process documentation followed by selected illustration and visual-development work.</p></div>
-      <figure class="hero-panel zoomable"><img id="heroImage" src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development gallery"></figure>
+      <div><p class="eyebrow"><span></span> Illustration · visual development</p><h1>Visual Development — <em>Character Illustration.</em></h1><p>Process documentation and selected illustration work.</p></div>
+      <figure class="hero-panel zoomable"><img src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development work"></figure>
     </section>
 
     <section class="ill-section section-shell" id="process">
       <div class="section-heading"><div><p class="eyebrow"><span></span> Process documentation</p><h2>From line work to final presentation.</h2></div></div>
-      <div id="processContent"></div>
+      <div class="process-grid" id="processGrid"></div>
+      <figure class="art-panel legacy zoomable" id="legacyProcess" hidden><img src="/media/illustration/process-atlas.webp" alt="Line art, color pass and final lighting stages"></figure>
     </section>
 
     <section class="ill-section section-shell" id="gallery">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Selected illustration gallery</p><h2>Visual-development work.</h2></div></div>
-      <div id="legacyGallery"></div>
-      <div class="gallery-additions" id="galleryGrid"></div>
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Selected illustration gallery</p><h2>Visual development.</h2></div></div>
+      <div class="work-grid" id="galleryGrid"></div>
+      <figure class="art-panel legacy zoomable" id="legacyGallery" hidden><img src="/media/illustration/gallery-atlas.webp" alt="Selected illustration gallery"></figure>
     </section>
   </main>
 
   <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Illustration · visual development</span><a href="#main-content">Back to top ↑</a></footer>
-  <a class="owner-tools" id="ownerTools" href="/admin/">Owner Admin</a>
   <div class="lightbox" id="lightbox" aria-hidden="true"><button id="closeLightbox" type="button">Close ×</button><img id="lightboxImg" alt=""></div>
 
   <script>
-    const fallback={showLegacyProcessAtlas:true,showLegacyGalleryAtlas:true,process:[],gallery:[]};
-    const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-    function zoomable(el){el.addEventListener('click',()=>{const im=el.querySelector('img');if(!im)return;const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');li.src=im.src;li.alt=im.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false')})}
-    function render(data){
-      const process=document.getElementById('processContent');
-      const activeProcess=(data.process||[]).filter(x=>x&&x.src);
-      if(activeProcess.length){
-        process.innerHTML='<div class="process-grid">'+activeProcess.map((x,i)=>`<figure class="process-card zoomable"><img src="${esc(x.src)}" alt="${esc(x.title||x.slot||'Process image')}"><figcaption><strong>${esc(x.title||x.slot||'Process')}</strong><span>${String(i+1).padStart(2,'0')}</span></figcaption></figure>`).join('')+'</div>';
-      }else if(data.showLegacyProcessAtlas!==false){
-        process.innerHTML='<figure class="art-panel zoomable"><img src="/media/illustration/process-atlas.webp" alt="Line art, color pass and final lighting stages"></figure>';
-      }else process.innerHTML='<div class="empty">No process images selected.</div>';
-
-      const legacy=document.getElementById('legacyGallery');
-      legacy.innerHTML=data.showLegacyGalleryAtlas!==false?'<figure class="art-panel zoomable"><img src="/media/illustration/gallery-atlas.webp" alt="Selected illustration and visual development pieces"></figure>':'';
-
-      const grid=document.getElementById('galleryGrid');
-      const items=(data.gallery||[]).filter(x=>x&&x.src);
-      grid.innerHTML=items.map((x,i)=>`<figure class="gallery-card zoomable"><img src="${esc(x.src)}" alt="${esc(x.title||'Illustration')}"><figcaption><strong>${esc(x.title||'Untitled')}</strong><span>${esc(x.category||'Illustration')}</span></figcaption></figure>`).join('');
-      if(!items.length && data.showLegacyGalleryAtlas===false) grid.innerHTML='<div class="empty">No gallery images selected.</div>';
-      const hero=items[0]?.src||activeProcess[2]?.src||activeProcess[0]?.src||'/media/illustration/gallery-atlas.webp';document.getElementById('heroImage').src=hero;
-      document.querySelectorAll('.zoomable').forEach(zoomable);
+    const processGrid=document.getElementById('processGrid'),galleryGrid=document.getElementById('galleryGrid');
+    const legacyProcess=document.getElementById('legacyProcess'),legacyGallery=document.getElementById('legacyGallery');
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    function card(item){return `<figure class="work-card zoomable"><img src="${esc(item.src)}" alt="${esc(item.title||'Illustration')}" loading="lazy"><figcaption><strong>${esc(item.title||'Untitled')}</strong><span>${esc(item.category||item.slot||'Illustration')}</span></figcaption></figure>`}
+    async function loadContent(){
+      try{
+        const r=await fetch('/illustration/content.json?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('content');
+        const m=await r.json();const process=(m.process||[]).filter(x=>x&&x.src);const gallery=(m.gallery||[]).filter(x=>x&&x.src);
+        processGrid.innerHTML=process.length?process.map(card).join(''):'';
+        galleryGrid.innerHTML=gallery.length?gallery.map(card).join(''):'';
+        legacyProcess.hidden=!(m.showLegacyProcessAtlas!==false && !process.length);
+        legacyGallery.hidden=!(m.showLegacyGalleryAtlas!==false && !gallery.length);
+        if(!process.length && legacyProcess.hidden)processGrid.innerHTML='<p class="empty-note">Process images are being updated.</p>';
+        if(!gallery.length && legacyGallery.hidden)galleryGrid.innerHTML='<p class="empty-note">Gallery images are being updated.</p>';
+        bindZoom();
+      }catch(e){legacyProcess.hidden=false;legacyGallery.hidden=false;bindZoom()}
     }
-    fetch('/illustration/content.json?'+Date.now()).then(r=>r.ok?r.json():fallback).then(render).catch(()=>render(fallback));
-    if(sessionStorage.getItem('kaPortfolioOwner')==='1') document.getElementById('ownerTools').classList.add('on');
-    function closeLB(){const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');li.src=''}
-    document.getElementById('closeLightbox').addEventListener('click',closeLB);document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox')closeLB()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
+    const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');
+    function bindZoom(){document.querySelectorAll('.zoomable').forEach(el=>{if(el.dataset.zoomBound)return;el.dataset.zoomBound='1';el.addEventListener('click',()=>{const im=el.querySelector('img');if(!im)return;li.src=im.src;li.alt=im.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false')})})}
+    function closeLB(){lb.classList.remove('open');lb.setAttribute('aria-hidden','true');li.src=''}
+    document.getElementById('closeLightbox').addEventListener('click',closeLB);lb.addEventListener('click',e=>{if(e.target===lb)closeLB()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
+    loadContent();
   </script>
 </body>
 </html>
