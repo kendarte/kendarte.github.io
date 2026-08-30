@@ -17,7 +17,8 @@
     .hero-panel,.art-panel,.work-card{margin:0;border:1px solid var(--line);background:#090b0c;overflow:hidden}
     .hero-panel img,.art-panel img,.work-card img{display:block;width:100%;height:auto}
     .zoomable{cursor:zoom-in}
-    .process-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+    .process-grid{display:grid;grid-template-columns:1fr;gap:28px;margin-top:28px}
+    .process-grid .work-card img{aspect-ratio:auto;max-height:780px;object-fit:contain}
     .work-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
     .work-card img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff}
     .work-card figcaption{display:flex;justify-content:space-between;gap:20px;padding:14px 16px;border-top:1px solid var(--line)}
@@ -26,7 +27,7 @@
     .lightbox{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.96);padding:28px}
     .lightbox.open{display:grid}.lightbox img{max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain}.lightbox button{position:absolute;right:18px;top:18px;border:1px solid rgba(255,255,255,.4);background:#111;color:#fff;padding:10px 13px;cursor:pointer}
     .empty-note{padding:30px;border:1px solid var(--line);color:var(--muted)}
-    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.process-grid,.work-grid{grid-template-columns:1fr}}
+    @media(max-width:900px){.ill-hero{grid-template-columns:1fr}.work-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -63,18 +64,19 @@
     const processGrid=document.getElementById('processGrid'),galleryGrid=document.getElementById('galleryGrid');
     const legacyProcess=document.getElementById('legacyProcess'),legacyGallery=document.getElementById('legacyGallery');
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-    function card(item){return `<figure class="work-card zoomable"><img src="${esc(item.src)}" alt="${esc(item.title||'Illustration')}" loading="lazy"><figcaption><strong>${esc(item.title||'Untitled')}</strong><span>${esc(item.category||item.slot||'Illustration')}</span></figcaption></figure>`}
+    function card(item){const source=item.src?`src="${esc(item.src)}"`:`data-parts="${esc(item.parts||'')}" data-part-count="${Number(item.partCount)||0}"`;return `<figure class="work-card zoomable"><img ${source} alt="${esc(item.title||'Illustration')}" loading="lazy"><figcaption><strong>${esc(item.title||'Untitled')}</strong><span>${esc(item.category||item.slot||'Illustration')}</span></figcaption></figure>`}
+    async function hydrateImages(){await Promise.all([...document.querySelectorAll('img[data-parts]')].map(async image=>{const base=image.dataset.parts,count=Number(image.dataset.partCount);const texts=await Promise.all(Array.from({length:count},(_,i)=>fetch(`${base}/part-${String(i).padStart(2,'0')}.b64`,{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error(response.url);return response.text()})));const binary=atob(texts.join('').replace(/\s+/g,''));const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);image.src=URL.createObjectURL(new Blob([bytes],{type:'image/jpeg'}));}))}
     async function loadContent(){
       try{
         const r=await fetch('/illustration/content.json?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('content');
-        const m=await r.json();const process=(m.process||[]).filter(x=>x&&x.src);const gallery=(m.gallery||[]).filter(x=>x&&x.src);
+        const m=await r.json();const process=(m.process||[]).filter(x=>x&&(x.src||x.parts));const gallery=(m.gallery||[]).filter(x=>x&&x.src);
         processGrid.innerHTML=process.length?process.map(card).join(''):'';
         galleryGrid.innerHTML=gallery.length?gallery.map(card).join(''):'';
         legacyProcess.hidden=!(m.showLegacyProcessAtlas!==false && !process.length);
         legacyGallery.hidden=!(m.showLegacyGalleryAtlas!==false && !gallery.length);
         if(!process.length && legacyProcess.hidden)processGrid.innerHTML='<p class="empty-note">Process images are being updated.</p>';
         if(!gallery.length && legacyGallery.hidden)galleryGrid.innerHTML='<p class="empty-note">Gallery images are being updated.</p>';
-        bindZoom();
+        await hydrateImages();bindZoom();
       }catch(e){legacyProcess.hidden=false;legacyGallery.hidden=false;bindZoom()}
     }
     const lb=document.getElementById('lightbox'),li=document.getElementById('lightboxImg');
