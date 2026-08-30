@@ -12,29 +12,34 @@
 </head>
 <body>
 <div class="wrap">
-<header class="top"><a class="brand" href="/">SHAMPOO ARCADE</a><a class="back" href="/">← Portfolio</a></header>
+<header class="top"><a class="brand" href="/">SHAMPOO ARCADE</a><a class="back" href="/">← Main portfolio</a></header>
 <section class="hero"><div class="kicker">Commercial production</div><h1>Advertising built to move.</h1><p>Selected commercial, branded and social video work produced through Shampoo Arcade.</p></section>
 <section class="work">
 <article class="card">
 <div class="video-shell"><div class="loading" id="loading">Loading Santa Gráfica commercial…</div><video id="santaVideo" controls playsinline preload="metadata" aria-label="Santa Gráfica commercial"></video></div>
 <div class="meta"><div class="type">Featured commercial</div><h2>Santa Gráfica</h2><p>Promotional campaign video for Santa Gráfica's creative AI workshops.</p><div class="tags"><span class="tag">Advertising</span><span class="tag">Vertical video</span><span class="tag">Social campaign</span></div></div>
 </article>
+<article class="card" style="margin-top:28px">
+<div class="video-shell"><div class="loading" id="hfLoading">Loading Shampoo Arcade commercial…</div><video id="hfVideo" controls playsinline preload="metadata" aria-label="Shampoo Arcade commercial"></video></div>
+<div class="meta"><div class="type">Commercial video</div><h2>Shampoo Arcade</h2><p>Commercial video produced for the Shampoo Arcade portfolio.</p><div class="tags"><span class="tag">Commercial production</span><span class="tag">Branded video</span><span class="tag">Video campaign</span></div></div>
+</article>
 </section>
-<footer class="footer"><span>© 2026 Shampoo Arcade</span><a href="mailto:Kendarte@gmail.com">Kendarte@gmail.com ↗</a></footer>
+<footer class="footer"><span>© 2026 Shampoo Arcade</span><a href="/">← Return to main portfolio</a><a href="mailto:Kendarte@gmail.com">Kendarte@gmail.com ↗</a></footer>
 </div>
 <script>
 (async()=>{
- const video=document.getElementById('santaVideo');
- const loading=document.getElementById('loading');
- const parts=['part-00.b64','part-01.b64','part-02.b64','part-03.b64','part-04.b64','part-05.b64'];
+ async function loadVideo(video,loading,parts,type){
  try{
-   const texts=await Promise.all(parts.map(p=>fetch('./video/santa-grafica-webm/'+p,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(p);return r.text()})));
+   const texts=await Promise.all(parts.map(p=>fetch(p,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(p);return r.text()})));
    const b64=texts.join('').replace(/\s+/g,'');
    const bin=atob(b64);const bytes=new Uint8Array(bin.length);
    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-   video.src=URL.createObjectURL(new Blob([bytes],{type:'video/webm'}));
+   video.src=URL.createObjectURL(new Blob([bytes],{type}));
    loading.remove();
  }catch(e){loading.textContent='Video failed to load.';console.error(e)}
+ }
+ loadVideo(document.getElementById('santaVideo'),document.getElementById('loading'),['part-00.b64','part-01.b64','part-02.b64','part-03.b64','part-04.b64','part-05.b64'].map(p=>'./video/santa-grafica-webm/'+p),'video/webm');
+ loadVideo(document.getElementById('hfVideo'),document.getElementById('hfLoading'),Array.from({length:51},(_,i)=>'./video/hf-commercial/part-'+String(i).padStart(2,'0')+'.b64'),'video/mp4');
 })();
 </script>
 </body>
