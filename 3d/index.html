@@ -25,7 +25,8 @@
     .art-hero p.lede { max-width:640px; margin:32px 0 0; color:#b9c2bd; font-size:clamp(17px,1.6vw,21px); line-height:1.7; }
     .art-hero-media { position:relative; overflow:hidden; aspect-ratio:1/1; border:1px solid var(--line); background:radial-gradient(circle at 50% 30%,rgba(155,124,255,.15),transparent 52%),#080a0c; }
     .art-hero-media img { width:100%; height:100%; object-fit:cover; }
-    .art-hero-media::after { content:"SELECTED CHARACTER WORK"; position:absolute; left:18px; bottom:18px; padding:8px 10px; border:1px solid var(--line); background:rgba(11,13,14,.78); color:#d7d1ff; font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.12em; }
+    .art-hero-media .hero-replacement { position:absolute; inset:0; z-index:2; }
+    .art-hero-media::after { content:"SELECTED CHARACTER WORK"; position:absolute; z-index:3; left:18px; bottom:18px; padding:8px 10px; border:1px solid var(--line); background:rgba(11,13,14,.78); color:#d7d1ff; font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.12em; }
     .image-lightbox { position:fixed; inset:0; z-index:999; display:none; place-items:center; padding:28px; background:rgba(0,0,0,.96); }
     .image-lightbox.open { display:grid; }
     .image-lightbox img { width:min(94vw,1400px); height:90vh; max-width:96vw; max-height:90vh; object-fit:contain; }
@@ -283,6 +284,24 @@
       close.addEventListener('click',hide);
       lightbox.addEventListener('click',event=>{if(event.target===lightbox)hide();});
       document.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});
+    })();
+  </script>
+  <script>
+    (async()=>{
+      const host=document.querySelector('.art-hero-media');
+      try{
+        const parts=Array.from({length:3},(_,i)=>`/media/3d/hero-portrait/part-${String(i).padStart(2,'0')}.b64`);
+        const texts=await Promise.all(parts.map(path=>fetch(path,{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error(path);return response.text()})));
+        const bin=atob(texts.join('').replace(/\s+/g,''));
+        const bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+        const image=new Image();
+        image.className='hero-replacement';
+        image.alt='3D character in a neon environment';
+        image.src=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
+        image.addEventListener('click',()=>{document.getElementById('imageLightboxImage').src=image.src;document.getElementById('imageLightboxImage').alt=image.alt;document.getElementById('imageLightbox').classList.add('open');document.getElementById('imageLightbox').setAttribute('aria-hidden','false');});
+        host.append(image);
+      }catch(error){console.error(error);}
     })();
   </script>
 </body>
