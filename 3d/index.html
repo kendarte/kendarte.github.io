@@ -60,6 +60,19 @@
     .video-card video { display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#000; }
     .video-card figcaption { padding:14px 16px; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
 
+    .motion-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+    .motion-step { margin:0; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
+    .motion-step img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; }
+    .motion-step:first-child img { aspect-ratio:16/9; object-fit:cover; }
+    .motion-step figcaption { padding:15px 16px 17px; }
+    .motion-step strong { display:block; font-size:13px; }
+    .motion-step span { display:block; margin-top:5px; color:var(--muted); font-size:12px; line-height:1.45; }
+    .motion-final { display:grid; grid-template-columns:1fr 1fr; margin-top:18px; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
+    .motion-final video { display:block; width:100%; aspect-ratio:1/1; object-fit:contain; background:#000; }
+    .motion-final-copy { display:flex; flex-direction:column; justify-content:center; padding:clamp(32px,5vw,64px); }
+    .motion-final-copy h3 { margin:0; font-size:clamp(30px,3vw,48px); letter-spacing:-.045em; line-height:1; }
+    .motion-final-copy p { color:var(--muted); line-height:1.7; }
+
     .ai-workflow { padding-block:clamp(90px,11vw,150px); border-top:1px solid var(--line); }
     .ai-case { overflow:hidden; border:1px solid var(--line); background:var(--panel); }
     .ai-case-grid { display:grid; grid-template-columns:1.05fr .95fr; }
@@ -75,7 +88,7 @@
     .ai-video video { display:block; width:min(720px,100%); margin:auto; aspect-ratio:1/1; object-fit:cover; background:#000; }
     .ai-video-label { width:min(720px,100%); margin:12px auto 0; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
     @media (max-width:900px) {
-      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid{grid-template-columns:1fr;}
+      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid,.motion-steps,.motion-final{grid-template-columns:1fr;}
       .art-project:nth-of-type(even) .art-project-media{order:0;}
       .art-hero{min-height:auto;}
       .art-hero-media{max-width:720px;}
@@ -97,7 +110,7 @@
       <span class="brand-copy"><strong>Kendall Angulo</strong><small>3D Art</small></span>
     </a>
     <nav aria-label="3D portfolio navigation">
-      <a href="#work">Selected Work</a><a href="#video-work">3D Video</a><a href="#ai-workflow">AI Workflow</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
+      <a href="#work">Selected Work</a><a href="#video-work">3D Video</a><a href="#ai-workflow">Render to Motion</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
     </nav>
     <a class="header-cta" href="mailto:Kendarte@gmail.com">Contact</a>
   </header>
@@ -161,26 +174,18 @@
 
     <section class="ai-workflow section-shell" id="ai-workflow">
       <div class="section-heading">
-        <div><p class="eyebrow"><span></span> 3D workflow</p><h2>3D Rendering → AI Animation.</h2></div>
-        <p>From the 3D render to the animated result.</p>
+        <div><p class="eyebrow"><span></span> Render to motion</p><h2>From 3D scene to final shot.</h2></div>
+        <p>A complete character presentation pipeline: Maya setup, clean render, final visual treatment, then the animated result.</p>
       </div>
-      <article class="ai-case">
-        <div class="ai-case-grid">
-          <div class="ai-stills"><img src="/media/3d/ai-workflow.webp" alt="3D render workflow and character presentation"></div>
-          <div class="ai-copy">
-            <p class="project-kicker">3D Rendering · Animation</p>
-            <h2>Render to motion.</h2>
-            <p>Character rendering carried into an AI animation pass for the final moving shot.</p>
-            <div class="pipeline"><span>3D Scene</span><b>→</b><span>Render</span><b>→</b><span>AI Animation</span><b>→</b><span>Final Output</span></div>
-          </div>
-        </div>
-        <div class="ai-video">
-          <video controls playsinline preload="metadata" aria-label="Animated final output">
-            <source src="/media/3d/ai-animation.mp4" type="video/mp4">
-          </video>
-          <div class="ai-video-label">Animated final output</div>
-        </div>
-      </article>
+      <div class="motion-steps">
+        <figure class="motion-step"><img src="/media/3d/render-to-motion/01-maya-scene.jpg" alt="Maya scene setup with the character, rig, camera and lighting"><figcaption><strong>01 · 3D scene</strong><span>Character, rig, camera and lighting assembled in Maya.</span></figcaption></figure>
+        <figure class="motion-step"><img src="/media/3d/render-to-motion/02-character-render.png" alt="Clean 3D character render holding a card"><figcaption><strong>02 · Character render</strong><span>Finalized 3D character render before environmental treatment.</span></figcaption></figure>
+        <figure class="motion-step"><img src="/media/3d/render-to-motion/03-final-composition.jpg" alt="Final character composition against a red sky and moon"><figcaption><strong>03 · Final composition</strong><span>Atmosphere, background and final visual presentation.</span></figcaption></figure>
+      </div>
+      <div class="motion-final">
+        <video controls playsinline preload="metadata" poster="/media/3d/render-to-motion/03-final-composition.jpg" aria-label="Final animated character shot"><source src="/media/3d/render-to-motion/final-animation.mp4" type="video/mp4"></video>
+        <div class="motion-final-copy"><p class="project-kicker">04 · Animated output</p><h3>Final shot in motion.</h3><p>The rendered character and finished composition carried through to the final animation.</p></div>
+      </div>
     </section>
 
     <section class="art-focus section-shell" id="focus">
