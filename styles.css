@@ -191,7 +191,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .project-visual { position: relative; display: block; min-height: 360px; overflow: hidden; background: #191d1f; }
 .project-featured .project-visual { min-height: 520px; }
 .project-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.7)); }
-.project-visual img { height: 100%; object-fit: cover; transition: transform .55s ease, filter .55s ease; }
+.project-visual img { width: 100%; height: 100%; object-fit: cover; transition: transform .55s ease, filter .55s ease; }
 .project-card:hover .project-visual img { transform: scale(1.035); filter: saturate(1.15); }
 .commercial-project-visual { display: grid; place-items: center; background: linear-gradient(145deg, #10141a, #050607 70%); }
 .commercial-mark { position: relative; z-index: 1; color: var(--acid); font-size: clamp(30px, 5vw, 64px); font-weight: 800; line-height: .82; letter-spacing: -.08em; text-align: center; }
