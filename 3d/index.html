@@ -54,6 +54,12 @@
     .art-contact h2 { max-width:850px; margin:0; font-size:clamp(40px,5vw,74px); font-weight:560; letter-spacing:-.055em; line-height:1; }
     .art-contact p { max-width:670px; margin:24px 0 0; color:var(--muted); line-height:1.75; }
 
+    .video-showcase { padding-block:clamp(80px,10vw,140px); border-top:1px solid var(--line); }
+    .video-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:42px; }
+    .video-card { margin:0; overflow:hidden; border:1px solid var(--line); background:#080a0c; }
+    .video-card video { display:block; width:100%; aspect-ratio:9/16; object-fit:cover; background:#000; }
+    .video-card figcaption { padding:14px 16px; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+
     .ai-workflow { padding-block:clamp(90px,11vw,150px); border-top:1px solid var(--line); }
     .ai-case { overflow:hidden; border:1px solid var(--line); background:var(--panel); }
     .ai-case-grid { display:grid; grid-template-columns:1.05fr .95fr; }
@@ -69,7 +75,7 @@
     .ai-video video { display:block; width:min(720px,100%); margin:auto; aspect-ratio:1/1; object-fit:cover; background:#000; }
     .ai-video-label { width:min(720px,100%); margin:12px auto 0; color:var(--muted); font-family:var(--font-geist-mono),monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
     @media (max-width:900px) {
-      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid{grid-template-columns:1fr;}
+      .art-hero,.art-project,.art-project:nth-of-type(even),.ai-case-grid,.video-grid{grid-template-columns:1fr;}
       .art-project:nth-of-type(even) .art-project-media{order:0;}
       .art-hero{min-height:auto;}
       .art-hero-media{max-width:720px;}
@@ -91,7 +97,7 @@
       <span class="brand-copy"><strong>Kendall Angulo</strong><small>3D Art</small></span>
     </a>
     <nav aria-label="3D portfolio navigation">
-      <a href="#work">Selected Work</a><a href="#ai-workflow">AI Workflow</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
+      <a href="#work">Selected Work</a><a href="#video-work">3D Video</a><a href="#ai-workflow">AI Workflow</a><a href="https://kendarte.pb.online/kendallangulosportfolio" target="_blank" rel="noopener">Rendering Portfolio</a><a href="#focus">Focus</a><a href="/">Main Portfolio</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a>
     </nav>
     <a class="header-cta" href="mailto:Kendarte@gmail.com">Contact</a>
   </header>
@@ -141,6 +147,15 @@
       </article>
     </section>
 
+
+    <section class="video-showcase section-shell" id="video-work">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> 3D video</p><h2>Animated character work.</h2></div><p>Selected motion studies and presentation clips.</p></div>
+      <div class="video-grid">
+        <figure class="video-card"><video controls playsinline preload="metadata" aria-label="3D animation clip one"><source src="/media/3d/video-showcase/clip-01.mp4" type="video/mp4"></video><figcaption>3D animation · Clip 01</figcaption></figure>
+        <figure class="video-card"><video controls playsinline preload="metadata" aria-label="3D animation clip two"><source src="/media/3d/video-showcase/clip-02.mp4" type="video/mp4"></video><figcaption>3D animation · Clip 02</figcaption></figure>
+        <figure class="video-card"><video controls playsinline preload="metadata" aria-label="3D animation clip three"><source src="/media/3d/video-showcase/clip-03.mp4" type="video/mp4"></video><figcaption>3D animation · Clip 03</figcaption></figure>
+      </div>
+    </section>
 
     <section class="ai-workflow section-shell" id="ai-workflow">
       <div class="section-heading">
