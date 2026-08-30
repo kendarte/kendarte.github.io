@@ -1,10 +1,10 @@
 {
-  "showLegacyProcessAtlas": true,
+  "showLegacyProcessAtlas": false,
   "showLegacyGalleryAtlas": false,
   "process": [
-    {"slot":"Line Art","src":"","title":"Line Art"},
-    {"slot":"Color Pass","src":"","title":"Color Pass"},
-    {"slot":"Final Lighting","src":"","title":"Final Lighting"}
+    {"slot":"Line Art","parts":"/media/illustration/process/line-art","partCount":8,"title":"Line Art"},
+    {"slot":"Color Pass","parts":"/media/illustration/process/color-pass","partCount":8,"title":"Color Pass"},
+    {"slot":"Final Lighting","parts":"/media/illustration/process/final-lighting","partCount":10,"title":"Final Lighting"}
   ],
   "gallery": [
     {"src":"/media/illustration/gallery/536278618_10212924322740137_4310412701060649189_n.jpg","title":"Character Illustration I","category":"Character illustration"},
