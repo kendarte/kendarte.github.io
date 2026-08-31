@@ -3,7 +3,7 @@
 
 const CARD_KEY='siza_card_generator_library_v2';
 const DECK_KEY='siza_card_generator_decks_v1';
-const SESSION_RELOAD_KEY='siza_generator_seeded_reload_dragon_thunder_effects_v03';
+const SESSION_RELOAD_KEY='siza_generator_seeded_reload_airborne_cattle_v01';
 const now=()=>new Date().toISOString();
 
 function loadObject(key){
@@ -18,12 +18,12 @@ function generatorCard(source,index){
  const art=source.art||'multi';
  const affinity=art==='blue'?'azul':art==='red'?'rojo':art==='land'?'land':'multi';
  const template=art==='blue'?'standard_blue':art==='red'?'standard_red':art==='land'?'standard_colorless':'standard_colorless';
- const setCode=source.id.startsWith('dtc_')?'DTC':source.id.startsWith('dhk_')?'DHK':'SZA';
+ const setCode=source.id.startsWith('dtc_')?'DTC':source.id.startsWith('bov_')?'BOV':source.id.startsWith('dhk_')?'DHK':'SZA';
  return SizaCardSchema.normalizeCard({...source,cardType:source.type,affinity,template,rules:source.text,setCode,cardNumber:String(index+1).padStart(3,'0')});
 }
 
-/* Generator mirrors the executable shared catalogs. Structured effects are
-   copied with the cards, so editing Dragon Thunder never degrades to text-only. */
+/* Generator mirrors the shared catalogs plus generator-only starter seeds.
+   Structured effects remain attached to the cards while printed rules stay authored. */
 const cards=SizaCardCatalog.all().map(generatorCard);
 const decks=SizaDeckCatalog.all().map(deck=>({
  id:deck.id,
@@ -66,6 +66,7 @@ window.SizaStarterSeed=Object.freeze({
  decks:decks.map(deck=>deck.id),
  dragonThunderDeck:'vertical_dragon_thunder_classic',
  crimsonTideDeck:'deck_tide_crimson',
+ airborneCattleDeck:'starter_batallon_bovino_aerotransportado_v01',
  changedCards,
  changedDecks
 });
@@ -75,7 +76,9 @@ function openRequestedDeck(){
  const aliases={
   'dragon-thunder-classic':'vertical_dragon_thunder_classic',
   'marea-carmesi':'deck_tide_crimson',
-  'marea-roja':'deck_tide_crimson'
+  'marea-roja':'deck_tide_crimson',
+  'batallon-bovino-aerotransportado':'starter_batallon_bovino_aerotransportado_v01',
+  'vacas-paracaidistas':'starter_batallon_bovino_aerotransportado_v01'
  };
  const target=aliases[requested]||requested;
  if(!target)return;
