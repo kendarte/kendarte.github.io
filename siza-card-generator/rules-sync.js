@@ -15,8 +15,8 @@ function readEffects(){
 function syncRules(){
  const effects=readEffects();
  /* Structured effects are the executable contract. Printed rules remain an
-    editable presentation layer so English vertical-slice copy is not replaced
-    by the Spanish fallback renderer. */
+    editable presentation layer so authored card copy is not replaced by the
+    fallback renderer. */
  rulesField.readOnly=false;
  delete rulesField.dataset.rulesMode;
  lastGenerated=effects.length?rulesCore.rulesText(effects):'';
@@ -37,12 +37,15 @@ window.SizaRulesSync=Object.freeze({refresh:syncRules,getGeneratedFallback:()=>l
 })();
 
 (function(){
- const starter=document.createElement('script');
- starter.src='./starter-decks.js?v=dragon-thunder-effects-v02';
- starter.onload=()=>{
+ function loadScript(src,onload){
   const script=document.createElement('script');
-  script.src='./deck-generator.js?v=dragon-thunder-effects-v02';
+  script.src=src;
+  script.onload=onload;
   document.body.appendChild(script);
- };
- document.body.appendChild(starter);
+ }
+ loadScript('./airborne-cattle-seed.js?v=airborne-cattle-v01',()=>{
+  loadScript('./starter-decks.js?v=airborne-cattle-v01',()=>{
+   loadScript('./deck-generator.js?v=airborne-cattle-v01');
+  });
+ });
 })();
