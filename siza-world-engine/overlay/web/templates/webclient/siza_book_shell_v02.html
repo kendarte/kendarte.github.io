@@ -1,4 +1,43 @@
 <div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false">
+  <section id="siza-login-gate" class="sizaLoginGate" data-state="visible" aria-label="Acceso a SIZA">
+    <div class="sizaLoginBackdrop" aria-hidden="true"></div>
+    <div class="sizaLoginPanel">
+      <header class="sizaLoginBrand">
+        <div class="sizaLoginSigil" aria-hidden="true">S</div>
+        <div>
+          <small>WORLD ENGINE</small>
+          <strong>SIZA</strong>
+        </div>
+      </header>
+
+      <div class="sizaLoginHeading">
+        <small>ACCESO AL MUNDO PERSISTENTE</small>
+        <h1>Continuar la expedición</h1>
+        <p>Tu personaje, memoria y estado del mundo te esperan.</p>
+      </div>
+
+      <form id="siza-login-form" class="sizaLoginForm" autocomplete="on">
+        <label for="siza-login-username">Personaje</label>
+        <input id="siza-login-username" name="username" type="text" value="Nereida" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+
+        <label for="siza-login-password">Contraseña</label>
+        <input id="siza-login-password" name="password" type="password" autocomplete="current-password" required>
+
+        <label class="sizaLoginRemember" for="siza-login-remember">
+          <input id="siza-login-remember" type="checkbox" checked>
+          <span>Recordar y entrar automáticamente en este equipo</span>
+        </label>
+
+        <button id="siza-login-submit" class="sizaLoginPrimary" type="submit">Entrar al mundo</button>
+        <button id="siza-login-create" class="sizaLoginSecondary" type="button">Crear una cuenta nueva</button>
+
+        <div id="siza-login-status" class="sizaLoginStatus" data-kind="info" role="status" aria-live="polite">Conectando con el World Engine…</div>
+      </form>
+
+      <footer class="sizaLoginFoot">Acceso guardado únicamente en este navegador local.</footer>
+    </div>
+  </section>
+
   <header class="sizaBookHeader">
     <section class="sizaHeaderCharacter sizaHeaderCharacterPlayer" aria-label="Player character">
       <aside id="siza-player-portrait" class="sizaPortraitSlot" data-side="left" data-empty="false" aria-label="Player portrait">
