@@ -109,6 +109,17 @@ No necesita hacer `cd /d` antes.
 
 ## Webclient
 
+Para iniciar todo y entrar al MUD con un solo doble clic:
+
+```bat
+INICIAR_SIZA.bat
+```
+
+Este lanzador sincroniza el overlay, inicia Ollama si hace falta, comprueba que
+Portal y Server estén activos, espera al webclient y abre la ruta correcta. Los
+atajos históricos `start_world_engine.bat` y `play_siza_world.bat` redirigen al
+mismo lanzador; no deben ejecutarse como pasos separados.
+
 Normalmente:
 
 ```text

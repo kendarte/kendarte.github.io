@@ -142,10 +142,10 @@ echo SETUP COMPLETO
 echo ============================================
 echo.
 echo Ahora ejecute:
-echo   start_world_engine.bat
+echo   INICIAR_SIZA.bat
 echo.
 echo Cuando el servidor este arriba abra:
-echo   http://localhost:4001
+echo   http://localhost:4001/webclient/
 echo.
 echo Como superusuario ejecute dentro del juego:
 echo   batchcode kalnaj_pilot
