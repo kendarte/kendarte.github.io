@@ -76,8 +76,15 @@ echo [3/4] Comprobando Portal y Server...
 pushd "%SIZA_RUNTIME%"
 call :evennia_ready
 if not errorlevel 1 (
-  echo Portal y Server ya estaban activos.
-  goto :wait_webclient
+  call :webclient_ready
+  if not errorlevel 1 (
+    echo Portal, Server y webclient ya estaban activos.
+    goto :ready
+  )
+  echo Portal y Server figuran activos, pero el webclient no responde.
+  echo Reiniciando Evennia automaticamente...
+  "%SIZA_PYTHON%" -m evennia stop >nul 2>&1
+  timeout /t 2 /nobreak >nul
 )
 
 echo Iniciando Evennia...
