@@ -6,7 +6,7 @@ title SIZA - Arranque completo
 
 set "SIZA_PYTHON=%CD%\.venv\Scripts\python.exe"
 set "SIZA_RUNTIME=%CD%\runtime"
-set "SIZA_WEBCLIENT=http://localhost:4001/webclient/"
+set "SIZA_WEBCLIENT=http://127.0.0.1:4001/webclient/"
 set "SIZA_OLLAMA_MODEL=qwen3:8b"
 set "SIZA_OLLAMA_ENDPOINT=http://127.0.0.1:11434/api/chat"
 set "SIZA_STATUS_FILE=%TEMP%\siza_evennia_status_%RANDOM%_%RANDOM%.txt"
@@ -118,8 +118,8 @@ set /a SIZA_TRIES=0
 call :webclient_ready
 if not errorlevel 1 goto :ready
 set /a SIZA_TRIES+=1
-if !SIZA_TRIES! GEQ 60 (
-  echo ERROR: Evennia esta activo, pero el webclient no respondio en 60 segundos.
+if !SIZA_TRIES! GEQ 20 (
+  echo ERROR: Evennia esta activo, pero el puerto web 4001 no respondio en 20 segundos.
   if exist "%SIZA_STATUS_FILE%" type "%SIZA_STATUS_FILE%"
   popd
   goto :fail
@@ -148,7 +148,7 @@ if errorlevel 1 exit /b 1
 exit /b 0
 
 :webclient_ready
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -UseBasicParsing -Uri '%SIZA_WEBCLIENT%' -TimeoutSec 2; if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 500) { exit 0 } } catch {}; exit 1" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$client = New-Object System.Net.Sockets.TcpClient; try { $task = $client.ConnectAsync('127.0.0.1', 4001); if ($task.Wait(2000) -and $client.Connected) { exit 0 }; exit 1 } catch { exit 1 } finally { $client.Dispose() }" >nul 2>&1
 exit /b %ERRORLEVEL%
 
 :fail
