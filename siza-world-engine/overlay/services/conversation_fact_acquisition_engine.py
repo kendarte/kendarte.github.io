@@ -4,7 +4,7 @@ from services.knowledge_fact_engine import find_knowledge_fact
 from services.knowledge_fact_transfer_engine import transfer_knowledge_fact
 
 
-CONVERSATION_FACT_ACQUISITION_BUILD = "0.80.1-campaign-observed-npc-to-player-fact-acquisition"
+CONVERSATION_FACT_ACQUISITION_BUILD = "0.80.2-single-observation-npc-to-player-fact-acquisition"
 
 
 def _plain_list(value):
@@ -58,30 +58,6 @@ def _new_shared_fact_memory(actor, before_memory_count):
             continue
         return row
     return None
-
-
-def _observe_new_player_fact(actor, npc, memory, fact_id, transfer):
-    """Project one newly acquired authoritative conversation Fact into the active campaign, if any."""
-    reason = str((transfer or {}).get("reason") or "")
-    if reason == "ALREADY_TRANSFERRED":
-        return None
-    from services.dm_campaign_registry import observe_active_campaign_evidence
-
-    return observe_active_campaign_evidence(
-        actor,
-        {
-            "authority": "WORLD_ENGINE",
-            "source": "CONVERSATION_FACT_ACQUISITION",
-            "action_types": ["KNOWLEDGE_FACT_SHARED"],
-            "fact_id": fact_id,
-            "fact_text": memory.get("fact_text"),
-            "topic": memory.get("topic"),
-            "source_npc_id": str(getattr(npc.db, "npc_id", "") or "") or None,
-            "source_dbref": int(npc.id),
-            "source_name": str(npc.key),
-            "transfer": transfer,
-        },
-    )
 
 
 def acquire_fact_from_new_conversation(actor, before_memory_count, expected_target_dbref=None):
@@ -159,7 +135,6 @@ def acquire_fact_from_new_conversation(actor, before_memory_count, expected_targ
         }
 
     reason = str(transfer.get("reason") or "")
-    campaign_observation = _observe_new_player_fact(actor, npc, memory, fact_id, transfer)
     return {
         "status": "FACT_ALREADY_ACQUIRED" if reason == "ALREADY_TRANSFERRED" else "FACT_ACQUIRED",
         "acquired": True,
@@ -169,8 +144,9 @@ def acquire_fact_from_new_conversation(actor, before_memory_count, expected_targ
         "topic": memory.get("topic"),
         "source_dbref": int(npc.id),
         "source_name": str(npc.key),
+        "campaign_tags": list(transfer.get("campaign_tags") or []),
         "transfer": transfer,
-        "campaign_observation": campaign_observation,
+        "campaign_observation": transfer.get("campaign_observation"),
         "build": CONVERSATION_FACT_ACQUISITION_BUILD,
     }
 
