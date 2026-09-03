@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Cargando NPCs de Darkhaven…</title></head>
+<body>
+<script>
+const rooms=[
+ {room_id:'DH7-ROOM-001',key:'Puerta de Darkhaven'},{room_id:'DH7-ROOM-002',key:'Patio Central de la Antigua Prisión'},{room_id:'DH7-ROOM-003',key:'Sala de Guardia'},{room_id:'DH7-ROOM-004',key:'Mando Regional de Sector 7'},{room_id:'DH7-ROOM-005',key:'Sala de Comunicaciones'},{room_id:'DH7-ROOM-006',key:'Dirección de Orphim Trimago'},{room_id:'DH7-ROOM-007',key:'Archivos de Sector 7'},{room_id:'DH7-ROOM-008',key:'Aulas de Darkhaven'},{room_id:'DH7-ROOM-009',key:'Sala de Briefing de Fireteams'},{room_id:'DH7-ROOM-010',key:'Patio de Entrenamiento y Esgrima'},{room_id:'DH7-ROOM-011',key:'Dormitorios del Fireteam 7'},{room_id:'DH7-ROOM-012',key:'Dormitorios Generales'},{room_id:'DH7-ROOM-013',key:'Comedor de Darkhaven'},{room_id:'DH7-ROOM-014',key:'Cocina y Taller de Berta'},{room_id:'DH7-ROOM-015',key:'Laboratorio de Artefactos y Reliquias'},{room_id:'DH7-ROOM-016',key:'Atelier de Relena Dao'},{room_id:'DH7-ROOM-017',key:'Taller FrameSmith de Maine'},{room_id:'DH7-ROOM-018',key:'Bahía de Equipos Pesados y Deep Dive Frames'},{room_id:'DH7-ROOM-019',key:'Depósito de Equipo Darkhaven'},{room_id:'DH7-ROOM-020',key:'Enfermería de Respuesta'},{room_id:'DH7-ROOM-021',key:'Aislamiento de Exposición'},{room_id:'DH7-ROOM-022',key:'Contención Compleja'},{room_id:'DH7-ROOM-023',key:'Sala de Observación de Anomalías'},{room_id:'DH7-ROOM-024',key:'Torre de Vigilancia'},{room_id:'DH7-ROOM-025',key:'Muelle de Despliegue'}
+];
+const stats=()=>({FUE:2,AGI:2,COO:2,INT:2,PER:2,PSI:2});
+const cp=(deck_id='',role='',tags=[])=>({enabled:!!deck_id,deck_id,tcg_profile:role?{role}: {},loadout:{},world_status:{},encounter_tags:tags});
+const base=(id,key,room,extra={})=>({editor_id:'ed_'+id.toLowerCase().replace(/[^a-z0-9]+/g,'_'),key,npc_id:id,aliases:[],desc:'',dialogue_greeting:'',canon_status:'canon-draft',campaign_id:'DARKHAVEN-ACADEMY-EXPERIMENT',simulation_enabled:false,decision_enabled:false,current_room_id:room,current_room_key:(rooms.find(r=>r.room_id===room)||{}).key||'',home_room_id:'',work_room_id:'',rest_room_id:'',adventure_stats:stats(),knowledge:{DARKHAVEN:2},knowledge_facts:[],job:{},relationships:{},memories:[],routine:[],needs:{},need_rules:[],need_dynamics:[],decision_priorities:{DANGER:100,EVENT:80,NEED:70,JOB:60,RELATIONSHIP:50,ROUTINE:10},decision_goals:[],virtues:{},flaws:{},combat_profile:cp(),...extra});
+const npcs=[
+ base('NPC-DH7-BASILIZA','Basiliza','DH7-ROOM-011',{
+   aliases:['Gwen'],
+   desc:'Estudiante voluntaria de estética gótica, elegante, precisa y peligrosa. Basiliza es la identidad nacida de Gwen tras sobrevivir a su caída y llega a Darkhaven buscando información sobre Trinasty.',
+   dialogue_greeting:'Basiliza te observa como si ya hubiera decidido qué parte de la verdad piensa decirte.',
+   adventure_stats:{FUE:2,AGI:3,COO:3,INT:4,PER:4,PSI:5},
+   knowledge:{DARKHAVEN:2,TRINASTY:3,RELIQUIAS:2},
+   job:{id:'ROLE-FIRETEAM7-SUPPORT',name:'Fireteam 7 · Support'},
+   combat_profile:cp('starter_darkhaven_vigilancia_v01','Support',['DARKHAVEN','FIRETEAM-7','SUPPORT']),
+   home_room_id:'DH7-ROOM-011'
+ }),
+ base('NPC-DH7-DRASHTON','Drashton Windrago','DH7-ROOM-011',{
+   aliases:['Drash','Windrago'],
+   desc:'Heredero problemático de los dragones de tormenta Windrago. Arrogante, gracioso, brutal, carismático y peligrosamente cómodo en combate.',
+   dialogue_greeting:'Drash sonríe como si cualquier conversación pudiera convertirse en una pelea entretenida.',
+   adventure_stats:{FUE:5,AGI:4,COO:3,INT:2,PER:3,PSI:4},
+   knowledge:{DARKHAVEN:2,WINDRAGO:3,COMBATE:3},
+   job:{id:'ROLE-FIRETEAM7-DPS2',name:'Fireteam 7 · DPS'},
+   combat_profile:cp('vertical_dragon_thunder_classic','DPS',['DARKHAVEN','FIRETEAM-7','WINDRAGO','DPS']),
+   home_room_id:'DH7-ROOM-011'
+ }),
+ base('NPC-DH7-ROXY','Roxy Soleonus','DH7-ROOM-011',{
+   aliases:['Roxy','Soleonus'],
+   desc:'Estudiante de la casa solar Soleonus, enviada a Darkhaven por no ajustarse a la imagen perfecta de su familia. Provocadora, socialmente brillante, atrevida y perceptiva.',
+   dialogue_greeting:'Roxy te dedica una mirada rápida que parece leer la habitación antes de responder.',
+   adventure_stats:{FUE:3,AGI:4,COO:4,INT:3,PER:5,PSI:3},
+   knowledge:{DARKHAVEN:2,SOLEONUS:3,COMBATE:2},
+   job:{id:'ROLE-FIRETEAM7-DPS1',name:'Fireteam 7 · DPS'},
+   combat_profile:cp('starter_darkhaven_ruptura_v01','DPS',['DARKHAVEN','FIRETEAM-7','SOLEONUS','DPS']),
+   home_room_id:'DH7-ROOM-011'
+ }),
+ base('NPC-DH7-AXEL','Axel Likabalier','DH7-ROOM-011',{
+   aliases:['Axel','Likabalier'],
+   desc:'Joven de una casa caballeresca en decadencia. Correcto, formal y cargado por la expectativa de restaurar un linaje incapaz de producir mana fuerte.',
+   dialogue_greeting:'Axel se endereza por reflejo antes de hablar, como si cada conversación también fuera una prueba de protocolo.',
+   adventure_stats:{FUE:4,AGI:2,COO:3,INT:3,PER:3,PSI:4},
+   knowledge:{DARKHAVEN:2,LIKABALIER:3,CABALLERIA:2},
+   job:{id:'ROLE-FIRETEAM7-TANK',name:'Fireteam 7 · Tank'},
+   combat_profile:cp('starter_darkhaven_contencion_v01','Tank',['DARKHAVEN','FIRETEAM-7','LIKABALIER','TANK']),
+   home_room_id:'DH7-ROOM-011'
+ }),
+ base('NPC-DH7-TRIMAGO','Orphim Trimago','DH7-ROOM-006',{
+   aliases:['Trimago','Director Trimago','Orphim'],
+   desc:'Director de Darkhaven Zona 7. Carismático, oportunista, manipulador, brillante y peligrosamente encantador. Compró la antigua prisión y la convirtió en instituto.',
+   dialogue_greeting:'Trimago sonríe con la tranquilidad de alguien que ya está calculando para qué podría servirle esta conversación.',
+   adventure_stats:{FUE:2,AGI:2,COO:3,INT:5,PER:5,PSI:5},
+   knowledge:{DARKHAVEN:5,SECTOR7:5,POLITICA:4,ANOMALIAS:3},
+   job:{id:'JOB-DH7-DIRECTOR',name:'Director de Darkhaven Zona 7'},
+   work_room_id:'DH7-ROOM-006'
+ }),
+ base('NPC-DH7-RELENA','Relena Dao','DH7-ROOM-016',{
+   aliases:['Relena','Relena Dao','Pitonisa Dao'],
+   desc:'Pitonisa de cabello morado, estudiosa de artefactos, diseñadora de uniformes, Fashion Frames y parte del sistema de creación de spells de Darkhaven.',
+   dialogue_greeting:'Relena aparta la vista de su trabajo con una calma impecable.',
+   adventure_stats:{FUE:2,AGI:2,COO:4,INT:5,PER:4,PSI:5},
+   knowledge:{DARKHAVEN:4,ARTEFACTOS:5,FASHION_FRAMES:5,TRINASTY:4},
+   job:{id:'JOB-DH7-RELENA',name:'Pitonisa · Artefactos y Fashion Frames'},
+   work_room_id:'DH7-ROOM-016'
+ }),
+ base('NPC-DH7-DAO-A','Gemela Dao A','DH7-ROOM-016',{
+   aliases:['gemela Dao','gemela A'],
+   desc:'Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.',
+   dialogue_greeting:'La gemela espera una instrucción con una atención demasiado perfecta.',
+   knowledge:{DARKHAVEN:2,FASHION_FRAMES:3},job:{id:'ROLE-DH7-DAO-ASSISTANT',name:'Asistente de Relena'},work_room_id:'DH7-ROOM-016'
+ }),
+ base('NPC-DH7-DAO-B','Gemela Dao B','DH7-ROOM-016',{
+   aliases:['gemela Dao','gemela B'],
+   desc:'Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.',
+   dialogue_greeting:'La segunda gemela te mira con la misma serenidad ensayada que su hermana.',
+   knowledge:{DARKHAVEN:2,FASHION_FRAMES:3},job:{id:'ROLE-DH7-DAO-ASSISTANT',name:'Asistente de Relena'},work_room_id:'DH7-ROOM-016'
+ }),
+ base('NPC-DH7-ORLAN','Sir Orlan','DH7-ROOM-010',{
+   aliases:['Orlan','Sir Orlan','capitán Orlan'],
+   desc:'Viejo caballero y escudero de la familia Likabalier. Crió a Axel y fue aceptado en Darkhaven como capitán de guardia y mentor de esgrima.',
+   dialogue_greeting:'Orlan te recibe con la cortesía sencilla de alguien que no necesita demostrar su autoridad.',
+   adventure_stats:{FUE:4,AGI:3,COO:5,INT:3,PER:4,PSI:4},
+   knowledge:{DARKHAVEN:3,CABALLERIA:5,ESGRIMA:5,LIKABALIER:4},
+   job:{id:'JOB-DH7-ORLAN',name:'Capitán de guardia · Mentor de esgrima'},
+   work_room_id:'DH7-ROOM-010'
+ }),
+ base('NPC-DH7-ARLITA','Arlita','DH7-ROOM-015',{
+   aliases:['Arlita','pictomante'],
+   desc:'Pictomante de origen humilde, talentosa y amable, graduada de la Casa del Artista. Acompaña exploraciones para crear nuevas Pages a partir de criaturas, lugares y fenómenos.',
+   dialogue_greeting:'Arlita cierra su cuaderno de trabajo y te presta atención.',
+   adventure_stats:{FUE:2,AGI:3,COO:4,INT:4,PER:5,PSI:4},
+   knowledge:{DARKHAVEN:3,PICTOMANCIA:5,PAGES:4,ANOMALIAS:3},
+   job:{id:'JOB-DH7-ARLITA',name:'Pictomante de campo'},
+   work_room_id:'DH7-ROOM-015'
+ }),
+ base('NPC-DH7-MAINE','Maine','DH7-ROOM-017',{
+   aliases:['Maine','FrameSmith'],
+   desc:'Mestia / Manabeast y FrameSmith pesado. Enorme, culto, técnico e intelectual. Repara manacores, Spellblades, ManaDrivers y Deep Dive Frames.',
+   dialogue_greeting:'Maine deja una herramienta pesada sobre el banco antes de mirarte.',
+   adventure_stats:{FUE:5,AGI:2,COO:5,INT:5,PER:3,PSI:3},
+   knowledge:{DARKHAVEN:3,FRAMESMITH:5,MANACORES:5,DEEP_DIVE:5},
+   job:{id:'JOB-DH7-MAINE',name:'FrameSmith pesado'},
+   work_room_id:'DH7-ROOM-017'
+ }),
+ base('NPC-DH7-BERTA','Berta','DH7-ROOM-014',{
+   aliases:['Berta','cocinera'],
+   desc:'Cocinera, alquimista, soldadora, carpintera, reparadora y consejera de Darkhaven. Su comida parece castigo, pero funciona.',
+   dialogue_greeting:'Berta te mira por encima de lo que esté cocinando o reparando, lo que haya ocurrido primero.',
+   adventure_stats:{FUE:3,AGI:2,COO:4,INT:4,PER:4,PSI:4},
+   knowledge:{DARKHAVEN:4,COCINA:5,ALQUIMIA:4,REPARACION:4},
+   job:{id:'JOB-DH7-BERTA',name:'Cocinera · Alquimista · Reparadora'},
+   work_room_id:'DH7-ROOM-014'
+ }),
+ base('NPC-DH7-DINO','Dino','DH7-ROOM-002',{
+   aliases:['Dino'],
+   desc:'Estudiante terciario y asistente operativo. Funciona como fuente de rumor, comedia, reacción y textura cotidiana de Darkhaven.',
+   dialogue_greeting:'Dino parece estar a medio segundo de contarte algo que probablemente no debería saber.',
+   knowledge:{DARKHAVEN:3,RUMORES:4},job:{id:'ROLE-DH7-STUDENT-ASSISTANT',name:'Estudiante terciario · Asistente operativo'},home_room_id:'DH7-ROOM-012'
+ }),
+ base('NPC-DH7-SQUEEK','Squeek','DH7-ROOM-002',{
+   aliases:['Squeek'],
+   desc:'Estudiante terciario y asistente operativo. Vive entre los pasillos, rumores y pequeños trabajos que hacen sentir a Darkhaven como una institución viva.',
+   dialogue_greeting:'Squeek levanta la cabeza con expresión de quien ya escuchó la mitad del rumor antes de que llegaras.',
+   knowledge:{DARKHAVEN:3,RUMORES:4},job:{id:'ROLE-DH7-STUDENT-ASSISTANT',name:'Estudiante terciario · Asistente operativo'},home_room_id:'DH7-ROOM-012'
+ })
+];
+const project={version:2,meta:{name:'Academia Darkhaven · Zona 7',campaign_id:'DARKHAVEN-ACADEMY-EXPERIMENT'},map:{name:'Academia Darkhaven · Zona 7',rooms},npcs};
+localStorage.setItem('siza_npc_creator_v2',JSON.stringify(project));
+location.replace('./');
+</script>
+</body></html>
