@@ -199,6 +199,7 @@
             return null;
         }
 
+        var prefixes = ["Exits:", "Characters:", "You see:"];
         var titleIndex = -1;
         for (var i = 0; i < lines.length; i += 1) {
             if (/\(#\d+\)\s*$/.test(lines[i])) {
@@ -207,11 +208,18 @@
             }
         }
         if (titleIndex === -1) {
-            return null;
+            // Normal players do not see database references such as (#9).
+            // A room snapshot is still unambiguous when it contains Evennia's
+            // authored room metadata after a title/description.
+            var unprivilegedMeta = metadataIndex(lines, prefixes);
+            if (unprivilegedMeta > 0) {
+                titleIndex = 0;
+            } else {
+                return null;
+            }
         }
 
         var body = lines.slice(titleIndex);
-        var prefixes = ["Exits:", "Characters:", "You see:"];
         var firstMeta = metadataIndex(body, prefixes);
         if (firstMeta === -1) {
             return null;
