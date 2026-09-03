@@ -369,7 +369,14 @@
     max-width: none;
     margin: 0 0 4px;
     color: #382a1e;
+    background: transparent;
     font: 14px/1.42 Georgia,"Times New Roman",serif;
+}
+
+.sizaBookLine.sizaNarrativeEvent,
+.sizaBookOutput .sizaBookLine {
+    color: #382a1e !important;
+    background: transparent !important;
 }
 
 .sizaBookSystem {
