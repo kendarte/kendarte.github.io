@@ -5,8 +5,11 @@ from evennia.accounts.models import AccountDB
 from evennia.utils import utils
 from twisted.internet import reactor
 
+from services.dm_campaign_registry import start_registered_campaign
+
 
 LOCAL_CHARACTER = "Nereida"
+LOCAL_CAMPAIGN = "CAMPAIGN-FARO-AHOGADO-VS01"
 
 
 def _client_host(session):
@@ -113,6 +116,7 @@ class CmdSizaLocalLogin(Command):
                 if current != character:
                     account.puppet_object(session, character)
                 account.db._last_puppet = character
+                campaign = start_registered_campaign(character, LOCAL_CAMPAIGN, force=False)
                 _emit_ready(
                     session,
                     "READY",
@@ -120,6 +124,7 @@ class CmdSizaLocalLogin(Command):
                     character=LOCAL_CHARACTER,
                     puppet=character.key,
                     location=str(getattr(character, "location", "") or ""),
+                    campaign=str(campaign.get("status") or ""),
                 )
             except Exception as error:
                 _emit_ready(session, "PUPPET_FAILED", character=character.key, error=str(error))
