@@ -5,6 +5,19 @@ from services.exit_state_gate_engine import inspect_exit_state
 from services.ollama_narrator import narrate_move_async
 
 
+def _plain_string_list(value):
+    try:
+        rows = list(value or [])
+    except Exception:
+        rows = []
+    output = []
+    for raw in rows:
+        item = str(raw or "").strip()
+        if item and item not in output:
+            output.append(item)
+    return output
+
+
 class Exit(DefaultExit):
     """Persistent Siza Exit. Geometry and door state are authoritative here."""
 
@@ -17,6 +30,7 @@ class Exit(DefaultExit):
         self.db.canon_status = "prototype"
         self.db.state_requirements = []
         self.db.state_block_message = "El estado actual del lugar no permite usar ese paso."
+        self.db.campaign_tags = []
 
     def at_traverse(self, traversing_object, target_location, **kwargs):
         state_check = inspect_exit_state(self)
@@ -38,12 +52,14 @@ class Exit(DefaultExit):
     def at_post_traverse(self, traversing_object, source_location, **kwargs):
         super().at_post_traverse(traversing_object, source_location, **kwargs)
         destination = getattr(traversing_object, "location", None)
+        campaign_tags = _plain_string_list(getattr(self.db, "campaign_tags", []))
         observe_active_campaign_evidence(
             traversing_object,
             {
                 "authority": "WORLD_ENGINE",
                 "source": "EXIT_TRAVERSAL",
                 "action_types": ["MOVEMENT_EXECUTED"],
+                "campaign_tags": campaign_tags,
                 "result": {
                     "exit_dbref": int(self.id) if getattr(self, "id", None) is not None else None,
                     "exit_id": str(getattr(self.db, "exit_id", "") or "") or None,
