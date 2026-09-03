@@ -88,6 +88,7 @@ def reset():
 
     player.move_to(entry, quiet=True)
     started = start_campaign(player, DARKHAVEN_TUTORIAL_CAMPAIGN, force=True)
+    player.db.darkhaven_intro_pending = True
 
     return {
         "status": "RESET",
