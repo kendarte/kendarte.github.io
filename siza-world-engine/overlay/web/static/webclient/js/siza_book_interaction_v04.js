@@ -3,6 +3,7 @@
 
     var STORAGE_KEY = "siza_player_language";
     var currentLanguage = "es";
+    var contextTimer = null;
 
     var ROOM_PRESENTATION = {
         "Embarcadero de Campana": {enName:"Bell Dock",enDescription:"A working dock platform where cargo, crews, and arrivals converge under the noise of the harbor."},
@@ -181,6 +182,8 @@
         var field=byId("siza-inputfield");if(field)field.setAttribute("placeholder",choose("Describe lo que haces…","Describe what you do…"));
         var send=byId("siza-inputsend");if(send&&!send.disabled)setNodeText(send,choose("ENVIAR","SEND"));
         var hint=root&&root.querySelector(".sizaBookInputHint");setNodeText(hint,choose("Enter para enviar · Shift+Enter para nueva línea · ↑/↓ historial","Enter to send · Shift+Enter for a new line · ↑/↓ history"));
+        setText("siza-contextual-actions-title",choose("ACCIONES DISPONIBLES","AVAILABLE ACTIONS"));
+        setText("siza-contextual-actions-empty",choose("Puedes describir otra acción abajo.","You can describe another action below."));
 
         var placeholder=root&&root.querySelector("#siza-scene-placeholder > span");setNodeText(placeholder,choose("IMAGEN DEL LUGAR","LOCATION IMAGE"));
         var tcgResources=byId("siza-tcg-resource-mount"),tcgHand=byId("siza-tcg-hand-mount"),tcgStatus=byId("siza-tcg-status");
@@ -252,6 +255,42 @@
         Evennia.msg("text",["siza-ui-stats"],{});
     }
 
+    function requestContext(){
+        clearTimeout(contextTimer);
+        contextTimer=setTimeout(function(){
+            if(window.Evennia&&Evennia.isConnected())Evennia.msg("text",["siza-ui-context"],{});
+        },80);
+    }
+
+    function renderContextActions(args){
+        var packet=args&&args.length?args[0]:args;
+        if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
+        packet=packet||{};
+        var root=byId("siza-contextual-actions"),list=byId("siza-contextual-actions-list"),empty=byId("siza-contextual-actions-empty"),location=byId("siza-contextual-actions-location");
+        if(!root||!list)return;
+        var actions=Array.isArray(packet.actions)?packet.actions:[];
+        list.innerHTML="";
+        actions.slice(0,12).forEach(function(action){
+            var command=clean(action.command),label=clean(action.label);
+            if(!command||!label)return;
+            var button=document.createElement("button");
+            button.type="button";
+            button.className="sizaContextAction";
+            button.setAttribute("data-kind",clean(action.kind).toUpperCase());
+            button.setAttribute("data-command",command);
+            button.textContent=label;
+            button.addEventListener("click",function(){
+                var client=window.SizaWorldBookClient;
+                if(client&&typeof client.sendText==="function")client.sendText(command);
+            });
+            list.appendChild(button);
+        });
+        var isEmpty=list.children.length===0;
+        root.setAttribute("data-empty",isEmpty?"true":"false");
+        if(empty)empty.hidden=!isEmpty;
+        if(location)location.textContent=clean(packet.location)||choose("Escena actual","Current scene");
+    }
+
     function onStats(args){
         var packet=args&&args.length?args[0]:args;
         if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
@@ -285,13 +324,15 @@
         observe("siza-location-label",localizeRoom);observe("siza-scene-description",localizeRoom);observe("siza-knowledge-list",localizeMemories);observe("siza-scene-cast",localizeCast);
         observe("siza-mode-label",localizeMode);observe("siza-connection-label",localizeConnection);observe("siza-current-prompt",localizeStaticUi);observe("siza-inputsend",localizeStaticUi);
 
-        if(window.Evennia&&Evennia.emitter){Evennia.emitter.on("siza_character_stats",onStats);Evennia.emitter.on("siza_player_language",onLanguage);}
+        if(window.Evennia&&Evennia.emitter){Evennia.emitter.on("siza_character_stats",onStats);Evennia.emitter.on("siza_player_language",onLanguage);Evennia.emitter.on("siza_context_actions",renderContextActions);}
         refresh();
+        requestContext();
     }
 
     window.SizaBookInteractionV04=Object.freeze({
         splitItems:splitItems,renderActionSource:renderActionSource,openPanel:openPanel,requestStats:requestStats,
-        localizeRoom:localizeRoom,setLanguage:setLanguage,getLanguage:function(){return currentLanguage;},refresh:refresh
+        localizeRoom:localizeRoom,setLanguage:setLanguage,getLanguage:function(){return currentLanguage;},refresh:refresh,
+        requestContext:requestContext,renderContextActions:renderContextActions
     });
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
