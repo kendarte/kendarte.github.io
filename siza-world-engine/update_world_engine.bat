@@ -75,6 +75,14 @@ if errorlevel 1 (
   )
 )
 
+echo.
+echo 4. Instalando/actualizando contenido Faro Ahogado VS01...
+python -m evennia shell -c "from world.faro_ahogado_vs01_seed import install; r=install(); print('FARO_AHOGADO_VS01=', r); assert r.get('status') == 'INSTALLED', r"
+if errorlevel 1 (
+  popd
+  goto :fail
+)
+
 popd
 
 echo.
@@ -83,6 +91,7 @@ echo UPDATE COMPLETO - SERVIDOR REINICIADO
 echo ============================================
 echo.
 echo El mundo y la base de datos NO se borraron.
+echo Faro Ahogado VS01 fue instalado/actualizado de forma idempotente.
 echo Siza Arena fue sincronizado al webclient local.
 echo Vuelva a conectar al webclient si se desconecto.
 echo.
