@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIZA Map Creator</title>
+<style>
+:root{--bg:#0b0e13;--panel:#111722;--panel2:#171f2d;--line:#2a3446;--text:#edf2f7;--muted:#91a0b5;--accent:#77bdfb;--danger:#ff6b6b;--ok:#75d69c;--node:#182437;--nodeSel:#23466a;--world:#0d121a}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}.app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.topbar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#0e141e;flex-wrap:wrap}.brand{font-weight:800;letter-spacing:.04em;margin-right:10px}.brand small{display:block;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.08em}.btn{border:1px solid #344159;background:#182233;color:var(--text);padding:7px 10px;border-radius:7px;cursor:pointer}.btn:hover{background:#202d42}.btn.primary{border-color:#3f78a9;background:#17466d}.btn.danger{border-color:#6c3438;background:#3b1c21}.btn.active{outline:2px solid var(--accent);background:#1d3e5b}.spacer{flex:1}.status{font-size:12px;color:var(--muted);min-width:160px;text-align:right}.layout{min-height:0;display:grid;grid-template-columns:250px minmax(420px,1fr) 370px}.sidebar,.inspector{min-height:0;background:var(--panel);overflow:auto}.sidebar{border-right:1px solid var(--line)}.inspector{border-left:1px solid var(--line)}.section{padding:12px;border-bottom:1px solid var(--line)}.section h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#aab7ca}.field{display:grid;gap:5px;margin:0 0 9px}.field label{font-size:11px;color:var(--muted)}.field input,.field textarea,.field select{width:100%;border:1px solid #324058;background:#0d131d;color:var(--text);padding:7px 8px;border-radius:6px}.field textarea{min-height:74px;resize:vertical}.field.inline{grid-template-columns:1fr 1fr;gap:8px}.checkrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:#c9d4e3}.checkrow label{display:flex;gap:6px;align-items:center}.list{display:grid;gap:5px}.list-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid transparent;background:#0e151f;padding:7px 8px;border-radius:6px;cursor:pointer}.list-item:hover{border-color:#36465f}.list-item.selected{border-color:#5d9ed5;background:#17283b}.list-item .name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.list-item .meta{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pill{font-size:9px;padding:2px 5px;border-radius:999px;border:1px solid #40506a;color:#aab8cc}.canvas-wrap{position:relative;min-width:0;min-height:0;background:#080c12;overflow:auto}.world{position:relative;width:4200px;height:2800px;background-color:var(--world);background-image:linear-gradient(#18202d 1px,transparent 1px),linear-gradient(90deg,#18202d 1px,transparent 1px),linear-gradient(#121926 1px,transparent 1px),linear-gradient(90deg,#121926 1px,transparent 1px);background-size:100px 100px,100px 100px,20px 20px,20px 20px}.edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.edge{fill:none;stroke:#61738d;stroke-width:2;pointer-events:stroke;cursor:pointer}.edge:hover{stroke:#a9c8e8;stroke-width:4}.edge.selected{stroke:var(--accent);stroke-width:4}.edge.hidden{stroke-dasharray:7 6;opacity:.55}.node{position:absolute;width:190px;min-height:84px;border:1px solid #39506d;border-radius:10px;background:var(--node);box-shadow:0 7px 22px #0008;cursor:grab;user-select:none;overflow:hidden}.node:active{cursor:grabbing}.node.selected{border-color:var(--accent);background:var(--nodeSel);box-shadow:0 0 0 2px #77bdfb33,0 8px 25px #0008}.node.connect-source{border-color:#e4b65d;box-shadow:0 0 0 3px #e4b65d44}.node-head{padding:9px 10px 6px;font-weight:800;font-size:13px}.node-id{padding:0 10px 7px;color:#95a9c4;font-size:10px}.node-foot{border-top:1px solid #304059;padding:5px 10px;font-size:10px;color:#9eb0c7;display:flex;justify-content:space-between;gap:7px}.empty{padding:12px;color:var(--muted);font-size:12px;border:1px dashed #334158;border-radius:8px}.help{font-size:11px;line-height:1.45;color:var(--muted)}.inspector-title{position:sticky;top:0;z-index:3;background:#111722ee;backdrop-filter:blur(8px);padding:12px;border-bottom:1px solid var(--line);font-weight:800}.json-error{border-color:var(--danger)!important}.small-actions{display:flex;gap:6px;flex-wrap:wrap}.kbd{border:1px solid #445269;background:#0d131d;border-radius:4px;padding:1px 4px;font-size:10px;color:#c7d3e2}@media(max-width:1000px){.layout{grid-template-columns:210px minmax(360px,1fr) 320px}}@media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar,.inspector{display:none}.status{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">SIZA MAP CREATOR<small>World Engine authoring tool</small></div>
+    <button class="btn" id="newBtn">Nuevo</button>
+    <button class="btn primary" id="addRoomBtn">+ Room</button>
+    <button class="btn" id="connectBtn">Conectar</button>
+    <label class="checkrow"><label><input type="checkbox" id="twoWay" checked> ida y vuelta</label></label>
+    <button class="btn" id="deleteBtn">Eliminar</button>
+    <button class="btn" id="centerBtn">Centrar</button>
+    <div class="spacer"></div>
+    <button class="btn" id="importBtn">Importar JSON</button>
+    <button class="btn" id="exportBtn">Exportar JSON</button>
+    <button class="btn" id="pythonBtn">Exportar seed Python</button>
+    <input type="file" id="fileInput" accept="application/json,.json" hidden>
+    <div class="status" id="status">Listo</div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="section">
+        <h3>Proyecto</h3>
+        <div class="field"><label>Nombre del mapa</label><input id="mapName" value="Nuevo mapa SIZA"></div>
+        <div class="field"><label>Campaign ID</label><input id="campaignId" placeholder="CAMPAIGN-FARO-AHOGADO-VS01"></div>
+        <div class="field"><label>Tag de seed</label><input id="seedTag" placeholder="faro_ahogado_map"></div>
+      </div>
+      <div class="section">
+        <h3>Rooms <span id="roomCount"></span></h3>
+        <div class="list" id="roomList"></div>
+      </div>
+      <div class="section">
+        <h3>Exits <span id="exitCount"></span></h3>
+        <div class="list" id="exitList"></div>
+      </div>
+      <div class="section help">
+        Arrastre los Rooms directamente en el mapa. Para conectar, pulse <b>Conectar</b>, elija origen y luego destino. Los datos se guardan automáticamente en este navegador.
+      </div>
+    </aside>
+
+    <section class="canvas-wrap" id="canvasWrap">
+      <div class="world" id="world">
+        <svg class="edges" id="edges" viewBox="0 0 4200 2800" preserveAspectRatio="none">
+          <defs><marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#61738d"></polygon></marker></defs>
+        </svg>
+        <div id="nodes"></div>
+      </div>
+    </section>
+
+    <aside class="inspector">
+      <div class="inspector-title" id="inspectorTitle">Inspector</div>
+      <div id="inspectorBody"><div class="section"><div class="empty">Seleccione un Room o Exit.</div></div></div>
+    </aside>
+  </main>
+</div>
+<script>
+(() => {
+'use strict';
+const STORAGE_KEY='siza_map_creator_v1';
+const W=4200,H=2800,NW=190,NH=84;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+'-'+Math.random().toString(36).slice(2,9)+'-'+Date.now().toString(36).slice(-5);
+const lines=v=>String(v??'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+const deep=v=>JSON.parse(JSON.stringify(v));
+
+function blankProject(){return {version:1,meta:{name:'Nuevo mapa SIZA',campaign_id:'',seed_tag:'siza_map'},rooms:[],exits:[]};}
+function defaultRoom(x=700,y=500){const n=state.rooms.length+1;return {id:uid('room'),key:'Nuevo lugar '+n,room_id:'ROOM-'+String(n).padStart(3,'0'),x,y,zone_id:'',region_id:'',settlement_id:'',district_id:'',desc:'',canon_status:'prototype',sensory_facts:{sight:[],hearing:[],smell:[],touch:[],taste:[]},space_profile:{room_type:null,scale:null,geometry:null,orientation:null,focal_points:[],status:'prototype'},perception_facts:[],job_tasks:[],conditions:{},world_state:{},state_presentations:[]};}
+function defaultExit(source,target){const a=findRoom(source),b=findRoom(target);const n=state.exits.length+1;return {id:uid('exit'),exit_id:'EXIT-'+String(n).padStart(3,'0'),key:'ir a '+(b?.key||'destino'),source,target,aliases:[],door_state:'open',is_locked:false,hidden:false,canon_status:'prototype',state_requirements:[],state_block_message:'El estado actual del lugar no permite usar ese paso.',campaign_tags:[]};}
+
+let state=load()||blankProject();
+let selected=null;
+let connectMode=false,connectSource=null;
+let drag=null;
+
+function normalize(p){p=p&&typeof p==='object'?p:blankProject();p.version=1;p.meta={name:p.meta?.name||'Nuevo mapa SIZA',campaign_id:p.meta?.campaign_id||'',seed_tag:p.meta?.seed_tag||'siza_map'};p.rooms=Array.isArray(p.rooms)?p.rooms:[];p.exits=Array.isArray(p.exits)?p.exits:[];p.rooms.forEach((r,i)=>{r.id=r.id||uid('room');r.key=r.key||'Room '+(i+1);r.room_id=r.room_id||'ROOM-'+String(i+1).padStart(3,'0');r.x=Number.isFinite(+r.x)?+r.x:600+i*220;r.y=Number.isFinite(+r.y)?+r.y:500;r.sensory_facts={sight:[],hearing:[],smell:[],touch:[],taste:[],...(r.sensory_facts||{})};r.space_profile={room_type:null,scale:null,geometry:null,orientation:null,focal_points:[],status:'prototype',...(r.space_profile||{})};['perception_facts','job_tasks','state_presentations'].forEach(k=>r[k]=Array.isArray(r[k])?r[k]:[]);['conditions','world_state'].forEach(k=>r[k]=r[k]&&typeof r[k]==='object'&&!Array.isArray(r[k])?r[k]:{});});p.exits=p.exits.filter(e=>p.rooms.some(r=>r.id===e.source)&&p.rooms.some(r=>r.id===e.target));p.exits.forEach((e,i)=>{e.id=e.id||uid('exit');e.exit_id=e.exit_id||'EXIT-'+String(i+1).padStart(3,'0');e.key=e.key||'salida';e.aliases=Array.isArray(e.aliases)?e.aliases:[];e.door_state=e.door_state||'open';e.state_requirements=Array.isArray(e.state_requirements)?e.state_requirements:[];e.campaign_tags=Array.isArray(e.campaign_tags)?e.campaign_tags:[];});return p;}
+function save(){state=normalize(state);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));setStatus('Guardado');}
+function load(){try{return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'));}catch{return null;}}
+function setStatus(t,bad=false){$('status').textContent=t;$('status').style.color=bad?'var(--danger)':'var(--muted)';clearTimeout(setStatus.t);setStatus.t=setTimeout(()=>{$('status').textContent='Listo';$('status').style.color='var(--muted)';},1800);}
+function findRoom(id){return state.rooms.find(r=>r.id===id)}
+function findExit(id){return state.exits.find(e=>e.id===id)}
+function selObj(){return selected?.type==='room'?findRoom(selected.id):selected?.type==='exit'?findExit(selected.id):null}
+
+function render(){state=normalize(state);$('mapName').value=state.meta.name;$('campaignId').value=state.meta.campaign_id;$('seedTag').value=state.meta.seed_tag;renderLists();renderGraph();renderInspector();}
+function renderLists(){
+ $('roomCount').textContent='('+state.rooms.length+')';$('exitCount').textContent='('+state.exits.length+')';
+ $('roomList').innerHTML=state.rooms.length?state.rooms.map(r=>`<div class="list-item ${selected?.type==='room'&&selected.id===r.id?'selected':''}" data-room-list="${r.id}"><div><div class="name">${esc(r.key)}</div><div class="meta">${esc(r.room_id)}</div></div><span class="pill">ROOM</span></div>`).join(''):'<div class="empty">Sin Rooms.</div>';
+ $('exitList').innerHTML=state.exits.length?state.exits.map(e=>{const a=findRoom(e.source),b=findRoom(e.target);return `<div class="list-item ${selected?.type==='exit'&&selected.id===e.id?'selected':''}" data-exit-list="${e.id}"><div><div class="name">${esc(e.key)}</div><div class="meta">${esc(a?.key||'?')} → ${esc(b?.key||'?')}</div></div><span class="pill">EXIT</span></div>`}).join(''):'<div class="empty">Sin Exits.</div>';
+ document.querySelectorAll('[data-room-list]').forEach(el=>el.onclick=()=>select('room',el.dataset.roomList));document.querySelectorAll('[data-exit-list]').forEach(el=>el.onclick=()=>select('exit',el.dataset.exitList));
+}
+function renderGraph(){
+ const edges=$('edges');edges.querySelectorAll('.edge').forEach(n=>n.remove());
+ state.exits.forEach(e=>{const a=findRoom(e.source),b=findRoom(e.target);if(!a||!b)return;const x1=a.x+NW/2,y1=a.y+NH/2,x2=b.x+NW/2,y2=b.y+NH/2;const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;const ux=dx/len,uy=dy/len;const sx=x1+ux*102,sy=y1+uy*50,tx=x2-ux*102,ty=y2-uy*50;const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${sx} ${sy} L ${tx} ${ty}`);path.setAttribute('marker-end','url(#arrow)');path.setAttribute('class','edge'+(selected?.type==='exit'&&selected.id===e.id?' selected':'')+(e.hidden?' hidden':''));path.dataset.exit=e.id;path.style.pointerEvents='stroke';path.onclick=ev=>{ev.stopPropagation();select('exit',e.id)};edges.appendChild(path)});
+ $('nodes').innerHTML=state.rooms.map(r=>`<div class="node ${selected?.type==='room'&&selected.id===r.id?'selected':''} ${connectSource===r.id?'connect-source':''}" data-room="${r.id}" style="left:${r.x}px;top:${r.y}px"><div class="node-head">${esc(r.key)}</div><div class="node-id">${esc(r.room_id)}</div><div class="node-foot"><span>${esc(r.space_profile?.room_type||'Room')}</span><span>${esc(r.canon_status||'prototype')}</span></div></div>`).join('');
+ document.querySelectorAll('.node').forEach(bindNode);
+}
+function bindNode(el){
+ el.onpointerdown=ev=>{if(ev.button!==0)return;ev.stopPropagation();const id=el.dataset.room;if(connectMode){handleConnectClick(id);return;}select('room',id,false);const r=findRoom(id);drag={id,startX:ev.clientX,startY:ev.clientY,x:r.x,y:r.y};el.setPointerCapture(ev.pointerId)};
+ el.onpointermove=ev=>{if(!drag||drag.id!==el.dataset.room)return;const r=findRoom(drag.id);r.x=Math.max(0,Math.min(W-NW,drag.x+ev.clientX-drag.startX));r.y=Math.max(0,Math.min(H-NH,drag.y+ev.clientY-drag.startY));el.style.left=r.x+'px';el.style.top=r.y+'px';renderEdgesOnly()};
+ el.onpointerup=()=>{if(drag){drag=null;save();renderLists();}};
+}
+function renderEdgesOnly(){const edges=$('edges');edges.querySelectorAll('.edge').forEach(n=>n.remove());state.exits.forEach(e=>{const a=findRoom(e.source),b=findRoom(e.target);if(!a||!b)return;const x1=a.x+NW/2,y1=a.y+NH/2,x2=b.x+NW/2,y2=b.y+NH/2,dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',`M ${x1+ux*102} ${y1+uy*50} L ${x2-ux*102} ${y2-uy*50}`);p.setAttribute('marker-end','url(#arrow)');p.setAttribute('class','edge'+(selected?.type==='exit'&&selected.id===e.id?' selected':'')+(e.hidden?' hidden':''));p.dataset.exit=e.id;p.style.pointerEvents='stroke';p.onclick=ev=>{ev.stopPropagation();select('exit',e.id)};edges.appendChild(p)});}
+function select(type,id,full=true){selected={type,id};if(full)render();else{renderLists();renderInspector();document.querySelectorAll('.node').forEach(n=>n.classList.toggle('selected',n.dataset.room===id));renderEdgesOnly();}}
+function handleConnectClick(id){if(!connectSource){connectSource=id;renderGraph();setStatus('Seleccione el destino');return;}if(connectSource===id){connectSource=null;renderGraph();setStatus('Conexión cancelada');return;}const f=defaultExit(connectSource,id);state.exits.push(f);if($('twoWay').checked){const r=defaultExit(id,connectSource);const a=findRoom(connectSource);r.key='volver a '+(a?.key||'origen');state.exits.push(r)}connectSource=null;connectMode=false;$('connectBtn').classList.remove('active');selected={type:'exit',id:f.id};save();render();}
+
+function roomInspector(r){
+ const sf=r.sensory_facts||{},sp=r.space_profile||{};
+ return `<div class="section"><div class="field"><label>Nombre / key</label><input data-r="key" value="${esc(r.key)}"></div><div class="field"><label>room_id</label><input data-r="room_id" value="${esc(r.room_id)}"></div><div class="field inline"><div><label>canon_status</label><select data-r="canon_status"><option ${r.canon_status==='prototype'?'selected':''}>prototype</option><option ${r.canon_status==='vertical_slice'?'selected':''}>vertical_slice</option><option ${r.canon_status==='canon'?'selected':''}>canon</option></select></div><div><label>Tipo de lugar</label><input data-sp="room_type" value="${esc(sp.room_type||'')}"></div></div><div class="field"><label>Descripción</label><textarea data-r="desc">${esc(r.desc||'')}</textarea></div></div>
+ <div class="section"><h3>Jerarquía geográfica</h3><div class="field"><label>region_id</label><input data-r="region_id" value="${esc(r.region_id||'')}"></div><div class="field"><label>settlement_id</label><input data-r="settlement_id" value="${esc(r.settlement_id||'')}"></div><div class="field"><label>district_id</label><input data-r="district_id" value="${esc(r.district_id||'')}"></div><div class="field"><label>zone_id</label><input data-r="zone_id" value="${esc(r.zone_id||'')}"></div></div>
+ <div class="section"><h3>Space profile</h3><div class="field inline"><div><label>scale</label><input data-sp="scale" value="${esc(sp.scale||'')}"></div><div><label>status</label><input data-sp="status" value="${esc(sp.status||'prototype')}"></div></div><div class="field"><label>geometry</label><textarea data-sp="geometry">${esc(sp.geometry||'')}</textarea></div><div class="field"><label>orientation</label><textarea data-sp="orientation">${esc(sp.orientation||'')}</textarea></div><div class="field"><label>focal_points · uno por línea</label><textarea data-sp-list="focal_points">${esc((sp.focal_points||[]).join('\n'))}</textarea></div></div>
+ <div class="section"><h3>Sensory facts</h3>${['sight','hearing','smell','touch','taste'].map(k=>`<div class="field"><label>${k} · uno por línea</label><textarea data-sf="${k}">${esc((sf[k]||[]).join('\n'))}</textarea></div>`).join('')}</div>
+ <div class="section"><h3>Datos avanzados JSON</h3>${jsonField('perception_facts',r.perception_facts)}${jsonField('job_tasks',r.job_tasks)}${jsonField('conditions',r.conditions)}${jsonField('world_state',r.world_state)}${jsonField('state_presentations',r.state_presentations)}</div>`;
+}
+function exitInspector(e){const a=findRoom(e.source),b=findRoom(e.target);return `<div class="section"><div class="field"><label>Nombre / key</label><input data-e="key" value="${esc(e.key)}"></div><div class="field"><label>exit_id</label><input data-e="exit_id" value="${esc(e.exit_id)}"></div><div class="field"><label>Origen</label><select data-e="source">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===e.source?'selected':''}>${esc(r.key)}</option>`).join('')}</select></div><div class="field"><label>Destino</label><select data-e="target">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===e.target?'selected':''}>${esc(r.key)}</option>`).join('')}</select></div><div class="field"><label>Aliases · uno por línea</label><textarea data-e-list="aliases">${esc((e.aliases||[]).join('\n'))}</textarea></div></div>
+ <div class="section"><h3>Estado físico</h3><div class="field inline"><div><label>door_state</label><select data-e="door_state"><option ${e.door_state==='open'?'selected':''}>open</option><option ${e.door_state==='closed'?'selected':''}>closed</option><option ${e.door_state==='locked'?'selected':''}>locked</option></select></div><div><label>canon_status</label><select data-e="canon_status"><option ${e.canon_status==='prototype'?'selected':''}>prototype</option><option ${e.canon_status==='vertical_slice'?'selected':''}>vertical_slice</option><option ${e.canon_status==='canon'?'selected':''}>canon</option></select></div></div><div class="checkrow"><label><input type="checkbox" data-e-bool="is_locked" ${e.is_locked?'checked':''}> locked</label><label><input type="checkbox" data-e-bool="hidden" ${e.hidden?'checked':''}> hidden</label></div></div>
+ <div class="section"><h3>Campaign / gating</h3><div class="field"><label>campaign_tags · uno por línea</label><textarea data-e-list="campaign_tags">${esc((e.campaign_tags||[]).join('\n'))}</textarea></div><div class="field"><label>Mensaje de bloqueo</label><textarea data-e="state_block_message">${esc(e.state_block_message||'')}</textarea></div>${jsonField('state_requirements',e.state_requirements,'exit')}</div>
+ <div class="section"><div class="help">${esc(a?.key||'?')} → ${esc(b?.key||'?')}</div></div>`;}
+function jsonField(key,value,kind='room'){return `<div class="field"><label>${key} · JSON</label><textarea class="json-editor" data-json-kind="${kind}" data-json-key="${key}">${esc(JSON.stringify(value??(key==='conditions'||key==='world_state'?{}:[]),null,2))}</textarea></div>`;}
+function renderInspector(){const o=selObj();if(!o){$('inspectorTitle').textContent='Inspector';$('inspectorBody').innerHTML='<div class="section"><div class="empty">Seleccione un Room o Exit.</div></div>';return}const kind=selected.type;$('inspectorTitle').textContent=(kind==='room'?'ROOM · ':'EXIT · ')+o.key;$('inspectorBody').innerHTML=kind==='room'?roomInspector(o):exitInspector(o);bindInspector(kind,o);}
+function bindInspector(kind,o){
+ if(kind==='room'){
+  document.querySelectorAll('[data-r]').forEach(el=>el.oninput=()=>{o[el.dataset.r]=el.value;commitInspector(false)});
+  document.querySelectorAll('[data-sp]').forEach(el=>el.oninput=()=>{o.space_profile[el.dataset.sp]=el.value||null;commitInspector(false)});
+  document.querySelectorAll('[data-sp-list]').forEach(el=>el.oninput=()=>{o.space_profile[el.dataset.spList]=lines(el.value);commitInspector(false)});
+  document.querySelectorAll('[data-sf]').forEach(el=>el.oninput=()=>{o.sensory_facts[el.dataset.sf]=lines(el.value);commitInspector(false)});
+ } else {
+  document.querySelectorAll('[data-e]').forEach(el=>el.oninput=()=>{o[el.dataset.e]=el.value;commitInspector(false)});
+  document.querySelectorAll('[data-e-list]').forEach(el=>el.oninput=()=>{o[el.dataset.eList]=lines(el.value);commitInspector(false)});
+  document.querySelectorAll('[data-e-bool]').forEach(el=>el.onchange=()=>{o[el.dataset.eBool]=el.checked;commitInspector(false)});
+ }
+ document.querySelectorAll('.json-editor').forEach(el=>el.onchange=()=>{try{o[el.dataset.jsonKey]=JSON.parse(el.value);el.classList.remove('json-error');commitInspector(false)}catch{el.classList.add('json-error');setStatus('JSON inválido',true)}});
+}
+function commitInspector(full){save();if(full)render();else{renderLists();renderGraph();$('inspectorTitle').textContent=(selected.type==='room'?'ROOM · ':'EXIT · ')+(selObj()?.key||'');}}
+
+function addRoom(){const wrap=$('canvasWrap');const x=Math.max(40,Math.min(W-NW,wrap.scrollLeft+wrap.clientWidth/2-NW/2));const y=Math.max(40,Math.min(H-NH,wrap.scrollTop+wrap.clientHeight/2-NH/2));const r=defaultRoom(x,y);state.rooms.push(r);selected={type:'room',id:r.id};save();render();}
+function deleteSelected(){if(!selected)return;const o=selObj();if(!o)return;if(selected.type==='room'){if(!confirm(`Eliminar Room "${o.key}" y todos sus Exits?`))return;state.rooms=state.rooms.filter(r=>r.id!==o.id);state.exits=state.exits.filter(e=>e.source!==o.id&&e.target!==o.id)}else{if(!confirm(`Eliminar Exit "${o.key}"?`))return;state.exits=state.exits.filter(e=>e.id!==o.id)}selected=null;save();render();}
+function newProject(){if(!confirm('Crear un mapa nuevo? El proyecto actual seguirá disponible sólo si ya lo exportó.'))return;state=blankProject();selected=null;connectSource=null;connectMode=false;save();render();centerView();}
+function centerView(){const wrap=$('canvasWrap');if(!state.rooms.length){wrap.scrollTo({left:450,top:300,behavior:'smooth'});return}const xs=state.rooms.map(r=>r.x+NW/2),ys=state.rooms.map(r=>r.y+NH/2);const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;wrap.scrollTo({left:Math.max(0,cx-wrap.clientWidth/2),top:Math.max(0,cy-wrap.clientHeight/2),behavior:'smooth'});}
+function download(name,text,type='text/plain'){const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function slug(s){return String(s||'siza_map').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'siza_map'}
+function exportJson(){save();download(slug(state.meta.name)+'.siza-map.json',JSON.stringify(state,null,2),'application/json');}
+function exportPython(){
+ const payload=JSON.stringify(state,null,2).replace(/'''/g,"'\\'\\''");const tag=slug(state.meta.seed_tag||state.meta.name);const py=`# Generated by SIZA Map Creator\n# Map: ${state.meta.name.replace(/\n/g,' ')}\n\nimport json\nfrom evennia import create_object, search_tag\n\nMAP_TAG = ${JSON.stringify(tag)}\nMAP_CATEGORY = "siza_map_seed"\nMAP_DATA = json.loads(r'''${payload}''')\n\ndef _plain(value, fallback):\n    return value if isinstance(value, type(fallback)) else fallback\n\ndef _find_room(room_id):\n    for obj in search_tag(MAP_TAG, category=MAP_CATEGORY):\n        if str(getattr(obj.db, "room_id", "") or "") == str(room_id):\n            return obj\n    return None\n\ndef _find_exit(exit_id):\n    for obj in search_tag(MAP_TAG, category=MAP_CATEGORY):\n        if str(getattr(obj.db, "exit_id", "") or "") == str(exit_id):\n            return obj\n    return None\n\ndef _ensure_room(row):\n    room = _find_room(row.get("room_id"))\n    created = False\n    if not room:\n        room = create_object("typeclasses.rooms.Room", key=row.get("key") or row.get("room_id") or "Room", tags=[(MAP_TAG, MAP_CATEGORY)])\n        created = True\n    room.key = row.get("key") or room.key\n    room.db.room_id = row.get("room_id")\n    room.db.zone_id = row.get("zone_id") or None\n    room.db.region_id = row.get("region_id") or None\n    room.db.settlement_id = row.get("settlement_id") or None\n    room.db.district_id = row.get("district_id") or None\n    room.db.desc = row.get("desc") or ""\n    room.db.canon_status = row.get("canon_status") or "prototype"\n    room.db.sensory_facts = _plain(row.get("sensory_facts"), {})\n    room.db.space_profile = _plain(row.get("space_profile"), {})\n    room.db.perception_facts = _plain(row.get("perception_facts"), [])\n    room.db.job_tasks = _plain(row.get("job_tasks"), [])\n    room.db.conditions = _plain(row.get("conditions"), {})\n    room.db.world_state = _plain(row.get("world_state"), {})\n    room.db.state_presentations = _plain(row.get("state_presentations"), [])\n    campaign_id = (MAP_DATA.get("meta") or {}).get("campaign_id")\n    if campaign_id:\n        room.db.campaign_id = campaign_id\n    return room, created\n\ndef _ensure_exit(row, rooms_by_editor_id):\n    source = rooms_by_editor_id.get(row.get("source"))\n    target = rooms_by_editor_id.get(row.get("target"))\n    if not source or not target:\n        return None, False\n    obj = _find_exit(row.get("exit_id"))\n    created = False\n    if not obj:\n        obj = create_object("typeclasses.exits.Exit", key=row.get("key") or "salida", aliases=row.get("aliases") or [], location=source, destination=target, tags=[(MAP_TAG, MAP_CATEGORY)])\n        created = True\n    obj.key = row.get("key") or obj.key\n    obj.location = source\n    obj.destination = target\n    obj.db.exit_id = row.get("exit_id")\n    obj.db.door_state = row.get("door_state") or "open"\n    obj.db.is_locked = bool(row.get("is_locked"))\n    obj.db.hidden = bool(row.get("hidden"))\n    obj.db.canon_status = row.get("canon_status") or "prototype"\n    obj.db.state_requirements = _plain(row.get("state_requirements"), [])\n    obj.db.state_block_message = row.get("state_block_message") or "El estado actual del lugar no permite usar ese paso."\n    obj.db.campaign_tags = _plain(row.get("campaign_tags"), [])\n    for alias in row.get("aliases") or []:\n        try:\n            obj.aliases.add(alias)\n        except Exception:\n            pass\n    campaign_id = (MAP_DATA.get("meta") or {}).get("campaign_id")\n    if campaign_id:\n        obj.db.campaign_id = campaign_id\n    return obj, created\n\ndef install():\n    rooms = {}\n    room_created = 0\n    exit_created = 0\n    for row in MAP_DATA.get("rooms") or []:\n        obj, created = _ensure_room(row)\n        rooms[row.get("id")] = obj\n        room_created += int(created)\n    for row in MAP_DATA.get("exits") or []:\n        _, created = _ensure_exit(row, rooms)\n        exit_created += int(created)\n    return {\n        "status": "INSTALLED",\n        "map": (MAP_DATA.get("meta") or {}).get("name"),\n        "rooms": len(rooms),\n        "exits": len(MAP_DATA.get("exits") or []),\n        "rooms_created": room_created,\n        "exits_created": exit_created,\n    }\n`;
+ download(slug(state.meta.name)+'_seed.py',py,'text/x-python');
+}
+
+$('addRoomBtn').onclick=addRoom;$('deleteBtn').onclick=deleteSelected;$('newBtn').onclick=newProject;$('centerBtn').onclick=centerView;
+$('connectBtn').onclick=()=>{connectMode=!connectMode;connectSource=null;$('connectBtn').classList.toggle('active',connectMode);renderGraph();setStatus(connectMode?'Seleccione el Room de origen':'Conexión cancelada')};
+$('exportBtn').onclick=exportJson;$('pythonBtn').onclick=exportPython;$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{state=normalize(JSON.parse(rd.result));selected=null;save();render();centerView();setStatus('Mapa importado')}catch{setStatus('JSON inválido',true)}};rd.readAsText(f);ev.target.value=''};
+$('mapName').oninput=e=>{state.meta.name=e.target.value;save()};$('campaignId').oninput=e=>{state.meta.campaign_id=e.target.value;save()};$('seedTag').oninput=e=>{state.meta.seed_tag=e.target.value;save()};
+$('world').onpointerdown=e=>{if(e.target===$('world')||e.target===$('nodes')||e.target===$('edges')){selected=null;render()}};
+window.addEventListener('keydown',e=>{if((e.key==='Delete'||e.key==='Backspace')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();deleteSelected()}if(e.key==='Escape'&&connectMode){connectMode=false;connectSource=null;$('connectBtn').classList.remove('active');renderGraph();}});
+render();setTimeout(centerView,60);
+})();
+</script>
+</body>
+</html>
