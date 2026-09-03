@@ -385,9 +385,15 @@
             if (/^(look|l|mirar|mira)$/i.test(normalizeSpace(completedCommand))) {
                 renderExplicitLook(room);
             }
+            if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.requestContext === "function") {
+                window.SizaBookInteractionV04.requestContext();
+            }
             return;
         }
         appendHtml(html, cls);
+        if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.requestContext === "function") {
+            window.SizaBookInteractionV04.requestContext();
+        }
     }
 
     function onText(args, kwargs) {
