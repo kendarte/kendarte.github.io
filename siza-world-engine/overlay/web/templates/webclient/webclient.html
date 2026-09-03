@@ -4,7 +4,7 @@
 {% block guilib_import %}
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_login_v01.css' %}?v=20260902-01">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_shell_v02.css' %}?v=20260903-output-fix">
-<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_interaction_v03.css' %}?v=20260903-context-actions">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_interaction_v03.css' %}?v=20260903-context-layout-fix">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_dialogue_mode_v01.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_tcg_embed_v01.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_combat_choreography_v01.css' %}">
@@ -84,6 +84,18 @@
 }
 .sizaBookScene {
     margin-top: 4px !important;
+    grid-template-rows: minmax(235px, 1fr) minmax(250px, 44%) !important;
+}
+.sizaBookClient .sizaStoryPage {
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+}
+.sizaBookClient .sizaStoryCopy,
+.sizaBookClient .sizaBookOutput {
+    min-height: 0 !important;
 }
 @media (max-width:760px) {
     .sizaBookClient { grid-template-rows: 52px minmax(0,1fr) !important; }
@@ -91,6 +103,7 @@
     .sizaPortraitSlot { width:36px !important; height:42px !important; }
     .sizaHeaderCharacterPlayer { grid-template-columns:40px minmax(0,1fr) !important; }
     .sizaHeaderCharacterFocus { grid-template-columns:minmax(0,1fr) 40px !important; }
+    .sizaBookScene { grid-template-rows:minmax(210px,1fr) minmax(245px,44%) !important; }
 }
 </style>
 <script src="{% static 'webclient/js/siza_book_client.js' %}?v=20260903-context-actions" type="text/javascript" charset="utf-8"></script>
