@@ -103,6 +103,9 @@
             if (gate) {
                 gate.setAttribute("data-state", "hidden");
             }
+            if (window.Evennia && Evennia.isConnected()) {
+                Evennia.msg("text", ["look"], {});
+            }
         }, 180);
     }
 
@@ -148,9 +151,19 @@
         Evennia.msg("text", [mode + " " + quoteUsername(credentials.username) + " " + credentials.password], {});
     }
 
-    function onServerText(args) {
+    function forwardText(args, kwargs) {
+        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.receiveText === "function") {
+            window.SizaWorldBookClient.receiveText(args, kwargs);
+        }
+    }
+
+    function onServerText(args, kwargs) {
         var text = packetText(args && args.length ? args[0] : "");
         if (!text) {
+            return;
+        }
+        if (authenticated) {
+            forwardText(args, kwargs);
             return;
         }
         if (isLoginFailure(text)) {
@@ -164,8 +177,11 @@
             showGate("No se pudo validar ese acceso. Revisa los datos e inténtalo otra vez.", "error");
             return;
         }
-        if (looksLikeWorld(text) || (authPending && !isLoginBanner(text))) {
+        if (looksLikeWorld(text)) {
             completeLogin();
+            if (/\(#\d+\)/.test(text)) {
+                forwardText(args, kwargs);
+            }
             return;
         }
         if (isLoginBanner(text)) {
@@ -179,6 +195,9 @@
     }
 
     function onConnectionOpen() {
+        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionOpen === "function") {
+            window.SizaWorldBookClient.connectionOpen();
+        }
         var saved = readSaved();
         setStatus(saved ? "Recuperando acceso guardado…" : "Conexión lista.", "info");
         clearTimeout(savedLoginTimer);
@@ -225,10 +244,16 @@
         Evennia.emitter.on("connection_open", onConnectionOpen);
         Evennia.emitter.on("connection_close", function () {
             authenticated = false;
+            if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionClose === "function") {
+                window.SizaWorldBookClient.connectionClose();
+            }
             showGate("La conexión se cerró. Reconectando…", "error");
         });
         Evennia.emitter.on("connection_error", function () {
             authenticated = false;
+            if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionError === "function") {
+                window.SizaWorldBookClient.connectionError();
+            }
             showGate("No se pudo conectar con el World Engine.", "error");
         });
 
