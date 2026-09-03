@@ -50,6 +50,7 @@ from commands.job_commands import (
     CmdSizaWorkSet,
     CmdSizaWorksite,
 )
+from commands.local_login_commands import CmdSizaLocalLogin
 from commands.knowledge_commands import (
     CmdSizaKnowledge,
     CmdSizaKnowledgeEffectToggle,
@@ -303,6 +304,7 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
 
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
+        self.add(CmdSizaLocalLogin())
 
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
