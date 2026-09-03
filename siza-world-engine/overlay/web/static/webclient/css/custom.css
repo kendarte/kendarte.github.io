@@ -342,7 +342,7 @@ body {
 }
 
 .sizaBookClient[data-mode="DIALOGUE"] .sizaBookBody {
-    grid-template-rows: minmax(250px, .72fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .sizaBookClient[data-mode="DIALOGUE"] .sizaBookNarrative {
