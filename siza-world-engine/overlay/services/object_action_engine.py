@@ -11,7 +11,7 @@ from services.consequence_engine import emit_world_action
 from services.object_visibility_engine import object_visible_in_world_state
 
 
-OBJECT_ACTION_BUILD = "0.48.0-authored-object-actions"
+OBJECT_ACTION_BUILD = "0.48.1-campaign-observed-object-actions"
 OBJECT_ACTION_HISTORY_LIMIT = 50
 OBJECT_STATE_OPERATORS = {"EQ", "NE", "GTE", "LTE", "EXISTS", "NOT_EXISTS"}
 
@@ -244,6 +244,32 @@ def _object_payload(obj):
     }
 
 
+def _observe_campaign_object_action(actor, record):
+    """Publish only a completed authoritative object action to the active campaign."""
+    from services.dm_campaign_registry import observe_active_campaign_evidence
+
+    return observe_active_campaign_evidence(
+        actor,
+        {
+            "authority": "WORLD_ENGINE",
+            "source": "OBJECT_ACTION_ENGINE",
+            "action_types": ["OBJECT_ACTION_EXECUTED"],
+            "result": {
+                "attempt_id": record.get("attempt_id"),
+                "object_action_id": record.get("object_action_id"),
+                "object_action_name": record.get("object_action_name"),
+                "status": record.get("status"),
+                "outcome": record.get("outcome"),
+                "provider": record.get("provider"),
+                "site_dbref": record.get("site_dbref"),
+                "site_room_id": record.get("site_room_id"),
+                "object_dbref": record.get("object_dbref"),
+                "object_id": record.get("object_id"),
+            },
+        },
+    )
+
+
 def begin_object_action(actor, obj, action_id, attempt_id=None):
     """Start one authored action on a local visible object using existing hard gates and resolution lifecycle."""
     if not actor:
@@ -361,7 +387,10 @@ def begin_object_action(actor, obj, action_id, attempt_id=None):
     record["action_consequence"] = consequence
     history.append(record)
     _save_history(actor, history)
-    return dict(record)
+    return {
+        **dict(record),
+        "campaign_observation": _observe_campaign_object_action(actor, record),
+    }
 
 
 def resolve_object_action(actor, attempt_id, outcome, provider, resolution_data=None):
@@ -436,6 +465,9 @@ def resolve_object_action(actor, attempt_id, outcome, provider, resolution_data=
         record["action_consequence"] = consequence
         history[index] = record
         _save_history(actor, history)
-        return dict(record)
+        return {
+            **dict(record),
+            "campaign_observation": _observe_campaign_object_action(actor, record),
+        }
 
     return {"status": "ATTEMPT_NOT_FOUND", "attempt_id": wanted, "build": OBJECT_ACTION_BUILD}
