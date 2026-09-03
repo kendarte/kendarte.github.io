@@ -1,17 +1,18 @@
 from ipaddress import ip_address
 
-from evennia import Command, search_object
+from evennia import Command, search_object, search_tag
 from evennia.accounts.models import AccountDB
 from evennia.utils import utils
 from twisted.internet import reactor
 
 from services.dm_campaign_registry import start_registered_campaign
+from world.darkhaven_tutorial_campaign import DARKHAVEN_TUTORIAL_CAMPAIGN
 
 
 LOCAL_CHARACTER = "Nereida"
-LOCAL_CAMPAIGN = "CAMPAIGN-FARO-AHOGADO-VS01"
-PILOT_ROOM = "Pescaderia de Darsena"
-PILOT_ROOM_ID = "CAR-KAL-DAR-007"
+LOCAL_CAMPAIGN = str(DARKHAVEN_TUTORIAL_CAMPAIGN.get("id"))
+ENTRY_ROOM = "Puerta de Darkhaven"
+ENTRY_ROOM_ID = "DH7-ROOM-001"
 
 
 def _client_host(session):
@@ -36,20 +37,20 @@ def _candidate_score(account, character):
     campaign = getattr(character.db, "dm_campaign_state", None)
     location = getattr(character, "location", None)
     room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "")
-    room_key = str(getattr(location, "key", "") or "").lower()
 
     if campaign:
-        score += 200
-        progressed = bool(campaign.get("completed_beats")) or int(campaign.get("director_turn", 0) or 0) > 0
-        progressed = progressed or str(campaign.get("active_beat_id") or "") not in {"", "FA-BEAT-LEAD"}
-        if progressed:
+        score += 100
+        if str(campaign.get("campaign_id") or "") == LOCAL_CAMPAIGN:
             score += 1200
-    if room_id == "CAR-KAL-DAR-007" or "pescaderia" in room_key or "pescadería" in room_key:
+        progressed = bool(campaign.get("completed_beats")) or int(campaign.get("director_turn", 0) or 0) > 0
+        if progressed:
+            score += 300
+    if room_id.startswith("DH7-ROOM-"):
         score += 900
     elif location:
         score += 100
     if str(getattr(character, "key", "") or "").lower() == LOCAL_CHARACTER.lower():
-        score += 50
+        score += 80
     if getattr(account.db, "_last_puppet", None) == character:
         score += 25
     if bool(getattr(account, "is_superuser", False)):
@@ -86,20 +87,44 @@ def _find_player():
     )
 
 
-def _ensure_pilot_location(character):
+def _find_entry_room():
+    for obj in search_tag("darkhaven_academy_v01", category="siza_campaign_seed"):
+        if str(getattr(obj.db, "room_id", "") or "") == ENTRY_ROOM_ID:
+            return obj
+    for obj in search_object(ENTRY_ROOM):
+        if str(getattr(obj.db, "room_id", "") or "") == ENTRY_ROOM_ID:
+            return obj
+    return None
+
+
+def _is_darkhaven_location(location):
+    room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "") if location else ""
+    return room_id.startswith("DH7-ROOM-")
+
+
+def _ensure_darkhaven_location(character, campaign_started=False):
     location = getattr(character, "location", None)
-    if location and str(getattr(location, "key", "") or "").strip().lower() != "limbo":
-        return location
-    rooms = [
-        obj
-        for obj in search_object(PILOT_ROOM)
-        if str(getattr(obj.db, "room_id", "") or "") == PILOT_ROOM_ID
-    ]
-    if not rooms:
-        return location
-    destination = sorted(rooms, key=lambda obj: int(getattr(obj, "id", 0) or 0))[0]
-    character.move_to(destination, quiet=True)
-    return destination
+    if not campaign_started and _is_darkhaven_location(location):
+        return location, False
+    destination = _find_entry_room()
+    if not destination:
+        return location, False
+    if location != destination:
+        character.move_to(destination, quiet=True)
+        return destination, True
+    return destination, False
+
+
+def _emit_darkhaven_opening(character):
+    character.msg(
+        "El portón de Darkhaven se cierra detrás de ti con un golpe demasiado parecido al de una celda. "
+        "La lluvia corre por vitrales nuevos montados sobre piedra que claramente es más vieja que la idea de esta escuela."
+    )
+    character.msg(
+        "Un muchacho flaco con una tablilla torcida espera bajo el arco. Dino comprueba tu nombre y hace una mueca. "
+        "«Nereida. Bien. Trimago dijo que si llegabas por tu cuenta te mandara al patio. Squeek sabe dónde dejaron tu ingreso. "
+        "Y no cruces ninguna puerta que diga Contención sólo porque esté abierta.»"
+    )
 
 
 def _emit_ready(session, status, **extra):
@@ -136,8 +161,11 @@ class CmdSizaLocalLogin(Command):
                 if current != character:
                     account.puppet_object(session, character)
                 account.db._last_puppet = character
-                location = _ensure_pilot_location(character)
+
                 campaign = start_registered_campaign(character, LOCAL_CAMPAIGN, force=False)
+                campaign_started = str(campaign.get("status") or "") == "STARTED"
+                location, moved = _ensure_darkhaven_location(character, campaign_started=campaign_started)
+
                 _emit_ready(
                     session,
                     "READY",
@@ -147,6 +175,8 @@ class CmdSizaLocalLogin(Command):
                     location=str(location or ""),
                     campaign=str(campaign.get("status") or ""),
                 )
+                if campaign_started or moved:
+                    _emit_darkhaven_opening(character)
             except Exception as error:
                 _emit_ready(session, "PUPPET_FAILED", character=character.key, error=str(error))
 
