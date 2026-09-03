@@ -6,7 +6,21 @@ from services.player_recipient_consequence_engine import apply_player_actor_cons
 from services.synchronize_d6_resolution_engine import resolve_pending_object_action_synchronize_d6
 
 
-PLAYER_ROLL_BUILD = "0.57.0-persistent-knowledge-facts-dispatch"
+PLAYER_ROLL_BUILD = "0.57.1-campaign-tagged-resolved-object-actions"
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _plain_list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
 
 
 def _pending_action(actor, attempt_id=None):
@@ -25,7 +39,53 @@ def _resolution_record(actor, resolution_id):
     return None
 
 
-def _finalize_player_recipient(actor, packet):
+def _campaign_tags(action):
+    metadata = _plain_dict((action or {}).get("metadata"))
+    values = metadata.get("campaign_tags") or (action or {}).get("campaign_tags") or []
+    output = []
+    for raw in _plain_list(values):
+        value = str(raw or "").strip()
+        if value and value not in output:
+            output.append(value)
+    return output
+
+
+def _observe_campaign_resolution(actor, pending_action, packet):
+    if str((packet or {}).get("status") or "") != "RESOLVED":
+        return None
+    tags = _campaign_tags(pending_action)
+    if not tags:
+        return None
+    from services.dm_campaign_registry import observe_active_campaign_evidence
+
+    site = getattr(actor, "location", None) if actor else None
+    action_result = (packet or {}).get("action_result") or {}
+    return observe_active_campaign_evidence(
+        actor,
+        {
+            "authority": "WORLD_ENGINE",
+            "source": "PLAYER_ROLL_RESOLUTION",
+            "action_types": ["OBJECT_ACTION_EXECUTED"],
+            "campaign_tags": tags,
+            "object_action_id": (packet or {}).get("object_action_id") or (pending_action or {}).get("object_action_id"),
+            "object_id": (packet or {}).get("object_id") or (pending_action or {}).get("object_id"),
+            "object_dbref": (packet or {}).get("object_dbref") or (pending_action or {}).get("object_dbref"),
+            "site_room_id": str(getattr(getattr(site, "db", None), "room_id", "") or "") if site else None,
+            "site_dbref": int(site.id) if site and getattr(site, "id", None) is not None else None,
+            "outcome": (packet or {}).get("outcome"),
+            "result": {
+                "status": (packet or {}).get("status"),
+                "attempt_id": (packet or {}).get("attempt_id") or (pending_action or {}).get("attempt_id"),
+                "resolution_id": (packet or {}).get("resolution_id") or (pending_action or {}).get("resolution_id"),
+                "outcome": (packet or {}).get("outcome"),
+                "object_action_id": (packet or {}).get("object_action_id") or (pending_action or {}).get("object_action_id"),
+                "object_name": action_result.get("object_name") or (pending_action or {}).get("object_name"),
+            },
+        },
+    )
+
+
+def _finalize_player_recipient(actor, packet, pending_action=None):
     result = dict(packet or {})
     if str(result.get("status") or "") != "RESOLVED":
         return result
@@ -51,6 +111,9 @@ def _finalize_player_recipient(actor, packet):
         "object_name": action_result.get("object_name"),
     }
     result["player_recipient_consequence"] = apply_player_actor_consequences(actor, action_packet)
+    observation = _observe_campaign_resolution(actor, pending_action, result)
+    if observation is not None:
+        result["campaign_observation"] = observation
     return result
 
 
@@ -91,7 +154,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "DIRECT"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return _finalize_player_recipient(actor, packet)
+        return _finalize_player_recipient(actor, packet, pending_action=action)
 
     if mode == "ACCUMULATE":
         packet = resolve_pending_object_action_accumulate_d6(
@@ -101,7 +164,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "ACCUMULATE"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return _finalize_player_recipient(actor, packet)
+        return _finalize_player_recipient(actor, packet, pending_action=action)
 
     if mode == "CONFRONT":
         packet = resolve_pending_object_action_confront_d6(
@@ -112,7 +175,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "CONFRONT"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return _finalize_player_recipient(actor, packet)
+        return _finalize_player_recipient(actor, packet, pending_action=action)
 
     if mode == "SYNCHRONIZE":
         packet = resolve_pending_object_action_synchronize_d6(
@@ -122,7 +185,7 @@ def resolve_pending_object_action_roll(
         )
         packet["mode"] = "SYNCHRONIZE"
         packet["dispatch_build"] = PLAYER_ROLL_BUILD
-        return _finalize_player_recipient(actor, packet)
+        return _finalize_player_recipient(actor, packet, pending_action=action)
 
     return {
         "status": "UNSUPPORTED_MODE",
