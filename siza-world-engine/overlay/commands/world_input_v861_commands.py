@@ -9,9 +9,14 @@ from commands.world_input_v83_commands import classify_v83_input
 from commands.world_input_v84_commands import _current_interaction_capability
 from commands.world_input_v85_commands import CmdSizaNoMatchV85, handle_action_proposal_result_v85
 from services.active_perception_proposal_runtime import dispatch_active_perception_proposal_async
+from services.action_intent_proposal_engine import build_local_capability_catalog
 from services.action_resolution_engine import adventure_stats
 from services.dm_free_action_pipeline import dispatch_dm_unsupported_action_async, is_valid_unsupported_proposal
+from services.direct_d6_resolution_engine import pending_object_actions
+from services.exit_state_gate_engine import inspect_exit_state
 from services.interaction_engine import parse_interaction_intent
+from services.object_action_engine import find_object_action
+from services.object_visibility_engine import object_visible_in_world_state
 from services.player_language_contract import get_actor_turn_language, localize, resolve_turn_language
 from services.ranked_fact_conversation_engine import (
     RANKED_FACT_CONVERSATION_BUILD,
@@ -34,6 +39,7 @@ COMBAT_RESULT_PREFIX = "siza-combat-result "
 COMBAT_TEST_PREFIX = "siza-combat-test "
 COMBAT_CLEAR_COMMAND = "siza-combat-clear"
 UI_STATS_COMMAND = "siza-ui-stats"
+UI_CONTEXT_COMMAND = "siza-ui-context"
 EXPLICIT_COMBAT_PATTERNS = (
     re.compile(r"^(?:ataco|ataca|atacar|golpeo|golpea|golpear)(?:\s+(?:a|contra))?\s+(.+?)\s*[.!?]*$", re.IGNORECASE),
     re.compile(r"^(?:i\s+)?(?:attack|hit|fight)(?:\s+against)?\s+(.+?)\s*[.!?]*$", re.IGNORECASE),
@@ -49,6 +55,128 @@ def _is_admin(actor):
         return bool(actor.permissions.check("Admin"))
     except Exception:
         return False
+
+
+def _local_object(actor, dbref):
+    location = getattr(actor, "location", None) if actor else None
+    if not location:
+        return None
+    try:
+        wanted = int(dbref)
+    except (TypeError, ValueError):
+        return None
+    return next(
+        (obj for obj in list(getattr(location, "contents", []) or []) if getattr(obj, "id", None) == wanted),
+        None,
+    )
+
+
+def _context_action_packet(actor):
+    """Build player-facing buttons only from capabilities currently valid in the room."""
+    location = getattr(actor, "location", None) if actor else None
+    if not location:
+        return {"location": None, "room_id": None, "actions": [], "pending_roll": False}
+
+    actions = []
+    exits_by_capability = {}
+    for exit_obj in list(getattr(location, "exits", []) or []):
+        stable_id = str(getattr(exit_obj.db, "exit_id", "") or f"DBREF:{int(exit_obj.id)}")
+        exits_by_capability[f"MOVE:{stable_id}"] = exit_obj
+
+    for capability in build_local_capability_catalog(actor):
+        kind = str(capability.get("kind") or "").upper()
+        target = _local_object(actor, capability.get("target_dbref"))
+
+        if kind == "MOVEMENT":
+            exit_obj = exits_by_capability.get(str(capability.get("capability_id") or ""))
+            state = inspect_exit_state(exit_obj) if exit_obj else {}
+            if (
+                not exit_obj
+                or bool(getattr(exit_obj.db, "hidden", False))
+                or not bool(state.get("eligible"))
+                or bool(getattr(exit_obj.db, "is_locked", False))
+                or str(getattr(exit_obj.db, "door_state", "open") or "open").lower() != "open"
+            ):
+                continue
+            command = str(exit_obj.key)
+            actions.append(
+                {
+                    "id": str(capability.get("capability_id") or ""),
+                    "kind": kind,
+                    "label": command,
+                    "command": command,
+                    "target": str(getattr(getattr(exit_obj, "destination", None), "key", "") or ""),
+                }
+            )
+            continue
+
+        if not target or not object_visible_in_world_state(target, site=location):
+            continue
+
+        if kind == "OBJECT_ACTION":
+            action = find_object_action(actor, target, capability.get("object_action_id"), eligible_only=True)
+            if not action:
+                continue
+            phrases = list(action.get("input_phrases") or [])
+            verb = str(phrases[0] if phrases else action.get("name") or "").strip()
+            command = f"{verb} {target.key}".strip()
+            actions.append(
+                {
+                    "id": str(capability.get("capability_id") or ""),
+                    "kind": kind,
+                    "label": str(action.get("name") or verb),
+                    "command": command,
+                    "target": str(target.key),
+                }
+            )
+            continue
+
+        if kind == "INTERACTION":
+            actions.append(
+                {
+                    "id": str(capability.get("capability_id") or ""),
+                    "kind": kind,
+                    "label": f"Hablar con {target.key}",
+                    "command": f"hablar con {target.key}",
+                    "target": str(target.key),
+                }
+            )
+            continue
+
+        if kind == "PERCEPTION" and not bool(getattr(target.db, "is_npc", False)):
+            actions.append(
+                {
+                    "id": str(capability.get("capability_id") or ""),
+                    "kind": kind,
+                    "label": f"Examinar {target.key}",
+                    "command": f"observar {target.key}",
+                    "target": str(target.key),
+                }
+            )
+
+    pending = pending_object_actions(actor)
+    if pending:
+        current = pending[-1]
+        actions.insert(
+            0,
+            {
+                "id": f"ROLL:{current.get('attempt_id')}",
+                "kind": "ROLL",
+                "label": "Tirar d6",
+                "command": "tirar",
+                "target": str(current.get("object_name") or current.get("object_action_name") or ""),
+            },
+        )
+
+    order = {"ROLL": 0, "OBJECT_ACTION": 10, "INTERACTION": 20, "MOVEMENT": 30, "PERCEPTION": 40}
+    actions.sort(key=lambda row: (order.get(str(row.get("kind") or ""), 99), str(row.get("label") or "")))
+    return {
+        "location": str(location.key),
+        "room_id": str(getattr(location.db, "room_id", "") or "") or None,
+        "actions": actions,
+        "pending_roll": bool(pending),
+        "build": "ui-context-0.1",
+    }
 
 
 def _explicit_combat_target_name(raw):
@@ -223,6 +351,10 @@ def _handle_reserved_combat_input(actor, raw):
     """Handle browser/QA bridge messages before any natural-language or AI routing."""
     value = str(raw or "").strip()
     lowered = value.lower()
+
+    if lowered == UI_CONTEXT_COMMAND:
+        actor.msg(siza_context_actions=((_context_action_packet(actor),), {}))
+        return True
 
     if lowered == UI_STATS_COMMAND:
         stats = adventure_stats(actor)
