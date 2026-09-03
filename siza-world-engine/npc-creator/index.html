@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIZA NPC Creator</title>
+<style>
+:root{--bg:#090d13;--panel:#111823;--panel2:#171f2c;--line:#2c384b;--text:#edf3fa;--muted:#94a3b8;--accent:#75bdf4;--ok:#6bd69a;--warn:#efc56e;--danger:#ff7070}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Inter,Segoe UI,Arial,sans-serif}button,input,select,textarea{font:inherit}.app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.top{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0e141e;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{font-weight:900;letter-spacing:.055em;margin-right:10px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.08em}.btn{border:1px solid #34445b;background:#182334;color:var(--text);border-radius:7px;padding:7px 10px;cursor:pointer}.btn:hover{background:#213149}.btn.primary{background:#184a70;border-color:#397caf}.btn.danger{background:#3a1e24;border-color:#71353c}.spacer{flex:1}.status{font-size:12px;color:var(--muted)}.layout{min-height:0;display:grid;grid-template-columns:270px minmax(520px,1fr) 360px}.left,.right{min-height:0;overflow:auto;background:var(--panel)}.left{border-right:1px solid var(--line)}.right{border-left:1px solid var(--line)}.main{min-height:0;overflow:auto;background:#0d121a;padding:16px}.section{padding:12px;border-bottom:1px solid var(--line)}.section h3,.card h3{margin:0 0 9px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#adbbce}.list{display:grid;gap:6px}.item{border:1px solid transparent;background:#0d141e;border-radius:7px;padding:8px;cursor:pointer}.item:hover{border-color:#3a4b63}.item.sel{border-color:#67aee5;background:#17283a}.item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item small{color:var(--muted)}.pill{float:right;border:1px solid #42536c;border-radius:999px;padding:1px 5px;font-size:9px;color:#adbbce}.card{max-width:980px;margin:0 auto 14px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.field{display:grid;gap:5px}.field label{font-size:11px;color:var(--muted)}.field input,.field select,.field textarea{width:100%;border:1px solid #33425a;background:#0b111a;color:var(--text);border-radius:6px;padding:8px}.field textarea{min-height:82px;resize:vertical}.field .mini{min-height:54px}.check{display:flex;align-items:center;gap:7px;color:#d7e1ed}.check input{width:auto}.note{font-size:11px;color:var(--muted);line-height:1.45}.combat{border-color:#3a6f98;background:linear-gradient(180deg,#132231,#111823)}.deckbox{margin-top:10px;padding:10px;border-radius:8px;background:#0c131c;border:1px solid #2e4156}.deck-title{font-weight:800}.deck-meta{font-size:11px;color:var(--muted);margin:3px 0 8px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;max-height:190px;overflow:auto;font-size:11px}.cardrow{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #202b39;padding:3px 0}.valid{color:var(--ok)}.invalid{color:var(--danger)}.warning{color:var(--warn)}pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#090e15;border:1px solid #273448;border-radius:7px;padding:10px;color:#cad6e4;font-size:11px}.right-title{position:sticky;top:0;z-index:3;padding:12px;background:#111823ed;border-bottom:1px solid var(--line);font-weight:800}.details{border-top:1px solid var(--line);padding:10px 0 0;margin-top:10px}.details summary{cursor:pointer;color:#b8c7da;font-weight:700}.jsonarea{font-family:Consolas,monospace;font-size:11px;min-height:110px!important}.help{font-size:11px;color:var(--muted);line-height:1.5}.empty{border:1px dashed #35445a;color:var(--muted);border-radius:8px;padding:12px}.mapinfo{font-size:11px;color:#bed0e4}.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}@media(max-width:1100px){.layout{grid-template-columns:230px minmax(480px,1fr) 310px}.grid6{grid-template-columns:repeat(3,1fr)}}@media(max-width:820px){.layout{grid-template-columns:1fr}.left,.right{display:none}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+<script src="../../siza-core/decks.js"></script>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand">SIZA NPC CREATOR<small>World Engine + TCG combat authoring</small></div>
+  <button class="btn primary" id="addBtn">+ NPC</button>
+  <button class="btn" id="dupBtn">Duplicar</button>
+  <button class="btn danger" id="delBtn">Eliminar</button>
+  <div class="spacer"></div>
+  <button class="btn" id="mapBtn">Importar mapa</button>
+  <button class="btn" id="importBtn">Importar NPC JSON</button>
+  <button class="btn" id="exportBtn">Exportar NPC JSON</button>
+  <button class="btn" id="seedBtn">Exportar seed Python</button>
+  <input id="mapFile" type="file" accept=".json,application/json" hidden>
+  <input id="npcFile" type="file" accept=".json,application/json" hidden>
+  <div class="status" id="status">Listo</div>
+</header>
+<div class="layout">
+<aside class="left">
+  <div class="section">
+    <h3>Proyecto</h3>
+    <div class="field"><label>Nombre</label><input id="projectName"></div>
+    <div class="field"><label>Campaign ID por defecto</label><input id="defaultCampaign" placeholder="CAMPAIGN-FARO-AHOGADO-VS01"></div>
+    <div class="toolbar"><button class="btn" id="clearMapBtn">Quitar mapa</button></div>
+    <div class="mapinfo" id="mapInfo">Sin mapa importado.</div>
+  </div>
+  <div class="section"><h3>NPCs <span id="count"></span></h3><div class="list" id="npcList"></div></div>
+  <div class="section help">El NPC guarda un <b>deck_id</b>, no una copia de las cartas. Al entrar a combate el TCG vuelve a resolver ese ID desde el catálogo canónico y baraja una copia nueva.</div>
+</aside>
+<main class="main" id="editor"></main>
+<aside class="right">
+  <div class="right-title">Salida / diagnóstico</div>
+  <div class="section"><h3>Encounter opponent</h3><pre id="encounterPreview">Seleccione un NPC.</pre></div>
+  <div class="section"><h3>Deck</h3><div id="deckPreview" class="empty">Sin NPC.</div></div>
+  <div class="section"><h3>Validación</h3><div id="validation" class="help">—</div></div>
+</aside>
+</div>
+</div>
+<script>
+(()=>{
+'use strict';
+const KEY='siza_npc_creator_v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+'-'+Math.random().toString(36).slice(2,9)+'-'+Date.now().toString(36).slice(-5);
+const lines=v=>String(v??'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+const deep=v=>JSON.parse(JSON.stringify(v));
+function object(v,fallback={}){return v&&typeof v==='object'&&!Array.isArray(v)?v:fallback}
+function array(v){return Array.isArray(v)?v:[]}
+function blankProject(){return{version:1,meta:{name:'NPCs SIZA',campaign_id:''},map:{name:'',rooms:[]},npcs:[]}}
+function blankNPC(){const n=state.npcs.length+1;return{
+  editor_id:uid('npc'),key:'Nuevo NPC '+n,npc_id:'NPC-'+String(n).padStart(3,'0'),aliases:[],desc:'',dialogue_greeting:'',canon_status:'prototype',campaign_id:state.meta.campaign_id||'',simulation_enabled:false,decision_enabled:false,
+  current_room_id:'',current_room_key:'',home_room_id:'',work_room_id:'',rest_room_id:'',
+  adventure_stats:{FUE:2,AGI:2,COO:2,INT:2,PER:2,PSI:2},knowledge:{},knowledge_facts:[],job:{},relationships:{},memories:[],routine:[],needs:{},need_rules:[],need_dynamics:[],decision_priorities:{DANGER:100,EVENT:80,NEED:70,JOB:60,RELATIONSHIP:50,ROUTINE:10},decision_goals:[],virtues:{},flaws:{},
+  combat_profile:{enabled:false,deck_id:'',tcg_profile:{},loadout:{},world_status:{},encounter_tags:[]}
+}}
+function normalize(p){p=object(p,blankProject());p.version=1;p.meta={name:p.meta?.name||'NPCs SIZA',campaign_id:p.meta?.campaign_id||''};p.map=object(p.map,{name:'',rooms:[]});p.map.rooms=array(p.map.rooms);p.npcs=array(p.npcs).map((raw,i)=>{const d=blankNPC(),n={...d,...object(raw)};n.editor_id=n.editor_id||uid('npc');n.key=n.key||'NPC '+(i+1);n.npc_id=n.npc_id||'NPC-'+String(i+1).padStart(3,'0');n.aliases=array(n.aliases);n.adventure_stats={...d.adventure_stats,...object(n.adventure_stats)};['knowledge','job','relationships','needs','decision_priorities','virtues','flaws'].forEach(k=>n[k]=object(n[k],{}));['knowledge_facts','memories','routine','need_rules','need_dynamics','decision_goals'].forEach(k=>n[k]=array(n[k]));n.combat_profile={...d.combat_profile,...object(n.combat_profile)};n.combat_profile.tcg_profile=object(n.combat_profile.tcg_profile,{});n.combat_profile.loadout=object(n.combat_profile.loadout,{});n.combat_profile.world_status=object(n.combat_profile.world_status,{});n.combat_profile.encounter_tags=array(n.combat_profile.encounter_tags);return n});return p}
+let state=normalize(load()||blankProject()),selected=state.npcs[0]?.editor_id||null;
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}}
+function save(){state=normalize(state);localStorage.setItem(KEY,JSON.stringify(state));setStatus('Guardado')}
+function setStatus(t,bad=false){$('status').textContent=t;$('status').style.color=bad?'var(--danger)':'var(--muted)';clearTimeout(setStatus.t);setStatus.t=setTimeout(()=>{$('status').textContent='Listo';$('status').style.color='var(--muted)'},1600)}
+function npc(){return state.npcs.find(n=>n.editor_id===selected)||null}
+function deckCatalog(){const C=window.SizaDeckCatalog;return C&&typeof C.all==='function'?C:null}
+function decks(){try{return deckCatalog()?.all()||[]}catch{return[]}}
+function deckById(id){try{return deckCatalog()?.get?.(String(id||''))||null}catch{return null}}
+function cardName(id){try{return window.SizaCardCatalog?.get?.(id)?.name||id}catch{return id}}
+function totalDeck(d){return Object.values(d?.counts||{}).reduce((a,b)=>a+(Number(b)||0),0)}
+function download(name,text,type='text/plain'){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function safeName(s){return String(s||'siza_npcs').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'siza_npcs'}
+function parseJSON(value,label){try{return JSON.parse(value||'null')}catch(e){throw new Error(label+': '+e.message)}}
+
+function render(){
+ $('projectName').value=state.meta.name;$('defaultCampaign').value=state.meta.campaign_id;$('count').textContent='('+state.npcs.length+')';
+ $('mapInfo').textContent=state.map.rooms.length?`${state.map.name||'Mapa importado'} · ${state.map.rooms.length} Rooms`:'Sin mapa importado.';
+ $('npcList').innerHTML=state.npcs.length?state.npcs.map(n=>`<div class="item ${n.editor_id===selected?'sel':''}" data-npc="${n.editor_id}"><span class="pill">${n.combat_profile?.enabled?'COMBAT':'NPC'}</span><b>${esc(n.key)}</b><small>${esc(n.npc_id)}${n.current_room_id?' · '+esc(n.current_room_id):''}</small></div>`).join(''):'<div class="empty">No hay NPCs. Pulse + NPC.</div>';
+ document.querySelectorAll('[data-npc]').forEach(el=>el.onclick=()=>{selected=el.dataset.npc;render()});
+ renderEditor();renderPreview();
+}
+
+function field(label,id,value,type='text',extra=''){return`<div class="field"><label>${label}</label><input id="${id}" type="${type}" value="${esc(value??'')}" ${extra}></div>`}
+function textarea(label,id,value,cls=''){return`<div class="field"><label>${label}</label><textarea id="${id}" class="${cls}">${esc(value??'')}</textarea></div>`}
+function jsonText(v){return JSON.stringify(v??{},null,2)}
+function renderEditor(){
+ const n=npc();if(!n){$('editor').innerHTML='<div class="card empty">Cree o seleccione un NPC.</div>';return}
+ const roomOptions=['<option value="">— sin ubicación del mapa —</option>',...state.map.rooms.map(r=>`<option value="${esc(r.room_id||'')}" ${r.room_id===n.current_room_id?'selected':''}>${esc(r.key||r.room_id)} · ${esc(r.room_id||'')}</option>`)].join('');
+ const deckOptions=['<option value="">— sin deck —</option>',...decks().map(d=>`<option value="${esc(d.id)}" ${d.id===n.combat_profile.deck_id?'selected':''}>${esc(d.name)} · ${esc(d.id)}</option>`)].join('');
+ const s=n.adventure_stats||{};
+ $('editor').innerHTML=`
+ <div class="card"><h3>Identidad</h3>
+  <div class="grid2">${field('Nombre / key','f_key',n.key)}${field('NPC ID','f_npcid',n.npc_id)}${field('Canon status','f_canon',n.canon_status)}${field('Campaign ID','f_campaign',n.campaign_id)}</div>
+  ${textarea('Aliases — uno por línea','f_aliases',n.aliases.join('\n'),'mini')}
+  ${textarea('Descripción','f_desc',n.desc)}
+  ${textarea('Saludo / inicio de diálogo','f_greeting',n.dialogue_greeting,'mini')}
+  <div class="grid2"><label class="check"><input id="f_sim" type="checkbox" ${n.simulation_enabled?'checked':''}> Simulation enabled</label><label class="check"><input id="f_decision" type="checkbox" ${n.decision_enabled?'checked':''}> Decision enabled</label></div>
+ </div>
+ <div class="card"><h3>Ubicación</h3>
+  <div class="field"><label>Room importado del SIZA Map Creator</label><select id="f_roomselect">${roomOptions}</select></div>
+  <div class="grid2">${field('Current room_id','f_roomid',n.current_room_id)}${field('Current Room key','f_roomkey',n.current_room_key)}${field('Home room_id','f_home',n.home_room_id)}${field('Work room_id','f_work',n.work_room_id)}${field('Rest room_id','f_rest',n.rest_room_id)}</div>
+  <div class="note">Importar un mapa no crea nada en el World Engine: solamente le permite asignar al NPC Rooms por sus IDs reales y exportar luego el seed.</div>
+ </div>
+ <div class="card"><h3>Adventure Stats</h3><div class="grid6">
+   ${['FUE','AGI','COO','INT','PER','PSI'].map(k=>field(k,'stat_'+k,s[k]??2,'number')).join('')}
+ </div></div>
+ <div class="card combat"><h3>Combate TCG</h3>
+  <label class="check"><input id="c_enabled" type="checkbox" ${n.combat_profile.enabled?'checked':''}> Este NPC puede entrar en modo pelea</label>
+  <div class="grid2" style="margin-top:10px"><div class="field"><label>Deck canónico</label><select id="c_deck">${deckOptions}</select></div>${field('Deck ID manual','c_deckid',n.combat_profile.deck_id)}</div>
+  <div class="note">El NPC guarda únicamente <b>deck_id</b>. Cada entrada a combate obtiene otra vez el deck desde <b>SizaDeckCatalog</b>, lo expande, lo baraja y crea una mano nueva de 7 cartas.</div>
+  <div class="grid3" style="margin-top:10px">${field('Life override','tcg_life',n.combat_profile.tcg_profile?.life??'','number')}${field('MF','tcg_mf',n.combat_profile.tcg_profile?.mf??'','number')}${field('PROW','tcg_prow',n.combat_profile.tcg_profile?.prow??'','number')}${field('EVA','tcg_eva',n.combat_profile.tcg_profile?.eva??'','number')}</div>
+  ${textarea('Encounter tags — uno por línea','c_tags',n.combat_profile.encounter_tags.join('\n'),'mini')}
+  <details class="details"><summary>Loadout y estado de mundo</summary><div class="grid2" style="margin-top:10px">${textarea('loadout JSON','c_loadout',jsonText(n.combat_profile.loadout),'jsonarea')}${textarea('world_status JSON','c_world',jsonText(n.combat_profile.world_status),'jsonarea')}</div></details>
+ </div>
+ <div class="card"><h3>Knowledge / Social / Simulation</h3>
+  <details open><summary>Facts y conocimiento</summary><div class="grid2" style="margin-top:10px">${textarea('knowledge JSON','j_knowledge',jsonText(n.knowledge),'jsonarea')}${textarea('knowledge_facts JSON','j_facts',jsonText(n.knowledge_facts),'jsonarea')}</div></details>
+  <details class="details"><summary>Trabajo y relaciones</summary><div class="grid2" style="margin-top:10px">${textarea('job JSON','j_job',jsonText(n.job),'jsonarea')}${textarea('relationships JSON','j_relationships',jsonText(n.relationships),'jsonarea')}</div>${textarea('memories JSON','j_memories',jsonText(n.memories),'jsonarea')}</details>
+  <details class="details"><summary>Rutina y necesidades</summary><div class="grid2" style="margin-top:10px">${textarea('routine JSON','j_routine',jsonText(n.routine),'jsonarea')}${textarea('needs JSON','j_needs',jsonText(n.needs),'jsonarea')}${textarea('need_rules JSON','j_needrules',jsonText(n.need_rules),'jsonarea')}${textarea('need_dynamics JSON','j_needdyn',jsonText(n.need_dynamics),'jsonarea')}</div></details>
+  <details class="details"><summary>Decision Layer / Virtudes / Defectos</summary><div class="grid2" style="margin-top:10px">${textarea('decision_priorities JSON','j_priorities',jsonText(n.decision_priorities),'jsonarea')}${textarea('decision_goals JSON','j_goals',jsonText(n.decision_goals),'jsonarea')}${textarea('virtues JSON','j_virtues',jsonText(n.virtues),'jsonarea')}${textarea('flaws JSON','j_flaws',jsonText(n.flaws),'jsonarea')}</div></details>
+ </div>`;
+ bindEditor(n);
+}
+function bind(id,fn,event='input'){const el=$(id);if(el)el.addEventListener(event,()=>{try{fn(el);save();renderPreview();renderListOnly()}catch(e){setStatus(e.message,true)}})}
+function renderListOnly(){const keep=selected;$('count').textContent='('+state.npcs.length+')';$('npcList').innerHTML=state.npcs.map(n=>`<div class="item ${n.editor_id===keep?'sel':''}" data-npc="${n.editor_id}"><span class="pill">${n.combat_profile?.enabled?'COMBAT':'NPC'}</span><b>${esc(n.key)}</b><small>${esc(n.npc_id)}${n.current_room_id?' · '+esc(n.current_room_id):''}</small></div>`).join('');document.querySelectorAll('[data-npc]').forEach(el=>el.onclick=()=>{selected=el.dataset.npc;render()})}
+function bindEditor(n){
+ bind('f_key',e=>n.key=e.value);bind('f_npcid',e=>n.npc_id=e.value);bind('f_canon',e=>n.canon_status=e.value);bind('f_campaign',e=>n.campaign_id=e.value);bind('f_aliases',e=>n.aliases=lines(e.value));bind('f_desc',e=>n.desc=e.value);bind('f_greeting',e=>n.dialogue_greeting=e.value);bind('f_sim',e=>n.simulation_enabled=e.checked,'change');bind('f_decision',e=>n.decision_enabled=e.checked,'change');
+ bind('f_roomselect',e=>{const r=state.map.rooms.find(x=>x.room_id===e.value);n.current_room_id=e.value;n.current_room_key=r?.key||'';if(!n.home_room_id)n.home_room_id=e.value;render()},'change');bind('f_roomid',e=>n.current_room_id=e.value);bind('f_roomkey',e=>n.current_room_key=e.value);bind('f_home',e=>n.home_room_id=e.value);bind('f_work',e=>n.work_room_id=e.value);bind('f_rest',e=>n.rest_room_id=e.value);
+ ['FUE','AGI','COO','INT','PER','PSI'].forEach(k=>bind('stat_'+k,e=>n.adventure_stats[k]=Number(e.value)||0));
+ bind('c_enabled',e=>n.combat_profile.enabled=e.checked,'change');bind('c_deck',e=>{n.combat_profile.deck_id=e.value;render()},'change');bind('c_deckid',e=>n.combat_profile.deck_id=e.value);
+ [['tcg_life','life'],['tcg_mf','mf'],['tcg_prow','prow'],['tcg_eva','eva']].forEach(([id,k])=>bind(id,e=>{if(e.value==='')delete n.combat_profile.tcg_profile[k];else n.combat_profile.tcg_profile[k]=Number(e.value)}));
+ bind('c_tags',e=>n.combat_profile.encounter_tags=lines(e.value));bind('c_loadout',e=>n.combat_profile.loadout=object(parseJSON(e.value,'loadout'),{}),'change');bind('c_world',e=>n.combat_profile.world_status=object(parseJSON(e.value,'world_status'),{}),'change');
+ const j=[['j_knowledge','knowledge',{}],['j_facts','knowledge_facts',[]],['j_job','job',{}],['j_relationships','relationships',{}],['j_memories','memories',[]],['j_routine','routine',[]],['j_needs','needs',{}],['j_needrules','need_rules',[]],['j_needdyn','need_dynamics',[]],['j_priorities','decision_priorities',{}],['j_goals','decision_goals',[]],['j_virtues','virtues',{}],['j_flaws','flaws',{}]];
+ j.forEach(([id,k,f])=>bind(id,e=>n[k]=parseJSON(e.value,k),'change'));
+}
+function renderPreview(){
+ const n=npc();if(!n){$('encounterPreview').textContent='Seleccione un NPC.';$('deckPreview').innerHTML='<div class="empty">Sin NPC.</div>';$('validation').textContent='—';return}
+ const cp=n.combat_profile||{},packet={opponent:{npc_id:n.npc_id,name:n.key,deck_id:cp.deck_id||'',tcg_profile:cp.tcg_profile||{},loadout:cp.loadout||{},world_status:cp.world_status||{}},world_context_tags:cp.encounter_tags||[]};$('encounterPreview').textContent=JSON.stringify(packet,null,2);
+ const d=deckById(cp.deck_id),catalogOk=!!deckCatalog();
+ if(!cp.enabled){$('deckPreview').innerHTML='<div class="warning">Combate desactivado para este NPC.</div>'}
+ else if(!catalogOk){$('deckPreview').innerHTML='<div class="invalid">SizaDeckCatalog no pudo cargarse.</div>'}
+ else if(!cp.deck_id){$('deckPreview').innerHTML='<div class="invalid">Falta deck_id.</div>'}
+ else if(!d){$('deckPreview').innerHTML=`<div class="invalid">Deck desconocido: ${esc(cp.deck_id)}</div>`}
+ else{const rows=Object.entries(d.counts||{}).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));$('deckPreview').innerHTML=`<div class="deck-title">${esc(d.name)}</div><div class="deck-meta">${esc(d.id)} · ${totalDeck(d)} cartas · ${esc(d.role||'')}</div><div class="cards">${rows.map(([id,c])=>`<div class="cardrow"><span>${esc(cardName(id))}</span><b>×${c}</b></div>`).join('')}</div>`}
+ const errors=[];if(!n.key.trim())errors.push('Falta nombre');if(!n.npc_id.trim())errors.push('Falta npc_id');if(cp.enabled&&!cp.deck_id)errors.push('Combate activo sin deck_id');if(cp.enabled&&cp.deck_id&&catalogOk&&!d)errors.push('deck_id no existe en SizaDeckCatalog');if(d&&totalDeck(d)<8)errors.push('Deck demasiado pequeño para mano inicial');$('validation').innerHTML=errors.length?errors.map(x=>`<div class="invalid">• ${esc(x)}</div>`):'<div class="valid">NPC válido para exportar.</div>';
+}
+
+function projectExport(){return normalize(deep(state))}
+function seedPython(){
+ const payload=JSON.stringify({project:state.meta,npcs:state.npcs.map(n=>{const x=deep(n);delete x.editor_id;return x})});
+ const literal=JSON.stringify(payload);
+ return `from evennia import create_object, search_object\nfrom evennia.objects.models import ObjectDB\nfrom services.knowledge_fact_engine import upsert_knowledge_fact\nimport json\n\nDATA = json.loads(${literal})\n\ndef _find_room(room_id, room_key=''):\n    room_id = str(room_id or '')\n    if room_key:\n        for obj in search_object(room_key):\n            if str(getattr(obj.db, 'room_id', '') or '') == room_id:\n                return obj\n    if not room_id:\n        return None\n    for obj in ObjectDB.objects.all():\n        if str(getattr(obj.db, 'room_id', '') or '') == room_id:\n            return obj\n    return None\n\ndef _find_npc(npc_id):\n    npc_id = str(npc_id or '')\n    for obj in ObjectDB.objects.all():\n        if bool(getattr(obj.db, 'is_npc', False)) and str(getattr(obj.db, 'npc_id', '') or '') == npc_id:\n            return obj\n    return None\n\ndef _plain_dict(value):\n    return dict(value or {})\n\ndef install_npc(data):\n    npc_id = str(data.get('npc_id') or '')\n    npc = _find_npc(npc_id)\n    room = _find_room(data.get('current_room_id'), data.get('current_room_key'))\n    created = False\n    if npc is None:\n        npc = create_object('typeclasses.npcs.NPC', key=data.get('key') or npc_id or 'NPC SIZA', location=room)\n        created = True\n    npc.key = data.get('key') or npc.key\n    if room is not None:\n        npc.location = room\n    npc.aliases.clear()\n    for alias in data.get('aliases') or []:\n        npc.aliases.add(str(alias))\n    npc.db.npc_id = npc_id\n    npc.db.desc = data.get('desc') or ''\n    npc.db.dialogue_greeting = data.get('dialogue_greeting') or ''\n    npc.db.canon_status = data.get('canon_status') or 'prototype'\n    npc.db.campaign_id = data.get('campaign_id') or None\n    npc.db.simulation_enabled = bool(data.get('simulation_enabled'))\n    npc.db.decision_enabled = bool(data.get('decision_enabled'))\n    npc.db.home_room_id = data.get('home_room_id') or None\n    npc.db.work_room_id = data.get('work_room_id') or None\n    npc.db.rest_room_id = data.get('rest_room_id') or None\n    npc.db.adventure_stats = _plain_dict(data.get('adventure_stats'))\n    npc.db.knowledge = _plain_dict(data.get('knowledge'))\n    npc.db.job = _plain_dict(data.get('job'))\n    npc.db.relationships = _plain_dict(data.get('relationships'))\n    npc.db.memories = list(data.get('memories') or [])\n    npc.db.routine = list(data.get('routine') or [])\n    npc.db.needs = _plain_dict(data.get('needs'))\n    npc.db.need_rules = list(data.get('need_rules') or [])\n    npc.db.need_dynamics = list(data.get('need_dynamics') or [])\n    npc.db.decision_priorities = _plain_dict(data.get('decision_priorities'))\n    npc.db.decision_goals = list(data.get('decision_goals') or [])\n    npc.db.virtues = _plain_dict(data.get('virtues'))\n    npc.db.flaws = _plain_dict(data.get('flaws'))\n    combat = _plain_dict(data.get('combat_profile'))\n    npc.db.combat_profile = {\n        'enabled': bool(combat.get('enabled')),\n        'deck_id': str(combat.get('deck_id') or '').strip() or None,\n        'tcg_profile': _plain_dict(combat.get('tcg_profile')),\n        'loadout': _plain_dict(combat.get('loadout')),\n        'world_status': _plain_dict(combat.get('world_status')),\n        'encounter_tags': list(combat.get('encounter_tags') or []),\n    }\n    npc.db.knowledge_facts = []\n    for fact in data.get('knowledge_facts') or []:\n        if isinstance(fact, dict):\n            upsert_knowledge_fact(npc, fact)\n    return {'npc_id': npc_id, 'key': npc.key, 'dbref': int(npc.id), 'created': created, 'room_id': str(getattr(getattr(npc.location, 'db', None), 'room_id', '') or '') if npc.location else None, 'deck_id': npc.db.combat_profile.get('deck_id')}\n\ndef build():\n    report = [install_npc(row) for row in DATA.get('npcs') or []]\n    try:\n        caller.msg('SIZA_NPC_CREATOR=' + repr(report))\n    except NameError:\n        print('SIZA_NPC_CREATOR=', report)\n    return report\n\nbuild()\n`;
+}
+
+$('addBtn').onclick=()=>{const n=blankNPC();state.npcs.push(n);selected=n.editor_id;save();render()};
+$('dupBtn').onclick=()=>{const source=npc();if(!source)return;const n=deep(source);n.editor_id=uid('npc');n.key=source.key+' copia';n.npc_id=source.npc_id+'-COPY';state.npcs.push(n);selected=n.editor_id;save();render()};
+$('delBtn').onclick=()=>{const n=npc();if(!n)return;if(!confirm('¿Eliminar '+n.key+' del proyecto del editor?'))return;state.npcs=state.npcs.filter(x=>x.editor_id!==n.editor_id);selected=state.npcs[0]?.editor_id||null;save();render()};
+$('projectName').addEventListener('input',e=>{state.meta.name=e.target.value;save()});$('defaultCampaign').addEventListener('input',e=>{state.meta.campaign_id=e.target.value;save()});
+$('mapBtn').onclick=()=>$('mapFile').click();$('importBtn').onclick=()=>$('npcFile').click();
+$('clearMapBtn').onclick=()=>{state.map={name:'',rooms:[]};save();render()};
+$('mapFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text()),rooms=array(p.rooms);if(!rooms.length)throw new Error('El JSON no contiene rooms del Map Creator');state.map={name:p.meta?.name||f.name,rooms:rooms.map(r=>({room_id:String(r.room_id||''),key:String(r.key||''),zone_id:String(r.zone_id||''),region_id:String(r.region_id||''),district_id:String(r.district_id||'')})).filter(r=>r.room_id)};save();render();setStatus('Mapa importado')}catch(err){setStatus(err.message,true)}e.target.value=''};
+$('npcFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{state=normalize(JSON.parse(await f.text()));selected=state.npcs[0]?.editor_id||null;save();render();setStatus('Proyecto importado')}catch(err){setStatus(err.message,true)}e.target.value=''};
+$('exportBtn').onclick=()=>download(safeName(state.meta.name)+'.npc.json',JSON.stringify(projectExport(),null,2),'application/json');
+$('seedBtn').onclick=()=>download(safeName(state.meta.name)+'_npc_seed.py',seedPython(),'text/x-python');
+
+if(!state.npcs.length){const first=blankNPC();state.npcs.push(first);selected=first.editor_id;save()}
+render();
+})();
+</script>
+</body>
+</html>
