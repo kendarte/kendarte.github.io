@@ -535,6 +535,8 @@ class CmdSizaNoMatchV861(CmdSizaNoMatchV85):
             _present_conversation_v861(self.caller, packet, emit_messages=True)
             return None
         if classification.get("route") == "AI_ACTION_PROPOSAL":
-            dispatch_unknown_action_v861(self.caller, raw)
+            # Buttons and authored commands already use deterministic routes.
+            # Text reaching this branch is a free action and belongs to the DM.
+            dispatch_dm_unsupported_action_async(self.caller, raw)
             return None
         return super().func()
