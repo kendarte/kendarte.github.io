@@ -4,10 +4,15 @@ const vm=require('vm');
 
 const events=[];
 class FakeCustomEvent{constructor(type,init){this.type=type;this.detail=init?.detail}}
+const guardDeck={id:'deck_guard',name:'Guard Deck',counts:{GUARD_A:4,GUARD_B:4,GUARD_C:4}};
 const sandbox={
   console,
   CustomEvent:FakeCustomEvent,
   dispatchEvent(event){events.push(event)},
+  SizaDeckCatalog:{
+    get(id){return id==='deck_guard'?guardDeck:null},
+    copy(id){const d=this.get(id);return d?{...d,counts:{...d.counts}}:null}
+  },
   window:null
 };
 sandbox.window=sandbox;
@@ -19,7 +24,8 @@ if(!B)throw new Error('SizaWorldCombatBridgeV01 missing');
 function assert(cond,msg){if(!cond)throw new Error(msg)}
 function match(){return{
   id:'match-test',rulesVersion:'0.7.0',over:false,winner:null,
-  player:{life:20,mf:2,prow:2,eva:2},enemy:{life:20,mf:2,prow:2,eva:2}
+  player:{life:20,mf:2,prow:2,eva:2,hand:['OLD_PLAYER'],library:['OLD_PLAYER']},
+  enemy:{life:20,mf:2,prow:2,eva:2,hand:['OLD_ENEMY'],library:['OLD_ENEMY']}
 }}
 const encounter={
   encounter_id:'COMBAT-CAR-KAL-001',
@@ -42,8 +48,13 @@ const attached=B.attachEncounter(M,encounter);
 assert(attached.ok&&B.isWorldMatch(M),'valid encounter did not attach');
 assert(M.player.life===18&&M.player.mf===3,'initiator tcg_profile not applied');
 assert(M.enemy.life===12&&M.enemy.mf===1,'opponent tcg_profile not applied');
+assert(attached.deck_load.enemy.applied&&attached.deck_load.enemy.deck_id==='deck_guard','authored opponent deck was not applied');
+assert(M.enemy.hand.length===7&&M.enemy.library.length===5,'fresh opponent hand/library not created from authored deck');
+assert(M.enemy.hand.every(id=>id.startsWith('GUARD_'))&&M.enemy.library.every(id=>id.startsWith('GUARD_')),'opponent deck contains stale cards');
+assert(M.enemy.deck_id==='deck_guard','resolved deck id not stored on enemy duelist');
 const meta=B.presentationMeta(M);
 assert(meta.location==='Dársenas de Campana'&&meta.opponent_name==='Guardia de Dársena','presentation meta not grounded in encounter');
+assert(meta.opponent_deck_id==='deck_guard','presentation meta missing opponent deck id');
 
 assert(B.buildResult(M).status==='ENCOUNTER_NOT_RESOLVED','unresolved encounter produced result');
 M.player.life=11;
@@ -67,4 +78,4 @@ assert(again.status==='RESULT_ALREADY_EMITTED','duplicate result was not idempot
 assert(events.length===1,'duplicate result emitted twice');
 assert(B.getResult(M).encounter_id==='COMBAT-CAR-KAL-001','stored result unavailable');
 
-console.log('PASS World Combat Bridge v0.1: validation, profiles, result authority boundary, provenance, idempotent emit');
+console.log('PASS World Combat Bridge v0.2: validation, profiles, authored NPC deck load, result authority boundary, provenance, idempotent emit');
