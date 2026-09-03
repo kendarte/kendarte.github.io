@@ -1,8 +1,8 @@
 (function (root) {
   'use strict';
 
-  const VERSION='0.1.0';
-  const BUILD='world-combat-bridge-v0.1';
+  const VERSION='0.2.0';
+  const BUILD='world-combat-bridge-v0.2-npc-decks';
   const ENCOUNTER_TYPE='COMBAT_CONFRONTATION';
 
   function clone(value){
@@ -77,6 +77,73 @@
     }
   }
 
+  function shuffledCopy(cards){
+    const output=Array.isArray(cards)?cards.slice():[];
+    for(let i=output.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      const tmp=output[i];output[i]=output[j];output[j]=tmp;
+    }
+    return output;
+  }
+
+  function materializeDeck(deckId){
+    const wanted=text(deckId);
+    if(!wanted)return{applied:false,status:'NO_DECK_ID',deck_id:''};
+
+    const catalog=root?.SizaDeckCatalog;
+    if(!catalog||typeof catalog.get!=='function'){
+      return{applied:false,status:'DECK_CATALOG_UNAVAILABLE',deck_id:wanted};
+    }
+
+    const source=catalog.get(wanted);
+    if(!source){
+      return{applied:false,status:'UNKNOWN_DECK_ID',deck_id:wanted};
+    }
+
+    const deck=typeof catalog.copy==='function'?catalog.copy(wanted):clone(source);
+    const counts=deck&&deck.counts&&typeof deck.counts==='object'?deck.counts:{};
+    const cards=[];
+    for(const [cardId,rawCount] of Object.entries(counts)){
+      const count=Number(rawCount);
+      if(!cardId||!Number.isInteger(count)||count<=0)continue;
+      for(let i=0;i<count;i++)cards.push(cardId);
+    }
+    if(cards.length<8){
+      return{applied:false,status:'INVALID_DECK_SIZE',deck_id:wanted,total:cards.length};
+    }
+
+    return{
+      applied:true,
+      status:'DECK_READY',
+      deck_id:text(deck.id)||wanted,
+      deck_name:text(deck.name)||wanted,
+      total:cards.length,
+      cards:shuffledCopy(cards)
+    };
+  }
+
+  function applyDeck(duelist,deckId){
+    if(!duelist||typeof duelist!=='object')return{applied:false,status:'DUELIST_MISSING',deck_id:text(deckId)};
+    const packet=materializeDeck(deckId);
+    if(!packet.applied)return packet;
+
+    const cards=packet.cards.slice();
+    duelist.hand=cards.splice(0,7);
+    duelist.library=cards;
+    duelist.deck_id=packet.deck_id;
+    duelist.deck_name=packet.deck_name;
+
+    return{
+      applied:true,
+      status:'DECK_APPLIED',
+      deck_id:packet.deck_id,
+      deck_name:packet.deck_name,
+      total:packet.total,
+      hand_count:duelist.hand.length,
+      library_count:duelist.library.length
+    };
+  }
+
   function attachEncounter(match,raw){
     if(!match||typeof match!=='object')return{ok:false,status:'NO_MATCH'};
     const validation=validateEncounter(raw);
@@ -86,10 +153,16 @@
     applyProfile(match.player,encounter.initiator.tcg_profile);
     applyProfile(match.enemy,encounter.opponents[0].tcg_profile);
 
+    // A world NPC stores only its canonical deck_id. Every combat entry resolves
+    // that id again from SizaDeckCatalog, shuffles a fresh copy and replaces the
+    // enemy hand/library for this match. No authored card list is cached on the NPC.
+    const enemyDeck=applyDeck(match.enemy,encounter.opponents[0].deck_id);
+
     match.worldBridge={
       version:VERSION,
       build:BUILD,
       encounter,
+      deck_load:{enemy:clone(enemyDeck)},
       initial:{
         player_life:finite(match.player?.life),
         enemy_life:finite(match.enemy?.life)
@@ -97,7 +170,7 @@
       result:null,
       emitted:false
     };
-    return{ok:true,status:'ENCOUNTER_ATTACHED',encounter:clone(encounter),match};
+    return{ok:true,status:'ENCOUNTER_ATTACHED',encounter:clone(encounter),deck_load:clone(match.worldBridge.deck_load),match};
   }
 
   function isWorldMatch(match){
@@ -181,6 +254,7 @@
       location:encounter.site?.name||encounter.site?.room_id||'',
       opponent_name:encounter.opponents?.[0]?.name||'Rival',
       player_name:encounter.initiator?.name||'',
+      opponent_deck_id:encounter.opponents?.[0]?.deck_id||'',
       world_context_tags:clone(encounter.world_context_tags||[])
     };
   }
@@ -188,6 +262,8 @@
   root.SizaWorldCombatBridgeV01=Object.freeze({
     VERSION,BUILD,ENCOUNTER_TYPE,
     validateEncounter,
+    materializeDeck,
+    applyDeck,
     attachEncounter,
     isWorldMatch,
     buildResult,
