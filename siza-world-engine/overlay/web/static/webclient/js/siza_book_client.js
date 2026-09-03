@@ -72,7 +72,8 @@
             return;
         }
         var entry = document.createElement("div");
-        entry.className = "sizaBookLine " + safeClass(cls);
+        entry.className = "sizaBookLine";
+        entry.setAttribute("data-evennia-class", safeClass(cls));
         entry.innerHTML = String(html);
         output.appendChild(entry);
         trimNarrative();
@@ -90,7 +91,8 @@
             return;
         }
         var entry = document.createElement("div");
-        entry.className = "sizaBookLine " + safeClass(cls);
+        entry.className = "sizaBookLine";
+        entry.setAttribute("data-evennia-class", safeClass(cls));
         entry.setAttribute("data-siza-text", value);
         entry.textContent = value;
         output.appendChild(entry);
