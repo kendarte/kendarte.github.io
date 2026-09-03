@@ -5,7 +5,7 @@ from services.knowledge_context_engine import fact_knowledge_state, knowledge_le
 from services.knowledge_fact_engine import find_knowledge_fact, upsert_knowledge_fact
 
 
-FACT_TRANSFER_BUILD = "0.58.0-persistent-fact-transfer"
+FACT_TRANSFER_BUILD = "0.58.1-campaign-tagged-fact-transfer"
 TRANSFER_PROVENANCE_BUILD = "0.60.0-multihop-fact-provenance"
 TRANSFER_HISTORY_LIMIT = 25
 
@@ -29,6 +29,15 @@ def _record(value):
         return {str(key): item for key, item in value.items()}
     except Exception:
         return None
+
+
+def _string_list(value):
+    output = []
+    for raw in _plain_list(value):
+        item = str(raw or "").strip()
+        if item and item not in output:
+            output.append(item)
+    return output
 
 
 def _entity_token(entity):
@@ -103,6 +112,7 @@ def transfer_knowledge_fact(source, target, fact_id):
         }
 
     wanted_fact_id = str(fact.get("id") or "")
+    campaign_tags = _string_list(fact.get("campaign_tags"))
     transfer_id = _transfer_id(source, target, wanted_fact_id)
     existing = find_knowledge_fact(target, wanted_fact_id)
     existing_history = _plain_list((existing or {}).get("transfer_history"))
@@ -112,6 +122,7 @@ def transfer_knowledge_fact(source, target, fact_id):
             "created": False,
             "reason": "ALREADY_TRANSFERRED",
             "fact_id": wanted_fact_id,
+            "campaign_tags": campaign_tags,
             "transfer_id": transfer_id,
             "source_name": source.key,
             "target_name": target.key,
@@ -122,7 +133,6 @@ def transfer_knowledge_fact(source, target, fact_id):
 
     now = datetime.now(timezone.utc).isoformat()
     recipient_fact = dict(fact)
-    # Keep the original evidence/learning untouched; transfer history is a separate provenance layer.
     recipient_fact["source"] = _plain_dict(fact.get("source"))
     recipient_fact["learned_by"] = _plain_dict(fact.get("learned_by"))
     recipient_fact["origin_learned_at"] = fact.get("origin_learned_at") or fact.get("learned_at")
@@ -158,6 +168,7 @@ def transfer_knowledge_fact(source, target, fact_id):
         "target_name": target.key,
         "fact_id": wanted_fact_id,
         "knowledge_key": knowledge_key,
+        "campaign_tags": campaign_tags,
         "transfer_id": transfer_id,
         "transfer_mode": "DIRECT_LOCAL",
         "site_dbref": int(source.location.id),
@@ -175,6 +186,7 @@ def transfer_knowledge_fact(source, target, fact_id):
             "action_types": ["KNOWLEDGE_FACT_SHARED"],
             "fact_ids": [wanted_fact_id],
             "knowledge_keys": [knowledge_key] if knowledge_key else [],
+            "campaign_tags": campaign_tags,
             "result": {"target_known": True, "fact_id": wanted_fact_id},
         })
 
@@ -183,6 +195,7 @@ def transfer_knowledge_fact(source, target, fact_id):
         "created": bool(fact_result.get("created")),
         "reason": "FACT_TRANSFERRED",
         "fact_id": wanted_fact_id,
+        "campaign_tags": campaign_tags,
         "transfer_id": transfer_id,
         "source_name": source.key,
         "source_dbref": int(source.id),
