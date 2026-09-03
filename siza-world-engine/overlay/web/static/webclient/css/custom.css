@@ -446,7 +446,7 @@ body {
 
 /* Structured room presentation: room state replaces terminal-style repetition. */
 .sizaBookScene {
-    grid-template-rows: auto auto minmax(92px, 1fr);
+    grid-template-rows: minmax(235px, 1fr) minmax(250px, 44%);
 }
 
 .sizaBookSceneState {
