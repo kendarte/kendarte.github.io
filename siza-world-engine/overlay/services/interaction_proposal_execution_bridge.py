@@ -1,9 +1,10 @@
 from services.action_intent_proposal_engine import build_local_capability_catalog
 from services.action_proposal_execution_bridge import MIN_EXECUTION_CONFIDENCE
+from services.conversation_fact_acquisition_engine import acquire_fact_from_new_conversation
 from services.interaction_engine import normalize, resolve_interaction
 
 
-INTERACTION_BRIDGE_BUILD = "0.74.0-player-authored-topic-interaction-bridge"
+INTERACTION_BRIDGE_BUILD = "0.74.1-dm-interaction-fact-acquisition"
 MAX_TOPIC_CHARS = 180
 TOPIC_MARKERS = (
     " tema del ",
@@ -21,6 +22,13 @@ def _proposal_dict(proposal_result):
         return {str(key): value for key, value in (proposal_result.get("proposal") or {}).items()}
     except Exception:
         return {}
+
+
+def _plain_list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
 
 
 def extract_player_authored_topic(raw_player_input):
@@ -145,7 +153,13 @@ def execute_validated_interaction_proposal(
         "intent": "TALK",
         "raw": canonical_raw,
     }
+    before_count = len(_plain_list(getattr(actor.db, "memories", [])))
     response_text = str(resolve_interaction(actor, canonical_intent) or "").strip()
+    acquisition = acquire_fact_from_new_conversation(
+        actor,
+        before_count,
+        expected_target_dbref=int(npc.id),
+    )
     if not response_text:
         return {
             "status": "INTERACTION_REJECTED",
@@ -154,6 +168,7 @@ def execute_validated_interaction_proposal(
             "target_dbref": int(npc.id),
             "target_name": str(npc.key),
             "topic": topic or None,
+            "knowledge_acquisition": acquisition,
             "build": INTERACTION_BRIDGE_BUILD,
         }
 
@@ -170,5 +185,6 @@ def execute_validated_interaction_proposal(
         "interaction_intent": "TALK",
         "topic": topic or None,
         "topic_source": "PLAYER_INPUT" if topic else None,
+        "knowledge_acquisition": acquisition,
         "build": INTERACTION_BRIDGE_BUILD,
     }
