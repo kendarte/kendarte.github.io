@@ -278,14 +278,22 @@ def execute_adjudicated_dm_free_action(actor, adjudication, raw_player_input="")
     campaign_observation = None
     if all_executed:
         # The execution bridge is after deterministic world resolution; no model output is accepted here.
+        # Successful movement is observed by Exit.at_post_traverse for every traversal path,
+        # including direct player commands. Exclude it here so a DM-routed move is not counted twice.
         from services.dm_campaign_registry import observe_active_campaign_evidence
+        action_types = [
+            str(row.get("status") or "")
+            for row in results
+            if str(row.get("status") or "") != "MOVEMENT_EXECUTED"
+        ]
         evidence = {
             "authority": "WORLD_ENGINE",
             "source": "DM_FREE_ACTION_EXECUTION",
-            "action_types": [str(row.get("status") or "") for row in results],
+            "action_types": action_types,
             "results": results,
         }
-        campaign_observation = observe_active_campaign_evidence(actor, evidence)
+        if action_types:
+            campaign_observation = observe_active_campaign_evidence(actor, evidence)
     return {
         "status": "EXECUTED" if all_executed else "PARTIAL_OR_REJECTED",
         "executed": all_executed,
