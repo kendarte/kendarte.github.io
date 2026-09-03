@@ -84,6 +84,14 @@ if errorlevel 1 (
 )
 
 echo.
+echo 4a. Aplicando reglas de progresion del tutorial Darkhaven...
+python -m evennia shell -c "from world.darkhaven_tutorial_patch import apply; r=apply(); print('DARKHAVEN_TUTORIAL_PATCH=', r); assert r.get('status') == 'PATCHED', r"
+if errorlevel 1 (
+  popd
+  goto :fail
+)
+
+echo.
 echo 4b. Conservando contenido Faro Ahogado VS01...
 python -m evennia shell -c "from world.faro_ahogado_vs01_seed import install; r=install(); print('FARO_AHOGADO_VS01=', r); assert r.get('status') == 'INSTALLED', r"
 if errorlevel 1 (
@@ -100,6 +108,7 @@ echo ============================================
 echo.
 echo El mundo y la base de datos NO se borraron.
 echo Academia Darkhaven Zona 7 fue instalada/actualizada de forma idempotente.
+echo Tutorial Darkhaven fue endurecido para evitar rutas duplicadas o beats adelantados.
 echo Faro Ahogado permanece instalado como contenido disponible, pero ya no es el arranque local por defecto.
 echo Siza Arena fue sincronizado al webclient local.
 echo Vuelva a conectar al webclient si se desconecto.
