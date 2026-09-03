@@ -34,7 +34,10 @@ FARO_AHOGADO_CAMPAIGN = {
             "name": "Medios para partir",
             "state_goal": "El jugador consigue los medios, permisos, aliados o recursos que hagan ejecutable la ruta elegida.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"}],
+            "completion_conditions": [
+                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"},
+                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-MEANS"},
+            ],
         },
         {
             "id": "FA-BEAT-CROSSING",
@@ -52,7 +55,7 @@ FARO_AHOGADO_CAMPAIGN = {
         },
     ],
     "signal_projections": [
-        {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"}},
+        {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-ATTENTION"}},
     ],
     "deck": [
         {
