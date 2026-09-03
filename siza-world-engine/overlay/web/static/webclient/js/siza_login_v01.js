@@ -5,6 +5,7 @@
     var authPending = false;
     var authenticated = false;
     var savedLoginTimer = null;
+    var authTimer = null;
     var pendingCredentials = null;
 
     function byId(id) {
@@ -84,6 +85,7 @@
         authenticated = true;
         authPending = false;
         clearTimeout(savedLoginTimer);
+        clearTimeout(authTimer);
         setBusy(false);
         setStatus("Acceso confirmado.", "success");
 
@@ -146,9 +148,24 @@
 
         pendingCredentials = credentials;
         authPending = true;
+        clearTimeout(authTimer);
         setBusy(true);
         setStatus(mode === "create" ? "Creando tu acceso…" : "Recuperando tu personaje…", "info");
         Evennia.msg("text", [mode + " " + quoteUsername(credentials.username) + " " + credentials.password], {});
+        authTimer = window.setTimeout(function () {
+            if (!authPending || authenticated) {
+                return;
+            }
+            authPending = false;
+            pendingCredentials = null;
+            showGate("El servidor no confirmó el acceso. Revisa la cuenta o vuelve a intentarlo.", "error");
+        }, 10000);
+    }
+
+    function onLoggedIn() {
+        if (!authenticated) {
+            completeLogin();
+        }
     }
 
     function forwardText(args, kwargs) {
@@ -241,6 +258,7 @@
         }
 
         Evennia.emitter.on("text", onServerText);
+        Evennia.emitter.on("logged_in", onLoggedIn);
         Evennia.emitter.on("connection_open", onConnectionOpen);
         Evennia.emitter.on("connection_close", function () {
             authenticated = false;
