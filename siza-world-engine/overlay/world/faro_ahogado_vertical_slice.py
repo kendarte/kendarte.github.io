@@ -14,14 +14,20 @@ FARO_AHOGADO_CAMPAIGN = {
             "name": "Indicio fiable",
             "state_goal": "El jugador obtiene una pista verificable que abre una vía real para la expedición.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "KNOWLEDGE_FACT_SHARED"}],
+            "completion_conditions": [
+                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "KNOWLEDGE_FACT_SHARED"},
+                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-LEAD"},
+            ],
         },
         {
             "id": "FA-BEAT-ROUTE",
             "name": "Ruta viable",
             "state_goal": "El jugador identifica al menos una ruta, procedimiento o cadena de acceso viable para continuar.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"}],
+            "completion_conditions": [
+                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"},
+                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-ROUTE"},
+            ],
         },
         {
             "id": "FA-BEAT-MEANS",
@@ -47,7 +53,6 @@ FARO_AHOGADO_CAMPAIGN = {
     ],
     "signal_projections": [
         {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"}},
-        {"signal": "route", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"}},
     ],
     "deck": [
         {
@@ -220,7 +225,6 @@ FARO_AHOGADO_CAMPAIGN = {
     ],
 }
 
-# The vertical slice opts into the generic registry; the DM pipeline never imports it.
 from services.dm_campaign_registry import register_campaign
 
 register_campaign(FARO_AHOGADO_CAMPAIGN)
