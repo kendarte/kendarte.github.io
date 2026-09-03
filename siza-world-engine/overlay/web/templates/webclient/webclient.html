@@ -84,7 +84,14 @@
 }
 .sizaBookScene {
     margin-top: 4px !important;
-    grid-template-rows: minmax(235px, 1fr) minmax(250px, 44%) !important;
+}
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
+    display: flex !important;
+    flex-direction: column !important;
+}
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual {
+    flex: 1 1 0 !important;
+    min-height: 235px !important;
 }
 .sizaBookClient .sizaStoryPage {
     align-self: stretch !important;
@@ -92,6 +99,11 @@
     width: 100% !important;
     height: 100% !important;
     min-height: 0 !important;
+}
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage {
+    flex: 0 0 250px !important;
+    height: 250px !important;
+    min-height: 250px !important;
 }
 .sizaBookClient .sizaStoryCopy,
 .sizaBookClient .sizaBookOutput {
@@ -103,7 +115,8 @@
     .sizaPortraitSlot { width:36px !important; height:42px !important; }
     .sizaHeaderCharacterPlayer { grid-template-columns:40px minmax(0,1fr) !important; }
     .sizaHeaderCharacterFocus { grid-template-columns:minmax(0,1fr) 40px !important; }
-    .sizaBookScene { grid-template-rows:minmax(210px,1fr) minmax(245px,44%) !important; }
+    .sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual { min-height:210px !important; }
+    .sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage { flex-basis:245px !important; height:245px !important; min-height:245px !important; }
 }
 </style>
 <script src="{% static 'webclient/js/siza_book_client.js' %}?v=20260903-context-actions" type="text/javascript" charset="utf-8"></script>
