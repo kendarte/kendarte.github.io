@@ -28,6 +28,52 @@
         return String(value == null ? "" : value).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
     }
 
+    function knownRoom(value) {
+        var text = clean(value).replace(/\s*\(#\d+\)\s*$/, "");
+        for (var i = 0; i < RAW_ROOMS.length; i += 1) {
+            if (text === RAW_ROOMS[i] || text.indexOf(RAW_ROOMS[i]) !== -1) {
+                return RAW_ROOMS[i];
+            }
+        }
+        return "";
+    }
+
+    function isPlaceholderDescription(value) {
+        var text = clean(value).toLowerCase();
+        return !text ||
+            text === "the current location will be described here." ||
+            text === "la ubicación actual se describirá aquí." ||
+            text === "la ubicacion actual se describira aqui." ||
+            text === "sin descripción disponible." ||
+            text === "sin descripcion disponible.";
+    }
+
+    /*
+     * This must run before the localization observer. The old bug was:
+     * room snapshot -> DOM changes -> localization reads stale data-raw-room /
+     * data-raw-description -> localization restores the old room/placeholder.
+     * Keep the raw identity synchronized with the authoritative DOM mutation
+     * before localization gets a chance to repaint it.
+     */
+    function syncRawIdentity() {
+        var location = byId("siza-location-label");
+        var description = byId("siza-scene-description");
+        if (!location) {
+            return false;
+        }
+
+        var room = knownRoom(location.textContent);
+        if (!room) {
+            return false;
+        }
+
+        location.setAttribute("data-raw-room", room);
+        if (description && !isPlaceholderDescription(description.textContent)) {
+            description.setAttribute("data-raw-description", clean(description.textContent));
+        }
+        return true;
+    }
+
     function htmlToLines(html) {
         var holder = document.createElement("div");
         var source = String(html == null ? "" : html)
@@ -43,13 +89,7 @@
     }
 
     function roomNameFromLine(line) {
-        var value = clean(line).replace(/\s*\(#\d+\)\s*$/, "");
-        for (var i = 0; i < RAW_ROOMS.length; i += 1) {
-            if (value === RAW_ROOMS[i] || value.indexOf(RAW_ROOMS[i]) !== -1) {
-                return RAW_ROOMS[i];
-            }
-        }
-        return "";
+        return knownRoom(line);
     }
 
     function metaValue(lines, prefixes) {
@@ -124,6 +164,21 @@
         }
     }
 
+    function forceSceneOpen() {
+        var scene = byId("siza-scene-panel");
+        var sceneToggle = byId("siza-scene-panel-toggle");
+        var stats = byId("siza-stats-panel");
+        var memories = byId("siza-memories-panel");
+        var statsToggle = byId("siza-stats-panel-toggle");
+        var memoriesToggle = byId("siza-memories-panel-toggle");
+        if (scene) scene.hidden = false;
+        if (sceneToggle) sceneToggle.setAttribute("aria-expanded", "true");
+        if (stats) stats.hidden = true;
+        if (memories) memories.hidden = true;
+        if (statsToggle) statsToggle.setAttribute("aria-expanded", "false");
+        if (memoriesToggle) memoriesToggle.setAttribute("aria-expanded", "false");
+    }
+
     function render(room) {
         if (!room) {
             return false;
@@ -133,16 +188,17 @@
         var description = byId("siza-scene-description");
         var context = byId("siza-context-label");
 
+        /* Set raw values first so localization cannot restore stale content. */
         if (location) {
-            location.textContent = room.title;
             location.setAttribute("data-raw-room", room.title);
+            location.textContent = room.title;
         }
         if (title) {
             title.textContent = room.title;
         }
         if (description && room.description) {
-            description.textContent = room.description;
             description.setAttribute("data-raw-description", room.description);
+            description.textContent = room.description;
         }
         if (context) {
             context.textContent = "World Engine · escena persistente";
@@ -151,12 +207,13 @@
         setFact("siza-exits", "siza-exits-card", room.exits);
         setFact("siza-characters", "siza-characters-card", room.people);
         setFact("siza-visible", "siza-visible-card", room.visible);
+        syncRawIdentity();
 
         if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.refresh === "function") {
             window.SizaBookInteractionV04.refresh();
         }
-        if (explicitLookPending && window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.openPanel === "function") {
-            window.SizaBookInteractionV04.openPanel("scene");
+        if (explicitLookPending) {
+            forceSceneOpen();
         }
         explicitLookPending = false;
         return true;
@@ -184,7 +241,25 @@
         }
     }
 
+    function observeRawStateBeforeLocalization() {
+        if (!window.MutationObserver) {
+            return;
+        }
+        var location = byId("siza-location-label");
+        var description = byId("siza-scene-description");
+        var observer = new MutationObserver(syncRawIdentity);
+        if (location) {
+            observer.observe(location, {childList: true, characterData: true, subtree: true});
+        }
+        if (description) {
+            observer.observe(description, {childList: true, characterData: true, subtree: true});
+        }
+    }
+
     function init() {
+        syncRawIdentity();
+        observeRawStateBeforeLocalization();
+
         if (window.Evennia && Evennia.emitter) {
             Evennia.emitter.on("text", onText);
             Evennia.emitter.on("default", function (cmdname, args) {
@@ -210,7 +285,8 @@
 
     window.SizaRoomSnapshotFixV01 = Object.freeze({
         parse: parseLooseRoom,
-        render: render
+        render: render,
+        syncRawIdentity: syncRawIdentity
     });
 
     if (document.readyState === "loading") {
