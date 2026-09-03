@@ -1,5 +1,6 @@
 from evennia import DefaultExit
 
+from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.exit_state_gate_engine import inspect_exit_state
 from services.ollama_narrator import narrate_move_async
 
@@ -36,10 +37,36 @@ class Exit(DefaultExit):
 
     def at_post_traverse(self, traversing_object, source_location, **kwargs):
         super().at_post_traverse(traversing_object, source_location, **kwargs)
+        destination = getattr(traversing_object, "location", None)
+        observe_active_campaign_evidence(
+            traversing_object,
+            {
+                "authority": "WORLD_ENGINE",
+                "source": "EXIT_TRAVERSAL",
+                "action_types": ["MOVEMENT_EXECUTED"],
+                "result": {
+                    "exit_dbref": int(self.id) if getattr(self, "id", None) is not None else None,
+                    "exit_id": str(getattr(self.db, "exit_id", "") or "") or None,
+                    "exit_key": str(self.key),
+                    "origin_dbref": int(source_location.id)
+                    if source_location and getattr(source_location, "id", None) is not None
+                    else None,
+                    "origin_room_id": str(getattr(getattr(source_location, "db", None), "room_id", "") or "")
+                    if source_location
+                    else None,
+                    "destination_dbref": int(destination.id)
+                    if destination and getattr(destination, "id", None) is not None
+                    else None,
+                    "destination_room_id": str(getattr(getattr(destination, "db", None), "room_id", "") or "")
+                    if destination
+                    else None,
+                },
+            },
+        )
         if traversing_object.db.siza_narration:
             narrate_move_async(
                 traversing_object,
                 source_location,
-                self.destination,
+                destination,
                 self,
             )
