@@ -95,6 +95,80 @@
 .sizaActionLink:hover { color:#fff0c8; text-decoration-color:#e4c184; }
 .sizaActionLink::after { content:'  ›'; color:#9f7b49; text-decoration:none; }
 
+.sizaContextualActions {
+    flex:0 0 auto;
+    margin:1px 0 8px;
+    padding:7px 9px 8px;
+    border:1px solid rgba(91,65,39,.3);
+    border-radius:4px;
+    background:rgba(255,255,255,.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+}
+.sizaContextualActionsHeader {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:6px;
+}
+.sizaContextualActionsHeader strong {
+    color:#5b3d22;
+    font:800 8px/1 system-ui,sans-serif;
+    letter-spacing:.12em;
+}
+.sizaContextualActionsHeader span {
+    overflow:hidden;
+    color:#856b49;
+    font:8px/1 system-ui,sans-serif;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.sizaContextualActionsList {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+.sizaContextAction {
+    appearance:none;
+    min-height:27px;
+    padding:5px 9px;
+    border:1px solid #715233;
+    border-radius:999px;
+    color:#362317;
+    background:linear-gradient(180deg,rgba(238,216,171,.9),rgba(190,157,104,.72));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 1px 2px rgba(64,39,20,.16);
+    font:700 9px/1.15 system-ui,sans-serif;
+    cursor:pointer;
+}
+.sizaContextAction:hover,
+.sizaContextAction:focus-visible {
+    color:#1f140d;
+    border-color:#3f2a19;
+    background:linear-gradient(180deg,#f1dcae,#c8a064);
+    outline:none;
+}
+.sizaContextAction[data-kind="MOVEMENT"] { border-style:dashed; }
+.sizaContextAction[data-kind="ROLL"] {
+    color:#f5e5c5;
+    border-color:#4a2e1d;
+    background:linear-gradient(180deg,#70472d,#352116);
+}
+.sizaBookClient[data-pending="true"] .sizaContextAction {
+    pointer-events:none;
+    opacity:.5;
+}
+.sizaContextualActionsEmpty {
+    display:none;
+    color:#806647;
+    font:italic 9px/1.3 Georgia,serif;
+}
+.sizaContextualActions[data-empty="true"] .sizaContextualActionsEmpty { display:block; }
+
+@media(max-width:760px) {
+    .sizaContextualActions { padding:6px 7px; }
+    .sizaContextAction { min-height:25px; padding:4px 7px; font-size:8px; }
+}
+
 .sizaStatsGrid {
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
