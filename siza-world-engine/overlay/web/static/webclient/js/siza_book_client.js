@@ -323,6 +323,20 @@
         });
     }
 
+    function renderExplicitLook(room) {
+        var details = [room.description || "Sin descripción disponible."];
+        if (room.characters) {
+            details.push("Personas: " + room.characters + ".");
+        }
+        if (room.visible) {
+            details.push("A la vista: " + room.visible + ".");
+        }
+        if (room.exits) {
+            details.push("Salidas: " + room.exits + ".");
+        }
+        appendText(details.join(" "), "sizaBookLook");
+    }
+
     function setPending(isPending, command) {
         var root = byId("siza-book-client");
         var button = byId("siza-inputsend");
@@ -357,13 +371,20 @@
     }
 
     function handleServerPacket(html, cls) {
+        var completedCommand = pendingCommand;
         setPending(false);
-        if (html === null || html === undefined || isDuplicatePacket(html)) {
+        if (html === null || html === undefined) {
+            return;
+        }
+        if (isDuplicatePacket(html) && !completedCommand) {
             return;
         }
         var room = parseRoomSnapshot(html);
         if (room) {
             renderRoomSnapshot(room);
+            if (/^(look|l|mirar|mira)$/i.test(normalizeSpace(completedCommand))) {
+                renderExplicitLook(room);
+            }
             return;
         }
         appendHtml(html, cls);
