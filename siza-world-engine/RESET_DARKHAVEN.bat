@@ -20,6 +20,14 @@ if errorlevel 1 (
   popd
   goto :fail
 )
+
+echo.
+echo 3. Validando arranque Darkhaven...
+"..\.venv\Scripts\python.exe" -m evennia shell -c "from world.darkhaven_tutorial_validator import validate; r=validate(); print('DARKHAVEN_VALIDATE=', r); assert r.get('status') == 'PASS', r"
+if errorlevel 1 (
+  popd
+  goto :fail
+)
 popd
 
 echo.
@@ -28,6 +36,7 @@ echo DARKHAVEN LISTO
 
 echo Nereida comienza en Puerta de Darkhaven.
 echo Campana activa: CAMPAIGN-DARKHAVEN-TUTORIAL-V01
+echo Validacion de mundo/tutorial: PASS
 echo Cierre y vuelva a abrir el webclient si estaba conectado.
 echo ============================================
 pause
