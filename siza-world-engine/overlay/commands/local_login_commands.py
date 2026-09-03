@@ -9,7 +9,6 @@ from services.dm_campaign_registry import start_registered_campaign
 from world.darkhaven_tutorial_campaign import DARKHAVEN_TUTORIAL_CAMPAIGN
 
 
-LOCAL_CHARACTER = "Nereida"
 LOCAL_CAMPAIGN = str(DARKHAVEN_TUTORIAL_CAMPAIGN.get("id"))
 ENTRY_ROOM = "Puerta de Darkhaven"
 ENTRY_ROOM_ID = "DH7-ROOM-001"
@@ -38,6 +37,8 @@ def _candidate_score(account, character):
     location = getattr(character, "location", None)
     room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "")
 
+    if getattr(account.db, "_last_puppet", None) == character:
+        score += 2000
     if campaign:
         score += 100
         if str(campaign.get("campaign_id") or "") == LOCAL_CAMPAIGN:
@@ -49,12 +50,8 @@ def _candidate_score(account, character):
         score += 900
     elif location:
         score += 100
-    if str(getattr(character, "key", "") or "").lower() == LOCAL_CHARACTER.lower():
-        score += 80
-    if getattr(account.db, "_last_puppet", None) == character:
-        score += 25
     if bool(getattr(account, "is_superuser", False)):
-        score += 10
+        score += 50
     return score
 
 
@@ -69,15 +66,6 @@ def _find_player():
         for character in characters:
             if character and character.access(account, "puppet"):
                 pairs.append((account, character))
-
-    if not pairs:
-        named = [obj for obj in search_object(LOCAL_CHARACTER) if str(obj.key).lower() == LOCAL_CHARACTER.lower()]
-        for account in accounts:
-            if not bool(getattr(account, "is_superuser", False)):
-                continue
-            for character in named:
-                if character.access(account, "puppet"):
-                    pairs.append((account, character))
 
     if not pairs:
         return None, None
@@ -121,8 +109,8 @@ def _emit_darkhaven_opening(character):
         "La lluvia corre por vitrales nuevos montados sobre piedra que claramente es más vieja que la idea de esta escuela."
     )
     character.msg(
-        "Un muchacho flaco con una tablilla torcida espera bajo el arco. Dino comprueba tu nombre y hace una mueca. "
-        "«Nereida. Bien. Trimago dijo que si llegabas por tu cuenta te mandara al patio. Squeek sabe dónde dejaron tu ingreso. "
+        f"Un muchacho flaco con una tablilla torcida espera bajo el arco. Dino comprueba el nombre «{character.key}» y hace una mueca. "
+        "«Bien. Trimago dijo que si llegabas por tu cuenta te mandara al patio. Squeek sabe dónde dejaron tu ingreso. "
         "Y no cruces ninguna puerta que diga Contención sólo porque esté abierta.»"
     )
 
@@ -147,7 +135,7 @@ class CmdSizaLocalLogin(Command):
 
         account, character = _find_player()
         if not account or not character:
-            _emit_ready(session, "PERSISTENT_PLAYER_NOT_FOUND", character=LOCAL_CHARACTER)
+            _emit_ready(session, "PERSISTENT_PLAYER_NOT_FOUND")
             return
 
         session.sessionhandler.login(session, account)
@@ -171,7 +159,7 @@ class CmdSizaLocalLogin(Command):
                     session,
                     "READY",
                     account=account.key,
-                    character=LOCAL_CHARACTER,
+                    character=character.key,
                     puppet=character.key,
                     location=str(location or ""),
                     campaign=str(campaign.get("status") or ""),
