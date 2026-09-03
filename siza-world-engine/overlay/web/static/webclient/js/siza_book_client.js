@@ -488,6 +488,11 @@
 
     window.SizaWorldBookClient = Object.freeze({
         appendHtml: appendHtml,
+        receiveText: onText,
+        receivePrompt: onPrompt,
+        connectionOpen: onConnectionOpen,
+        connectionClose: onConnectionClose,
+        connectionError: onConnectionError,
         parseRoomSnapshot: parseRoomSnapshot,
         sendText: sendText,
         setContext: setContext,
