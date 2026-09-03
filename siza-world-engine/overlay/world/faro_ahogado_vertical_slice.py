@@ -1,61 +1,77 @@
+from world.faro_ahogado_cards import (
+    EXTERNAL_CONTENT_IDS,
+    FARO_AHOGADO_CARDS,
+    FARO_AHOGADO_CARD_VALIDATION,
+    FARO_AHOGADO_INITIAL_STATE,
+)
+
+
 FARO_AHOGADO_CAMPAIGN = {
     "id": "CAMPAIGN-FARO-AHOGADO-VS01",
     "name": "Faro Ahogado",
     "canon_status": "vertical_slice",
-    "campaign_note": "Faro Ahogado es una campaña. Este ID no representa una Room ni un lugar del mapa.",
+    "campaign_note": "Faro Ahogado es una campaña reactiva. Este ID no representa una Room ni un lugar del mapa.",
+    "premise": (
+        "El Culto de las Arañas sustituye habitantes por Alternos para contaminar la reliquia del templo-faro; "
+        "la sustitución y la Niebla degradan progresivamente la percepción y la psique del pueblo."
+    ),
     "objective": {
         "id": "FA-OBJECTIVE-EXPEDITION",
-        "text": "Abrir, preparar y completar la expedición de Faro Ahogado usando cualquier vía que el mundo permita.",
+        "text": "Descubrir la sustitución del pueblo, asegurar acceso al Faro Ahogado y activar la Linterna Etérica para detener la contaminación de la reliquia.",
         "completion_authority": "WORLD_ENGINE_EVIDENCE",
+    },
+    "content_contract": {
+        "card_count": 14,
+        "card_validation": FARO_AHOGADO_CARD_VALIDATION,
+        "initial_state": FARO_AHOGADO_INITIAL_STATE,
+        "external_content_dependencies": sorted(EXTERNAL_CONTENT_IDS),
+        "adventure_cards": FARO_AHOGADO_CARDS,
+        "stat_bridge": {"printed_POW": "FUE", "printed_DEF": "TCG_OR_ENCOUNTER_DEF", "shared": ["PSI", "PER"], "equipment": ["DRIVER"]},
     },
     "beats": [
         {
             "id": "FA-BEAT-LEAD",
             "name": "Indicio fiable",
-            "state_goal": "El jugador obtiene una pista verificable que abre una vía real para la expedición.",
+            "state_goal": "El mundo contiene evidencia verificable de que una persona fue sustituida por un Alterno.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [
-                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "KNOWLEDGE_FACT_SHARED"},
-                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-LEAD"},
-            ],
+            "completion_conditions": [{"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "REPLACEMENT_PROOF"}],
         },
         {
             "id": "FA-BEAT-ROUTE",
             "name": "Ruta viable",
-            "state_goal": "El jugador identifica al menos una ruta, procedimiento o cadena de acceso viable para continuar.",
+            "state_goal": "El jugador identifica mediante evidencia una ruta costera o la red física utilizada por el Culto.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [
-                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "MOVEMENT_EXECUTED"},
-                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-ROUTE"},
-            ],
+            "completion_conditions": [{"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "ROUTE_IDENTIFIED"}],
         },
         {
             "id": "FA-BEAT-MEANS",
             "name": "Medios para partir",
-            "state_goal": "El jugador consigue los medios, permisos, aliados o recursos que hagan ejecutable la ruta elegida.",
+            "state_goal": "El mundo confirma que el jugador posee Linterna, acceso y medios suficientes para alcanzar el Faro.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [
-                {"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "OBJECT_ACTION_EXECUTED"},
-                {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-BEAT-MEANS"},
-            ],
+            "completion_conditions": [{"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "EXPEDITION_MEANS_SECURED"}],
         },
         {
             "id": "FA-BEAT-CROSSING",
             "name": "Tramo peligroso",
-            "state_goal": "El jugador supera el tramo de riesgo que separa la preparación del objetivo final de la expedición.",
+            "state_goal": "Una confrontación autorizada elimina o contiene la amenaza que bloquea la resolución del Faro.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "COMBAT_RESOLVED"}],
+            "completion_conditions": [{"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "CLIMAX_THREAT_RESOLVED"}],
         },
         {
             "id": "FA-BEAT-CLIMAX",
             "name": "Resolución de la expedición",
-            "state_goal": "El estado del mundo confirma que el objetivo final de la campaña fue resuelto.",
+            "state_goal": "El Faro queda activado y el Master es exiliado por una resolución autoritativa del World Engine.",
             "completion_authority": "WORLD_ENGINE_EVIDENCE",
-            "completion_conditions": [{"source": "EVIDENCE", "path": "action_types", "op": "contains", "value": "WORLD_ACTION_RESOLVED"}],
+            "completion_conditions": [{"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "FARO_RESOLVED"}],
         },
     ],
     "signal_projections": [
-        {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_tags", "op": "contains", "value": "FA-ATTENTION"}},
+        {"signal": "attention", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "PUBLIC_HARM_OR_COERCION"}},
+        {"signal": "replacement", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "REPLACEMENT_PROOF"}},
+        {"signal": "route", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "ROUTE_IDENTIFIED"}},
+        {"signal": "means", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "EXPEDITION_MEANS_SECURED"}},
+        {"signal": "climax", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "CLIMAX_THREAT_RESOLVED"}},
+        {"signal": "faro", "mode": "INCREMENT", "value": 1, "when": {"source": "EVIDENCE", "path": "campaign_milestones", "op": "contains", "value": "FARO_RESOLVED"}},
     ],
     "deck": [
         {
@@ -76,6 +92,7 @@ FARO_AHOGADO_CAMPAIGN = {
                 "expediciones y rutas relevantes al contexto local",
             ],
             "director_intent": "FIND_EXISTING_SOURCE_FOR_LEAD",
+            "content_card_ids": ["FA-CARD-LA-NINA-DE-LAS-FLORES", "FA-CARD-ALDEANOS-PARANOICOS", "FA-CARD-PESCADOR-OLVIDO-MAR"],
         },
         {
             "id": "FA-CARD-LEAD-PRESSURE",
@@ -90,6 +107,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["autoridades, instituciones y rutinas locales relevantes"],
             "director_intent": "EVALUATE_EXISTING_PRESSURE_ON_INFORMATION_ACCESS",
+            "content_card_ids": ["FA-CARD-VOZ-EN-LA-NIEBLA", "FA-CARD-ROSTRO-DE-NADIE"],
         },
         {
             "id": "FA-CARD-ROUTE-EVIDENCE",
@@ -110,6 +128,7 @@ FARO_AHOGADO_CAMPAIGN = {
                 "restricciones de viaje y acceso",
             ],
             "director_intent": "ASSEMBLE_ROUTE_FROM_EXISTING_EVIDENCE",
+            "content_card_ids": ["FA-CARD-PESCADOR-OLVIDO-MAR", "FA-CARD-PROCESION-SIN-ROSTROS"],
         },
         {
             "id": "FA-CARD-ROUTE-ALTERNATIVE",
@@ -127,6 +146,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["formas institucionales, comerciales y clandestinas de acceso relevantes"],
             "director_intent": "SEARCH_FOR_EXISTING_ALTERNATE_ROUTE",
+            "content_card_ids": ["FA-CARD-VISION-DEL-AGUA", "FA-CARD-CAPILLA-HUNDIDA"],
         },
         {
             "id": "FA-CARD-MEANS-ACCESS",
@@ -144,6 +164,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["recursos, transporte, autoridad y economia relevantes a la ruta elegida"],
             "director_intent": "FIND_EXISTING_MEANS_TO_EXECUTE_ROUTE",
+            "content_card_ids": ["FA-CARD-CAPILLA-HUNDIDA", "FA-CARD-FARO-AHOGADO"],
         },
         {
             "id": "FA-CARD-MEANS-PRESSURE",
@@ -160,6 +181,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["ritmos de trabajo, viaje y disponibilidad relevantes"],
             "director_intent": "EVALUATE_EXISTING_TIME_OR_RESOURCE_PRESSURE",
+            "content_card_ids": ["FA-CARD-PORTAVOZ-SEDA-NEGRA", "FA-CARD-PROCESION-SIN-ROSTROS"],
         },
         {
             "id": "FA-CARD-CONSEQUENCE-ATTENTION",
@@ -178,6 +200,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["autoridad y respuesta social relevante a las consecuencias existentes"],
             "director_intent": "SURFACE_EXISTING_CONSEQUENCES",
+            "content_card_ids": ["FA-CARD-VECINO-REEMPLAZADO", "FA-CARD-ALTERNO-ROSAS-MARCHITAS"],
         },
         {
             "id": "FA-CARD-CROSSING-RISK",
@@ -194,6 +217,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["peligros ambientales, sociales y de viaje relevantes a la ruta"],
             "director_intent": "EVALUATE_EXISTING_CROSSING_RISK",
+            "content_card_ids": ["FA-CARD-ROSTRO-DE-NADIE", "FA-CARD-ROSTRO-EN-EL-VIDRIO", "FA-CARD-PORTAVOZ-SEDA-NEGRA"],
         },
         {
             "id": "FA-CARD-CROSSING-RESOURCE",
@@ -209,6 +233,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["recursos y prácticas útiles ante el peligro actual"],
             "director_intent": "FIND_EXISTING_CROSSING_OPPORTUNITY",
+            "content_card_ids": ["FA-CARD-VISION-DEL-AGUA", "FA-CARD-NINA-DE-LAS-FLORES-CREATURE"],
         },
         {
             "id": "FA-CARD-CLIMAX-CONTEXT",
@@ -224,6 +249,7 @@ FARO_AHOGADO_CAMPAIGN = {
             ],
             "worldbook_topics": ["canon estrictamente relevante al objetivo final de Faro Ahogado"],
             "director_intent": "ASSEMBLE_FINAL_CONTEXT_WITHOUT_INVENTING_STATE",
+            "content_card_ids": ["FA-CARD-FARO-AHOGADO"],
         },
     ],
 }
