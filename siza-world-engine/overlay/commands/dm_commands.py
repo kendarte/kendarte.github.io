@@ -17,7 +17,7 @@ from services.dm_campaign_registry import get_active_campaign_definition, start_
 from world.faro_ahogado_vertical_slice import FARO_AHOGADO_CAMPAIGN
 
 
-DM_COMMAND_BUILD = "dm-0.1-faro-ahogado-debug-harness"
+DM_COMMAND_BUILD = "dm-0.2-faro-ahogado-campaign-scope-harness"
 
 
 def _is_admin(actor):
@@ -154,7 +154,7 @@ class CmdSizaValidateDMV01(Command):
             results.append(bool(passed))
             self.caller.msg(f"{'PASS' if passed else 'FAIL'} {label}{' | ' + detail if detail else ''}")
 
-        self.caller.msg(f"=== SIZA DM VALIDATION v0.1 | {DM_COMMAND_BUILD} ===")
+        self.caller.msg(f"=== SIZA DM VALIDATION v0.2 | {DM_COMMAND_BUILD} ===")
         try:
             definition = validate_campaign_definition(FARO_AHOGADO_CAMPAIGN)
             check("faro-ahogado-definition-valid", bool(definition.get("valid")), str(definition.get("errors")))
@@ -199,10 +199,31 @@ class CmdSizaValidateDMV01(Command):
                 str(attention_ids),
             )
 
+            unrelated_fact = project_campaign_evidence(
+                self.caller,
+                FARO_AHOGADO_CAMPAIGN,
+                {
+                    "authority": "WORLD_ENGINE",
+                    "source": "QA_UNRELATED_FACT",
+                    "action_types": ["KNOWLEDGE_FACT_SHARED"],
+                    "campaign_tags": [],
+                },
+            )
+            check(
+                "unrelated-fact-does-not-complete-lead",
+                not bool(unrelated_fact.get("advanced")) and get_campaign_state(self.caller).get("active_beat_id") == "FA-BEAT-LEAD",
+                str((unrelated_fact.get("advancement") or {}).get("status")),
+            )
+
             advanced = project_campaign_evidence(
                 self.caller,
                 FARO_AHOGADO_CAMPAIGN,
-                {"authority": "WORLD_ENGINE", "source": "QA", "action_types": ["KNOWLEDGE_FACT_SHARED"]},
+                {
+                    "authority": "WORLD_ENGINE",
+                    "source": "QA_CAMPAIGN_FACT",
+                    "action_types": ["KNOWLEDGE_FACT_SHARED"],
+                    "campaign_tags": ["FA-BEAT-LEAD"],
+                },
             )
             route_plan = build_dm_turn_plan(
                 self.caller,
@@ -212,9 +233,42 @@ class CmdSizaValidateDMV01(Command):
             )
             route_ids = [str(card.get("id") or "") for card in list(route_plan.get("selected_cards") or [])]
             check(
-                "authoritative-beat-evidence-advances-to-route-deck",
+                "tagged-lead-evidence-advances-to-route-deck",
                 (advanced.get("advancement") or {}).get("active_beat_id") == "FA-BEAT-ROUTE" and "FA-CARD-ROUTE-EVIDENCE" in route_ids,
                 f"active={(advanced.get('advancement') or {}).get('active_beat_id')} cards={route_ids}",
+            )
+
+            unrelated_move = project_campaign_evidence(
+                self.caller,
+                FARO_AHOGADO_CAMPAIGN,
+                {
+                    "authority": "WORLD_ENGINE",
+                    "source": "QA_UNRELATED_MOVE",
+                    "action_types": ["MOVEMENT_EXECUTED"],
+                    "campaign_tags": [],
+                },
+            )
+            check(
+                "unrelated-movement-does-not-complete-route",
+                not bool(unrelated_move.get("advanced")) and get_campaign_state(self.caller).get("active_beat_id") == "FA-BEAT-ROUTE",
+                str((unrelated_move.get("advancement") or {}).get("status")),
+            )
+
+            tagged_move = project_campaign_evidence(
+                self.caller,
+                FARO_AHOGADO_CAMPAIGN,
+                {
+                    "authority": "WORLD_ENGINE",
+                    "source": "QA_CAMPAIGN_ROUTE",
+                    "action_types": ["MOVEMENT_EXECUTED"],
+                    "campaign_tags": ["FA-BEAT-ROUTE"],
+                },
+            )
+            check(
+                "tagged-route-movement-advances-to-means",
+                bool(tagged_move.get("advanced"))
+                and (tagged_move.get("advancement") or {}).get("active_beat_id") == "FA-BEAT-MEANS",
+                f"active={(tagged_move.get('advancement') or {}).get('active_beat_id')}",
             )
         finally:
             self.caller.db.dm_campaign_state = original
