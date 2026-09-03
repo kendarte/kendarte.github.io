@@ -7,6 +7,8 @@ from world.darkhaven_academy_seed import (
     GEAR_OBJECT_ID,
     KITCHEN_ROOM_ID,
     TRAINING_ROOM_ID,
+    _find_by_attr,
+    _find_room,
     install as install_darkhaven,
 )
 from world.darkhaven_tutorial_campaign import DARKHAVEN_TUTORIAL_CAMPAIGN
@@ -23,29 +25,6 @@ def _plain_dict(value):
         return {}
 
 
-def _find_by_attr_candidates(attr_name, value):
-    wanted = str(value or "")
-    output = []
-    try:
-        from evennia.objects.models import ObjectDB
-        for obj in ObjectDB.objects.all():
-            if str(getattr(getattr(obj, "db", None), attr_name, "") or "") == wanted:
-                output.append(obj)
-    except Exception:
-        pass
-    return output
-
-
-def _find_room(room_id):
-    rows = _find_by_attr_candidates("room_id", room_id)
-    return sorted(rows, key=lambda obj: int(getattr(obj, "id", 0) or 0))[0] if rows else None
-
-
-def _find_object(object_id):
-    rows = _find_by_attr_candidates("object_id", object_id)
-    return sorted(rows, key=lambda obj: int(getattr(obj, "id", 0) or 0))[0] if rows else None
-
-
 def _find_player():
     rows = []
     for obj in search_object(PLAYER_KEY):
@@ -60,7 +39,7 @@ def _find_player():
 
 
 def _reset_tutorial_world_state():
-    gear = _find_object(GEAR_OBJECT_ID)
+    gear = _find_by_attr("object_id", GEAR_OBJECT_ID)
     if gear:
         state = _plain_dict(getattr(gear.db, "state", {}))
         state["completed"] = False
