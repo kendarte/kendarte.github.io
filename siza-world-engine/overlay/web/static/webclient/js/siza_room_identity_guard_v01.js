@@ -9,7 +9,8 @@
         "Casa de Remedio": true,
         "Cantina de Turno": true,
         "Pescaderia de Darsena": true,
-        "Trastienda de la Pescaderia": true
+        "Trastienda de la Pescaderia": true,
+        "Muelles de Descenso": true
     };
 
     function byId(id) { return document.getElementById(id); }
