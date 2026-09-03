@@ -1,15 +1,48 @@
+from services.consequence_engine import upsert_consequence_rule
 from services.knowledge_fact_engine import set_knowledge_fact_status
-from world.darkhaven_academy_seed import _find_by_attr
+from world.darkhaven_academy_seed import (
+    GEAR_ACTION_ID,
+    GEAR_RULE_ID,
+    TRAINING_ACTION_ID,
+    TRAINING_RULE_ID,
+    _find_by_attr,
+)
 
 
 ORIENTATION_FACT_ID = "DH7-FACT-TUT-ORIENTATION-001"
 
 
+def _install_player_neutral_rules():
+    upsert_consequence_rule({
+        "id": GEAR_RULE_ID,
+        "enabled": True,
+        "canon_status": "vertical_slice",
+        "when": {
+            "action_type": "OBJECT_ACTION_COMPLETED",
+            "object_action_id": GEAR_ACTION_ID,
+            "outcome": "COMPLETED",
+        },
+        "state_effects": [
+            {"scope": "ACTION_OBJECT", "namespace": "state", "field": "completed", "op": "SET", "value": True},
+            {"scope": "ACTION_SITE", "namespace": "world_state", "field": "darkhaven_ingreso_equipo_reclamado", "op": "SET", "value": True},
+        ],
+    })
+    upsert_consequence_rule({
+        "id": TRAINING_RULE_ID,
+        "enabled": True,
+        "canon_status": "vertical_slice",
+        "when": {
+            "action_type": "OBJECT_ACTION_COMPLETED",
+            "object_action_id": TRAINING_ACTION_ID,
+        },
+        "state_effects": [
+            {"scope": "ACTION_SITE", "namespace": "world_state", "field": "darkhaven_prueba_orlan_realizada", "op": "SET", "value": True},
+        ],
+    })
+
+
 def apply():
     removed = []
-    # The authored training->briefing pair DH7-EXIT-012 already supplies the
-    # correct route. Remove the older duplicate pair so the player cannot pick
-    # an untagged parallel Exit and silently miss tutorial progression.
     for exit_id in ("DH7-EXIT-011A", "DH7-EXIT-011B"):
         obj = _find_by_attr("exit_id", exit_id)
         if obj:
@@ -20,10 +53,6 @@ def apply():
     if briefing_exit:
         briefing_exit.db.campaign_tags = ["DH-TUT-BRIEFING"]
 
-    # Dino receives the player at the gate, but Squeek is the intended
-    # orientation source after the player has actually entered the academy.
-    # Retraction preserves provenance without letting the first beat be
-    # short-circuited by acquiring the next beat's fact too early.
     dino = _find_by_attr("npc_id", "NPC-DH7-DINO")
     dino_fact = None
     if dino:
@@ -44,10 +73,13 @@ def apply():
             reason="DARKHAVEN_TUTORIAL_ORIENTATION_SOURCE",
         )
 
+    _install_player_neutral_rules()
+
     return {
         "status": "PATCHED",
         "removed_duplicate_exits": removed,
         "briefing_exit_dbref": int(briefing_exit.id) if briefing_exit else None,
         "dino_fact": dino_fact,
         "squeek_fact": squeek_fact,
+        "player_neutral_rules": [GEAR_RULE_ID, TRAINING_RULE_ID],
     }
