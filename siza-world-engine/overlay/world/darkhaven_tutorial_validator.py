@@ -1,4 +1,5 @@
-from evennia import search_object
+from evennia.accounts.models import AccountDB
+from evennia.utils import utils
 
 from services.dm_campaign_director import get_campaign_state
 from services.knowledge_fact_engine import find_knowledge_fact
@@ -14,17 +15,43 @@ from world.darkhaven_academy_seed import (
 )
 
 
-PLAYER_KEY = "Nereida"
 ORIENTATION_FACT_ID = "DH7-FACT-TUT-ORIENTATION-001"
 
 
+def _candidate_score(account, character):
+    score = 0
+    campaign = getattr(character.db, "dm_campaign_state", None)
+    location = getattr(character, "location", None)
+    room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "")
+    if getattr(account.db, "_last_puppet", None) == character:
+        score += 2000
+    if campaign and str(campaign.get("campaign_id") or "") == CAMPAIGN_ID:
+        score += 1200
+    if room_id.startswith("DH7-ROOM-"):
+        score += 900
+    elif location:
+        score += 100
+    if bool(getattr(account, "is_superuser", False)):
+        score += 50
+    return score
+
+
 def _find_player():
-    rows = [
-        obj for obj in search_object(PLAYER_KEY)
-        if str(getattr(obj, "key", "") or "").lower() == PLAYER_KEY.lower()
-        and not bool(getattr(getattr(obj, "db", None), "is_npc", False))
-    ]
-    return sorted(rows, key=lambda obj: int(getattr(obj, "id", 0) or 0), reverse=True)[0] if rows else None
+    pairs = []
+    for account in AccountDB.objects.all().order_by("id"):
+        characters = list(utils.make_iter(account.characters))
+        last = getattr(account.db, "_last_puppet", None)
+        if last and last not in characters and last.access(account, "puppet"):
+            characters.append(last)
+        for character in characters:
+            if character and character.access(account, "puppet"):
+                pairs.append((account, character))
+    if not pairs:
+        return None
+    return max(
+        pairs,
+        key=lambda pair: (_candidate_score(pair[0], pair[1]), int(getattr(pair[1], "id", 0) or 0)),
+    )[1]
 
 
 def _actions(obj):
@@ -98,6 +125,7 @@ def validate():
     failed = [row for row in checks if not row["passed"]]
     return {
         "status": "PASS" if not failed else "FAIL",
+        "player": getattr(player, "key", None),
         "passed": len(checks) - len(failed),
         "total": len(checks),
         "failed": failed,
