@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.1.0-structured-dialogue-book-mode";
+    var BUILD = "0.1.1-dialogue-without-layout-switch";
     var activeDialogue = null;
     var activeRoom = "";
 
@@ -55,7 +55,9 @@
         if(!text)return {ok:false,status:"INVALID_DIALOGUE"};
         activeDialogue=packet;
         activeRoom=roomKey();
-        if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("DIALOGUE");
+        if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION");
+        var modeLabel=byId("siza-mode-label");
+        if(modeLabel)modeLabel.textContent="DIÁLOGO";
         setFocusSpeaker(packet&&packet.speaker);
         renderDialogue(packet);
         return {ok:true,status:"DIALOGUE_ACTIVE",build:BUILD};
