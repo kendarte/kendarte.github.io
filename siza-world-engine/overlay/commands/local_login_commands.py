@@ -10,6 +10,8 @@ from services.dm_campaign_registry import start_registered_campaign
 
 LOCAL_CHARACTER = "Nereida"
 LOCAL_CAMPAIGN = "CAMPAIGN-FARO-AHOGADO-VS01"
+PILOT_ROOM = "Pescaderia de Darsena"
+PILOT_ROOM_ID = "CAR-KAL-DAR-007"
 
 
 def _client_host(session):
@@ -37,11 +39,13 @@ def _candidate_score(account, character):
     room_key = str(getattr(location, "key", "") or "").lower()
 
     if campaign:
-        score += 1000
-        if str(campaign.get("status") or "").upper() == "ACTIVE":
-            score += 300
+        score += 200
+        progressed = bool(campaign.get("completed_beats")) or int(campaign.get("director_turn", 0) or 0) > 0
+        progressed = progressed or str(campaign.get("active_beat_id") or "") not in {"", "FA-BEAT-LEAD"}
+        if progressed:
+            score += 1200
     if room_id == "CAR-KAL-DAR-007" or "pescaderia" in room_key or "pescadería" in room_key:
-        score += 600
+        score += 900
     elif location:
         score += 100
     if str(getattr(character, "key", "") or "").lower() == LOCAL_CHARACTER.lower():
@@ -82,6 +86,22 @@ def _find_player():
     )
 
 
+def _ensure_pilot_location(character):
+    location = getattr(character, "location", None)
+    if location and str(getattr(location, "key", "") or "").strip().lower() != "limbo":
+        return location
+    rooms = [
+        obj
+        for obj in search_object(PILOT_ROOM)
+        if str(getattr(obj.db, "room_id", "") or "") == PILOT_ROOM_ID
+    ]
+    if not rooms:
+        return location
+    destination = sorted(rooms, key=lambda obj: int(getattr(obj, "id", 0) or 0))[0]
+    character.move_to(destination, quiet=True)
+    return destination
+
+
 def _emit_ready(session, status, **extra):
     packet = {"status": status, **extra}
     session.msg(siza_local_ready=((packet,), {}))
@@ -116,6 +136,7 @@ class CmdSizaLocalLogin(Command):
                 if current != character:
                     account.puppet_object(session, character)
                 account.db._last_puppet = character
+                location = _ensure_pilot_location(character)
                 campaign = start_registered_campaign(character, LOCAL_CAMPAIGN, force=False)
                 _emit_ready(
                     session,
@@ -123,7 +144,7 @@ class CmdSizaLocalLogin(Command):
                     account=account.key,
                     character=LOCAL_CHARACTER,
                     puppet=character.key,
-                    location=str(getattr(character, "location", "") or ""),
+                    location=str(location or ""),
                     campaign=str(campaign.get("status") or ""),
                 )
             except Exception as error:
