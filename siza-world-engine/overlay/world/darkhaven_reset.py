@@ -1,4 +1,5 @@
-from evennia import search_object
+from evennia.accounts.models import AccountDB
+from evennia.utils import utils
 
 from services.dm_campaign_director import start_campaign
 from world.darkhaven_academy_seed import (
@@ -15,9 +16,6 @@ from world.darkhaven_tutorial_campaign import DARKHAVEN_TUTORIAL_CAMPAIGN
 from world.darkhaven_tutorial_patch import apply as apply_tutorial_patch
 
 
-PLAYER_KEY = "Nereida"
-
-
 def _plain_dict(value):
     try:
         return {str(key): item for key, item in (value or {}).items()}
@@ -25,17 +23,42 @@ def _plain_dict(value):
         return {}
 
 
+def _candidate_score(account, character):
+    score = 0
+    campaign = getattr(character.db, "dm_campaign_state", None)
+    location = getattr(character, "location", None)
+    room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "")
+    if getattr(account.db, "_last_puppet", None) == character:
+        score += 2000
+    if campaign and str(campaign.get("campaign_id") or "") == CAMPAIGN_ID:
+        score += 1200
+    if room_id.startswith("DH7-ROOM-"):
+        score += 900
+    elif location:
+        score += 100
+    if bool(getattr(account, "is_superuser", False)):
+        score += 50
+    return score
+
+
 def _find_player():
-    rows = []
-    for obj in search_object(PLAYER_KEY):
-        if str(getattr(obj, "key", "") or "").lower() != PLAYER_KEY.lower():
-            continue
-        if bool(getattr(getattr(obj, "db", None), "is_npc", False)):
-            continue
-        rows.append(obj)
-    if not rows:
+    pairs = []
+    for account in AccountDB.objects.all().order_by("id"):
+        characters = list(utils.make_iter(account.characters))
+        last = getattr(account.db, "_last_puppet", None)
+        if last and last not in characters and last.access(account, "puppet"):
+            characters.append(last)
+        for character in characters:
+            if character and character.access(account, "puppet"):
+                pairs.append((account, character))
+    if not pairs:
         return None
-    return sorted(rows, key=lambda obj: int(getattr(obj, "id", 0) or 0), reverse=True)[0]
+    account, character = max(
+        pairs,
+        key=lambda pair: (_candidate_score(pair[0], pair[1]), int(getattr(pair[1], "id", 0) or 0)),
+    )
+    account.db._last_puppet = character
+    return character
 
 
 def _reset_tutorial_world_state():
@@ -48,12 +71,14 @@ def _reset_tutorial_world_state():
     kitchen = _find_room(KITCHEN_ROOM_ID)
     if kitchen:
         state = _plain_dict(getattr(kitchen.db, "world_state", {}))
+        state.pop("darkhaven_ingreso_equipo_reclamado", None)
         state.pop("nereida_ingreso_equipo_reclamado", None)
         kitchen.db.world_state = state
 
     training = _find_room(TRAINING_ROOM_ID)
     if training:
         state = _plain_dict(getattr(training.db, "world_state", {}))
+        state.pop("darkhaven_prueba_orlan_realizada", None)
         state.pop("nereida_prueba_orlan_realizada", None)
         training.db.world_state = state
 
@@ -69,7 +94,7 @@ def reset():
 
     player = _find_player()
     if not player:
-        return {"status": "PLAYER_NOT_FOUND", "player_key": PLAYER_KEY}
+        return {"status": "PLAYER_NOT_FOUND"}
 
     entry = _find_room(ENTRY_ROOM_ID)
     if not entry:
@@ -77,7 +102,6 @@ def reset():
 
     _reset_tutorial_world_state()
 
-    # Reset player-local campaign/tutorial progress, not the authored academy.
     player.db.dm_campaign_state = {}
     player.db.object_action_history = []
     player.db.action_resolution_history = []
