@@ -2,10 +2,11 @@ import re
 import unicodedata
 
 from services.action_resolution_engine import stat_value
+from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.object_action_engine import authored_object_actions, begin_object_action
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.55.0-player-facing-synchronize-input"
+OBJECT_ACTION_INPUT_BUILD = "0.55.1-campaign-observed-object-action-input"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
@@ -87,6 +88,39 @@ def _phrase_score(raw, phrases):
     return best
 
 
+def _campaign_tags(action):
+    metadata = (action or {}).get("metadata") or {}
+    values = metadata.get("campaign_tags") or (action or {}).get("campaign_tags") or []
+    return [str(value) for value in _plain_list(values) if str(value or "").strip()]
+
+
+def _observe_completed_campaign_action(actor, matched, result):
+    action = (matched or {}).get("action") or {}
+    tags = _campaign_tags(action)
+    if not tags:
+        return None
+    return observe_active_campaign_evidence(
+        actor,
+        {
+            "authority": "WORLD_ENGINE",
+            "source": "OBJECT_ACTION_INPUT",
+            "action_types": ["OBJECT_ACTION_EXECUTED"],
+            "campaign_tags": tags,
+            "object_action_id": result.get("object_action_id") or matched.get("object_action_id"),
+            "object_id": result.get("object_id") or matched.get("object_id"),
+            "object_dbref": result.get("object_dbref") or matched.get("object_dbref"),
+            "site_room_id": result.get("site_room_id"),
+            "site_dbref": result.get("site_dbref"),
+            "outcome": result.get("outcome"),
+            "result": {
+                "status": result.get("status"),
+                "attempt_id": result.get("attempt_id"),
+                "object_action_id": result.get("object_action_id") or matched.get("object_action_id"),
+            },
+        },
+    )
+
+
 def match_object_action_input(actor, raw):
     """Match natural-language input only when both one local object and one authored action are identifiable."""
     location = getattr(actor, "location", None) if actor else None
@@ -166,6 +200,10 @@ def route_object_action_input(actor, raw, attempt_id=None):
     obj = matched.get("object")
     action_id = matched.get("object_action_id")
     result = begin_object_action(actor, obj, action_id, attempt_id=attempt_id)
+    if str(result.get("status") or "") == "COMPLETED":
+        observation = _observe_completed_campaign_action(actor, matched, result)
+        if observation is not None:
+            result = {**dict(result), "campaign_observation": observation}
     return {
         **matched,
         "status": result.get("status"),
