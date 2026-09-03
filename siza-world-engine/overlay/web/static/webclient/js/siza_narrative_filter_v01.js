@@ -69,6 +69,10 @@
         // The book narrative is prose, not a terminal. Strip ANSI/HTML styling
         // inherited from Evennia and keep only the player-visible text.
         entry.textContent = value;
+        entry.removeAttribute("style");
+        ["out", "in", "msg", "message", "text"].forEach(function (name) {
+            entry.classList.remove(name);
+        });
         entry.classList.add("sizaNarrativeEvent");
         entry.setAttribute("data-siza-player-visible", "true");
         if (entry.getAttribute("data-siza-structured-dialogue") !== "true") {
