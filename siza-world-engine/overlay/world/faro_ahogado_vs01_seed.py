@@ -1,5 +1,6 @@
 from evennia import create_object, search_object, search_tag
 
+from services.consequence_engine import upsert_consequence_rule
 from services.knowledge_fact_engine import upsert_knowledge_fact
 
 
@@ -17,6 +18,53 @@ MUTUAL_NPC_ID = "NPC-FA-VS01-MUTUAL-001"
 BUZO_NPC_ID = "NPC-FA-VS01-BUZO-001"
 ROUTE_EXIT_ID = "EXIT-FA-VS01-MUELLES-A"
 RETURN_EXIT_ID = "EXIT-FA-VS01-MUELLES-B"
+
+FORMAL_OBJECT_ID = "OBJ-FA-VS01-ASIGNACION-001"
+FORMAL_ACTION_ID = "ACT-FA-VS01-MEANS-FORMAL-001"
+FORMAL_RULE_ID = "RULE-FA-VS01-MEANS-FORMAL-001"
+RELEVO_OBJECT_ID = "OBJ-FA-VS01-RELEVO-001"
+RELEVO_ACTION_ID = "ACT-FA-VS01-MEANS-RELEVO-001"
+RELEVO_RULE_ID = "RULE-FA-VS01-MEANS-RELEVO-001"
+MEANS_SELECTED_FIELD = "faro_means_selected"
+
+
+def _plain_list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _record(value):
+    try:
+        return {str(key): item for key, item in value.items()}
+    except Exception:
+        return None
+
+
+def _upsert_by_id(rows, replacement):
+    output = []
+    replaced = False
+    wanted = str(replacement.get("id") or "")
+    for raw in _plain_list(rows):
+        item = _record(raw)
+        if item is None:
+            continue
+        if str(item.get("id") or "") == wanted:
+            output.append(dict(replacement))
+            replaced = True
+        else:
+            output.append(item)
+    if not replaced:
+        output.append(dict(replacement))
+    return output
 
 
 def _find_room(room_id):
@@ -72,10 +120,17 @@ def _ensure_muelles():
     room.db.district_id = "CAR-KAL-DARSENAS-CAMPANA"
     room.db.desc = (
         "Un conjunto de plataformas de trabajo desciende hacia las campanas, armaduras y equipos "
-        "que operan bajo el nivel de las Dársenas de Campana. Aquí se preparan los turnos y las expediciones de profundidad."
+        "que operan bajo el nivel de las Dársenas de Campana. Aquí se preparan los turnos y las expediciones de profundidad. "
+        "Una mesa de asignaciones de la Mutual organiza los turnos formales; cerca de ella, una lista de relevo recoge vacantes de cuadrillas incompletas."
     )
     room.db.sensory_facts = {
-        "sight": ["campanas de descenso", "armaduras de profundidad", "equipos preparando turnos"],
+        "sight": [
+            "campanas de descenso",
+            "armaduras de profundidad",
+            "equipos preparando turnos",
+            "mesa de asignaciones de la Mutual",
+            "lista de relevo de cuadrilla",
+        ],
         "hearing": ["cadenas tensándose", "órdenes de cuadrilla", "agua golpeando bajo las plataformas"],
         "smell": ["metal húmedo", "aceite de maquinaria", "sal"],
     }
@@ -89,6 +144,8 @@ def _ensure_muelles():
     }
     room.db.canon_status = "prototype"
     room.db.campaign_id = CAMPAIGN_ID
+    if getattr(room.db, "world_state", None) is None:
+        room.db.world_state = {}
     return room, created
 
 
@@ -216,6 +273,132 @@ def _ensure_npc(location, *, npc_id, key, aliases, desc, job, greeting, fact):
     return npc, created
 
 
+def _means_action(action_id, name, input_phrases, means_path):
+    return {
+        "id": action_id,
+        "name": name,
+        "activity": name,
+        "input_phrases": list(input_phrases),
+        "enabled": True,
+        "knowledge_requirements": [
+            {
+                "knowledge_key": "FA_EXPEDICION",
+                "min_level": 1,
+                "name": "Conocimiento sobre la expedición de Faro Ahogado",
+            }
+        ],
+        "state_requirements": [
+            {
+                "field": MEANS_SELECTED_FIELD,
+                "op": "NOT_EXISTS",
+                "value": None,
+                "name": "Aún no se ha elegido un medio de descenso",
+            }
+        ],
+        "object_state_requirements": [
+            {
+                "field": "claimed",
+                "op": "EQ",
+                "value": False,
+                "name": "Esta opción todavía está disponible",
+            }
+        ],
+        "metadata": {
+            "campaign_id": CAMPAIGN_ID,
+            "campaign_tags": ["FA-BEAT-MEANS"],
+            "means_path": means_path,
+        },
+        "canon_status": "vertical_slice",
+    }
+
+
+def _ensure_means_object(location, *, object_id, key, aliases, desc, action):
+    obj = _find_entity("object_id", object_id)
+    created = False
+    if not obj:
+        obj = create_object(
+            "typeclasses.siza_objects.WorldObject",
+            key=key,
+            aliases=aliases,
+            location=location,
+            tags=[(ENTITY_TAG, ENTITY_CATEGORY)],
+        )
+        created = True
+    obj.key = key
+    obj.location = location
+    obj.db.object_id = object_id
+    obj.db.desc = desc
+    obj.db.portable = False
+    obj.db.hidden = False
+    obj.db.canon_status = "vertical_slice"
+    obj.db.campaign_id = CAMPAIGN_ID
+    state = _plain_dict(getattr(obj.db, "state", {}))
+    state.setdefault("claimed", False)
+    obj.db.state = state
+    obj.db.object_actions = _upsert_by_id(getattr(obj.db, "object_actions", []), action)
+    _ensure_aliases(obj, aliases)
+    return obj, created
+
+
+def _install_means_rules():
+    upsert_consequence_rule(
+        {
+            "id": FORMAL_RULE_ID,
+            "enabled": True,
+            "canon_status": "vertical_slice",
+            "when": {
+                "action_type": "OBJECT_ACTION_COMPLETED",
+                "object_action_id": FORMAL_ACTION_ID,
+                "outcome": "COMPLETED",
+            },
+            "state_effects": [
+                {
+                    "scope": "ACTION_OBJECT",
+                    "namespace": "state",
+                    "field": "claimed",
+                    "op": "SET",
+                    "value": True,
+                },
+                {
+                    "scope": "ACTION_SITE",
+                    "namespace": "world_state",
+                    "field": MEANS_SELECTED_FIELD,
+                    "op": "SET",
+                    "value": "FORMAL",
+                },
+            ],
+        }
+    )
+    upsert_consequence_rule(
+        {
+            "id": RELEVO_RULE_ID,
+            "enabled": True,
+            "canon_status": "vertical_slice",
+            "when": {
+                "action_type": "OBJECT_ACTION_COMPLETED",
+                "object_action_id": RELEVO_ACTION_ID,
+                "outcome": "COMPLETED",
+            },
+            "state_effects": [
+                {
+                    "scope": "ACTION_OBJECT",
+                    "namespace": "state",
+                    "field": "claimed",
+                    "op": "SET",
+                    "value": True,
+                },
+                {
+                    "scope": "ACTION_SITE",
+                    "namespace": "world_state",
+                    "field": MEANS_SELECTED_FIELD,
+                    "op": "SET",
+                    "value": "RELEVO",
+                },
+            ],
+        }
+    )
+
+
 def install():
     plaza = _find_room(PLAZA_ROOM_ID)
     patio = _find_room(PATIO_ROOM_ID)
@@ -274,6 +457,55 @@ def install():
         fact=_buzo_fact(),
     )
 
+    formal_action = _means_action(
+        FORMAL_ACTION_ID,
+        "Registrarse para un turno de descenso",
+        [
+            "registrarme para un turno de descenso",
+            "solicitar un turno de descenso",
+            "anotarme en la lista de campanas",
+            "conseguir una asignación formal",
+            "me registro en la mesa de asignaciones",
+        ],
+        "FORMAL",
+    )
+    formal_obj, formal_created = _ensure_means_object(
+        muelles,
+        object_id=FORMAL_OBJECT_ID,
+        key="Mesa de asignaciones de la Mutual",
+        aliases=["mesa de asignaciones", "registro de turnos", "lista de campanas", "mesa de turnos"],
+        desc=(
+            "Una mesa de la Mutual Campana Honda organiza nombres, campanas y turnos de descenso. "
+            "Quien ya conoce el procedimiento puede solicitar aquí una asignación formal."
+        ),
+        action=formal_action,
+    )
+
+    relevo_action = _means_action(
+        RELEVO_ACTION_ID,
+        "Tomar una plaza de relevo",
+        [
+            "anotarme como relevo",
+            "tomar una plaza de relevo",
+            "unirme a una cuadrilla incompleta",
+            "cubrir el puesto de relevo",
+            "me anoto en la lista de relevo",
+        ],
+        "RELEVO",
+    )
+    relevo_obj, relevo_created = _ensure_means_object(
+        muelles,
+        object_id=RELEVO_OBJECT_ID,
+        key="Lista de relevo de cuadrilla",
+        aliases=["lista de relevo", "lista de cuadrilla", "cuadrilla incompleta", "puesto de relevo"],
+        desc=(
+            "Una tablilla reúne vacantes de última hora en cuadrillas de profundidad. "
+            "Cubrir una de esas plazas permite bajar sin esperar una asignación ordinaria."
+        ),
+        action=relevo_action,
+    )
+
+    _install_means_rules()
     plaza.db.campaign_presence = [MUTUAL_NPC_ID, BUZO_NPC_ID]
 
     return {
@@ -294,6 +526,24 @@ def install():
             "return_exit_dbref": int(return_exit.id),
             "return_created": return_created,
         },
+        "means": [
+            {
+                "path": "FORMAL",
+                "object": formal_obj.key,
+                "object_dbref": int(formal_obj.id),
+                "object_created": formal_created,
+                "action_id": FORMAL_ACTION_ID,
+                "rule_id": FORMAL_RULE_ID,
+            },
+            {
+                "path": "RELEVO",
+                "object": relevo_obj.key,
+                "object_dbref": int(relevo_obj.id),
+                "object_created": relevo_created,
+                "action_id": RELEVO_ACTION_ID,
+                "rule_id": RELEVO_RULE_ID,
+            },
+        ],
     }
 
 
