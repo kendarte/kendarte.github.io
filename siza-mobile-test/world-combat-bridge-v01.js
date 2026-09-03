@@ -1,8 +1,8 @@
 (function (root) {
   'use strict';
 
-  const VERSION='0.2.0';
-  const BUILD='world-combat-bridge-v0.2-npc-decks';
+  const VERSION='0.2.1';
+  const BUILD='world-combat-bridge-v0.2.1-npc-decks';
   const ENCOUNTER_TYPE='COMBAT_CONFRONTATION';
 
   function clone(value){
@@ -157,6 +157,9 @@
     // that id again from SizaDeckCatalog, shuffles a fresh copy and replaces the
     // enemy hand/library for this match. No authored card list is cached on the NPC.
     const enemyDeck=applyDeck(match.enemy,encounter.opponents[0].deck_id);
+    if(encounter.opponents[0].deck_id&&!enemyDeck.applied){
+      return{ok:false,status:'OPPONENT_DECK_LOAD_FAILED',encounter:clone(encounter),deck_load:{enemy:clone(enemyDeck)}};
+    }
 
     match.worldBridge={
       version:VERSION,
