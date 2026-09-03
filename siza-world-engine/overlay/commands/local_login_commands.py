@@ -165,6 +165,7 @@ class CmdSizaLocalLogin(Command):
                 campaign = start_registered_campaign(character, LOCAL_CAMPAIGN, force=False)
                 campaign_started = str(campaign.get("status") or "") == "STARTED"
                 location, moved = _ensure_darkhaven_location(character, campaign_started=campaign_started)
+                intro_pending = bool(getattr(character.db, "darkhaven_intro_pending", False))
 
                 _emit_ready(
                     session,
@@ -175,8 +176,9 @@ class CmdSizaLocalLogin(Command):
                     location=str(location or ""),
                     campaign=str(campaign.get("status") or ""),
                 )
-                if campaign_started or moved:
+                if campaign_started or moved or intro_pending:
                     _emit_darkhaven_opening(character)
+                    character.db.darkhaven_intro_pending = False
             except Exception as error:
                 _emit_ready(session, "PUPPET_FAILED", character=character.key, error=str(error))
 
