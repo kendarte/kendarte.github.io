@@ -14,6 +14,18 @@ class NPC(Character):
         self.db.knowledge_facts = []
         self.db.dialogue_greeting = ""
 
+        # Persistent combat authoring. The World Engine owns the NPC identity and
+        # selected deck id; the TCG resolves that id against its canonical deck
+        # catalog every time a world encounter is attached to a fresh match.
+        self.db.combat_profile = {
+            "enabled": False,
+            "deck_id": None,
+            "tcg_profile": {},
+            "loadout": {},
+            "world_status": {},
+            "encounter_tags": [],
+        }
+
         # Persistent simulation state. Routine mechanics remain prototype data
         # until the world clock and final need math are frozen.
         self.db.home_room_id = None
