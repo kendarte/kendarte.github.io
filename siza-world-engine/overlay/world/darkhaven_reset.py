@@ -10,6 +10,7 @@ from world.darkhaven_academy_seed import (
     install as install_darkhaven,
 )
 from world.darkhaven_tutorial_campaign import DARKHAVEN_TUTORIAL_CAMPAIGN
+from world.darkhaven_tutorial_patch import apply as apply_tutorial_patch
 
 
 PLAYER_KEY = "Nereida"
@@ -20,14 +21,6 @@ def _plain_dict(value):
         return {str(key): item for key, item in (value or {}).items()}
     except Exception:
         return {}
-
-
-def _find_exact(attr_name, value):
-    wanted = str(value or "")
-    for obj in search_object("*"):
-        if str(getattr(getattr(obj, "db", None), attr_name, "") or "") == wanted:
-            return obj
-    return None
 
 
 def _find_by_attr_candidates(attr_name, value):
@@ -91,6 +84,10 @@ def reset():
     if str(installed.get("status") or "") != "INSTALLED":
         return {"status": "INSTALL_FAILED", "install": installed}
 
+    patched = apply_tutorial_patch()
+    if str(patched.get("status") or "") != "PATCHED":
+        return {"status": "PATCH_FAILED", "install": installed, "patch": patched}
+
     player = _find_player()
     if not player:
         return {"status": "PLAYER_NOT_FOUND", "player_key": PLAYER_KEY}
@@ -101,8 +98,7 @@ def reset():
 
     _reset_tutorial_world_state()
 
-    # Reset only player-local campaign/tutorial progression. Persistent authored
-    # world content remains installed and reusable.
+    # Reset player-local campaign/tutorial progress, not the authored academy.
     player.db.dm_campaign_state = {}
     player.db.object_action_history = []
     player.db.action_resolution_history = []
@@ -123,4 +119,5 @@ def reset():
         "room_id": ENTRY_ROOM_ID,
         "campaign": started,
         "install": installed,
+        "patch": patched,
     }
