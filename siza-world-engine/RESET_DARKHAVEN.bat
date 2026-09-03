@@ -14,7 +14,7 @@ if not exist ".venv\Scripts\python.exe" goto :fail
 pushd runtime
 
 echo.
-echo 2. Reseteando personaje y tutorial Darkhaven...
+echo 2. Reseteando personaje activo y tutorial Darkhaven...
 "..\.venv\Scripts\python.exe" -m evennia shell -c "from world.darkhaven_reset import reset; r=reset(); print('DARKHAVEN_RESET=', r); assert r.get('status') == 'RESET', r"
 if errorlevel 1 (
   popd
@@ -34,7 +34,7 @@ echo.
 echo ============================================
 echo DARKHAVEN LISTO
 
-echo Nereida comienza en Puerta de Darkhaven.
+echo El personaje activo comienza en Puerta de Darkhaven.
 echo Campana activa: CAMPAIGN-DARKHAVEN-TUTORIAL-V01
 echo Validacion de mundo/tutorial: PASS
 echo Cierre y vuelva a abrir el webclient si estaba conectado.
