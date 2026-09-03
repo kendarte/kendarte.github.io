@@ -162,10 +162,49 @@
         }, 10000);
     }
 
-    function onLoggedIn() {
-        if (!authenticated) {
-            completeLogin();
+    function submitLocalAccess() {
+        if (!window.Evennia || !Evennia.isConnected()) {
+            showGate("El World Engine todavía está conectando.", "error");
+            return;
         }
+        try {
+            window.localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            // Local access does not depend on browser storage.
+        }
+        pendingCredentials = null;
+        authPending = true;
+        clearTimeout(authTimer);
+        setBusy(true);
+        setStatus("Abriendo la sesión local de Nereida…", "info");
+        Evennia.msg("text", ["siza-local-login Nereida"], {});
+        authTimer = window.setTimeout(function () {
+            if (!authPending || authenticated) {
+                return;
+            }
+            authPending = false;
+            showGate("El World Engine no completó el acceso local.", "error");
+        }, 10000);
+    }
+
+    function onLocalReady(args) {
+        var packet = args && args.length && args[0] && typeof args[0] === "object" ? args[0] : {};
+        var status = String(packet.status || "");
+        if (status === "READY") {
+            var playerName = byId("siza-player-name");
+            if (playerName && packet.character) {
+                playerName.textContent = String(packet.character);
+            }
+            completeLogin();
+            return;
+        }
+        authPending = false;
+        clearTimeout(authTimer);
+        showGate("No se pudo abrir a Nereida: " + (status || "respuesta inválida") + ".", "error");
+    }
+
+    function onLoggedIn() {
+        setStatus("Cuenta local abierta. Cargando a Nereida…", "info");
     }
 
     function forwardText(args, kwargs) {
@@ -202,11 +241,8 @@
             return;
         }
         if (isLoginBanner(text)) {
-            var saved = readSaved();
-            if (saved && !authPending) {
-                submitCredentials("connect", saved);
-            } else if (!authPending) {
-                showGate("Introduce tu acceso para continuar.", "info");
+            if (!authPending) {
+                submitLocalAccess();
             }
         }
     }
@@ -215,19 +251,14 @@
         if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionOpen === "function") {
             window.SizaWorldBookClient.connectionOpen();
         }
-        var saved = readSaved();
-        setStatus(saved ? "Recuperando acceso guardado…" : "Conexión lista.", "info");
+        setStatus("Conexión lista. Abriendo mundo local…", "info");
         clearTimeout(savedLoginTimer);
         savedLoginTimer = window.setTimeout(function () {
             if (authenticated || authPending) {
                 return;
             }
-            if (saved) {
-                submitCredentials("connect", saved);
-            } else {
-                showGate("Introduce tu acceso para continuar.", "info");
-            }
-        }, 1200);
+            submitLocalAccess();
+        }, 250);
     }
 
     function init() {
@@ -244,7 +275,7 @@
         if (form) {
             form.addEventListener("submit", function (event) {
                 event.preventDefault();
-                submitCredentials("connect");
+                submitLocalAccess();
             });
         }
         if (create) {
@@ -259,6 +290,7 @@
 
         Evennia.emitter.on("text", onServerText);
         Evennia.emitter.on("logged_in", onLoggedIn);
+        Evennia.emitter.on("siza_local_ready", onLocalReady);
         Evennia.emitter.on("connection_open", onConnectionOpen);
         Evennia.emitter.on("connection_close", function () {
             authenticated = false;
