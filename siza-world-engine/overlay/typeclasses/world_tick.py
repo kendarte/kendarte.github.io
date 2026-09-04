@@ -224,8 +224,13 @@ class SizaWorldTick(DefaultScript):
         )
 
 
+def get_world_ticks():
+    """Return every matching global tick so duplicate state is inspectable."""
+    return sorted(list(search_script(WORLD_TICK_KEY)), key=lambda script: int(script.id or 0))
+
+
 def get_world_tick():
-    matches = list(search_script(WORLD_TICK_KEY))
+    matches = get_world_ticks()
     return matches[0] if matches else None
 
 
@@ -287,6 +292,19 @@ def start_world_tick(interval=DEFAULT_INTERVAL):
     return script, False
 
 
+def ensure_world_tick(interval=DEFAULT_INTERVAL):
+    """Idempotent bootstrap used by setup/update automation and validators."""
+    script, created = start_world_tick(interval=interval)
+    ticks = get_world_ticks()
+    return {
+        "exists": script is not None,
+        "created": bool(created),
+        "script_id": int(script.id) if script else None,
+        "duplicate_count": max(0, len(ticks) - 1),
+        "script_ids": [int(item.id) for item in ticks],
+    }
+
+
 def pause_world_tick():
     script = get_world_tick()
     if script is None:
@@ -298,6 +316,7 @@ def pause_world_tick():
 
 def world_tick_state():
     script = get_world_tick()
+    ticks = get_world_ticks()
     if script is None:
         return {
             "exists": False,
@@ -318,6 +337,8 @@ def world_tick_state():
             "next_repeat": None,
             "world_clock": world_clock_state(),
             "build": WORLD_TICK_BUILD,
+            "duplicate_count": 0,
+            "script_ids": [],
         }
 
     try:
@@ -345,4 +366,6 @@ def world_tick_state():
         "next_repeat": next_repeat,
         "world_clock": world_clock_state(script),
         "build": str(script.db.build or WORLD_TICK_BUILD),
+        "duplicate_count": max(0, len(ticks) - 1),
+        "script_ids": [int(item.id) for item in ticks],
     }

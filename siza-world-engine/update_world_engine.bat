@@ -4,7 +4,7 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 
-echo ============================================
+echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
 
 echo 1. Git pull
@@ -92,8 +92,24 @@ if errorlevel 1 (
 )
 
 echo.
-echo 4b. Conservando contenido Faro Ahogado VS01...
+echo 4b. Activando autonomia controlada de Darkhaven...
+python -m evennia shell -c "from world.darkhaven_autonomy_patch import apply; r=apply(); print('DARKHAVEN_AUTONOMY_PATCH=', r); assert r.get('status') == 'PATCHED', r"
+if errorlevel 1 (
+  popd
+  goto :fail
+)
+
+echo.
+echo 4c. Conservando contenido Faro Ahogado VS01...
 python -m evennia shell -c "from world.faro_ahogado_vs01_seed import install; r=install(); print('FARO_AHOGADO_VS01=', r); assert r.get('status') == 'INSTALLED', r"
+if errorlevel 1 (
+  popd
+  goto :fail
+)
+
+echo.
+echo 4d. Garantizando World Tick Siza unico...
+python -m evennia shell -c "from typeclasses.world_tick import ensure_world_tick; r=ensure_world_tick(); print('WORLD_TICK_BOOTSTRAP=', r); assert r.get('duplicate_count') == 0, r"
 if errorlevel 1 (
   popd
   goto :fail
@@ -102,13 +118,15 @@ if errorlevel 1 (
 popd
 
 echo.
-echo ============================================
+echo ========================================
 echo UPDATE COMPLETO - SERVIDOR REINICIADO
-echo ============================================
+echo ========================================
 echo.
 echo El mundo y la base de datos NO se borraron.
 echo Academia Darkhaven Zona 7 fue instalada/actualizada de forma idempotente.
 echo Tutorial Darkhaven fue endurecido para evitar rutas duplicadas o beats adelantados.
+echo Autonomia controlada de Darkhaven fue activada para el grupo seguro de prueba.
+echo World Tick Siza fue garantizado como script unico.
 echo Faro Ahogado permanece instalado como contenido disponible, pero ya no es el arranque local por defecto.
 echo Siza Arena fue sincronizado al webclient local.
 echo Vuelva a conectar al webclient si se desconecto.
@@ -118,10 +136,10 @@ exit /b 0
 
 :fail
 echo.
-echo ============================================
+echo ========================================
 echo UPDATE DETENIDO POR ERROR
 
 echo Copie la salida desde la primera linea de ERROR.
-echo ============================================
+echo ========================================
 if "%NO_PAUSE%"=="0" pause
 exit /b 1
