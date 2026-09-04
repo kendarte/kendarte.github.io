@@ -6,7 +6,7 @@ title SIZA - Arranque completo
 
 set "SIZA_PYTHON=%CD%\.venv\Scripts\python.exe"
 set "SIZA_RUNTIME=%CD%\runtime"
-set "SIZA_WEBCLIENT=http://127.0.0.1:4001/webclient/?siza_build=20260903_dialogue_event"
+set "SIZA_WEBCLIENT=http://127.0.0.1:4001/webclient/?siza_build=20260904-login-rebuild"
 set "SIZA_OLLAMA_MODEL=qwen3:8b"
 set "SIZA_OLLAMA_ENDPOINT=http://127.0.0.1:11434/api/chat"
 set "SIZA_STATUS_FILE=%TEMP%\siza_evennia_status_%RANDOM%_%RANDOM%.txt"
@@ -33,9 +33,25 @@ if !SIZA_RC! GEQ 8 (
   echo ERROR: robocopy fallo con codigo !SIZA_RC!.
   goto :fail
 )
+call :ensure_character_login_settings
+if errorlevel 1 goto :fail
 
 echo [2/4] Comprobando el DM local...
-call :ollama_ready
+call :ensure_character_login_settings
+set "SIZA_SETTINGS=%SIZA_RUNTIME%\server\conf\settings.py"
+findstr /C:"SIZA_CHARACTER_LOGIN_V01" "%SIZA_SETTINGS%" >nul 2>&1
+if not errorlevel 1 exit /b 0
+>>"%SIZA_SETTINGS%" echo.
+>>"%SIZA_SETTINGS%" echo # SIZA_CHARACTER_LOGIN_V01 - account and character selection in the webclient
+>>"%SIZA_SETTINGS%" echo AUTO_CREATE_CHARACTER_WITH_ACCOUNT = False
+>>"%SIZA_SETTINGS%" echo AUTO_PUPPET_ON_LOGIN = False
+if errorlevel 1 (
+  echo ERROR: No se pudo configurar el login de cuenta/personaje.
+  exit /b 1
+)
+exit /b 0
+
+:ollama_ready
 if not errorlevel 1 goto :ollama_running
 
 where ollama >nul 2>&1
