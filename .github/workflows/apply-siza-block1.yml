@@ -19,7 +19,25 @@ jobs:
       - name: Rebuild and verify patch
         shell: bash
         run: |
-          cat .github/siza_block1_patch/part*.b64 | tr -d '\n' | base64 -d > /tmp/siza_block1.patch
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, string
+          parts = sorted(Path('.github/siza_block1_patch').glob('part*.b64'))
+          alphabet = set(string.ascii_letters + string.digits + '+/=')
+          raw = ''.join(p.read_text(encoding='utf-8') for p in parts)
+          clean = ''.join(ch for ch in raw if ch in alphabet)
+          print('parts:', [(p.name, len(p.read_text(encoding='utf-8'))) for p in parts])
+          print('base64 chars:', len(clean))
+          if len(parts) != 9 or len(clean) != 73228:
+              raise SystemExit('staged patch length mismatch')
+          decoded = base64.b64decode(clean, validate=True)
+          digest = hashlib.sha256(decoded).hexdigest()
+          print('decoded bytes:', len(decoded))
+          print('sha256:', digest)
+          if len(decoded) != 54920 or digest != '122bcfc6e2ee9ccf7f3e47c8f017b73b7f80a6230cc6c6fc28e2e169dad53737':
+              raise SystemExit('staged patch hash mismatch')
+          Path('/tmp/siza_block1.patch').write_bytes(decoded)
+          PY
           echo "Changed paths:"
           grep '^diff --git ' /tmp/siza_block1.patch
           test "$(grep '^diff --git ' /tmp/siza_block1.patch | wc -l)" -eq 19
