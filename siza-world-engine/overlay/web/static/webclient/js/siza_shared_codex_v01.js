@@ -53,6 +53,14 @@
             return;
         }
         setInteraction("scene", "OBSERVACIÓN", currentLocation());
+        var prompt = byId("siza-current-prompt");
+        var input = byId("siza-inputfield");
+        if (prompt) {
+            prompt.textContent = "¿Qué haces?";
+        }
+        if (input) {
+            input.setAttribute("placeholder", "Describe lo que haces…");
+        }
     }
 
     function setDialogue(packet) {
