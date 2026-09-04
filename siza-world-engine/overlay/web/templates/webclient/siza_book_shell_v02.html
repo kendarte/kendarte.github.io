@@ -1,7 +1,7 @@
 <div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false" data-authenticated="false">
   <section id="siza-login-gate" class="sizaLoginGate" data-state="visible" aria-label="Acceso a SIZA">
     <div class="sizaLoginBackdrop" aria-hidden="true"></div>
-    <div class="sizaLoginPanel">
+    <div id="siza-login-panel" class="sizaLoginPanel" data-step="login">
       <header class="sizaLoginBrand">
         <div class="sizaLoginSigil" aria-hidden="true">S</div>
         <div>
@@ -10,31 +10,76 @@
         </div>
       </header>
 
-      <div class="sizaLoginHeading">
-        <small>ACCESO AL MUNDO PERSISTENTE</small>
-        <h1>Entrar al mundo</h1>
-        <p>Elige explícitamente el personaje/cuenta que quieres usar. No hay auto-login local.</p>
-      </div>
+      <section id="siza-login-step-login" class="sizaLoginStep" aria-labelledby="siza-login-title">
+        <div class="sizaLoginHeading">
+          <small>ACCESO AL MUNDO PERSISTENTE</small>
+          <h1 id="siza-login-title">Entrar al mundo</h1>
+          <p>Inicia con tu cuenta y elige el personaje con el que quieres jugar.</p>
+        </div>
 
-      <form id="siza-login-form" class="sizaLoginForm" autocomplete="on">
-        <label for="siza-login-username">Personaje / cuenta</label>
-        <input id="siza-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Nombre del personaje" required>
+        <form id="siza-login-form" class="sizaLoginForm" autocomplete="on">
+          <label for="siza-login-username">Cuenta</label>
+          <input id="siza-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
 
-        <label for="siza-login-password">Contraseña</label>
-        <input id="siza-login-password" name="password" type="password" autocomplete="current-password" required>
+          <label for="siza-login-password">Contraseña</label>
+          <input id="siza-login-password" name="password" type="password" autocomplete="current-password" required>
 
-        <label class="sizaLoginRemember" for="siza-login-remember">
-          <input id="siza-login-remember" type="checkbox" checked>
-          <span>Recordar acceso en este equipo</span>
-        </label>
+          <label class="sizaLoginRemember" for="siza-login-remember">
+            <input id="siza-login-remember" type="checkbox" checked>
+            <span>Recordar solo el nombre de cuenta en este equipo</span>
+          </label>
 
-        <button id="siza-login-submit" class="sizaLoginPrimary" type="submit">Entrar al mundo</button>
-        <button id="siza-login-create" class="sizaLoginSecondary" type="button">Crear una cuenta nueva</button>
+          <button id="siza-login-submit" class="sizaLoginPrimary" type="submit">Entrar al mundo</button>
+          <button id="siza-login-create" class="sizaLoginSecondary" type="button">Crear cuenta</button>
+        </form>
+      </section>
 
-        <div id="siza-login-status" class="sizaLoginStatus" data-kind="info" role="status" aria-live="polite">Conectando con el World Engine…</div>
-      </form>
+      <section id="siza-login-step-characters" class="sizaLoginStep" hidden aria-labelledby="siza-characters-title">
+        <div class="sizaLoginHeading">
+          <small>CUENTA</small>
+          <h1 id="siza-characters-title">Elige personaje</h1>
+          <p>Cuenta activa: <strong id="siza-character-account"></strong></p>
+        </div>
+        <div id="siza-character-list" class="sizaCharacterList" aria-label="Personajes disponibles"></div>
+        <div class="sizaLoginActions">
+          <button id="siza-character-create" class="sizaLoginPrimary" type="button">Crear personaje</button>
+          <button id="siza-character-back" class="sizaLoginSecondary" type="button">Usar otra cuenta</button>
+        </div>
+      </section>
 
-      <footer class="sizaLoginFoot">El acceso guardado se puede borrar desde el menú de sesión.</footer>
+      <section id="siza-login-step-creator" class="sizaLoginStep" hidden aria-labelledby="siza-creator-title">
+        <div class="sizaLoginHeading">
+          <small>CREADOR DE PERSONAJE</small>
+          <h1 id="siza-creator-title">Crear cuenta y personaje</h1>
+          <p id="siza-creator-copy">Tu cuenta y tu primer personaje se crean en un único paso.</p>
+          <p id="siza-creator-account-label" class="sizaCreatorAccount"></p>
+        </div>
+
+        <form id="siza-creator-form" class="sizaLoginForm" autocomplete="off">
+          <div id="siza-creator-account-fields">
+            <label for="siza-creator-account">Cuenta</label>
+            <input id="siza-creator-account" type="text" autocapitalize="none" spellcheck="false">
+
+            <label for="siza-creator-password">Contraseña</label>
+            <input id="siza-creator-password" type="password" autocomplete="new-password">
+
+            <label for="siza-creator-password-confirm">Confirmar contraseña</label>
+            <input id="siza-creator-password-confirm" type="password" autocomplete="new-password">
+          </div>
+
+          <label for="siza-creator-character">Nombre del personaje</label>
+          <input id="siza-creator-character" type="text" maxlength="40" autocapitalize="words" spellcheck="false" required>
+
+          <label for="siza-creator-origin">Origen o trasfondo breve <span>(opcional)</span></label>
+          <input id="siza-creator-origin" type="text" maxlength="80" autocomplete="off">
+
+          <button id="siza-creator-submit" class="sizaLoginPrimary" type="submit">Crear y entrar</button>
+          <button id="siza-creator-back" class="sizaLoginSecondary" type="button">Volver</button>
+        </form>
+      </section>
+
+      <div id="siza-login-status" class="sizaLoginStatus" data-kind="info" role="status" aria-live="polite">Conectando con el World Engine…</div>
+      <footer class="sizaLoginFoot">La contraseña no se guarda en el navegador.</footer>
     </div>
   </section>
 
