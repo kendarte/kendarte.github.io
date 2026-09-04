@@ -1,4 +1,4 @@
-<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false">
+<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false" data-authenticated="false">
   <section id="siza-login-gate" class="sizaLoginGate" data-state="visible" aria-label="Acceso a SIZA">
     <div class="sizaLoginBackdrop" aria-hidden="true"></div>
     <div class="sizaLoginPanel">
@@ -12,20 +12,20 @@
 
       <div class="sizaLoginHeading">
         <small>ACCESO AL MUNDO PERSISTENTE</small>
-        <h1>Continuar la expedición</h1>
-        <p>Tu personaje, memoria y estado del mundo te esperan.</p>
+        <h1>Entrar al mundo</h1>
+        <p>Elige explícitamente el personaje/cuenta que quieres usar. No hay auto-login local.</p>
       </div>
 
       <form id="siza-login-form" class="sizaLoginForm" autocomplete="on">
-        <label for="siza-login-username">Personaje</label>
-        <input id="siza-login-username" name="username" type="text" value="Nereida" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        <label for="siza-login-username">Personaje / cuenta</label>
+        <input id="siza-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Nombre del personaje" required>
 
         <label for="siza-login-password">Contraseña</label>
         <input id="siza-login-password" name="password" type="password" autocomplete="current-password" required>
 
         <label class="sizaLoginRemember" for="siza-login-remember">
           <input id="siza-login-remember" type="checkbox" checked>
-          <span>Recordar y entrar automáticamente en este equipo</span>
+          <span>Recordar acceso en este equipo</span>
         </label>
 
         <button id="siza-login-submit" class="sizaLoginPrimary" type="submit">Entrar al mundo</button>
@@ -34,24 +34,31 @@
         <div id="siza-login-status" class="sizaLoginStatus" data-kind="info" role="status" aria-live="polite">Conectando con el World Engine…</div>
       </form>
 
-      <footer class="sizaLoginFoot">Acceso guardado únicamente en este navegador local.</footer>
+      <footer class="sizaLoginFoot">El acceso guardado se puede borrar desde el menú de sesión.</footer>
     </div>
   </section>
 
   <header class="sizaBookHeader">
     <section class="sizaHeaderCharacter sizaHeaderCharacterPlayer" aria-label="Player character">
-      <aside id="siza-player-portrait" class="sizaPortraitSlot" data-side="left" data-empty="false" aria-label="Player portrait">
+      <aside id="siza-player-portrait" class="sizaPortraitSlot" data-side="left" data-empty="true" aria-label="Player portrait">
         <div class="sizaPortraitFrame" aria-hidden="true">
-          <span id="siza-player-portrait-initial" class="sizaPortraitInitial">N</span>
+          <span id="siza-player-portrait-initial" class="sizaPortraitInitial">?</span>
         </div>
       </aside>
       <div class="sizaHeaderCharacterCopy">
         <small>PLAYER</small>
-        <strong id="siza-player-name">Nereida</strong>
+        <strong id="siza-player-name">Sin personaje</strong>
         <span id="siza-player-state">Persistent character</span>
         <div class="sizaHeaderCharacterMeta"><span>WORLD ENGINE</span></div>
       </div>
-      <span id="siza-player-portrait-name" class="sizaPortraitMirror">Nereida</span>
+      <div id="siza-session-menu" class="sizaSessionMenu" data-open="false">
+        <button id="siza-session-menu-toggle" class="sizaSessionMenuToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="siza-session-menu-panel">MENU</button>
+        <div id="siza-session-menu-panel" class="sizaSessionMenuPanel" role="menu" hidden>
+          <button id="siza-logout-button" type="button" role="menuitem">Cerrar sesión</button>
+          <button id="siza-login-clear" type="button" role="menuitem">Olvidar acceso</button>
+        </div>
+      </div>
+      <span id="siza-player-portrait-name" class="sizaPortraitMirror">Sin personaje</span>
       <span data-portrait-role class="sizaPortraitRoleMirror">PLAYER</span>
     </section>
 
