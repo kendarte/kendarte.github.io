@@ -1,0 +1,39 @@
+name: Apply Siza Block 1
+
+on:
+  push:
+    branches:
+      - siza-block1-delivery-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild and verify patch
+        shell: bash
+        run: |
+          cat .github/siza_block1_patch/part*.b64 | tr -d '\n' | base64 -d > /tmp/siza_block1.patch
+          echo "Changed paths:"
+          grep '^diff --git ' /tmp/siza_block1.patch
+          test "$(grep '^diff --git ' /tmp/siza_block1.patch | wc -l)" -eq 19
+          if grep '^diff --git ' /tmp/siza_block1.patch | grep -v '^diff --git a/siza-world-engine/'; then
+            echo 'Patch contains a path outside siza-world-engine' >&2
+            exit 1
+          fi
+
+      - name: Apply tested Block 1 commit to main
+        shell: bash
+        run: |
+          git config user.name "Siza Work Delivery"
+          git config user.email "siza-work@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B siza-block1-apply origin/main
+          git am /tmp/siza_block1.patch
+          git push origin HEAD:main
