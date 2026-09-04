@@ -3,6 +3,9 @@
 **Versión:** Core Freeze Candidate v1.01.1  
 **Alcance:** routing de input natural, proposals, bridges de ejecución, diálogo y Ollama/Qwen.
 
+**Protocolo narrativo requerido:** [09 — Protocolo narrativo de SIZA](09_protocolo_narrativo_siza.md)  
+**Consulta:** cada escritura, revisión y renderizado narrativo comienza con el protocolo.
+
 ## 1. Objetivo
 
 SIZA quiere aceptar lenguaje natural sin convertir al LLM en Game Master autoritativo.
