@@ -51,7 +51,7 @@ from commands.job_commands import (
     CmdSizaWorksite,
 )
 from commands.local_login_commands import CmdSizaLocalLogin
-from commands.knowledge_commands import (
+from commands.siza_auth_commands import (\n    CmdSizaAuthCharacters,\n    CmdSizaAuthCreateCharacter,\n    CmdSizaAuthPlay,\n    CmdSizaAuthRegister,\n)\nfrom commands.knowledge_commands import (
     CmdSizaKnowledge,
     CmdSizaKnowledgeEffectToggle,
     CmdSizaKnowledgeSet,
@@ -297,6 +297,9 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
 
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
+        self.add(CmdSizaAuthCharacters())
+        self.add(CmdSizaAuthCreateCharacter())
+        self.add(CmdSizaAuthPlay())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
@@ -305,6 +308,7 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
         self.add(CmdSizaLocalLogin())
+        self.add(CmdSizaAuthRegister())
 
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
