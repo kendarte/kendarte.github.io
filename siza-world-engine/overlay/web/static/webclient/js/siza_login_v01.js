@@ -1,11 +1,13 @@
 (function () {
     "use strict";
 
-    var STORAGE_KEY = "siza.world.login.v1";
-    var authPending = false;
+    var STORAGE_KEY = "siza.world.account.v2";
     var authenticated = false;
+    var awaitingLogin = false;
+    var registrationPending = false;
     var authTimer = null;
-    var pendingCredentials = null;
+    var currentAccount = "";
+    var pendingAccount = "";
     var logoutRequested = false;
 
     function byId(id) {
@@ -18,36 +20,39 @@
         return String(holder.textContent || holder.innerText || "").replace(/\s+/g, " ").trim();
     }
 
-    function readSaved() {
+    function readRememberedAccount() {
         try {
-            var parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-            if (parsed && parsed.username && parsed.password) {
-                return {username: String(parsed.username), password: String(parsed.password)};
+            var saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
+            if (saved && typeof saved.account === "string" && saved.account.trim()) {
+                return saved.account.trim();
             }
+            /* Remove the old format because it contained a password. */
+            window.localStorage.removeItem("siza.world.login.v1");
         } catch (error) {
             window.localStorage.removeItem(STORAGE_KEY);
         }
-        return null;
+        return "";
     }
 
-    function forgetSaved() {
-        try {
-            window.localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-            // The session UI still resets even if storage is unavailable.
-        }
-    }
-
-    function saveCredentials(credentials) {
+    function rememberAccount(account) {
         var remember = byId("siza-login-remember");
         try {
             if (remember && remember.checked) {
-                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials));
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify({account: String(account || "")}));
             } else {
                 window.localStorage.removeItem(STORAGE_KEY);
             }
         } catch (error) {
-            setStatus("El navegador no permitió recordar el acceso.", "error");
+            setStatus("El navegador no permitió recordar la cuenta.", "error");
+        }
+    }
+
+    function forgetSavedAccount() {
+        try {
+            window.localStorage.removeItem(STORAGE_KEY);
+            window.localStorage.removeItem("siza.world.login.v1");
+        } catch (error) {
+            /* The visible session flow still works without local storage. */
         }
     }
 
@@ -61,24 +66,27 @@
     }
 
     function setBusy(busy) {
+        var panel = byId("siza-login-panel");
         var submit = byId("siza-login-submit");
-        var create = byId("siza-login-create");
-        var username = byId("siza-login-username");
-        var password = byId("siza-login-password");
-        [submit, create, username, password].forEach(function (element) {
-            if (element) {
+        var creatorSubmit = byId("siza-creator-submit");
+        if (panel) {
+            Array.prototype.forEach.call(panel.querySelectorAll("button, input, select"), function (element) {
                 element.disabled = !!busy;
-            }
-        });
+            });
+        }
         if (submit) {
-            submit.textContent = busy ? "Entrando…" : "Entrar al mundo";
+            submit.textContent = busy ? "Conectando…" : "Entrar al mundo";
+        }
+        if (creatorSubmit) {
+            creatorSubmit.textContent = busy ? "Creando…" : "Crear y entrar";
         }
     }
 
-    function setPlayerName(name) {
+    function setPlayerName(name, account) {
         var cleanName = String(name || "").trim();
         var displayName = cleanName || "Sin personaje";
         var initial = cleanName ? cleanName.charAt(0).toUpperCase() : "?";
+        var state = byId("siza-player-state");
         var playerName = byId("siza-player-name");
         var portraitName = byId("siza-player-portrait-name");
         var portraitInitial = byId("siza-player-portrait-initial");
@@ -96,6 +104,9 @@
         if (portrait) {
             portrait.setAttribute("data-empty", cleanName ? "false" : "true");
         }
+        if (state) {
+            state.textContent = cleanName ? "Cuenta: " + String(account || currentAccount || "") : "Persistent character";
+        }
     }
 
     function setMenuOpen(open) {
@@ -110,7 +121,45 @@
         panel.hidden = !open;
     }
 
-    function showGate(message, kind) {
+    function showStep(step) {
+        var panel = byId("siza-login-panel");
+        ["login", "characters", "creator"].forEach(function (name) {
+            var section = byId("siza-login-step-" + name);
+            if (section) {
+                section.hidden = name !== step;
+            }
+        });
+        if (panel) {
+            panel.setAttribute("data-step", step);
+        }
+        if (step === "creator") {
+            var hasAccount = !!currentAccount;
+            var accountFields = byId("siza-creator-account-fields");
+            var accountLabel = byId("siza-creator-account-label");
+            var accountInput = byId("siza-creator-account");
+            var creatorTitle = byId("siza-creator-title");
+            var creatorCopy = byId("siza-creator-copy");
+            if (accountFields) {
+                accountFields.hidden = hasAccount;
+            }
+            if (accountLabel) {
+                accountLabel.textContent = hasAccount ? currentAccount : "";
+            }
+            if (accountInput && hasAccount) {
+                accountInput.value = currentAccount;
+            }
+            if (creatorTitle) {
+                creatorTitle.textContent = hasAccount ? "Crear personaje" : "Crear cuenta y personaje";
+            }
+            if (creatorCopy) {
+                creatorCopy.textContent = hasAccount
+                    ? "Este personaje se añadirá a la cuenta " + currentAccount + "."
+                    : "Tu cuenta y tu primer personaje se crean en un único paso.";
+            }
+        }
+    }
+
+    function showGate(message, kind, step) {
         var gate = byId("siza-login-gate");
         var root = byId("siza-book-client");
         if (gate) {
@@ -121,27 +170,26 @@
         }
         setBusy(false);
         setMenuOpen(false);
-        setStatus(message || "Introduce tu acceso para continuar.", kind || "info");
+        showStep(step || "login");
+        setStatus(message || "Introduce tu cuenta para continuar.", kind || "info");
     }
 
-    function completeLogin(characterName) {
+    function completeLogin(characterName, accountName) {
         var gate = byId("siza-login-gate");
         var output = byId("siza-messagewindow");
         var root = byId("siza-book-client");
 
         authenticated = true;
-        authPending = false;
+        awaitingLogin = false;
+        registrationPending = false;
         logoutRequested = false;
+        currentAccount = String(accountName || currentAccount || pendingAccount || "");
         clearTimeout(authTimer);
         setBusy(false);
         setStatus("Acceso confirmado.", "success");
+        rememberAccount(currentAccount);
+        setPlayerName(characterName, currentAccount);
 
-        if (pendingCredentials) {
-            saveCredentials(pendingCredentials);
-            setPlayerName(characterName || pendingCredentials.username);
-        } else if (characterName) {
-            setPlayerName(characterName);
-        }
         if (output) {
             output.innerHTML = "";
         }
@@ -158,124 +206,205 @@
         }, 180);
     }
 
-    function resetSessionUi(message, kind) {
+    function resetToLogin(message, kind) {
         var output = byId("siza-messagewindow");
-        var username = byId("siza-login-username");
         var password = byId("siza-login-password");
 
         authenticated = false;
-        authPending = false;
-        pendingCredentials = null;
+        awaitingLogin = false;
+        registrationPending = false;
+        pendingAccount = "";
+        currentAccount = "";
         clearTimeout(authTimer);
-        setBusy(false);
-        setMenuOpen(false);
-        setPlayerName("");
         if (output) {
             output.innerHTML = "";
         }
         if (password) {
             password.value = "";
         }
-        showGate(message || "Sesión cerrada. Introduce tu acceso para continuar.", kind || "info");
-        window.setTimeout(function () {
-            (username || password || {}).focus && (username || password).focus();
-        }, 50);
+        setPlayerName("", "");
+        showGate(message || "Introduce tu cuenta para continuar.", kind || "info", "login");
     }
 
-    function performLogout() {
-        logoutRequested = true;
-        forgetSaved();
-        resetSessionUi("Sesión cerrada. Acceso recordado borrado en este navegador.", "info");
-        if (window.Evennia && Evennia.isConnected()) {
-            try {
-                Evennia.msg("text", ["quit"], {});
-            } catch (error) {
-                // The visible login gate is already restored.
+    function quote(value) {
+        return String(value || "").trim().replace(/\s+/g, "");
+    }
+
+    function encodePayload(payload) {
+        var json = JSON.stringify(payload);
+        var utf8 = unescape(encodeURIComponent(json));
+        return btoa(utf8).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function startTimer(message) {
+        clearTimeout(authTimer);
+        authTimer = window.setTimeout(function () {
+            if (!authenticated) {
+                awaitingLogin = false;
+                registrationPending = false;
+                setBusy(false);
+                setStatus(message, "error");
             }
-        }
+        }, 12000);
     }
 
-    function isLoginBanner(text) {
-        return /welcome to runtime|existing account|connect <username>|create <username>|need to create an account/i.test(text);
-    }
-
-    function isLoginFailure(text) {
-        return /incorrect password|authentication failed|does not exist|no account|unknown account|already exists|name is already taken|usage:\s*(connect|create)|could not connect/i.test(text);
-    }
-
-    function looksLikeWorld(text) {
-        return /\(#\d+\)|you become|logged in|pescader[ií]a|world engine|limbo|darkhaven/i.test(text) && !isLoginBanner(text);
-    }
-
-    function quoteUsername(value) {
-        var username = String(value || "").trim();
-        return /\s/.test(username) ? '"' + username.replace(/"/g, "") + '"' : username;
-    }
-
-    function submitCredentials(mode, supplied) {
-        var usernameField = byId("siza-login-username");
-        var passwordField = byId("siza-login-password");
-        var credentials = supplied || {
-            username: usernameField ? usernameField.value.trim() : "",
-            password: passwordField ? passwordField.value : ""
-        };
-
-        if (!credentials.username || !credentials.password) {
-            showGate("Escribe el personaje y la contraseña.", "error");
-            var focusTarget = credentials.username ? passwordField : usernameField;
-            if (focusTarget) {
-                focusTarget.focus();
-            }
+    function submitLogin() {
+        var accountInput = byId("siza-login-username");
+        var passwordInput = byId("siza-login-password");
+        var account = accountInput ? accountInput.value.trim() : "";
+        var password = passwordInput ? passwordInput.value : "";
+        if (!account || !password) {
+            setStatus("Escribe la cuenta y la contraseña.", "error");
+            (account ? passwordInput : accountInput).focus();
             return;
         }
         if (!window.Evennia || !Evennia.isConnected()) {
-            showGate("El World Engine todavía está conectando.", "error");
+            setStatus("El World Engine todavía está conectando.", "error");
             return;
         }
-
-        pendingCredentials = credentials;
-        authPending = true;
-        logoutRequested = false;
-        clearTimeout(authTimer);
+        pendingAccount = account;
+        awaitingLogin = true;
+        registrationPending = false;
         setBusy(true);
-        setStatus(mode === "create" ? "Creando tu acceso…" : "Recuperando tu personaje…", "info");
-        Evennia.msg("text", [mode + " " + quoteUsername(credentials.username) + " " + credentials.password], {});
-        authTimer = window.setTimeout(function () {
-            if (!authPending || authenticated) {
-                return;
-            }
-            authPending = false;
-            pendingCredentials = null;
-            showGate("El servidor no confirmó el acceso. Revisa la cuenta o vuelve a intentarlo.", "error");
-        }, 10000);
+        setStatus("Validando cuenta…", "info");
+        Evennia.msg("text", ["connect " + quote(account) + " " + password], {});
+        startTimer("El servidor no confirmó el login. Inténtalo otra vez.");
     }
 
-    function submitLocalAccess() {
-        showGate("Auto-login local desactivado. Use usuario y contraseña.", "info");
-    }
-
-    function onLocalReady(args) {
-        var packet = args && args.length && args[0] && typeof args[0] === "object" ? args[0] : {};
-        var status = String(packet.status || "");
-        if (status === "READY") {
-            completeLogin(packet.character || packet.puppet || packet.account || "");
+    function requestCharacters() {
+        if (!window.Evennia || !Evennia.isConnected()) {
+            resetToLogin("La conexión se perdió antes de elegir personaje.", "error");
             return;
         }
-        authPending = false;
-        clearTimeout(authTimer);
-        showGate("Acceso local automático desactivado. Use el login normal.", "info");
+        setStatus("Cuenta validada. Cargando personajes…", "info");
+        Evennia.msg("text", ["siza-auth-characters"], {});
+    }
+
+    function playCharacter(characterId) {
+        setBusy(true);
+        setStatus("Abriendo personaje…", "info");
+        Evennia.msg("text", ["siza-auth-play " + String(characterId)], {});
+        startTimer("El personaje no terminó de cargar. Vuelve a intentarlo.");
+    }
+
+    function renderCharacters(packet) {
+        var list = byId("siza-character-list");
+        var accountLabel = byId("siza-character-account");
+        var create = byId("siza-character-create");
+        var characters = Array.isArray(packet.characters) ? packet.characters : [];
+        currentAccount = String(packet.account || pendingAccount || currentAccount || "");
+        if (accountLabel) {
+            accountLabel.textContent = currentAccount;
+        }
+        if (list) {
+            list.innerHTML = "";
+            characters.forEach(function (character) {
+                var button = document.createElement("button");
+                var title = document.createElement("strong");
+                var detail = document.createElement("span");
+                button.type = "button";
+                button.className = "sizaCharacterChoice";
+                title.textContent = String(character.name || "Personaje");
+                detail.textContent = character.location ? "Ubicación: " + String(character.location) : "Entrar al mundo";
+                button.appendChild(title);
+                button.appendChild(detail);
+                button.addEventListener("click", function () {
+                    playCharacter(character.id);
+                });
+                list.appendChild(button);
+            });
+        }
+        if (!characters.length) {
+            showStep("creator");
+            setStatus("Esta cuenta aún no tiene personaje. Crea el primero.", "info");
+            return;
+        }
+        if (create) {
+            create.hidden = packet.slots === 0;
+        }
+        showStep("characters");
+        setBusy(false);
+        setStatus("Elige el personaje con el que quieres entrar.", "info");
+    }
+
+    function submitCreator() {
+        var characterInput = byId("siza-creator-character");
+        var originInput = byId("siza-creator-origin");
+        var accountInput = byId("siza-creator-account");
+        var passwordInput = byId("siza-creator-password");
+        var confirmInput = byId("siza-creator-password-confirm");
+        var character = characterInput ? characterInput.value.trim() : "";
+        var origin = originInput ? originInput.value.trim() : "";
+        var creatingAccount = !currentAccount;
+        var account = creatingAccount && accountInput ? accountInput.value.trim() : currentAccount;
+        var password = creatingAccount && passwordInput ? passwordInput.value : "";
+
+        if (!character) {
+            setStatus("Ponle un nombre a tu personaje.", "error");
+            characterInput.focus();
+            return;
+        }
+        if (creatingAccount && (!account || !password)) {
+            setStatus("Escribe la cuenta y la contraseña.", "error");
+            (account ? passwordInput : accountInput).focus();
+            return;
+        }
+        if (creatingAccount && confirmInput && password !== confirmInput.value) {
+            setStatus("Las contraseñas no coinciden.", "error");
+            confirmInput.focus();
+            return;
+        }
+        if (!window.Evennia || !Evennia.isConnected()) {
+            setStatus("El World Engine todavía está conectando.", "error");
+            return;
+        }
+        setBusy(true);
+        setStatus(creatingAccount ? "Creando cuenta y personaje…" : "Creando personaje…", "info");
+        if (creatingAccount) {
+            pendingAccount = account;
+            registrationPending = true;
+            Evennia.msg("text", ["siza-auth-register " + encodePayload({
+                account: account,
+                password: password,
+                character: character,
+                origin: origin
+            })], {});
+        } else {
+            Evennia.msg("text", ["siza-auth-create-character " + encodePayload({
+                character: character,
+                origin: origin
+            })], {});
+        }
+        startTimer("No se pudo completar el creador. Revisa los datos e inténtalo otra vez.");
     }
 
     function onLoggedIn() {
-        setStatus("Cuenta abierta. Cargando personaje…", "info");
-        if (authPending && !authenticated) {
-            completeLogin(pendingCredentials && pendingCredentials.username);
+        if (authenticated || registrationPending) {
+            return;
+        }
+        if (awaitingLogin) {
+            window.setTimeout(requestCharacters, 80);
         }
     }
 
-    function forwardText(args, kwargs) {
-        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.receiveText === "function") {
-            window.SizaWorldBookClient.receiveText(args, kwargs);
+    function onAuth(args) {
+        var packet = args && args.length && args[0] && typeof args[0] === "object" ? args[0] : {};
+        var status = String(packet.status || "");
+        if (status === "CHARACTERS") {
+            clearTimeout(authTimer);
+            renderCharacters(packet);
+            return;
+        }
+        if (status === "PUPPET_READY") {
+            completeLogin(packet.character, packet.account);
+            return;
+        }
+        if (status === "ERROR") {
+            clearTimeout(authTimer);
+            awaitingLogin = false;
+            registrationPending = false;
+            setBusy(false);
+            setStatus(String(packet.message || "No se pudo completar esa operación."), "error");
         }
     }
 
@@ -288,31 +417,27 @@
             forwardText(args, kwargs);
             return;
         }
-        if (isLoginFailure(text)) {
-            authPending = false;
-            pendingCredentials = null;
-            forgetSaved();
-            showGate("No se pudo validar ese acceso. Revisa los datos e inténtalo otra vez.", "error");
-            return;
-        }
-        if (looksLikeWorld(text)) {
-            completeLogin(pendingCredentials && pendingCredentials.username);
-            if (/\(#\d+\)/.test(text)) {
-                forwardText(args, kwargs);
-            }
-            return;
-        }
-        if (isLoginBanner(text) && !authPending) {
-            showGate("Conexión lista. Introduce tu personaje y contraseña.", "info");
+        if (/incorrect password|authentication failed|does not exist|no account|unknown account|usage:\s*connect|could not connect/i.test(text)) {
+            clearTimeout(authTimer);
+            awaitingLogin = false;
+            registrationPending = false;
+            setBusy(false);
+            setStatus("No se pudo validar esa cuenta. Revisa los datos e inténtalo otra vez.", "error");
         }
     }
 
-    function onConnectionOpen() {
-        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionOpen === "function") {
-            window.SizaWorldBookClient.connectionOpen();
+    function forwardText(args, kwargs) {
+        if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.receiveText === "function") {
+            window.SizaWorldBookClient.receiveText(args, kwargs);
         }
-        if (!authenticated && !authPending) {
-            showGate("Conexión lista. Introduce tu personaje y contraseña.", "info");
+    }
+
+    function performLogout() {
+        logoutRequested = true;
+        forgetSavedAccount();
+        resetToLogin("Sesión cerrada.", "info");
+        if (window.Evennia && Evennia.isConnected()) {
+            Evennia.msg("text", ["quit"], {});
         }
     }
 
@@ -321,7 +446,6 @@
         var toggle = byId("siza-session-menu-toggle");
         var logout = byId("siza-logout-button");
         var clear = byId("siza-login-clear");
-
         if (toggle) {
             toggle.addEventListener("click", function (event) {
                 event.preventDefault();
@@ -336,10 +460,9 @@
             });
         }
         if (clear) {
-            clear.addEventListener("click", function (event) {
-                event.preventDefault();
-                forgetSaved();
-                setStatus("Acceso recordado borrado.", "info");
+            clear.addEventListener("click", function () {
+                forgetSavedAccount();
+                setStatus("Cuenta recordada borrada.", "info");
                 setMenuOpen(false);
             });
         }
@@ -348,77 +471,90 @@
                 setMenuOpen(false);
             }
         });
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
-                setMenuOpen(false);
-            }
-        });
     }
 
     function init() {
-        var form = byId("siza-login-form");
-        var create = byId("siza-login-create");
-        var username = byId("siza-login-username");
-        var password = byId("siza-login-password");
-        var saved = readSaved();
+        var loginForm = byId("siza-login-form");
+        var createAccount = byId("siza-login-create");
+        var creatorForm = byId("siza-creator-form");
+        var characterCreate = byId("siza-character-create");
+        var characterBack = byId("siza-character-back");
+        var creatorBack = byId("siza-creator-back");
+        var accountInput = byId("siza-login-username");
+        var rememberedAccount = readRememberedAccount();
 
         setupSessionMenu();
-        setPlayerName("");
-        if (saved) {
-            if (username) {
-                username.value = saved.username;
-            }
-            if (password) {
-                password.value = saved.password;
-            }
+        setPlayerName("", "");
+        if (rememberedAccount && accountInput) {
+            accountInput.value = rememberedAccount;
         }
-        if (form) {
-            form.addEventListener("submit", function (event) {
+        if (loginForm) {
+            loginForm.addEventListener("submit", function (event) {
                 event.preventDefault();
-                submitCredentials("connect");
+                submitLogin();
             });
         }
-        if (create) {
-            create.addEventListener("click", function () {
-                submitCredentials("create");
+        if (createAccount) {
+            createAccount.addEventListener("click", function () {
+                currentAccount = "";
+                showStep("creator");
+                setStatus("Crea tu cuenta y tu primer personaje.", "info");
+            });
+        }
+        if (characterCreate) {
+            characterCreate.addEventListener("click", function () {
+                showStep("creator");
+                setStatus("Define el nuevo personaje.", "info");
+            });
+        }
+        if (characterBack) {
+            characterBack.addEventListener("click", function () {
+                resetToLogin("Introduce otra cuenta para continuar.", "info");
+            });
+        }
+        if (creatorBack) {
+            creatorBack.addEventListener("click", function () {
+                showStep(currentAccount ? "characters" : "login");
+                setStatus("", "info");
+            });
+        }
+        if (creatorForm) {
+            creatorForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                submitCreator();
             });
         }
         if (!window.Evennia) {
             showGate("El cliente del World Engine no está disponible.", "error");
             return;
         }
-
         Evennia.emitter.on("text", onServerText);
         Evennia.emitter.on("logged_in", onLoggedIn);
-        Evennia.emitter.on("siza_local_ready", onLocalReady);
-        Evennia.emitter.on("connection_open", onConnectionOpen);
-        Evennia.emitter.on("connection_close", function () {
-            authenticated = false;
-            if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionClose === "function") {
-                window.SizaWorldBookClient.connectionClose();
+        Evennia.emitter.on("siza_auth", onAuth);
+        Evennia.emitter.on("connection_open", function () {
+            if (!authenticated) {
+                showGate("Conexión lista. Introduce tu cuenta.", "info", "login");
             }
-            showGate(logoutRequested ? "Sesión cerrada." : "La conexión se cerró. Reconectando…", logoutRequested ? "info" : "error");
+        });
+        Evennia.emitter.on("connection_close", function () {
+            if (!logoutRequested) {
+                resetToLogin("La conexión se cerró. Reconectando…", "error");
+            }
         });
         Evennia.emitter.on("connection_error", function () {
-            authenticated = false;
-            if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionError === "function") {
-                window.SizaWorldBookClient.connectionError();
-            }
-            showGate("No se pudo conectar con el World Engine.", "error");
+            resetToLogin("No se pudo conectar con el World Engine.", "error");
         });
-
         if (Evennia.isConnected()) {
-            onConnectionOpen();
+            showGate("Conexión lista. Introduce tu cuenta.", "info", "login");
         }
         window.setTimeout(function () {
-            ((saved ? password : username) || username || password || {}).focus && ((saved ? password : username) || username || password).focus();
+            (accountInput || {}).focus && accountInput.focus();
         }, 50);
     }
 
     window.SizaLoginGate = Object.freeze({
         show: showGate,
-        logout: performLogout,
-        local: submitLocalAccess
+        logout: performLogout
     });
 
     $(document).ready(init);
