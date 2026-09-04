@@ -4,9 +4,9 @@
     var STORAGE_KEY = "siza.world.login.v1";
     var authPending = false;
     var authenticated = false;
-    var savedLoginTimer = null;
     var authTimer = null;
     var pendingCredentials = null;
+    var logoutRequested = false;
 
     function byId(id) {
         return document.getElementById(id);
@@ -28,6 +28,14 @@
             window.localStorage.removeItem(STORAGE_KEY);
         }
         return null;
+    }
+
+    function forgetSaved() {
+        try {
+            window.localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            // The session UI still resets even if storage is unavailable.
+        }
     }
 
     function saveCredentials(credentials) {
@@ -67,33 +75,72 @@
         }
     }
 
+    function setPlayerName(name) {
+        var cleanName = String(name || "").trim();
+        var displayName = cleanName || "Sin personaje";
+        var initial = cleanName ? cleanName.charAt(0).toUpperCase() : "?";
+        var playerName = byId("siza-player-name");
+        var portraitName = byId("siza-player-portrait-name");
+        var portraitInitial = byId("siza-player-portrait-initial");
+        var portrait = byId("siza-player-portrait");
+
+        if (playerName) {
+            playerName.textContent = displayName;
+        }
+        if (portraitName) {
+            portraitName.textContent = displayName;
+        }
+        if (portraitInitial) {
+            portraitInitial.textContent = initial;
+        }
+        if (portrait) {
+            portrait.setAttribute("data-empty", cleanName ? "false" : "true");
+        }
+    }
+
+    function setMenuOpen(open) {
+        var menu = byId("siza-session-menu");
+        var toggle = byId("siza-session-menu-toggle");
+        var panel = byId("siza-session-menu-panel");
+        if (!menu || !toggle || !panel) {
+            return;
+        }
+        menu.setAttribute("data-open", open ? "true" : "false");
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        panel.hidden = !open;
+    }
+
     function showGate(message, kind) {
         var gate = byId("siza-login-gate");
+        var root = byId("siza-book-client");
         if (gate) {
             gate.setAttribute("data-state", "visible");
         }
+        if (root) {
+            root.setAttribute("data-authenticated", "false");
+        }
         setBusy(false);
+        setMenuOpen(false);
         setStatus(message || "Introduce tu acceso para continuar.", kind || "info");
     }
 
-    function completeLogin() {
+    function completeLogin(characterName) {
         var gate = byId("siza-login-gate");
         var output = byId("siza-messagewindow");
         var root = byId("siza-book-client");
-        var playerName = byId("siza-player-name");
 
         authenticated = true;
         authPending = false;
-        clearTimeout(savedLoginTimer);
+        logoutRequested = false;
         clearTimeout(authTimer);
         setBusy(false);
         setStatus("Acceso confirmado.", "success");
 
         if (pendingCredentials) {
             saveCredentials(pendingCredentials);
-            if (playerName) {
-                playerName.textContent = pendingCredentials.username;
-            }
+            setPlayerName(characterName || pendingCredentials.username);
+        } else if (characterName) {
+            setPlayerName(characterName);
         }
         if (output) {
             output.innerHTML = "";
@@ -111,6 +158,43 @@
         }, 180);
     }
 
+    function resetSessionUi(message, kind) {
+        var output = byId("siza-messagewindow");
+        var username = byId("siza-login-username");
+        var password = byId("siza-login-password");
+
+        authenticated = false;
+        authPending = false;
+        pendingCredentials = null;
+        clearTimeout(authTimer);
+        setBusy(false);
+        setMenuOpen(false);
+        setPlayerName("");
+        if (output) {
+            output.innerHTML = "";
+        }
+        if (password) {
+            password.value = "";
+        }
+        showGate(message || "Sesión cerrada. Introduce tu acceso para continuar.", kind || "info");
+        window.setTimeout(function () {
+            (username || password || {}).focus && (username || password).focus();
+        }, 50);
+    }
+
+    function performLogout() {
+        logoutRequested = true;
+        forgetSaved();
+        resetSessionUi("Sesión cerrada. Acceso recordado borrado en este navegador.", "info");
+        if (window.Evennia && Evennia.isConnected()) {
+            try {
+                Evennia.msg("text", ["quit"], {});
+            } catch (error) {
+                // The visible login gate is already restored.
+            }
+        }
+    }
+
     function isLoginBanner(text) {
         return /welcome to runtime|existing account|connect <username>|create <username>|need to create an account/i.test(text);
     }
@@ -120,7 +204,7 @@
     }
 
     function looksLikeWorld(text) {
-        return /\(#\d+\)|you become|logged in|pescader[ií]a|world engine|limbo/i.test(text) && !isLoginBanner(text);
+        return /\(#\d+\)|you become|logged in|pescader[ií]a|world engine|limbo|darkhaven/i.test(text) && !isLoginBanner(text);
     }
 
     function quoteUsername(value) {
@@ -138,7 +222,10 @@
 
         if (!credentials.username || !credentials.password) {
             showGate("Escribe el personaje y la contraseña.", "error");
-            (credentials.username ? passwordField : usernameField).focus();
+            var focusTarget = credentials.username ? passwordField : usernameField;
+            if (focusTarget) {
+                focusTarget.focus();
+            }
             return;
         }
         if (!window.Evennia || !Evennia.isConnected()) {
@@ -148,6 +235,7 @@
 
         pendingCredentials = credentials;
         authPending = true;
+        logoutRequested = false;
         clearTimeout(authTimer);
         setBusy(true);
         setStatus(mode === "create" ? "Creando tu acceso…" : "Recuperando tu personaje…", "info");
@@ -163,48 +251,26 @@
     }
 
     function submitLocalAccess() {
-        if (!window.Evennia || !Evennia.isConnected()) {
-            showGate("El World Engine todavía está conectando.", "error");
-            return;
-        }
-        try {
-            window.localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-            // Local access does not depend on browser storage.
-        }
-        pendingCredentials = null;
-        authPending = true;
-        clearTimeout(authTimer);
-        setBusy(true);
-        setStatus("Abriendo la sesión local de Nereida…", "info");
-        Evennia.msg("text", ["siza-local-login Nereida"], {});
-        authTimer = window.setTimeout(function () {
-            if (!authPending || authenticated) {
-                return;
-            }
-            authPending = false;
-            showGate("El World Engine no completó el acceso local.", "error");
-        }, 10000);
+        showGate("Auto-login local desactivado. Use usuario y contraseña.", "info");
     }
 
     function onLocalReady(args) {
         var packet = args && args.length && args[0] && typeof args[0] === "object" ? args[0] : {};
         var status = String(packet.status || "");
         if (status === "READY") {
-            var playerName = byId("siza-player-name");
-            if (playerName && packet.character) {
-                playerName.textContent = String(packet.character);
-            }
-            completeLogin();
+            completeLogin(packet.character || packet.puppet || packet.account || "");
             return;
         }
         authPending = false;
         clearTimeout(authTimer);
-        showGate("No se pudo abrir a Nereida: " + (status || "respuesta inválida") + ".", "error");
+        showGate("Acceso local automático desactivado. Use el login normal.", "info");
     }
 
     function onLoggedIn() {
-        setStatus("Cuenta local abierta. Cargando a Nereida…", "info");
+        setStatus("Cuenta abierta. Cargando personaje…", "info");
+        if (authPending && !authenticated) {
+            completeLogin(pendingCredentials && pendingCredentials.username);
+        }
     }
 
     function forwardText(args, kwargs) {
@@ -225,25 +291,19 @@
         if (isLoginFailure(text)) {
             authPending = false;
             pendingCredentials = null;
-            try {
-                window.localStorage.removeItem(STORAGE_KEY);
-            } catch (error) {
-                // The visual error remains sufficient when storage is unavailable.
-            }
+            forgetSaved();
             showGate("No se pudo validar ese acceso. Revisa los datos e inténtalo otra vez.", "error");
             return;
         }
         if (looksLikeWorld(text)) {
-            completeLogin();
+            completeLogin(pendingCredentials && pendingCredentials.username);
             if (/\(#\d+\)/.test(text)) {
                 forwardText(args, kwargs);
             }
             return;
         }
-        if (isLoginBanner(text)) {
-            if (!authPending) {
-                submitLocalAccess();
-            }
+        if (isLoginBanner(text) && !authPending) {
+            showGate("Conexión lista. Introduce tu personaje y contraseña.", "info");
         }
     }
 
@@ -251,14 +311,48 @@
         if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionOpen === "function") {
             window.SizaWorldBookClient.connectionOpen();
         }
-        setStatus("Conexión lista. Abriendo mundo local…", "info");
-        clearTimeout(savedLoginTimer);
-        savedLoginTimer = window.setTimeout(function () {
-            if (authenticated || authPending) {
-                return;
+        if (!authenticated && !authPending) {
+            showGate("Conexión lista. Introduce tu personaje y contraseña.", "info");
+        }
+    }
+
+    function setupSessionMenu() {
+        var menu = byId("siza-session-menu");
+        var toggle = byId("siza-session-menu-toggle");
+        var logout = byId("siza-logout-button");
+        var clear = byId("siza-login-clear");
+
+        if (toggle) {
+            toggle.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                setMenuOpen(!(menu && menu.getAttribute("data-open") === "true"));
+            });
+        }
+        if (logout) {
+            logout.addEventListener("click", function (event) {
+                event.preventDefault();
+                performLogout();
+            });
+        }
+        if (clear) {
+            clear.addEventListener("click", function (event) {
+                event.preventDefault();
+                forgetSaved();
+                setStatus("Acceso recordado borrado.", "info");
+                setMenuOpen(false);
+            });
+        }
+        document.addEventListener("click", function (event) {
+            if (menu && !menu.contains(event.target)) {
+                setMenuOpen(false);
             }
-            submitLocalAccess();
-        }, 250);
+        });
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                setMenuOpen(false);
+            }
+        });
     }
 
     function init() {
@@ -268,14 +362,20 @@
         var password = byId("siza-login-password");
         var saved = readSaved();
 
+        setupSessionMenu();
+        setPlayerName("");
         if (saved) {
-            username.value = saved.username;
-            password.value = saved.password;
+            if (username) {
+                username.value = saved.username;
+            }
+            if (password) {
+                password.value = saved.password;
+            }
         }
         if (form) {
             form.addEventListener("submit", function (event) {
                 event.preventDefault();
-                submitLocalAccess();
+                submitCredentials("connect");
             });
         }
         if (create) {
@@ -297,7 +397,7 @@
             if (window.SizaWorldBookClient && typeof window.SizaWorldBookClient.connectionClose === "function") {
                 window.SizaWorldBookClient.connectionClose();
             }
-            showGate("La conexión se cerró. Reconectando…", "error");
+            showGate(logoutRequested ? "Sesión cerrada." : "La conexión se cerró. Reconectando…", logoutRequested ? "info" : "error");
         });
         Evennia.emitter.on("connection_error", function () {
             authenticated = false;
@@ -311,12 +411,14 @@
             onConnectionOpen();
         }
         window.setTimeout(function () {
-            (saved ? password : username).focus();
+            ((saved ? password : username) || username || password || {}).focus && ((saved ? password : username) || username || password).focus();
         }, 50);
     }
 
     window.SizaLoginGate = Object.freeze({
-        show: showGate
+        show: showGate,
+        logout: performLogout,
+        local: submitLocalAccess
     });
 
     $(document).ready(init);
