@@ -585,3 +585,23 @@ body {
 #siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder > strong {
     display: none !important;
 }
+
+
+/* Exploration has exactly two grid rows: folio and player presence. */
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookBody {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) 52px !important;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
+    grid-area: 1 / 1 / 2 / 2 !important;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaFolioPlayers {
+    grid-area: 2 / 1 / 3 / 2 !important;
+    align-self: stretch !important;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaTcgTray {
+    grid-area: 1 / 1 / 3 / 2;
+}
