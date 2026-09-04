@@ -605,3 +605,9 @@ body {
 #siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaTcgTray {
     grid-area: 1 / 1 / 3 / 2;
 }
+
+
+/* The old shell declared a second vertical scene row; the folio has one. */
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
+    grid-template-rows: minmax(0, 1fr) !important;
+}
