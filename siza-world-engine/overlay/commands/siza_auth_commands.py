@@ -145,7 +145,6 @@ def _enter_character(session, account, character):
                 account.unpuppet_object(session)
             if account.get_puppet(session) != character:
                 account.puppet_object(session, character)
-            account.db._last_puppet = character
             campaign_state = start_registered_campaign(
                 character, "CAMPAIGN-FARO-AHOGADO-VS01", force=False
             )
