@@ -55,11 +55,26 @@
         <strong id="siza-scene-title" hidden>Waiting for world state</strong>
         <div id="siza-scene-visual-label" class="sizaSceneVisualLabel">SIZA WORLD ENGINE</div>
         <div id="siza-scene-cast" class="sizaSceneCast" aria-label="Other characters present" hidden></div>
+        <div class="sizaFolioSceneMarkers" aria-hidden="true">
+          <span class="sizaFolioMarker" data-kind="person">Persona visible</span>
+          <span class="sizaFolioMarker" data-kind="object">Objeto visible</span>
+          <span class="sizaFolioMarker" data-kind="exit">Salida visible</span>
+        </div>
+        <nav class="sizaFolioSceneLegend" aria-label="Elementos de la escena">
+          <span>Persona</span>
+          <span>Objeto</span>
+          <span>Salida</span>
+        </nav>
       </div>
 
       <section class="sizaStoryPage" aria-label="Narration and actions">
         <div class="sizaStoryCopy">
-          <p id="siza-scene-description" class="sizaBookSceneDescription">The current location will be described here.</p>
+          <div class="sizaFolioObservation">
+            <header class="sizaFolioObservationHeader">
+              <strong>Observación</strong>
+              <span>Lo que percibe el personaje</span>
+            </header>
+            <p id="siza-scene-description" class="sizaBookSceneDescription">The current location will be described here.</p>
           <section id="siza-contextual-actions" class="sizaContextualActions" aria-label="Available actions">
             <div class="sizaContextualActionsHeader">
               <strong id="siza-contextual-actions-title">ACCIONES DISPONIBLES</strong>
@@ -128,7 +143,15 @@
           </div>
           <div class="sizaBookInputHint">Enter to send · Shift+Enter for a new line · ↑/↓ history</div>
         </section>
+          </div>
       </section>
+    </section>
+
+    <section class="sizaFolioPlayers" aria-label="Jugadores presentes">
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">1</span><div><strong>Jugador 1</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">2</span><div><strong>Jugador 2</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">3</span><div><strong>Jugador 3</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">4</span><div><strong>Jugador 4</strong><span>Presente · última acción</span></div></article>
     </section>
 
     <section id="siza-tcg-tray" class="sizaTcgTray" data-active="false" aria-label="SIZA TCG mount">
