@@ -268,6 +268,18 @@
         setBusy(true);
         setStatus("Validando cuenta…", "info");
         Evennia.msg("text", ["connect " + quote(account) + " " + password], {});
+        /*
+         * Evennia authenticates the socket before the browser's optional
+         * logged_in notification. Query the authenticated account directly
+         * so this flow also works with webclient builds that omit it.
+         */
+        [350, 900, 1800].forEach(function (delay) {
+            window.setTimeout(function () {
+                if (awaitingLogin && !authenticated) {
+                    requestCharacters();
+                }
+            }, delay);
+        });
         startTimer("El servidor no confirmó el login. Inténtalo otra vez.");
     }
 
