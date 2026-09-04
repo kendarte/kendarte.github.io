@@ -9,116 +9,7 @@
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_tcg_embed_v01.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_combat_choreography_v01.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_combat_animation_v02.css' %}">
-<style id="siza-compact-header-inline-v04">
-/* Served inline on purpose: this must win even when static CSS is stale/cached. */
-.sizaBookClient {
-    grid-template-rows: 58px minmax(0, 1fr) !important;
-}
-.sizaBookHeader {
-    height: 58px !important;
-    min-height: 58px !important;
-    max-height: 58px !important;
-}
-.sizaHeaderCharacterPlayer {
-    grid-template-columns: 48px minmax(0,1fr) !important;
-    padding: 4px 8px 4px 5px !important;
-}
-.sizaHeaderCharacterFocus {
-    grid-template-columns: minmax(0,1fr) 48px !important;
-    padding: 4px 5px 4px 8px !important;
-}
-.sizaPortraitSlot {
-    width: 42px !important;
-    height: 48px !important;
-}
-.sizaPortraitInitial {
-    font-size: 22px !important;
-}
-.sizaHeaderCharacterCopy {
-    padding: 0 7px !important;
-}
-.sizaHeaderCharacterCopy small,
-.sizaBookChapter small {
-    margin-bottom: 1px !important;
-    font-size: 6px !important;
-}
-.sizaHeaderCharacterCopy strong {
-    font-size: 15px !important;
-    line-height: 1 !important;
-}
-.sizaHeaderCharacterCopy > span {
-    margin-top: 2px !important;
-    font-size: 8px !important;
-    line-height: 1 !important;
-}
-.sizaHeaderCharacterMeta {
-    display: none !important;
-}
-.sizaBookChapter {
-    padding: 3px 10px !important;
-}
-.sizaBookChapter small {
-    margin-bottom: 2px !important;
-}
-.sizaBookChapter strong {
-    font-size: 16px !important;
-    line-height: 1 !important;
-}
-.sizaBookChapter span {
-    margin-top: 2px !important;
-    font-size: 8px !important;
-    line-height: 1 !important;
-}
-.sizaConnectionBadge {
-    right: 5px !important;
-    bottom: -11px !important;
-    padding: 2px 5px !important;
-    font-size: 6px !important;
-}
-.sizaConnectionDot {
-    width: 5px !important;
-    height: 5px !important;
-}
-.sizaSceneTopPlaque {
-    display: none !important;
-}
-.sizaBookScene {
-    margin-top: 4px !important;
-}
-.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
-    display: flex !important;
-    flex-direction: column !important;
-}
-.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual {
-    flex: 1 1 0 !important;
-    min-height: 235px !important;
-}
-.sizaBookClient .sizaStoryPage {
-    align-self: stretch !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-}
-.sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage {
-    flex: 0 0 250px !important;
-    height: 250px !important;
-    min-height: 250px !important;
-}
-.sizaBookClient .sizaStoryCopy,
-.sizaBookClient .sizaBookOutput {
-    min-height: 0 !important;
-}
-@media (max-width:760px) {
-    .sizaBookClient { grid-template-rows: 52px minmax(0,1fr) !important; }
-    .sizaBookHeader { height:52px !important; min-height:52px !important; max-height:52px !important; }
-    .sizaPortraitSlot { width:36px !important; height:42px !important; }
-    .sizaHeaderCharacterPlayer { grid-template-columns:40px minmax(0,1fr) !important; }
-    .sizaHeaderCharacterFocus { grid-template-columns:minmax(0,1fr) 40px !important; }
-    .sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual { min-height:210px !important; }
-    .sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage { flex-basis:245px !important; height:245px !important; min-height:245px !important; }
-}
-</style>
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_shared_codex_v01.css' %}?v=20260904-shared-codex"
 <script src="{% static 'webclient/js/siza_book_client.js' %}?v=20260903-context-actions" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_login_v01.js' %}?v=20260904-login-rebuild" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_book_shell_v02.js' %}" type="text/javascript" charset="utf-8"></script>
@@ -131,6 +22,7 @@
 <script src="{% static 'webclient/js/siza_book_interaction_v04.js' %}?v=20260903-context-actions" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_location_assets_v01.js' %}?v=20260902-pescaderia-v02" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_dialogue_mode_v01.js' %}?v=20260903-dialogue-no-layout-switch" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_shared_codex_v01.js' %}?v=20260904-shared-codex" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'webclient/js/siza_narrative_filter_v01.js' %}?v=20260903-output-fix" type="text/javascript" charset="utf-8"></script>
 {% endblock %}
 
