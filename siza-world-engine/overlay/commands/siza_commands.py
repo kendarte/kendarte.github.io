@@ -7,6 +7,7 @@ from services.interaction_engine import parse_interaction_intent, resolve_intera
 from services.npc_simulation import find_npc, npc_state, simstep
 from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
+from services.actor_registry import siza_npcs
 from typeclasses.world_tick import (
     DEFAULT_INTERVAL,
     pause_world_tick,
@@ -313,9 +314,8 @@ class CmdSizaWorldCheck(Command):
     def func(self):
         caller = self.caller
         location = getattr(caller, "location", None)
-        entities = list(search_tag(ENTITY_TAG, category=ENTITY_CATEGORY))
-        mara = next((obj for obj in entities if obj.db.npc_id == "NPC-KAL-DAR-MARA-001"), None)
-        board = next((obj for obj in entities if obj.db.object_id == "OBJ-KAL-DAR-CANTINA-001"), None)
+        mara = next((obj for obj in siza_npcs() if obj.db.npc_id == "NPC-KAL-DAR-MARA-001"), None)
+        board = next((obj for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY) if obj.db.object_id == "OBJ-KAL-DAR-CANTINA-001"), None)
         doors = list(search_tag(DOOR_GROUP, category=DOOR_CATEGORY))
         tick = world_tick_state()
 

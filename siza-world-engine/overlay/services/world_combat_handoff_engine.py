@@ -4,6 +4,7 @@ import uuid
 
 from services.consequence_engine import emit_world_action
 from services.player_recipient_consequence_engine import apply_player_actor_consequences
+from services.combat_profile_engine import combat_participant
 
 
 WORLD_COMBAT_HANDOFF_BUILD = "0.2.0-world-tcg-consequences"
@@ -65,14 +66,7 @@ def _tcg_profile(obj):
 
 
 def _participant(obj, *, player=False):
-    return {
-        "entity_id": _entity_id(obj, player=player),
-        "name": _text(getattr(obj, "key", "")),
-        "deck_id": _text(getattr(obj.db, "tcg_deck_id", "")) if obj else "",
-        "loadout": _clone(_plain_dict(getattr(obj.db, "tcg_loadout", {}))) if obj else {},
-        "world_status": _clone(_plain_dict(getattr(obj.db, "state", {}))) if obj else {},
-        "tcg_profile": _tcg_profile(obj),
-    }
+    return combat_participant(obj, _entity_id(obj, player=player)) if obj else {}
 
 
 def _site_packet(location):

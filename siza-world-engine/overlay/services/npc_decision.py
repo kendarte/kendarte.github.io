@@ -348,6 +348,7 @@ def _complete_selected_goal(npc, goal):
             npc,
             goal.get("relationship_obligation_id"),
             goal.get("relationship_target_npc_id"),
+            target_social_entity_id=goal.get("target_social_entity_id"),
         )
         return {
             "completed": bool(packet.get("completed")),

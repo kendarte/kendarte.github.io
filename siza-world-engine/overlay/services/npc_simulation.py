@@ -1,13 +1,12 @@
 from collections import deque
 
-from evennia import search_object, search_tag
+from evennia import search_object
+from services.actor_registry import siza_npcs
 
 from services.world_clock import schedule_is_active, schedule_label, world_clock_state
 from services.world_event_engine import danger_blocks_room
 
 
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -36,11 +35,7 @@ def _record(raw):
 
 
 def _npc_candidates():
-    return [
-        obj
-        for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY)
-        if getattr(obj.db, "is_npc", False)
-    ]
+    return siza_npcs()
 
 
 def simulated_npcs():

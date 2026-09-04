@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from evennia import search_tag
+from services.actor_registry import find_npc_by_id
 
 from services.decision_personality import apply_decision_personality
 from services.job_engine import job_sites
@@ -13,8 +13,6 @@ from services.world_event_engine import collect_event_candidates, danger_blocks_
 
 
 CLAIM_BUILD = "0.31.0-skills-competence"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 POLICY_FIRST_SELECTED = "FIRST_SELECTED"
 POLICY_NEAREST_REACHABLE = "NEAREST_REACHABLE"
 
@@ -101,13 +99,7 @@ def _priority_map(npc):
 
 
 def _npc_by_id(npc_id):
-    wanted = str(npc_id or "").strip()
-    if not wanted:
-        return None
-    for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if str(getattr(obj.db, "npc_id", "") or "") == wanted:
-            return obj
-    return None
+    return find_npc_by_id(npc_id)
 
 
 def _npc_exists(npc_id):

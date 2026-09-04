@@ -1,4 +1,4 @@
-from evennia import search_tag
+from services.actor_registry import find_npc_by_id
 
 from services.job_claims import inspect_job_claims, release_job_claim
 from services.job_engine import inspect_job_tasks
@@ -6,8 +6,6 @@ from services.world_clock import schedule_is_active, schedule_label, world_clock
 
 
 SHIFT_HANDOFF_BUILD = "0.17.0-shift-handoff"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 POLICY_KEEP = "KEEP"
 POLICY_RELEASE = "RELEASE"
 
@@ -20,13 +18,7 @@ def _plain_dict(value):
 
 
 def _find_npc(npc_id):
-    wanted = str(npc_id or "").strip()
-    if not wanted:
-        return None
-    for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if str(getattr(obj.db, "npc_id", "") or "") == wanted:
-            return obj
-    return None
+    return find_npc_by_id(npc_id)
 
 
 def _job_schedule(npc):

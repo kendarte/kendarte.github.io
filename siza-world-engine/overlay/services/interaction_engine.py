@@ -151,8 +151,10 @@ def _relationship_identity(other):
             "target_dbref": int(other.id),
             "target_name": other.key,
         }
-    return f"DBREF:{int(other.id)}", {
-        "target_type": "CHARACTER",
+    social_id = f"PLAYER:{int(other.id)}"
+    return social_id, {
+        "target_type": "PLAYER",
+        "target_social_entity_id": social_id,
         "target_dbref": int(other.id),
         "target_name": other.key,
     }
@@ -168,6 +170,8 @@ def _update_relationship(holder, other, timestamp):
     current["last_interaction"] = timestamp
     relationships[key] = current
     holder.db.relationships = relationships
+    from services.social_graph_engine import sync_legacy_relationships
+    sync_legacy_relationships(holder)
 
 
 def _record_conversation(

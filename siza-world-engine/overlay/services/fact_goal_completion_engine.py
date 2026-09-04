@@ -1,4 +1,5 @@
-from evennia import search_object, search_tag
+from evennia import search_object
+from services.actor_registry import find_npc_by_id
 
 from services.knowledge_fact_transfer_engine import transfer_knowledge_fact
 from services.object_action_engine import begin_object_action
@@ -6,8 +7,6 @@ from services.object_action_engine import begin_object_action
 
 FACT_GOAL_COMPLETION_BUILD = "0.60.0-fact-goal-completion-effects"
 FACT_GOAL_OBJECT_ACTION_BUILD = "0.62.0-goal-completion-object-action"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 LEDGER_ATTR = "fact_goal_completion_action_ids"
 LEDGER_LIMIT = 100
 
@@ -64,13 +63,7 @@ def upsert_completion_rule(npc, rule):
 
 
 def _find_npc_by_id(npc_id):
-    wanted = str(npc_id or "").strip()
-    if not wanted:
-        return None
-    for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if str(getattr(obj.db, "npc_id", "") or "").strip() == wanted:
-            return obj
-    return None
+    return find_npc_by_id(npc_id)
 
 
 def _find_object_by_identity(object_name, object_id):

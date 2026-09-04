@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
-from evennia import search_object, search_tag
+from evennia import search_object
+from services.actor_registry import find_npc_by_id
+from services.social_graph_engine import peek_social_entity_id, resolve_social_entity, sync_legacy_relationships
 
 from services.information_engine import (
     event_knowledge_route,
@@ -11,8 +13,6 @@ from services.information_engine import (
 
 RELATIONSHIP_BUILD = "0.35.0-social-information-action"
 FACT_SHARE_RELATIONSHIP_BUILD = "0.89.0-social-fact-share-obligation"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -40,10 +40,17 @@ def _npc_by_id(npc_id):
     wanted = str(npc_id or "").strip()
     if not wanted or wanted.startswith("DBREF:"):
         return None
-    for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if str(getattr(obj.db, "npc_id", "") or "") == wanted:
-            return obj
-    return None
+    return find_npc_by_id(wanted)
+
+
+def _target_key(target):
+    identity = peek_social_entity_id(target)
+    return identity[4:] if identity and identity.startswith("NPC:") else identity
+
+
+def _resolve_target(identity):
+    text = str(identity or "").strip()
+    return resolve_social_entity(text) if text.startswith(("NPC:", "PLAYER:")) else (_npc_by_id(text) or _dbref_target(text))
 
 
 def _dbref_target(identity):
@@ -107,7 +114,8 @@ def collect_relationship_candidates(npc, default_priority=50):
     output = []
     for target_npc_id, raw_relation in _relationships(npc).items():
         relation = _relation_record(raw_relation)
-        target = _npc_by_id(target_npc_id)
+        target_social_id = str(relation.get("target_social_entity_id") or target_npc_id)
+        target = _resolve_target(target_social_id)
         if not target or not target.location:
             continue
 
@@ -138,7 +146,8 @@ def collect_relationship_candidates(npc, default_priority=50):
             candidate = {
                 "id": f"RELATIONSHIP:{obligation_id}",
                 "relationship_obligation_id": obligation_id,
-                "relationship_target_npc_id": str(target_npc_id),
+                "relationship_target_npc_id": str(relation.get("target_npc_id") or "") or None,
+                "target_social_entity_id": peek_social_entity_id(target),
                 "relationship_target_name": target.key,
                 "type": "RELATIONSHIP",
                 "priority": priority,
@@ -170,8 +179,8 @@ def create_information_obligation(source, target, event_id, occurrence, priority
     if not source or not target:
         return {"success": False, "reason": "BAD_NPC"}
     source_id = str(getattr(source.db, "npc_id", "") or "").strip()
-    target_id = str(getattr(target.db, "npc_id", "") or "").strip()
-    if not source_id or not target_id or source_id == target_id:
+    target_id, target_social_id = _target_key(target), peek_social_entity_id(target)
+    if not source_id or not target_id or not target_social_id or target_social_id == peek_social_entity_id(source):
         return {"success": False, "reason": "BAD_NPC"}
     try:
         occurrence = int(occurrence)
@@ -218,12 +227,15 @@ def create_information_obligation(source, target, event_id, occurrence, priority
         obligations.append(payload)
 
     relation["obligations"] = obligations
-    relation["target_type"] = "NPC"
-    relation["target_npc_id"] = target_id
+    relation["target_type"] = "NPC" if target_social_id.startswith("NPC:") else "PLAYER"
+    relation["target_social_entity_id"] = target_social_id
+    if target_social_id.startswith("NPC:"):
+        relation["target_npc_id"] = target_id
     relation["target_dbref"] = int(target.id)
     relation["target_name"] = target.key
     relationships[target_id] = relation
     source.db.relationships = relationships
+    sync_legacy_relationships(source)
 
     return {
         "success": True,
@@ -231,7 +243,8 @@ def create_information_obligation(source, target, event_id, occurrence, priority
         "obligation_id": obligation_id,
         "source_npc_id": source_id,
         "source_name": source.key,
-        "target_npc_id": target_id,
+        "target_npc_id": target_id if target_social_id.startswith("NPC:") else None,
+        "target_social_entity_id": target_social_id,
         "target_name": target.key,
         "event_id": str(event_id).strip(),
         "occurrence": occurrence,
@@ -246,9 +259,9 @@ def create_fact_share_obligation(source, target, fact_id, priority=50):
     if not source or not target:
         return {"success": False, "reason": "BAD_NPC"}
     source_id = str(getattr(source.db, "npc_id", "") or "").strip()
-    target_id = str(getattr(target.db, "npc_id", "") or "").strip()
+    target_id, target_social_id = _target_key(target), peek_social_entity_id(target)
     wanted_fact_id = str(fact_id or "").strip()
-    if not source_id or not target_id or source_id == target_id or not wanted_fact_id:
+    if not source_id or not target_id or not target_social_id or target_social_id == peek_social_entity_id(source) or not wanted_fact_id:
         return {"success": False, "reason": "BAD_NPC_OR_FACT"}
     try:
         priority = int(priority)
@@ -292,12 +305,15 @@ def create_fact_share_obligation(source, target, fact_id, priority=50):
         obligations.append(payload)
 
     relation["obligations"] = obligations
-    relation["target_type"] = "NPC"
-    relation["target_npc_id"] = target_id
+    relation["target_type"] = "NPC" if target_social_id.startswith("NPC:") else "PLAYER"
+    relation["target_social_entity_id"] = target_social_id
+    if target_social_id.startswith("NPC:"):
+        relation["target_npc_id"] = target_id
     relation["target_dbref"] = int(target.id)
     relation["target_name"] = target.key
     relationships[target_id] = relation
     source.db.relationships = relationships
+    sync_legacy_relationships(source)
 
     return {
         "success": True,
@@ -305,7 +321,8 @@ def create_fact_share_obligation(source, target, fact_id, priority=50):
         "obligation_id": obligation_id,
         "source_npc_id": source_id,
         "source_name": source.key,
-        "target_npc_id": target_id,
+        "target_npc_id": target_id if target_social_id.startswith("NPC:") else None,
+        "target_social_entity_id": target_social_id,
         "target_name": target.key,
         "fact_id": wanted_fact_id,
         "fact_topic": fact.get("topic"),
@@ -314,14 +331,14 @@ def create_fact_share_obligation(source, target, fact_id, priority=50):
     }
 
 
-def resolve_relationship_goal(npc, obligation_id, target_npc_id):
-    """Resolve one social obligation only when actor and target NPC physically coincide."""
+def resolve_relationship_goal(npc, obligation_id, target_npc_id=None, target_social_entity_id=None):
+    """Resolve a goal against any social actor physically in the same room."""
     if not npc:
         return {"completed": False, "resolved": False, "reason": "NO_NPC"}
 
     wanted = str(obligation_id or "").strip()
-    target_id = str(target_npc_id or "").strip()
-    target = _npc_by_id(target_id)
+    target_id = str(target_social_entity_id or target_npc_id or "").strip()
+    target = _resolve_target(target_id)
     if not wanted or not target:
         return {"completed": False, "resolved": False, "reason": "BAD_TARGET"}
     if not npc.location or npc.location != target.location:
@@ -334,7 +351,8 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
         }
 
     relationships = _relationships(npc)
-    relation = _relation_record(relationships.get(target_id))
+    relation_key = _target_key(target)
+    relation = _relation_record(relationships.get(relation_key))
     obligations = _obligations(relation)
     changed = False
     now = datetime.now(timezone.utc).isoformat()
@@ -432,20 +450,24 @@ def resolve_relationship_goal(npc, obligation_id, target_npc_id):
         }
 
     relation["obligations"] = obligations
-    relation["target_type"] = "NPC"
-    relation["target_npc_id"] = target_id
+    relation["target_type"] = "NPC" if bool(getattr(target.db, "is_npc", False)) else "PLAYER"
+    relation["target_social_entity_id"] = peek_social_entity_id(target)
+    if bool(getattr(target.db, "is_npc", False)):
+        relation["target_npc_id"] = relation_key
     relation["target_dbref"] = int(target.id)
     relation["target_name"] = target.key
     relation["last_interaction_at"] = now
-    relationships[target_id] = relation
+    relationships[relation_key] = relation
     npc.db.relationships = relationships
+    sync_legacy_relationships(npc)
 
     return {
         "completed": True,
         "resolved": True,
         "reason": "RESOLVED",
         "obligation_id": wanted,
-        "target_npc_id": target_id,
+        "target_npc_id": relation.get("target_npc_id"),
+        "target_social_entity_id": peek_social_entity_id(target),
         "target_name": target.key,
         "location": npc.location.key if npc.location else None,
         "relationship_kind": relationship_kind,
@@ -484,6 +506,7 @@ def set_relationship_obligation_active(npc, obligation_id, active):
             relation["obligations"] = obligations
             relationships[str(target_id)] = relation
             npc.db.relationships = relationships
+            sync_legacy_relationships(npc)
             return {
                 "npc": npc,
                 "target_npc_id": str(target_id),

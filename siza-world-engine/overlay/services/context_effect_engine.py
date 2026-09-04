@@ -198,5 +198,7 @@ def set_context_effect_active(npc, effect_id, active):
             relation["decision_effects"] = effects
             relationships[str(identity)] = relation
             npc.db.relationships = relationships
+            from services.social_graph_engine import sync_legacy_relationships
+            sync_legacy_relationships(npc)
             return {"source": "RELATIONSHIP", "effect": dict(effect), "container_id": str(identity)}
     return None

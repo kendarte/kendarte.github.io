@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from evennia import search_object, search_tag
 
 from services.consequence_engine import emit_world_action
+from services.actor_registry import siza_npcs
 from services.faction_engine import has_active_membership
 from services.perception_engine import (
     EVENT_AWARENESS_AUDIENCE,
@@ -15,8 +16,6 @@ from services.perception_engine import (
 WORLD_EVENT_BUILD = "0.36.0-event-acknowledgement-actions"
 EVENT_SITE_TAG = "siza_event_site"
 EVENT_SITE_CATEGORY = "siza_world_event"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 EVENT_HISTORY_LIMIT = 200
 
 
@@ -151,11 +150,7 @@ def _find_room(room_key, room_id=None):
 
 
 def _all_npcs():
-    return [
-        obj
-        for obj in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY)
-        if bool(getattr(obj.db, "is_npc", False))
-    ]
+    return siza_npcs()
 
 
 def _npc_job_id(npc):

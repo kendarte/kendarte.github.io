@@ -172,15 +172,18 @@ def apply_player_actor_consequences(actor, action):
         if when and not _condition_matches(packet, when):
             continue
 
-        knowledge_result = _knowledge_result(actor, rule, packet)
-        fact_result = _fact_result(actor, rule, packet)
-        if not knowledge_result and not fact_result:
+        from services.consequence_engine import apply_consequence_effects_to_actor
+        effects = apply_consequence_effects_to_actor(rule, packet, actor)
+        knowledge_result = effects.get("knowledge") or _knowledge_result(actor, rule, packet)
+        fact_result = effects.get("knowledge_fact") or _fact_result(actor, rule, packet)
+        if not knowledge_result and not fact_result and not effects.get("memory") and not effects.get("relationship_effects"):
             continue
         row = {"rule_id": rule.get("id")}
         if knowledge_result:
             row.update(knowledge_result)
         if fact_result:
             row.update(fact_result)
+        row.update({key: value for key, value in effects.items() if key not in {"knowledge", "knowledge_fact"}})
         results.append(row)
 
     if not results:

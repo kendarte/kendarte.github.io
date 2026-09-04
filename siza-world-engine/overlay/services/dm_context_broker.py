@@ -167,6 +167,22 @@ def _relationship_context(actor):
     return output
 
 
+def _social_context(actor, target=None, depth=2):
+    """Read-only graph context: these APIs never assign identities or migrate rows."""
+    from services.social_graph_engine import peek_social_entity_id, read_related_entities, read_social_path
+    payload = {"actor_social_entity_id": peek_social_entity_id(actor), "connections": read_related_entities(actor, limit=MAX_ENGINE_RESULTS)}
+    if target:
+        payload["relationship_chain"] = read_social_path(actor, target, max_depth=min(max(int(depth), 1), 4), max_results=MAX_ENGINE_RESULTS * 8)
+    return payload
+
+
+def _visible_room_state(actor):
+    room = getattr(actor, "location", None) if actor else None
+    if not room:
+        return {}
+    return {"room_id": str(getattr(room.db, "room_id", "") or "") or None, "dbref": int(room.id) if getattr(room, "id", None) is not None else None, "name": str(getattr(room, "key", "")), "state": _safe_state(getattr(room.db, "state", {})), "world_context_tags": [_safe_scalar(x) for x in _plain_list(getattr(room.db, "world_context_tags", []))[:12]]}
+
+
 def _authority_context(actor):
     output = []
     site = getattr(actor, "location", None) if actor else None
@@ -206,6 +222,14 @@ def _hazard_context(actor, snapshot):
 
 def _resolve_engine_query(query_id, actor, raw_player_input, snapshot, search_query):
     query = str(query_id or "").strip()
+    aliases = {"local_exits": "local_route_objects_and_exits", "local_people": "local_npc_state", "active_local_facts": "local_entities_with_relevant_knowledge", "visible_local_objects": "local_object_state", "available_object_actions": "alternative_local_capabilities"}
+    query = aliases.get(query, query)
+    if query == "visible_room_state":
+        return {"status": "RESOLVED", "data": _visible_room_state(actor)}
+    if query == "active_campaign_state":
+        from services.dm_campaign_registry import get_active_campaign_definition
+        active = get_active_campaign_definition(actor)
+        return {"status": "RESOLVED", "data": {"state": deepcopy(_plain_dict(active.get("state"))), "campaign_id": active.get("campaign_id"), "registered": bool(active.get("definition"))}}
     if query in {"local_entities_with_relevant_knowledge", "npcs_with_route_or_access_knowledge", "player_active_facts_supporting_route_inference", "active_facts_related_to_campaign_lead"}:
         return {"status": "RESOLVED", "data": _fact_holders(actor, search_query)}
     if query in {"visible_documents_or_objects_with_relevant_information", "objects_or_documents_that_can_change_route_options", "local_object_state"}:
@@ -219,6 +243,11 @@ def _resolve_engine_query(query_id, actor, raw_player_input, snapshot, search_qu
         return {"status": "RESOLVED", "data": data}
     if query in {"relationships_or_factions_that_can_change_access", "local_relationship_context"}:
         return {"status": "RESOLVED", "data": _relationship_context(actor)}
+    if query in {"player_social_context", "relevant_personal_connections", "active_personal_obligations", "social_connections_to_target", "social_connections_to_faction", "relationship_chain", "affected_social_network"}:
+        data = _social_context(actor, snapshot.get("target_social_entity") or snapshot.get("target_entity"), snapshot.get("social_depth", 2))
+        if query == "active_personal_obligations":
+            data["connections"] = [row for row in data["connections"] if any(bool(x.get("active")) for x in row["relationship"].get("obligations", []))]
+        return {"status": "RESOLVED", "data": data}
     if query in {"affected_npcs_factions_and_authorities", "local_owners_or_authorities_of_required_resources", "local_authority_context"}:
         return {"status": "RESOLVED", "data": _authority_context(actor)}
     if query in {"current_route_hazards", "active_world_events_on_or_near_route", "combat_eligible_hostile_or_opposed_actors"}:

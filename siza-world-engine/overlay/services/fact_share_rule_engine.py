@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from evennia import search_tag
+from services.actor_registry import find_npc_by_id, siza_npcs
 
 from services.faction_engine import has_active_membership, membership_authority
 from services.knowledge_context_engine import fact_knowledge_state
@@ -17,8 +17,6 @@ FACT_SHARE_AUTHORITY_FILTER_BUILD = "0.93.0-faction-authority-filtered-fact-shar
 FACT_SHARE_RECIPIENT_SELECTION_BUILD = "0.94.0-nearest-limited-faction-fact-share-selection"
 FACT_SHARE_NEED_AWARE_SELECTION_BUILD = "0.95.0-need-aware-nearest-fact-share-selection"
 FACT_SHARE_AUTHORITY_RELATION_BUILD = "0.99.0-upchain-authority-relative-fact-sharing"
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -43,15 +41,7 @@ def _record(value):
 
 
 def _all_npcs():
-    output = []
-    for npc in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if not bool(getattr(npc.db, "is_npc", False)):
-            continue
-        npc_id = str(getattr(npc.db, "npc_id", "") or "").strip()
-        if npc_id:
-            output.append(npc)
-    output.sort(key=lambda npc: str(getattr(npc.db, "npc_id", "") or ""))
-    return output
+    return sorted(siza_npcs(), key=lambda npc: str(getattr(npc.db, "npc_id", "") or ""))
 
 
 def _npc_id(npc):
@@ -59,13 +49,7 @@ def _npc_id(npc):
 
 
 def _npc_by_id(npc_id):
-    wanted = str(npc_id or "").strip()
-    if not wanted:
-        return None
-    for npc in _all_npcs():
-        if _npc_id(npc) == wanted:
-            return npc
-    return None
+    return find_npc_by_id(npc_id)
 
 
 def _completed_obligation_exists(npc, target_id, obligation_id):
@@ -117,6 +101,8 @@ def _update_obligation_state(npc, target_id, obligation_id, status, reason, reas
         relation["obligations"] = obligations
         relationships[str(target_id)] = relation
         npc.db.relationships = relationships
+        from services.social_graph_engine import sync_legacy_relationships
+        sync_legacy_relationships(npc)
     return changed
 
 

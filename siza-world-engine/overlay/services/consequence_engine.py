@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 
-from evennia import create_script, search_script, search_tag
+from evennia import create_script, search_script
 
 from services.knowledge_fact_engine import upsert_knowledge_fact
 from services.relationship_engine import create_information_obligation
+from services.actor_registry import siza_npcs
+from services.social_graph_engine import add_relationship_obligation, add_relationship_role, adjust_relationship_dimension, append_relationship_history, remove_relationship_role, set_relationship_dimension, social_entity_id, resolve_social_entity
 from services.state_effect_engine import apply_state_effects
 
 
@@ -14,8 +16,6 @@ REGISTRY_KEY = "SIZA_CONSEQUENCE_REGISTRY"
 ACTION_LOG_LIMIT = 50
 PROCESSED_LIMIT = 200
 MEMORY_LIMIT = 100
-ENTITY_TAG = "kalnaj_pilot_v03_entities"
-ENTITY_CATEGORY = "siza_entity"
 
 
 def _plain_list(value):
@@ -173,13 +173,41 @@ def _resolve_template(value, action):
 def _npc_map():
     """All persistent Siza NPCs, including non-simulated social/test recipients."""
     output = {}
-    for npc in search_tag(ENTITY_TAG, category=ENTITY_CATEGORY):
-        if not bool(getattr(npc.db, "is_npc", False)):
-            continue
+    for npc in siza_npcs():
         npc_id = str(getattr(npc.db, "npc_id", "") or "").strip()
         if npc_id:
             output[npc_id] = npc
     return output
+
+
+def _apply_relationship_consequence(rule, action, recipient, npcs):
+    applied = []
+    for raw in _plain_list(_resolve_template(rule.get("relationship_effects"), action)):
+        spec = _plain_dict(raw)
+        source = npcs.get(str(spec.get("source_npc_id") or "")) or recipient
+        target = npcs.get(str(spec.get("target_npc_id") or "")) or resolve_social_entity(spec.get("target_social_entity_id"))
+        if not source or not target:
+            applied.append({"success": False, "reason": "SOCIAL_TARGET_NOT_FOUND"}); continue
+        operation = str(spec.get("operation") or "ADJUST").upper()
+        try:
+            if operation == "ADJUST": row = adjust_relationship_dimension(source, target, str(spec.get("dimension") or ""), spec.get("value", 0))
+            elif operation == "SET": row = set_relationship_dimension(source, target, str(spec.get("dimension") or ""), spec.get("value", 0))
+            elif operation == "ADD_ROLE": row = add_relationship_role(source, target, spec.get("role"))
+            elif operation == "REMOVE_ROLE": row = remove_relationship_role(source, target, spec.get("role"))
+            elif operation == "ADD_OBLIGATION": row = add_relationship_obligation(source, target, _plain_dict(spec.get("obligation")))
+            elif operation == "APPEND_HISTORY": row = append_relationship_history(source, target, _plain_dict(spec.get("history")))
+            else: raise ValueError("UNSUPPORTED_SOCIAL_OPERATION")
+            applied.append({"success": True, "operation": operation, "source_social_entity_id": social_entity_id(source), "target_social_entity_id": social_entity_id(target), "relationship": row})
+        except (TypeError, ValueError) as exc:
+            applied.append({"success": False, "reason": str(exc)})
+    return applied
+
+
+def apply_consequence_effects_to_actor(rule, action, actor, *, npc_lookup=None):
+    """Authoritative shared effect application for either a Player or an NPC."""
+    npcs = npc_lookup if isinstance(npc_lookup, dict) else _npc_map()
+    result = {"memory": _apply_memory_consequence(rule, action, actor), "knowledge": _apply_knowledge_consequence(rule, action, actor), "knowledge_fact": _apply_knowledge_fact_consequence(rule, action, actor), "relationship_effects": _apply_relationship_consequence(rule, action, actor, npcs)}
+    return {key: value for key, value in result.items() if value}
 
 
 def _recipient_ids(rule, action, npcs=None):
@@ -505,10 +533,12 @@ def emit_world_action(action):
                 "npc_name": npc.key,
                 "status": "APPLIED",
             }
-            memory_result = _apply_memory_consequence(rule, packet, npc)
-            knowledge_result = _apply_knowledge_consequence(rule, packet, npc)
-            fact_result = _apply_knowledge_fact_consequence(rule, packet, npc)
+            effects = apply_consequence_effects_to_actor(rule, packet, npc, npc_lookup=npcs)
+            memory_result = effects.get("memory")
+            knowledge_result = effects.get("knowledge")
+            fact_result = effects.get("knowledge_fact")
             social_result = _apply_social_intent_consequence(rule, packet, npc, npcs)
+            relationship_results = effects.get("relationship_effects", [])
             if memory_result:
                 row.update(memory_result)
                 row["memory_applied"] = True
@@ -523,11 +553,15 @@ def emit_world_action(action):
                 row["social_intent_applied"] = bool(
                     social_result.get("social_intent_success")
                 )
+            if relationship_results:
+                row["relationship_effects"] = relationship_results
+                row["relationship_applied"] = any(item.get("success") for item in relationship_results)
             if (
                 row.get("memory_applied")
                 or row.get("knowledge_applied")
                 or row.get("knowledge_fact_applied")
                 or social_result
+                or relationship_results
             ):
                 applied.append(row)
 
