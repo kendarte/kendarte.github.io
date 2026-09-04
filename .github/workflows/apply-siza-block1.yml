@@ -1,7 +1,9 @@
 name: Apply Siza Block 1
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - siza-block1-delivery-20260903
 
 permissions:
   contents: write
@@ -13,5 +15,52 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Staging in progress
-        run: echo "Patch staging in progress; delivery workflow will be re-enabled after exact chunk verification."
+
+      - name: Rebuild and verify exact Work patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          root = Path('.github/siza_block1_patch')
+          names = [
+              'part01.b64',
+              'seg02_01.b64','seg02_02.b64','seg02_03.b64','seg02_04.b64','seg02_05.b64','seg02_06.b64',
+              'part03.b64',
+              'seg04_01.b64','seg04_02.b64','seg04_03.b64','seg04_04.b64','seg04_05.b64','seg04_06.b64',
+              'part05.b64','part06.b64','part07.b64',
+              'seg08_01.b64','seg08_02.b64','seg08_03.b64','seg08_04.b64','seg08_05.b64','seg08_06.b64',
+              'part09.b64',
+          ]
+          raw = ''.join((root / name).read_text(encoding='utf-8').strip() for name in names)
+          print('base64 chars:', len(raw))
+          if len(raw) != 73228:
+              raise SystemExit('staged patch length mismatch')
+          decoded = base64.b64decode(raw, validate=True)
+          digest = hashlib.sha256(decoded).hexdigest()
+          print('decoded bytes:', len(decoded))
+          print('sha256:', digest)
+          if len(decoded) != 54920:
+              raise SystemExit('decoded patch length mismatch')
+          if digest != '122bcfc6e2ee9ccf7f3e47c8f017b73b7f80a6230cc6c6fc28e2e169dad53737':
+              raise SystemExit('staged patch hash mismatch')
+          Path('/tmp/siza_block1.patch').write_bytes(decoded)
+          PY
+          echo 'Changed paths:'
+          grep '^diff --git ' /tmp/siza_block1.patch
+          test "$(grep '^diff --git ' /tmp/siza_block1.patch | wc -l)" -eq 19
+          if grep '^diff --git ' /tmp/siza_block1.patch | grep -v '^diff --git a/siza-world-engine/'; then
+            echo 'Patch contains a path outside siza-world-engine' >&2
+            exit 1
+          fi
+
+      - name: Apply exact tested Block 1 to main
+        shell: bash
+        run: |
+          git config user.name "Siza Work Delivery"
+          git config user.email "siza-work@users.noreply.github.com"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "49fc3a2dc5142de6fcd6fef08247e6b062868e78"
+          git checkout -B siza-block1-apply origin/main
+          git am /tmp/siza_block1.patch
+          git push origin HEAD:main
