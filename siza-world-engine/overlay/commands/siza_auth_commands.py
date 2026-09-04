@@ -19,6 +19,7 @@ from services.dm_campaign_registry import start_registered_campaign
 
 
 AUTH_BUILD = "20260904-login-rebuild"
+AUTH_PACKET_PREFIX = "__SIZA_AUTH__:"
 CHARACTER_TYPECLASS = "typeclasses.characters.Character"
 START_ROOM_KEY = "Pescaderia de Darsena"
 START_ROOM_ID = "CAR-KAL-DAR-007"
@@ -34,7 +35,12 @@ def _client_host(session):
 
 
 def _emit(session, status, **extra):
-    session.msg(siza_auth=(({"status": status, "build": AUTH_BUILD, **extra},), {}))
+    """Send login state through Evennia's standard webclient text channel."""
+    packet = {"status": status, "build": AUTH_BUILD, **extra}
+    encoded = base64.urlsafe_b64encode(
+        json.dumps(packet, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii").rstrip("=")
+    session.msg(text=AUTH_PACKET_PREFIX + encoded)
 
 
 def _session_for(command, account=None):
