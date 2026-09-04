@@ -420,8 +420,28 @@
         }
     }
 
+    function authPacketFromText(text) {
+        var prefix = "__SIZA_AUTH__:";
+        var token = String(text || "");
+        if (token.indexOf(prefix) !== 0) {
+            return null;
+        }
+        try {
+            token = token.slice(prefix.length).replace(/-/g, "+").replace(/_/g, "/");
+            token += "===".slice((token.length + 3) % 4);
+            return JSON.parse(decodeURIComponent(escape(window.atob(token))));
+        } catch (error) {
+            return {status: "ERROR", message: "El servidor devolvió un estado de acceso inválido."};
+        }
+    }
+
     function onServerText(args, kwargs) {
         var text = packetText(args && args.length ? args[0] : "");
+        var authPacket = authPacketFromText(text);
+        if (authPacket) {
+            onAuth([authPacket]);
+            return;
+        }
         if (!text) {
             return;
         }
