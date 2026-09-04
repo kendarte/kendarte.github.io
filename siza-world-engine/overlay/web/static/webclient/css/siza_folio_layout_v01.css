@@ -1,0 +1,551 @@
+/* SIZA folio: one scene, one reading page, shared presence. */
+html,
+body {
+    background: #050708;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) {
+    --folio-ink: #132124;
+    --folio-deep: #0b1316;
+    --folio-paper: #e7dfc9;
+    --folio-paper-dark: #d2c8ad;
+    --folio-line: #b1a88f;
+    --folio-gold: #cfaa4d;
+    box-sizing: border-box;
+    width: min(1040px, calc(100vw - 34px)) !important;
+    height: min(760px, calc(100vh - 26px)) !important;
+    min-height: 520px;
+    margin: 13px auto !important;
+    overflow: hidden;
+    display: grid !important;
+    grid-template-rows: 38px minmax(0, 1fr) !important;
+    border: 1px solid #6d7880;
+    background: var(--folio-deep);
+    box-shadow: 0 0 0 5px #11181a, 0 18px 44px rgba(0, 0, 0, .48);
+    color: var(--folio-ink);
+    font-family: "Courier New", Courier, monospace;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookHeader {
+    position: relative;
+    z-index: 4;
+    box-sizing: border-box;
+    display: grid !important;
+    grid-template-columns: 148px minmax(0, 1fr);
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    border-bottom: 1px solid #6d7880;
+    background: #111a1e;
+    color: #f1e9d5;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaHeaderCharacterPlayer {
+    position: relative;
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaHeaderCharacterPlayer::before {
+    content: "SIZA";
+    position: absolute;
+    left: 16px;
+    top: 9px;
+    color: #f5e2a3;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaHeaderCharacterPlayer > * {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookChapter {
+    display: flex !important;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 15px !important;
+    border: 0 !important;
+    background: transparent !important;
+    text-align: right;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookChapter small,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookChapter span,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaHeaderCharacterFocus,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaConnectionBadge {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookChapter strong {
+    overflow: hidden;
+    max-width: 100%;
+    color: #eef0e9 !important;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10px !important;
+    font-weight: 700;
+    letter-spacing: .08em;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookBody {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) 52px;
+    min-height: 0;
+    padding: 0 !important;
+    background: var(--folio-deep);
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookScene {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.06fr) minmax(320px, .94fr);
+    min-height: 0 !important;
+    margin: 0 !important;
+    background: var(--folio-paper);
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneVisual {
+    position: relative;
+    display: block !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    padding: 58px 18px 54px;
+    border-right: 5px solid #706e63;
+    background: linear-gradient(130deg, #bbc4c1 0%, #788987 45%, #263537 46%, #142022 100%);
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneVisual::before {
+    content: "LUGAR ACTUAL  ·  PERCEPCIÓN COMÚN";
+    position: absolute;
+    z-index: 2;
+    top: 15px;
+    left: 18px;
+    color: #62645d;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .1em;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneVisualMedia,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder {
+    position: absolute !important;
+    inset: 58px 18px 54px !important;
+    overflow: hidden;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneVisualMedia {
+    z-index: 0;
+    border: 1px solid #203238;
+    background: #263739;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder {
+    z-index: 1;
+    display: grid !important;
+    place-content: center;
+    gap: 8px;
+    border: 1px solid #203238;
+    background:
+        linear-gradient(135deg, transparent 0 35%, rgba(16, 31, 31, .82) 35% 49%, transparent 49% 100%),
+        repeating-linear-gradient(90deg, #263634 0 18px, #1a2928 18px 23px);
+    color: #d9e3d7;
+    text-align: center;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder span {
+    color: #d5b665;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .13em;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder strong {
+    max-width: 220px;
+    color: #edf0dc;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.08;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaSceneVisualLabel {
+    position: absolute !important;
+    z-index: 3;
+    top: 28px;
+    left: 18px;
+    right: 18px;
+    max-width: 290px;
+    color: #f2efe1 !important;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(19px, 2.5vw, 31px) !important;
+    font-weight: 400;
+    line-height: .95;
+    text-align: left !important;
+    text-transform: uppercase;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, .24);
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) #siza-scene-kicker,
+#siza-book-client:not([data-mode="COMBAT"]) #siza-scene-title {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaSceneCast {
+    position: absolute !important;
+    z-index: 4;
+    inset: 58px 18px 54px !important;
+    display: block !important;
+    pointer-events: none;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaSceneCast > * {
+    pointer-events: auto;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioSceneMarkers {
+    position: absolute;
+    z-index: 5;
+    inset: 58px 18px 54px;
+    pointer-events: none;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioMarker {
+    position: absolute;
+    box-sizing: border-box;
+    padding: 5px 8px;
+    border: 1px solid #ecd173;
+    background: rgba(11, 24, 24, .88);
+    color: #fbebae;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioMarker::before {
+    content: "◇ ";
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioMarker[data-kind="person"] {
+    top: 18%;
+    left: 8%;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioMarker[data-kind="object"] {
+    top: 49%;
+    right: 7%;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioMarker[data-kind="exit"] {
+    bottom: 13%;
+    left: 36%;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioSceneLegend {
+    position: absolute;
+    z-index: 6;
+    right: 18px;
+    bottom: 14px;
+    left: 18px;
+    display: flex;
+    gap: 5px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioSceneLegend span {
+    padding: 5px 7px;
+    border: 1px solid #9a917b;
+    background: #f2ead6;
+    color: #1e2928;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaStoryPage {
+    position: relative;
+    display: block !important;
+    min-width: 0;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: var(--folio-paper) !important;
+    box-shadow: inset 18px 0 18px -20px rgba(25, 22, 12, .72);
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaStoryCopy {
+    box-sizing: border-box;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    padding: 15px 16px 13px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioObservation {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioObservationHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #827d6b;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioObservationHeader strong {
+    color: #f7f2e2;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioObservationHeader span {
+    color: #303e3d;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-align: right;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneDescription {
+    flex: 0 0 auto;
+    max-height: 34%;
+    margin: 14px 0 8px !important;
+    overflow: auto;
+    color: #4d4e47 !important;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActions {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 0 0 9px !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsHeader {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsList button,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsList a {
+    padding: 5px 7px !important;
+    border: 1px solid #978a67 !important;
+    border-radius: 0 !important;
+    background: #eee4ca !important;
+    color: #283334 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 8px !important;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsEmpty {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookOutput {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow: auto;
+    border: 0 !important;
+    background: transparent !important;
+    color: #555248 !important;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 14px;
+    line-height: 1.32;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookOutput > * {
+    margin: 0 0 8px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookNarrative {
+    flex: 0 0 auto;
+    margin-top: 9px;
+    padding-top: 10px;
+    border-top: 1px solid #827d6b;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookPrompt {
+    margin-bottom: 6px;
+    color: #a88a43;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookInputRow {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) #siza-inputfield {
+    box-sizing: border-box;
+    min-height: 50px !important;
+    padding: 9px 10px !important;
+    border: 1px solid #746d5b !important;
+    border-radius: 8px !important;
+    background: #f7f0dc !important;
+    color: #3d423f !important;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 13px !important;
+    line-height: 1.25;
+    resize: none;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) #siza-inputfield::placeholder {
+    color: #8d8a7d;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) #siza-inputsend {
+    min-width: 115px;
+    height: 31px;
+    padding: 0 12px !important;
+    border: 1px solid #2b494b !important;
+    border-radius: 0 !important;
+    background: #29474a !important;
+    color: #fcf3d1 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 8px !important;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaBookInputHint,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaPageTools,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaInfoPanel {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayers {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: 0;
+    border-top: 1px solid #657077;
+    background: #111a1e;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 23px minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 6px 9px;
+    border-right: 1px solid #4d5a5e;
+    color: #e5e0cf;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer:last-child {
+    border-right: 0;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayerNumber {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border: 1px solid #d7ba64;
+    border-radius: 50%;
+    color: #f5dfa0;
+    font-size: 9px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer strong,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer span {
+    overflow: hidden;
+    display: block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer strong {
+    color: #f1ecd9;
+    font-size: 8px;
+    letter-spacing: .04em;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer span {
+    margin-top: 2px;
+    color: #a9b4af;
+    font-size: 7px;
+    line-height: 1.1;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaTcgTray[data-active="false"] {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    #siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) {
+        width: 100vw !important;
+        height: 100dvh !important;
+        min-height: 0;
+        margin: 0 !important;
+        border: 0;
+        box-shadow: none;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaBookScene {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(250px, 42%) minmax(0, 1fr);
+        overflow: auto;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneVisual {
+        min-height: 250px !important;
+        border-right: 0;
+        border-bottom: 4px solid #706e63;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaBookBody {
+        grid-template-rows: minmax(0, 1fr) 56px;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayers {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: hidden;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaFolioPlayer:nth-child(n + 3) {
+        display: none;
+    }
+
+    #siza-book-client:not([data-mode="COMBAT"]) .sizaBookSceneDescription {
+        max-height: 28%;
+    }
+}
