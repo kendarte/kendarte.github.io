@@ -509,7 +509,11 @@
         }
         if (characterBack) {
             characterBack.addEventListener("click", function () {
+                logoutRequested = true;
                 resetToLogin("Introduce otra cuenta para continuar.", "info");
+                if (window.Evennia && Evennia.isConnected()) {
+                    Evennia.msg("text", ["quit"], {});
+                }
             });
         }
         if (creatorBack) {
