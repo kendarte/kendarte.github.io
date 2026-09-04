@@ -549,3 +549,39 @@ body {
         max-height: 28%;
     }
 }
+
+
+/* Keep the folio itself full-height; scene and reading page are equal leaves. */
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookBody {
+    height: 100% !important;
+    align-content: stretch !important;
+    align-items: stretch !important;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
+    height: 100% !important;
+    align-self: stretch !important;
+}
+
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual,
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage,
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryCopy,
+#siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaFolioObservation {
+    height: 100% !important;
+    min-height: 0 !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaSceneVisualLabel {
+    display: block !important;
+    transform: none !important;
+    inset: auto !important;
+    top: 28px !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 18px !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder > span,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaScenePlaceholder > strong {
+    display: none !important;
+}
