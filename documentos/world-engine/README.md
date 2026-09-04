@@ -146,6 +146,9 @@ Después del freeze, no se agregan features al core por especulación. Sólo se 
 - [08 — Inventario técnico](08_inventario_tecnico.md)  
   Mapa de carpetas, typeclasses, servicios y responsabilidades de los archivos principales.
 
+- [09 — Protocolo narrativo de SIZA](09_protocolo_narrativo_siza.md)  
+  Protocolo requerido para la escritura, revisión y renderizado de escenas, descripciones, diálogo y resultados de acción.
+
 ## 5. Jerarquía de autoridad documental
 
 Para evitar que una nota vieja contradiga al código:
