@@ -75,15 +75,18 @@
               <span>Lo que percibe el personaje</span>
             </header>
             <p id="siza-scene-description" class="sizaBookSceneDescription">The current location will be described here.</p>
-          <section id="siza-contextual-actions" class="sizaContextualActions" aria-label="Available actions">
-            <div class="sizaContextualActionsHeader">
-              <strong id="siza-contextual-actions-title">ACCIONES DISPONIBLES</strong>
-              <span id="siza-contextual-actions-location">Leyendo la escena…</span>
-            </div>
-            <div id="siza-contextual-actions-list" class="sizaContextualActionsList"></div>
-            <div id="siza-contextual-actions-empty" class="sizaContextualActionsEmpty">Puedes describir otra acción abajo.</div>
-          </section>
           <div id="siza-messagewindow" class="sizaBookOutput" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <section id="siza-contextual-actions" class="sizaContextualActions" aria-label="Opciones de la escena">
+            <section id="siza-contextual-interactions-group" class="sizaContextActionGroup" data-group="interactions">
+              <header>Interacciones</header>
+              <div id="siza-contextual-interactions" class="sizaContextualActionsList"></div>
+            </section>
+            <section id="siza-contextual-movement-group" class="sizaContextActionGroup" data-group="movement">
+              <header>Desplazamiento</header>
+              <div id="siza-contextual-movement" class="sizaContextualActionsList"></div>
+            </section>
+            <div id="siza-contextual-actions-empty" class="sizaContextualActionsEmpty">Describe una acción libre abajo.</div>
+          </section>
         <section class="sizaBookNarrative" aria-label="Free action">
           <div id="siza-current-prompt" class="sizaBookPrompt">What do you do?</div>
           <div class="sizaBookInputRow">
