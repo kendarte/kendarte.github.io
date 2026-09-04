@@ -317,3 +317,89 @@
         right: 4px;
     }
 }
+
+/* Account → character selection → character creator. */
+.sizaLoginStep[hidden] {
+    display: none !important;
+}
+
+.sizaLoginActions {
+    display: grid;
+    gap: 9px;
+}
+
+.sizaCharacterList {
+    display: grid;
+    gap: 9px;
+    margin-bottom: 12px;
+}
+
+.sizaCharacterChoice {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    min-height: 58px;
+    padding: 11px 13px;
+    border: 1px solid rgba(195, 151, 79, .38);
+    border-radius: 4px;
+    color: #f7e9c8;
+    background: rgba(4, 4, 4, .42);
+    text-align: left;
+    cursor: pointer;
+}
+
+.sizaCharacterChoice:hover,
+.sizaCharacterChoice:focus-visible {
+    border-color: #d5a855;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(213, 168, 85, .12);
+}
+
+.sizaCharacterChoice strong {
+    color: #fff1cf;
+    font: 700 15px/1 Georgia, serif;
+}
+
+.sizaCharacterChoice span,
+.sizaCreatorAccount {
+    color: #bfae95;
+    font: 11px/1.35 Arial, sans-serif;
+}
+
+#siza-creator-account-fields {
+    display: grid;
+    gap: 9px;
+}
+
+#siza-creator-account-fields > label {
+    margin-top: 3px;
+    color: #d0b379;
+    font: 700 10px/1 Arial, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+#siza-creator-account-fields > input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    padding: 0 13px;
+    border: 1px solid rgba(195, 151, 79, .38);
+    border-radius: 4px;
+    outline: none;
+    color: #f7e9c8;
+    background: rgba(4, 4, 4, .48);
+    font: 14px/1 Arial, sans-serif;
+}
+
+#siza-creator-account-fields > input:focus {
+    border-color: #d5a855;
+    box-shadow: 0 0 0 3px rgba(213, 168, 85, .12);
+}
+
+.sizaLoginForm label span {
+    color: #8f816d;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
