@@ -236,6 +236,68 @@
     text-align: center;
 }
 
+.sizaSessionMenu {
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    z-index: 30;
+    display: none;
+    font-family: Arial, sans-serif;
+}
+
+.sizaBookClient[data-authenticated="true"] .sizaSessionMenu {
+    display: block;
+}
+
+.sizaSessionMenuToggle {
+    height: 22px;
+    padding: 0 8px;
+    border: 1px solid rgba(210, 163, 83, .42);
+    border-radius: 3px;
+    color: #f0d28f;
+    background: rgba(12, 9, 7, .82);
+    font: 700 8px/1 Arial, sans-serif;
+    letter-spacing: .11em;
+    cursor: pointer;
+}
+
+.sizaSessionMenuToggle:hover,
+.sizaSessionMenu[data-open="true"] .sizaSessionMenuToggle {
+    border-color: rgba(224, 188, 117, .78);
+    color: #fff1cf;
+}
+
+.sizaSessionMenuPanel {
+    position: absolute;
+    top: 27px;
+    right: 0;
+    display: grid;
+    min-width: 148px;
+    padding: 6px;
+    border: 1px solid rgba(210, 163, 83, .48);
+    border-radius: 5px;
+    background: rgba(17, 12, 9, .98);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .55);
+}
+
+.sizaSessionMenuPanel button {
+    height: 30px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 3px;
+    color: #e7d1a7;
+    background: transparent;
+    text-align: left;
+    font: 700 10px/1 Arial, sans-serif;
+    letter-spacing: .06em;
+    cursor: pointer;
+}
+
+.sizaSessionMenuPanel button:hover {
+    color: #21150c;
+    background: #d2a354;
+}
+
 @media (max-width: 520px) {
     .sizaLoginGate {
         padding: 12px;
@@ -248,5 +310,10 @@
 
     .sizaLoginHeading h1 {
         font-size: 23px;
+    }
+
+    .sizaSessionMenu {
+        top: 4px;
+        right: 4px;
     }
 }
