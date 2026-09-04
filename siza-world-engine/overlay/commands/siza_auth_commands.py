@@ -186,6 +186,9 @@ class CmdSizaAuthRegister(Command):
         if not valid:
             _emit(session, "ERROR", message=error)
             return
+        if not _start_room():
+            _emit(session, "ERROR", message="El punto inicial de SIZA no está disponible todavía.")
+            return
 
         account, errors = AccountDB.create(
             username=account_name,
