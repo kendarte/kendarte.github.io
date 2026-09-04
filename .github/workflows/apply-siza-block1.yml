@@ -1,9 +1,7 @@
 name: Apply Siza Block 1
 
 on:
-  push:
-    branches:
-      - siza-block1-delivery-20260903
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,54 +13,5 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Rebuild and verify patch
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import base64, hashlib, string
-          expected = {
-            'part01.b64':'d2f1917a16630c0cbd834b729f86a1aa70a06c7e330fe80009514d57e66f8633',
-            'part02.b64':'0ed470244476a988b2efbf183102fb869b015360f1b508d2ba0b7132d2533666',
-            'part03.b64':'636d21447c1a6b14b47aaf9efe1f7cda93361ae665517017ebe9361856408bfb',
-            'part04.b64':'1612724810d273e7649c20965c650ae166b7bb37b27a7765d8fb410996ce0d75',
-            'part05.b64':'040efedb9456cfd67c4806484410e76d20412788127d88c503cba8618f3969c8',
-            'part06.b64':'c2f6c5a376f0a2165c183b8f50588e954e03291aa01b082c7fc6ecdeed3b5aef',
-            'part07.b64':'3e94b6c6466cc74f3dab2faab8863fbd59bb00c103505594699e31e065deb82e',
-            'part08.b64':'ff827e30ce38c9366979fe4701af66d1b84df9d179b2df4d4bdf6959320d4004',
-            'part09.b64':'e2edbb7b64cb0008b8b924beaa739c69a0988e4b5aae34a9329b1dc6d6447b3d',
-          }
-          parts = sorted(Path('.github/siza_block1_patch').glob('part*.b64'))
-          for p in parts:
-              text=p.read_text(encoding='utf-8')
-              digest=hashlib.sha256(text.encode()).hexdigest()
-              print(p.name, len(text), digest, 'OK' if digest==expected.get(p.name) else 'MISMATCH')
-          alphabet = set(string.ascii_letters + string.digits + '+/=')
-          raw = ''.join(p.read_text(encoding='utf-8') for p in parts)
-          clean = ''.join(ch for ch in raw if ch in alphabet)
-          if len(parts) != 9 or len(clean) != 73228:
-              raise SystemExit('staged patch length mismatch')
-          decoded = base64.b64decode(clean, validate=True)
-          digest = hashlib.sha256(decoded).hexdigest()
-          print('decoded bytes:', len(decoded), 'sha256:', digest)
-          if len(decoded) != 54920 or digest != '122bcfc6e2ee9ccf7f3e47c8f017b73b7f80a6230cc6c6fc28e2e169dad53737':
-              raise SystemExit('staged patch hash mismatch')
-          Path('/tmp/siza_block1.patch').write_bytes(decoded)
-          PY
-          grep '^diff --git ' /tmp/siza_block1.patch
-          test "$(grep '^diff --git ' /tmp/siza_block1.patch | wc -l)" -eq 19
-          if grep '^diff --git ' /tmp/siza_block1.patch | grep -v '^diff --git a/siza-world-engine/'; then
-            echo 'Patch contains a path outside siza-world-engine' >&2
-            exit 1
-          fi
-
-      - name: Apply tested Block 1 commit to main
-        shell: bash
-        run: |
-          git config user.name "Siza Work Delivery"
-          git config user.email "siza-work@users.noreply.github.com"
-          git fetch origin main
-          git checkout -B siza-block1-apply origin/main
-          git am /tmp/siza_block1.patch
-          git push origin HEAD:main
+      - name: Staging in progress
+        run: echo "Patch staging in progress; delivery workflow will be re-enabled after exact chunk verification."
