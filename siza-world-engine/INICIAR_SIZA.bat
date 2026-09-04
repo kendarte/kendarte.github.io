@@ -37,21 +37,7 @@ call :ensure_character_login_settings
 if errorlevel 1 goto :fail
 
 echo [2/4] Comprobando el DM local...
-call :ensure_character_login_settings
-set "SIZA_SETTINGS=%SIZA_RUNTIME%\server\conf\settings.py"
-findstr /C:"SIZA_CHARACTER_LOGIN_V01" "%SIZA_SETTINGS%" >nul 2>&1
-if not errorlevel 1 exit /b 0
->>"%SIZA_SETTINGS%" echo.
->>"%SIZA_SETTINGS%" echo # SIZA_CHARACTER_LOGIN_V01 - account and character selection in the webclient
->>"%SIZA_SETTINGS%" echo AUTO_CREATE_CHARACTER_WITH_ACCOUNT = False
->>"%SIZA_SETTINGS%" echo AUTO_PUPPET_ON_LOGIN = False
-if errorlevel 1 (
-  echo ERROR: No se pudo configurar el login de cuenta/personaje.
-  exit /b 1
-)
-exit /b 0
-
-:ollama_ready
+call :ollama_ready
 if not errorlevel 1 goto :ollama_running
 
 where ollama >nul 2>&1
@@ -143,6 +129,20 @@ if exist "%SIZA_STATUS_FILE%" del /q "%SIZA_STATUS_FILE%" >nul 2>&1
 echo.
 echo SIZA esta listo. Abriendo el MUD...
 start "" "%SIZA_WEBCLIENT%"
+exit /b 0
+
+:ensure_character_login_settings
+set "SIZA_SETTINGS=%SIZA_RUNTIME%\server\conf\settings.py"
+findstr /C:"SIZA_CHARACTER_LOGIN_V01" "%SIZA_SETTINGS%" >nul 2>&1
+if not errorlevel 1 exit /b 0
+>>"%SIZA_SETTINGS%" echo.
+>>"%SIZA_SETTINGS%" echo # SIZA_CHARACTER_LOGIN_V01 - account and character selection in the webclient
+>>"%SIZA_SETTINGS%" echo AUTO_CREATE_CHARACTER_WITH_ACCOUNT = False
+>>"%SIZA_SETTINGS%" echo AUTO_PUPPET_ON_LOGIN = False
+if errorlevel 1 (
+  echo ERROR: No se pudo configurar el login de cuenta/personaje.
+  exit /b 1
+)
 exit /b 0
 
 :ollama_ready
