@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var BUILD = "0.1.1-dialogue-without-layout-switch";
+    var BUILD = "0.2.0-dialogue-contextual-page";
     var activeDialogue = null;
     var activeRoom = "";
 
@@ -55,7 +55,7 @@
         if(!text)return {ok:false,status:"INVALID_DIALOGUE"};
         activeDialogue=packet;
         activeRoom=roomKey();
-        if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION");
+        if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("DIALOGUE");
         var modeLabel=byId("siza-mode-label");
         if(modeLabel)modeLabel.textContent="DIÁLOGO";
         setFocusSpeaker(packet&&packet.speaker);
