@@ -146,10 +146,33 @@
         <strong id="siza-scene-title" hidden>Waiting for world state</strong>
         <div id="siza-scene-visual-label" class="sizaSceneVisualLabel">SIZA WORLD ENGINE</div>
         <div id="siza-scene-cast" class="sizaSceneCast" aria-label="Other characters present" hidden></div>
+        <button id="siza-map-foldout-toggle" class="sizaMapFoldoutTab" type="button" aria-expanded="false" aria-controls="siza-map-foldout" hidden>RUTAS</button>
+        <aside id="siza-map-foldout" class="sizaMapFoldout" aria-label="Rutas desde la localización actual" hidden>
+          <header>
+            <small>RUTAS DESDE</small>
+            <strong id="siza-map-foldout-location">Localización actual</strong>
+            <button id="siza-map-foldout-close" type="button" aria-label="Cerrar rutas">×</button>
+          </header>
+          <div id="siza-map-foldout-routes" class="sizaMapFoldoutRoutes"></div>
+        </aside>
       </div>
 
       <section class="sizaStoryPage" aria-label="Narration and actions">
         <div class="sizaStoryCopy">
+          <section id="siza-active-interaction" class="sizaActiveInteraction" data-kind="scene" aria-live="polite">
+            <header class="sizaActiveInteractionHeader">
+              <small id="siza-active-interaction-label">OBSERVACIÓN</small>
+              <strong id="siza-active-interaction-title">Escena actual</strong>
+            </header>
+            <section id="siza-dialogue-card" class="sizaDialogueCard" aria-label="Conversación actual" hidden>
+              <div class="sizaDialogueSpeakerPortrait" aria-hidden="true"><span id="siza-dialogue-speaker-initial">?</span></div>
+              <div>
+                <small>INTERLOCUTOR</small>
+                <strong id="siza-dialogue-speaker-name">Persona presente</strong>
+                <span id="siza-dialogue-speaker-state">Conversación en curso</span>
+              </div>
+            </section>
+          </section>
           <p id="siza-scene-description" class="sizaBookSceneDescription">The current location will be described here.</p>
           <section id="siza-contextual-actions" class="sizaContextualActions" aria-label="Available actions">
             <div class="sizaContextualActionsHeader">
