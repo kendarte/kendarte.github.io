@@ -29,8 +29,6 @@ if %RC% GEQ 8 (
   echo ERROR: robocopy fallo con codigo %RC%.
   goto :fail
 )
-call :ensure_character_login_settings
-if errorlevel 1 goto :fail
 
 echo.
 echo 2b. Sincronizando Siza Arena local para el webclient...
@@ -134,20 +132,6 @@ echo Siza Arena fue sincronizado al webclient local.
 echo Vuelva a conectar al webclient si se desconecto.
 echo.
 if "%NO_PAUSE%"=="0" pause
-exit /b 0
-
-:ensure_character_login_settings
-set "SIZA_SETTINGS=%CD%\runtime\server\conf\settings.py"
-findstr /C:"SIZA_CHARACTER_LOGIN_V01" "%SIZA_SETTINGS%" >nul 2>&1
-if not errorlevel 1 exit /b 0
->>"%SIZA_SETTINGS%" echo.
->>"%SIZA_SETTINGS%" echo # SIZA_CHARACTER_LOGIN_V01 - account and character selection in the webclient
->>"%SIZA_SETTINGS%" echo AUTO_CREATE_CHARACTER_WITH_ACCOUNT = False
->>"%SIZA_SETTINGS%" echo AUTO_PUPPET_ON_LOGIN = False
-if errorlevel 1 (
-  echo ERROR: No se pudo configurar el login de cuenta/personaje.
-  exit /b 1
-)
 exit /b 0
 
 :fail
