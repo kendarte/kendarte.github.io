@@ -13,7 +13,7 @@ const npcs=[
  base('NPC-DH7-BASILIZA','Basiliza','DH7-ROOM-011',{
    aliases:['Gwen'],
    desc:'Estudiante voluntaria de estética gótica, elegante, precisa y peligrosa. Basiliza es la identidad nacida de Gwen tras sobrevivir a su caída y llega a Darkhaven buscando información sobre Trinasty.',
-   dialogue_greeting:'Basiliza te observa como si ya hubiera decidido qué parte de la verdad piensa decirte.',
+   dialogue_greeting:'Si buscas a alguien, dilo. Si buscas respuestas, pregunta mejor.',
    adventure_stats:{FUE:2,AGI:3,COO:3,INT:4,PER:4,PSI:5},
    knowledge:{DARKHAVEN:2,TRINASTY:3,RELIQUIAS:2},
    job:{id:'ROLE-FIRETEAM7-SUPPORT',name:'Fireteam 7 · Support'},
@@ -23,7 +23,7 @@ const npcs=[
  base('NPC-DH7-DRASHTON','Drashton Windrago','DH7-ROOM-011',{
    aliases:['Drash','Windrago'],
    desc:'Heredero problemático de los dragones de tormenta Windrago. Arrogante, gracioso, brutal, carismático y peligrosamente cómodo en combate.',
-   dialogue_greeting:'Drash sonríe como si cualquier conversación pudiera convertirse en una pelea entretenida.',
+   dialogue_greeting:'Llegaste. ¿Vas a quedarte mirando o necesitas algo?',
    adventure_stats:{FUE:5,AGI:4,COO:3,INT:2,PER:3,PSI:4},
    knowledge:{DARKHAVEN:2,WINDRAGO:3,COMBATE:3},
    job:{id:'ROLE-FIRETEAM7-DPS2',name:'Fireteam 7 · DPS'},
@@ -33,7 +33,7 @@ const npcs=[
  base('NPC-DH7-ROXY','Roxy Soleonus','DH7-ROOM-011',{
    aliases:['Roxy','Soleonus'],
    desc:'Estudiante de la casa solar Soleonus, enviada a Darkhaven por no ajustarse a la imagen perfecta de su familia. Provocadora, socialmente brillante, atrevida y perceptiva.',
-   dialogue_greeting:'Roxy te dedica una mirada rápida que parece leer la habitación antes de responder.',
+   dialogue_greeting:'Bueno, al menos alguien nuevo. ¿Qué quieres saber?',
    adventure_stats:{FUE:3,AGI:4,COO:4,INT:3,PER:5,PSI:3},
    knowledge:{DARKHAVEN:2,SOLEONUS:3,COMBATE:2},
    job:{id:'ROLE-FIRETEAM7-DPS1',name:'Fireteam 7 · DPS'},
@@ -43,7 +43,7 @@ const npcs=[
  base('NPC-DH7-AXEL','Axel Likabalier','DH7-ROOM-011',{
    aliases:['Axel','Likabalier'],
    desc:'Joven de una casa caballeresca en decadencia. Correcto, formal y cargado por la expectativa de restaurar un linaje incapaz de producir mana fuerte.',
-   dialogue_greeting:'Axel se endereza por reflejo antes de hablar, como si cada conversación también fuera una prueba de protocolo.',
+   dialogue_greeting:'¿Necesitas orientación o vienes por un asunto de servicio?',
    adventure_stats:{FUE:4,AGI:2,COO:3,INT:3,PER:3,PSI:4},
    knowledge:{DARKHAVEN:2,LIKABALIER:3,CABALLERIA:2},
    job:{id:'ROLE-FIRETEAM7-TANK',name:'Fireteam 7 · Tank'},
@@ -53,7 +53,7 @@ const npcs=[
  base('NPC-DH7-TRIMAGO','Orphim Trimago','DH7-ROOM-006',{
    aliases:['Trimago','Director Trimago','Orphim'],
    desc:'Director de Darkhaven Zona 7. Carismático, oportunista, manipulador, brillante y peligrosamente encantador. Compró la antigua prisión y la convirtió en instituto.',
-   dialogue_greeting:'Trimago sonríe con la tranquilidad de alguien que ya está calculando para qué podría servirle esta conversación.',
+   dialogue_greeting:'Bien. Cuéntame qué necesitas y decidimos por dónde empezar.',
    adventure_stats:{FUE:2,AGI:2,COO:3,INT:5,PER:5,PSI:5},
    knowledge:{DARKHAVEN:5,SECTOR7:5,POLITICA:4,ANOMALIAS:3},
    job:{id:'JOB-DH7-DIRECTOR',name:'Director de Darkhaven Zona 7'},
@@ -62,7 +62,7 @@ const npcs=[
  base('NPC-DH7-RELENA','Relena Dao','DH7-ROOM-016',{
    aliases:['Relena','Relena Dao','Pitonisa Dao'],
    desc:'Pitonisa de cabello morado, estudiosa de artefactos, diseñadora de uniformes, Fashion Frames y parte del sistema de creación de spells de Darkhaven.',
-   dialogue_greeting:'Relena aparta la vista de su trabajo con una calma impecable.',
+   dialogue_greeting:'Estoy trabajando. Si tienes una pregunta, hazla con precisión.',
    adventure_stats:{FUE:2,AGI:2,COO:4,INT:5,PER:4,PSI:5},
    knowledge:{DARKHAVEN:4,ARTEFACTOS:5,FASHION_FRAMES:5,TRINASTY:4},
    job:{id:'JOB-DH7-RELENA',name:'Pitonisa · Artefactos y Fashion Frames'},
@@ -71,19 +71,19 @@ const npcs=[
  base('NPC-DH7-DAO-A','Gemela Dao A','DH7-ROOM-016',{
    aliases:['gemela Dao','gemela A'],
    desc:'Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.',
-   dialogue_greeting:'La gemela espera una instrucción con una atención demasiado perfecta.',
+   dialogue_greeting:'Puedo ayudar si indicas una tarea concreta.',
    knowledge:{DARKHAVEN:2,FASHION_FRAMES:3},job:{id:'ROLE-DH7-DAO-ASSISTANT',name:'Asistente de Relena'},work_room_id:'DH7-ROOM-016'
  }),
  base('NPC-DH7-DAO-B','Gemela Dao B','DH7-ROOM-016',{
    aliases:['gemela Dao','gemela B'],
    desc:'Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.',
-   dialogue_greeting:'La segunda gemela te mira con la misma serenidad ensayada que su hermana.',
+   dialogue_greeting:'Puedo consultar a Relena o preparar material. ¿Qué necesitas?',
    knowledge:{DARKHAVEN:2,FASHION_FRAMES:3},job:{id:'ROLE-DH7-DAO-ASSISTANT',name:'Asistente de Relena'},work_room_id:'DH7-ROOM-016'
  }),
  base('NPC-DH7-ORLAN','Sir Orlan','DH7-ROOM-010',{
    aliases:['Orlan','Sir Orlan','capitán Orlan'],
    desc:'Viejo caballero y escudero de la familia Likabalier. Crió a Axel y fue aceptado en Darkhaven como capitán de guardia y mentor de esgrima.',
-   dialogue_greeting:'Orlan te recibe con la cortesía sencilla de alguien que no necesita demostrar su autoridad.',
+   dialogue_greeting:'¿Buscas práctica, una instrucción o una persona?',
    adventure_stats:{FUE:4,AGI:3,COO:5,INT:3,PER:4,PSI:4},
    knowledge:{DARKHAVEN:3,CABALLERIA:5,ESGRIMA:5,LIKABALIER:4},
    job:{id:'JOB-DH7-ORLAN',name:'Capitán de guardia · Mentor de esgrima'},
@@ -92,7 +92,7 @@ const npcs=[
  base('NPC-DH7-ARLITA','Arlita','DH7-ROOM-015',{
    aliases:['Arlita','pictomante'],
    desc:'Pictomante de origen humilde, talentosa y amable, graduada de la Casa del Artista. Acompaña exploraciones para crear nuevas Pages a partir de criaturas, lugares y fenómenos.',
-   dialogue_greeting:'Arlita cierra su cuaderno de trabajo y te presta atención.',
+   dialogue_greeting:'Puedo enseñarte lo que he registrado. ¿Qué estás buscando?',
    adventure_stats:{FUE:2,AGI:3,COO:4,INT:4,PER:5,PSI:4},
    knowledge:{DARKHAVEN:3,PICTOMANCIA:5,PAGES:4,ANOMALIAS:3},
    job:{id:'JOB-DH7-ARLITA',name:'Pictomante de campo'},
@@ -101,7 +101,7 @@ const npcs=[
  base('NPC-DH7-MAINE','Maine','DH7-ROOM-017',{
    aliases:['Maine','FrameSmith'],
    desc:'Mestia / Manabeast y FrameSmith pesado. Enorme, culto, técnico e intelectual. Repara manacores, Spellblades, ManaDrivers y Deep Dive Frames.',
-   dialogue_greeting:'Maine deja una herramienta pesada sobre el banco antes de mirarte.',
+   dialogue_greeting:'No toques nada sin preguntar. Si necesitas equipo, dime para qué.',
    adventure_stats:{FUE:5,AGI:2,COO:5,INT:5,PER:3,PSI:3},
    knowledge:{DARKHAVEN:3,FRAMESMITH:5,MANACORES:5,DEEP_DIVE:5},
    job:{id:'JOB-DH7-MAINE',name:'FrameSmith pesado'},
@@ -110,7 +110,7 @@ const npcs=[
  base('NPC-DH7-BERTA','Berta','DH7-ROOM-014',{
    aliases:['Berta','cocinera'],
    desc:'Cocinera, alquimista, soldadora, carpintera, reparadora y consejera de Darkhaven. Su comida parece castigo, pero funciona.',
-   dialogue_greeting:'Berta te mira por encima de lo que esté cocinando o reparando, lo que haya ocurrido primero.',
+   dialogue_greeting:'Si vienes a comer, siéntate. Si vienes a pedir algo, dilo antes de estorbar.',
    adventure_stats:{FUE:3,AGI:2,COO:4,INT:4,PER:4,PSI:4},
    knowledge:{DARKHAVEN:4,COCINA:5,ALQUIMIA:4,REPARACION:4},
    job:{id:'JOB-DH7-BERTA',name:'Cocinera · Alquimista · Reparadora'},
@@ -119,13 +119,13 @@ const npcs=[
  base('NPC-DH7-DINO','Dino','DH7-ROOM-002',{
    aliases:['Dino'],
    desc:'Estudiante terciario y asistente operativo. Funciona como fuente de rumor, comedia, reacción y textura cotidiana de Darkhaven.',
-   dialogue_greeting:'Dino parece estar a medio segundo de contarte algo que probablemente no debería saber.',
+   dialogue_greeting:'No sé nada... bueno, depende de qué quieras saber.',
    knowledge:{DARKHAVEN:3,RUMORES:4},job:{id:'ROLE-DH7-STUDENT-ASSISTANT',name:'Estudiante terciario · Asistente operativo'},home_room_id:'DH7-ROOM-012'
  }),
  base('NPC-DH7-SQUEEK','Squeek','DH7-ROOM-002',{
    aliases:['Squeek'],
    desc:'Estudiante terciario y asistente operativo. Vive entre los pasillos, rumores y pequeños trabajos que hacen sentir a Darkhaven como una institución viva.',
-   dialogue_greeting:'Squeek levanta la cabeza con expresión de quien ya escuchó la mitad del rumor antes de que llegaras.',
+   dialogue_greeting:'Llegaste. ¿Buscas a alguien o quieres saber qué pasó hoy?',
    knowledge:{DARKHAVEN:3,RUMORES:4},job:{id:'ROLE-DH7-STUDENT-ASSISTANT',name:'Estudiante terciario · Asistente operativo'},home_room_id:'DH7-ROOM-012'
  })
 ];
