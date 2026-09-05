@@ -269,6 +269,22 @@
             /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir)\b/.test(command);
     }
 
+    function actionIcon(action) {
+        var kind = clean(action && action.kind).toUpperCase();
+        var command = key(action && action.command);
+        if (isMovementAction(action)) {
+            if (/^volver\\b/.test(command)) return "↶";
+            if (/^subir\\b/.test(command)) return "↑";
+            if (/^bajar\\b/.test(command)) return "↓";
+            if (/^(salir|regresar)\\b/.test(command)) return "←";
+            if (/^entrar\\b/.test(command)) return "→";
+            return "↗";
+        }
+        if (kind === "TALK" || /^hablar\\b/.test(command)) return "◌";
+        if (kind === "OBJECT" || /^(observar|examinar|mirar|tomar|usar)\\b/.test(command)) return "◇";
+        return "✦";
+    }
+
     function appendContextAction(target, action) {
         var command = clean(action.command);
         var label = clean(action.label);
@@ -280,7 +296,10 @@
         button.className = "sizaContextAction";
         button.setAttribute("data-kind", clean(action.kind).toUpperCase());
         button.setAttribute("data-command", command);
-        button.textContent = label;
+        button.setAttribute("data-tooltip", label);
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+        button.textContent = actionIcon(action);
         button.addEventListener("click", function () {
             var client = window.SizaWorldBookClient;
             if (client && typeof client.sendText === "function") {
