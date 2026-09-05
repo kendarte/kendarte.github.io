@@ -256,10 +256,42 @@
     }
 
     function requestContext(){
-        clearTimeout(contextTimer);
-        contextTimer=setTimeout(function(){
-            if(window.Evennia&&Evennia.isConnected())Evennia.msg("text",["siza-ui-context"],{});
-        },80);
+        return false;
+    }
+
+    function renderRoomSnapshotActions(room) {
+        room = room || {};
+        var actions = [];
+        var seen = {};
+
+        function add(kind, label, command) {
+            var normalizedLabel = clean(label);
+            var normalizedCommand = clean(command);
+            if (!normalizedLabel || !normalizedCommand || seen[normalizedCommand]) {
+                return;
+            }
+            seen[normalizedCommand] = true;
+            actions.push({
+                id: kind + ":" + normalizedCommand,
+                kind: kind,
+                label: normalizedLabel,
+                command: normalizedCommand,
+                target: normalizedLabel
+            });
+        }
+
+        splitItems(room.characters).forEach(function (name) {
+            var target = rawEntityName(name);
+            add("INTERACTION", choose("Hablar con " + target, "Talk to " + target), "hablar con " + target);
+        });
+        splitItems(room.visible).forEach(function (name) {
+            var target = rawEntityName(name);
+            add("PERCEPTION", choose("Observar " + target, "Observe " + target), "observar " + target);
+        });
+        splitItems(room.exits).forEach(function (exit) {
+            add("MOVE", exitLabel(exit), exit);
+        });
+        renderContextActions({actions: actions});
     }
 
     function isMovementAction(action) {
@@ -369,13 +401,12 @@
 
         if(window.Evennia&&Evennia.emitter){Evennia.emitter.on("siza_character_stats",onStats);Evennia.emitter.on("siza_player_language",onLanguage);Evennia.emitter.on("siza_context_actions",renderContextActions);}
         refresh();
-        requestContext();
     }
 
     window.SizaBookInteractionV04=Object.freeze({
         splitItems:splitItems,renderActionSource:renderActionSource,openPanel:openPanel,requestStats:requestStats,
         localizeRoom:localizeRoom,setLanguage:setLanguage,getLanguage:function(){return currentLanguage;},refresh:refresh,
-        requestContext:requestContext,renderContextActions:renderContextActions
+        requestContext:requestContext,renderContextActions:renderContextActions,renderRoomSnapshotActions:renderRoomSnapshotActions
     });
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
