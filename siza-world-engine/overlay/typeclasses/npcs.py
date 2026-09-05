@@ -13,6 +13,7 @@ class NPC(Character):
         self.db.knowledge = {}
         self.db.knowledge_facts = []
         self.db.dialogue_greeting = ""
+        self.db.dialogue_topics = []
 
         # Persistent combat authoring. The World Engine owns the NPC identity and
         # selected deck id; the TCG resolves that id against its canonical deck
