@@ -3,9 +3,11 @@
 
     if (window.SizaRoomStateRendererV01) return;
 
-    var BUILD = "20260905-room-state-renderer-v1";
+    var BUILD = "20260905-room-state-renderer-v2";
     var requested = false;
+    var lastRequestAt = 0;
     var lastSignature = "";
+    var hasRoomState = false;
 
     function byId(id) {
         return document.getElementById(id);
@@ -94,6 +96,7 @@
         if (Array.isArray(packet) && packet.length === 1) packet = packet[0];
         packet = packet || {};
         if (packet.status && packet.status !== "ROOM_SNAPSHOT") return;
+        hasRoomState = true;
 
         var title = clean(packet.room_name || packet.location || "Ubicación actual");
         var observation = buildObservation(packet);
@@ -115,7 +118,10 @@
         renderActions(packet);
     }
 
-    function requestRoomState() {
+    function requestRoomState(force) {
+        var now = Date.now();
+        if (!force && now - lastRequestAt < 900) return;
+        lastRequestAt = now;
         if (!window.Evennia || typeof Evennia.isConnected !== "function" || !Evennia.isConnected()) return;
         Evennia.msg("text", ["siza-room-state"], {});
     }
@@ -124,15 +130,28 @@
         if (requested) return;
         requested = true;
         [250, 900, 1800].forEach(function (delay) {
-            window.setTimeout(requestRoomState, delay);
+            window.setTimeout(function () { requestRoomState(true); }, delay);
         });
         window.setTimeout(function () { requested = false; }, 2400);
+    }
+
+    function shouldRefreshAfterText(value) {
+        var text = clean(value).toLowerCase();
+        if (!hasRoomState) return /you become|entras en|you arrive|you see|exits:|salidas:/i.test(text);
+        if (!text) return false;
+        if (/command ['"]?siza-room-state/i.test(text)) return false;
+        if (/the current location will be described here/i.test(text)) return false;
+        return true;
     }
 
     function onText(args) {
         var value = args && args.length ? String(args[0] || "") : "";
         if (/you become/i.test(value)) {
             requestInitialRoomState();
+            return;
+        }
+        if (shouldRefreshAfterText(value)) {
+            window.setTimeout(function () { requestRoomState(false); }, 350);
         }
     }
 
