@@ -611,3 +611,50 @@ body {
 #siza-book-client.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
     grid-template-rows: minmax(0, 1fr) !important;
 }
+
+
+/* Read first; choose a verb second. */
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActions {
+    display: grid !important;
+    gap: 8px;
+    margin-top: 10px !important;
+    padding: 10px 0 0 !important;
+    border-top: 1px solid #9a947f !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextActionGroup {
+    display: grid;
+    gap: 5px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextActionGroup[hidden] {
+    display: none !important;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextActionGroup > header {
+    color: #9a7940;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsList {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction {
+    max-width: 100%;
+    padding: 6px 8px !important;
+    border: 1px solid #978a67 !important;
+    border-radius: 0 !important;
+    background: #eee4ca !important;
+    color: #283334 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 8px !important;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: left;
+}
