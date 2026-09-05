@@ -8,7 +8,7 @@ from services.object_action_engine import find_object_action
 from services.object_visibility_engine import object_visible_in_world_state
 
 
-SIZA_UI_RUNTIME_BUILD = "0.1.1-uppercase-room-ui-runtime"
+SIZA_UI_RUNTIME_BUILD = "0.1.2-no-look-alias-runtime"
 
 
 def _clean(value):
@@ -214,12 +214,7 @@ def emit_room_snapshot(actor):
 
 class CmdSizaRoomState(Command):
     key = "siza-room-state"
-    aliases = (
-        "SIZA-ROOM-STATE",
-        "look", "Look", "LOOK",
-        "l", "L",
-        "mirar", "Mirar", "MIRAR",
-    )
+    aliases = ()
     locks = "cmd:all()"
     help_category = "Siza"
 
@@ -229,7 +224,7 @@ class CmdSizaRoomState(Command):
 
 class CmdSizaUiContext(Command):
     key = "siza-ui-context"
-    aliases = ("SIZA-UI-CONTEXT",)
+    aliases = ()
     locks = "cmd:all()"
     help_category = "Siza"
 
@@ -239,7 +234,7 @@ class CmdSizaUiContext(Command):
 
 class CmdSizaUiStats(Command):
     key = "siza-ui-stats"
-    aliases = ("SIZA-UI-STATS",)
+    aliases = ()
     locks = "cmd:all()"
     help_category = "Siza"
 
