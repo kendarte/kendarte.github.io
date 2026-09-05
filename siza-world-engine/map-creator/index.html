@@ -23,6 +23,7 @@
     <button class="btn" id="importBtn">Importar JSON</button>
     <button class="btn" id="exportBtn">Exportar JSON</button>
     <button class="btn" id="pythonBtn">Exportar seed Python</button>
+    <button class="btn" id="validateBtn">Validar mundo</button>
     <input type="file" id="fileInput" accept="application/json,.json" hidden>
     <div class="status" id="status">Listo</div>
   </header>
@@ -90,8 +91,73 @@ let state=load()||blankProject();
 let selected=null;
 let connectMode=false,connectSource=null;
 let drag=null;
+let validationReportData=null;
 
 function normalize(p){p=p&&typeof p==='object'?p:blankProject();p.version=3;p.meta={name:p.meta?.name||'Nuevo mapa SIZA',campaign_id:p.meta?.campaign_id||'',seed_tag:p.meta?.seed_tag||'siza_map'};p.rooms=Array.isArray(p.rooms)?p.rooms:[];p.exits=Array.isArray(p.exits)?p.exits:[];p.rooms.forEach((r,i)=>{r.id=r.id||uid('room');r.key=r.key||'Room '+(i+1);r.room_id=r.room_id||'ROOM-'+String(i+1).padStart(3,'0');r.x=Number.isFinite(+r.x)?+r.x:600+i*220;r.y=Number.isFinite(+r.y)?+r.y:500;r.sensory_facts={sight:[],hearing:[],smell:[],touch:[],taste:[],...(r.sensory_facts||{})};r.space_profile={room_type:null,scale:null,geometry:null,orientation:null,focal_points:[],status:'prototype',...(r.space_profile||{})};r.scene_image={src:'',alt:'',position:'center center',fit:'cover',...(r.scene_image&&typeof r.scene_image==='object'?r.scene_image:{src:r.scene_image||''})};r.scene_image.src=String(r.scene_image.src||'').trim();r.scene_image.alt=String(r.scene_image.alt||'').trim();r.scene_image.position=String(r.scene_image.position||'center center').trim()||'center center';r.scene_image.fit=String(r.scene_image.fit||'cover').trim()==='contain'?'contain':'cover';r.scene_manifest=normalizeSceneManifest(r.scene_manifest);['perception_facts','job_tasks','state_presentations'].forEach(k=>r[k]=Array.isArray(r[k])?r[k]:[]);['conditions','world_state'].forEach(k=>r[k]=r[k]&&typeof r[k]==='object'&&!Array.isArray(r[k])?r[k]:{});});p.exits=p.exits.filter(e=>p.rooms.some(r=>r.id===e.source)&&p.rooms.some(r=>r.id===e.target));p.exits.forEach((e,i)=>{e.id=e.id||uid('exit');e.exit_id=e.exit_id||'EXIT-'+String(i+1).padStart(3,'0');e.key=e.key||'salida';e.aliases=Array.isArray(e.aliases)?e.aliases:[];e.door_state=e.door_state||'open';e.state_requirements=Array.isArray(e.state_requirements)?e.state_requirements:[];e.campaign_tags=Array.isArray(e.campaign_tags)?e.campaign_tags:[];});return p;}
+function validateMapProject(){
+ state=normalize(state);
+ const errors=[],warnings=[],roomIds=new Set(),entityIds=new Set(),objectIds=new Set();
+ const requiredOrientation=['arrival_summary','spatial_answer','time_context','current_activity'];
+ const validTriggers=new Set(['OBSTACLE','OPPOSITION','SYNCHRONY']);
+ const validModes=new Set(['DIRECT','ACCUMULATE','CONFRONT','SYNCHRONIZE']);
+ const validStats=new Set(['FUE','AGI','COO','INT','PER','PSI']);
+ for(const room of state.rooms){
+  const label=room.key||room.id||'Room sin nombre';
+  if(!String(room.room_id||'').trim())errors.push(label+': falta room_id estable.');
+  if(roomIds.has(String(room.room_id||'')))errors.push(label+': room_id duplicado '+room.room_id+'.');
+  roomIds.add(String(room.room_id||''));
+  if(!String(room.key||'').trim())errors.push(room.room_id+': falta nombre visible.');
+  if(!String(room.desc||'').trim())warnings.push(label+': falta descripción de entrada.');
+  const manifest=normalizeSceneManifest(room.scene_manifest);
+  for(const field of requiredOrientation)if(!String(manifest.orientation[field]||'').trim())errors.push(label+': falta orientación '+field+'.');
+  if(manifest.narrator_answers.length<3)warnings.push(label+': conviene autorar al menos tres respuestas de narrador.');
+  if(manifest.entities.length<2)warnings.push(label+': conviene autorar al menos dos elementos físicos.');
+  const localEntityIds=new Set();
+  for(const entity of manifest.entities){
+   const entityLabel=label+' / '+(entity.name||entity.id||'entidad');
+   if(!String(entity.id||'').trim())errors.push(entityLabel+': falta id de entidad.');
+   if(localEntityIds.has(String(entity.id||'')))errors.push(entityLabel+': id de entidad repetido dentro del Room.');
+   localEntityIds.add(String(entity.id||''));
+   if(entityIds.has(String(entity.id||'')))errors.push(entityLabel+': id de entidad repetido en el mapa.');
+   entityIds.add(String(entity.id||''));
+   if(!String(entity.object_id||'').trim())errors.push(entityLabel+': falta object_id estable.');
+   if(objectIds.has(String(entity.object_id||'')))errors.push(entityLabel+': object_id repetido en el mapa.');
+   objectIds.add(String(entity.object_id||''));
+   if(!String(entity.name||'').trim())errors.push(label+': una entidad necesita nombre visible.');
+   if(!String(entity.visible_description||'').trim())warnings.push(entityLabel+': falta descripción visible.');
+   for(const action of Array.isArray(entity.object_actions)?entity.object_actions:[]){
+    if(!String(action.id||'').trim()||!String(action.name||'').trim())errors.push(entityLabel+': acción de objeto sin id o nombre.');
+    const check=action.check;
+    if(check&&(!validTriggers.has(String(check.trigger||'').toUpperCase())||!validModes.has(String(check.mode||'').toUpperCase())||!validStats.has(String(check.stat||'').toUpperCase())))errors.push(entityLabel+': acción '+(action.name||action.id||'')+' tiene una tirada inválida.');
+   }
+  }
+  for(const discovery of manifest.hidden_discoveries){
+   if(!String(discovery.id||'').trim()||!String(discovery.reveal||'').trim())errors.push(label+': descubrimiento oculto sin id o revelación.');
+   const check=discovery.check||{};
+   if(!validTriggers.has(String(check.trigger||'').toUpperCase())||!validModes.has(String(check.mode||'').toUpperCase())||!validStats.has(String(check.stat||'').toUpperCase()))errors.push(label+': descubrimiento '+(discovery.label||discovery.id||'')+' tiene una tirada inválida.');
+  }
+  for(const hook of manifest.free_action_hooks){
+   if(!String(hook.id||'').trim()||!String(hook.label||'').trim())errors.push(label+': gancho de acción libre sin id o etiqueta.');
+   if(hook.target_entity_id&&!localEntityIds.has(String(hook.target_entity_id)))errors.push(label+': gancho '+(hook.label||hook.id)+' apunta a una entidad inexistente.');
+   const check=hook.check;
+   if(check&&(!validTriggers.has(String(check.trigger||'').toUpperCase())||!validModes.has(String(check.mode||'').toUpperCase())||!validStats.has(String(check.stat||'').toUpperCase())))errors.push(label+': gancho '+(hook.label||hook.id)+' tiene una tirada inválida.');
+  }
+ }
+ const roomEditorIds=new Set(state.rooms.map(room=>String(room.id||'')));
+ const exitIds=new Set();
+ for(const exit of state.exits){
+  const label=exit.key||exit.id||'Exit sin nombre';
+  if(!String(exit.exit_id||'').trim())errors.push(label+': falta exit_id estable.');
+  if(exitIds.has(String(exit.exit_id||'')))errors.push(label+': exit_id duplicado '+exit.exit_id+'.');
+  exitIds.add(String(exit.exit_id||''));
+  if(!roomEditorIds.has(String(exit.source||''))||!roomEditorIds.has(String(exit.target||'')))errors.push(label+': conecta un Room inexistente.');
+ }
+ validationReportData={errors,warnings,rooms:state.rooms.length,exits:state.exits.length};
+ selected={type:'validation',id:'report'};
+ render();
+ setStatus(errors.length?'Validación: '+errors.length+' errores':'Mapa válido · '+warnings.length+' avisos',Boolean(errors.length));
+}
+
 function save(){state=normalize(state);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));setStatus('Guardado');}
 function load(){try{return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'));}catch{return null;}}
 function setStatus(t,bad=false){$('status').textContent=t;$('status').style.color=bad?'var(--danger)':'var(--muted)';clearTimeout(setStatus.t);setStatus.t=setTimeout(()=>{$('status').textContent='Listo';$('status').style.color='var(--muted)';},1800);}
@@ -137,7 +203,13 @@ function exitInspector(e){const a=findRoom(e.source),b=findRoom(e.target);return
  <div class="section"><h3>Campaign / gating</h3><div class="field"><label>campaign_tags · uno por línea</label><textarea data-e-list="campaign_tags">${esc((e.campaign_tags||[]).join('\n'))}</textarea></div><div class="field"><label>Mensaje de bloqueo</label><textarea data-e="state_block_message">${esc(e.state_block_message||'')}</textarea></div>${jsonField('state_requirements',e.state_requirements,'exit')}</div>
  <div class="section"><div class="help">${esc(a?.key||'?')} → ${esc(b?.key||'?')}</div></div>`;}
 function jsonField(key,value,kind='room'){return `<div class="field"><label>${key} · JSON</label><textarea class="json-editor" data-json-kind="${kind}" data-json-key="${key}">${esc(JSON.stringify(value??(key==='conditions'||key==='world_state'?{}:[]),null,2))}</textarea></div>`;}
-function renderInspector(){const o=selObj();if(!o){$('inspectorTitle').textContent='Inspector';$('inspectorBody').innerHTML='<div class="section"><div class="empty">Seleccione un Room o Exit.</div></div>';return}const kind=selected.type;$('inspectorTitle').textContent=(kind==='room'?'ROOM · ':'EXIT · ')+o.key;$('inspectorBody').innerHTML=kind==='room'?roomInspector(o):exitInspector(o);bindInspector(kind,o);}
+function renderInspector(){if(selected?.type==='validation'){
+ const report=validationReportData||{errors:[],warnings:[],rooms:state.rooms.length,exits:state.exits.length};
+ $('inspectorTitle').textContent='VALIDACIÓN DEL MUNDO';
+ const rows=[...report.errors.map(text=>'<div class="field"><div style="color:var(--danger)">Error · '+esc(text)+'</div></div>'),...report.warnings.map(text=>'<div class="field"><div style="color:#e4b65d">Aviso · '+esc(text)+'</div></div>')].join('')||'<div class="empty">El mapa está listo para exportar: '+report.rooms+' Rooms y '+report.exits+' Exits.</div>';
+ $('inspectorBody').innerHTML='<div class="section"><h3>Resultado</h3><div class="help">'+report.rooms+' Rooms · '+report.exits+' Exits · '+report.errors.length+' errores · '+report.warnings.length+' avisos</div></div><div class="section">'+rows+'</div>';
+ return;
+ }const o=selObj();if(!o){$('inspectorTitle').textContent='Inspector';$('inspectorBody').innerHTML='<div class="section"><div class="empty">Seleccione un Room o Exit.</div></div>';return}const kind=selected.type;$('inspectorTitle').textContent=(kind==='room'?'ROOM · ':'EXIT · ')+o.key;$('inspectorBody').innerHTML=kind==='room'?roomInspector(o):exitInspector(o);bindInspector(kind,o);}
 function bindInspector(kind,o){
  if(kind==='room'){
   document.querySelectorAll('[data-r]').forEach(el=>el.oninput=()=>{o[el.dataset.r]=el.value;commitInspector(false)});
@@ -219,7 +291,7 @@ def _ensure_exit(row, rooms_by_editor_id):\n    source = rooms_by_editor_id.get(
 
 $('addRoomBtn').onclick=addRoom;$('deleteBtn').onclick=deleteSelected;$('newBtn').onclick=newProject;$('centerBtn').onclick=centerView;
 $('connectBtn').onclick=()=>{connectMode=!connectMode;connectSource=null;$('connectBtn').classList.toggle('active',connectMode);renderGraph();setStatus(connectMode?'Seleccione el Room de origen':'Conexión cancelada')};
-$('exportBtn').onclick=exportJson;$('pythonBtn').onclick=exportPython;$('importBtn').onclick=()=>$('fileInput').click();
+$('exportBtn').onclick=exportJson;$('pythonBtn').onclick=exportPython;$('validateBtn').onclick=validateMapProject;$('importBtn').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{state=normalize(JSON.parse(rd.result));selected=null;save();render();centerView();setStatus('Mapa importado')}catch{setStatus('JSON inválido',true)}};rd.readAsText(f);ev.target.value=''};
 $('mapName').oninput=e=>{state.meta.name=e.target.value;save()};$('campaignId').oninput=e=>{state.meta.campaign_id=e.target.value;save()};$('seedTag').oninput=e=>{state.meta.seed_tag=e.target.value;save()};
 $('world').onpointerdown=e=>{if(e.target===$('world')||e.target===$('nodes')||e.target===$('edges')){selected=null;render()}};
