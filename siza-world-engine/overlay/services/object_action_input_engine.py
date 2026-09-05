@@ -6,11 +6,31 @@ from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.object_action_engine import authored_object_actions, begin_object_action
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.55.1-campaign-observed-object-action-input"
+OBJECT_ACTION_INPUT_BUILD = "0.56.0-narrative-object-action-input"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
 }
+NARRATIVE_TEXT_KEYS = (
+    "narrative",
+    "narrative_text",
+    "completion_text",
+    "completed_text",
+    "result_text",
+    "success_text",
+    "response_text",
+    "observation",
+    "visible_result",
+    "after_text",
+    "text",
+)
+DESCRIPTION_KEYS = (
+    "visible_description",
+    "description",
+    "desc",
+    "summary",
+    "look_text",
+)
 
 
 def normalize(text):
@@ -34,6 +54,53 @@ def _plain_list(value):
         return list(value or [])
     except Exception:
         return []
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _clean_text(value):
+    return " ".join(str(value or "").replace("\r", "\n").split()).strip()
+
+
+def _first_text(container, keys=NARRATIVE_TEXT_KEYS):
+    if not isinstance(container, dict):
+        return ""
+    for key in keys:
+        value = container.get(key)
+        if isinstance(value, str) and value.strip():
+            return _clean_text(value)
+    for key in ("result", "results", "completion", "success", "on_complete", "outcome", "metadata"):
+        nested = container.get(key)
+        if isinstance(nested, dict):
+            found = _first_text(nested, keys)
+            if found:
+                return found
+    return ""
+
+
+def _db_text(obj, keys=DESCRIPTION_KEYS):
+    if not obj:
+        return ""
+    db = getattr(obj, "db", None)
+    for key in keys:
+        try:
+            value = getattr(db, key, None)
+        except Exception:
+            value = None
+        if isinstance(value, str) and value.strip():
+            return _clean_text(value)
+    try:
+        value = getattr(obj, "desc", None)
+    except Exception:
+        value = None
+    if isinstance(value, str) and value.strip():
+        return _clean_text(value)
+    return ""
 
 
 def _object_names(obj):
@@ -231,6 +298,101 @@ def _human_requirement_message(blockers, object_name):
     return "No cumples los requisitos necesarios para realizar esa acción."
 
 
+def _visible_name(obj):
+    return _clean_text(getattr(obj, "key", ""))
+
+
+def _room_snapshot_text(site, focus_obj=None):
+    if not site:
+        return ""
+
+    title = _visible_name(site) or "Ubicación actual"
+    desc = _db_text(site)
+    lines = [title]
+    if desc:
+        lines.append(desc)
+
+    objects = []
+    people = []
+    for obj in list(getattr(site, "contents", []) or []):
+        if obj is focus_obj:
+            continue
+        if getattr(obj, "destination", None):
+            continue
+        name = _visible_name(obj)
+        if not name:
+            continue
+        if bool(getattr(getattr(obj, "db", None), "is_npc", False)):
+            people.append(name)
+        else:
+            objects.append(name)
+
+    exits = []
+    for exit_obj in list(getattr(site, "exits", []) or []):
+        name = _visible_name(exit_obj)
+        if name:
+            exits.append(name)
+
+    if objects:
+        lines.append("Ves: " + ", ".join(objects[:10]) + ".")
+    if people:
+        lines.append("Personas presentes: " + ", ".join(people[:10]) + ".")
+    if exits:
+        lines.append("Salidas: " + ", ".join(exits[:10]) + ".")
+    return "\n".join(line for line in lines if str(line or "").strip())
+
+
+def _state_after_text(obj):
+    state = _plain_dict(getattr(getattr(obj, "db", None), "state", {})) if obj else {}
+    truthy = [
+        str(key).replace("_", " ")
+        for key, value in state.items()
+        if isinstance(value, bool) and value is True
+    ]
+    if not truthy:
+        return ""
+    return "Estado visible: " + ", ".join(truthy[:4]) + "."
+
+
+def _fallback_action_sentence(action_name, object_name):
+    action_n = normalize(action_name)
+    obj = object_name or "el objeto"
+    if action_n.startswith("examinar") or action_n.startswith("observar"):
+        return f"Examinas {obj} con cuidado. Te acercas lo suficiente para distinguir uso, desgaste y detalles que antes sólo eran parte del ruido del lugar."
+    if action_n.startswith("revisar"):
+        return f"Revisas {obj}. Apartas lo superficial, sigues marcas de uso reciente y confirmas qué queda realmente disponible."
+    if action_n.startswith("abrir"):
+        return f"Abres {obj}. El mecanismo cede y el lugar revela una capa más de información útil."
+    if action_n.startswith("activar") or action_n.startswith("usar"):
+        return f"Usas {obj}. La acción altera el estado inmediato del lugar y deja una consecuencia perceptible."
+    return f"Realizas {action_name} sobre {obj}. La acción queda resuelta en el mundo y cambia lo que tu personaje puede percibir desde aquí."
+
+
+def _render_completed_action(packet, action_name, object_name):
+    action = (packet or {}).get("action") or {}
+    result = (packet or {}).get("action_result") or {}
+    obj = (packet or {}).get("object")
+    site = getattr(obj, "location", None) if obj else None
+
+    authored = _first_text(action) or _first_text(result)
+    if not authored:
+        authored = _fallback_action_sentence(action_name, object_name)
+
+    object_desc = _db_text(obj)
+    state_text = _state_after_text(obj)
+    room_text = _room_snapshot_text(site, focus_obj=None)
+
+    blocks = []
+    if room_text:
+        blocks.append(room_text)
+    blocks.append(authored)
+    if object_desc:
+        blocks.append(f"{object_name}: {object_desc}")
+    if state_text:
+        blocks.append(state_text)
+    return "\n\n".join(block for block in blocks if str(block or "").strip())
+
+
 def render_object_action_input_result(packet):
     """Human-facing deterministic feedback for one routed object action."""
     status = str((packet or {}).get("status") or "")
@@ -262,9 +424,9 @@ def render_object_action_input_result(packet):
             target_obj = (packet or {}).get("object")
             target_value = stat_value(target_obj, target_stat) if target_obj and target_stat else None
             return (
-                f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
-                f"attempt_id={result.get('attempt_id')} | {result.get('actor_stat')}={result.get('actor_stat_value')} "
-                f"vs {object_name} {target_stat}={target_value} | escribe 'tirar' para resolver"
+                f"Intentas {action_name} sobre {object_name}. La situación exige una confrontación: "
+                f"{result.get('actor_stat')} {result.get('actor_stat_value')} contra {target_stat} {target_value}. "
+                "Escribe 'tirar' para resolver."
             )
         if mode == "SYNCHRONIZE":
             action = (packet or {}).get("action") or {}
@@ -273,17 +435,16 @@ def render_object_action_input_result(packet):
             parity = str(metadata.get("parity") or "").upper()
             parity_text = "PAR" if parity in {"EVEN", "PAR"} else "IMPAR"
             return (
-                f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
-                f"attempt_id={result.get('attempt_id')} | {result.get('actor_stat')}={result.get('actor_stat_value')} "
-                f"| sincronia={parity_text} | escribe 'tirar' para resolver"
+                f"Intentas {action_name} sobre {object_name}. La acción requiere sincronía "
+                f"{parity_text}. Escribe 'tirar' para resolver."
             )
         return (
-            f"[OBJECT ACTION] {action_name} -> PENDING_RESOLUTION | "
-            f"attempt_id={result.get('attempt_id')} | stat={result.get('actor_stat')} | "
-            f"difficulty={result.get('difficulty')} | escribe 'tirar' para resolver"
+            f"Intentas {action_name} sobre {object_name}. La acción requiere una tirada de "
+            f"{result.get('actor_stat')} contra dificultad {result.get('difficulty')}. "
+            "Escribe 'tirar' para resolver."
         )
     if status == "COMPLETED":
-        return f"[OBJECT ACTION] {action_name} -> COMPLETED"
+        return _render_completed_action(packet, action_name, object_name)
     if status == "BLOCKED_CHECK":
         return f"No se pudo preparar la resolución de '{action_name}': {result.get('resolution_status')}"
-    return f"[OBJECT ACTION] {action_name} -> {status or 'UNKNOWN'}"
+    return f"La acción '{action_name}' no pudo resolverse ahora ({status or 'UNKNOWN'})."
