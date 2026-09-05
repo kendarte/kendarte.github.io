@@ -8,11 +8,62 @@ from services.object_action_engine import find_object_action
 from services.object_visibility_engine import object_visible_in_world_state
 
 
-SIZA_UI_RUNTIME_BUILD = "0.1.3-room-text-fallback"
+SIZA_UI_RUNTIME_BUILD = "0.2.0-map-editor-room-state"
+PLACEHOLDER_DESCRIPTIONS = {
+    "",
+    "the current location will be described here.",
+    "the current location will be described here",
+    "no hay descripcion escrita para este lugar.",
+    "no hay descripción escrita para este lugar.",
+    "sin descripcion disponible.",
+    "sin descripción disponible.",
+}
+ROOM_TEXT_ATTRS = (
+    "desc",
+    "description",
+    "long_description",
+    "visible_description",
+    "look_text",
+    "arrival_summary",
+    "spatial_answer",
+    "current_activity",
+)
+EDITOR_ROOM_ATTRS = (
+    "scene_manifest",
+    "sensory_facts",
+    "perception_facts",
+    "space_profile",
+    "state_presentations",
+    "conditions",
+    "world_state",
+)
+TEXT_KEYS = (
+    "text",
+    "description",
+    "desc",
+    "summary",
+    "visible_description",
+    "arrival_summary",
+    "spatial_answer",
+    "current_activity",
+    "time_context",
+    "observation",
+    "narrative",
+    "value",
+    "label",
+)
 
 
 def _clean(value):
     return str(value or "").strip()
+
+
+def _clean_inline(value):
+    return " ".join(str(value or "").replace("\r", "\n").split()).strip()
+
+
+def _is_placeholder(value):
+    return _clean_inline(value).lower() in PLACEHOLDER_DESCRIPTIONS
 
 
 def _plain_list(value):
@@ -20,6 +71,21 @@ def _plain_list(value):
         return list(value or [])
     except Exception:
         return []
+
+
+def _plain_dict(value):
+    try:
+        return {str(key): item for key, item in (value or {}).items()}
+    except Exception:
+        return {}
+
+
+def _db_value(obj, name, default=""):
+    try:
+        value = getattr(obj.db, name, default)
+    except Exception:
+        return default
+    return default if value is None else value
 
 
 def _local_object(actor, dbref):
@@ -36,20 +102,103 @@ def _local_object(actor, dbref):
     )
 
 
-def _db_value(obj, name, default=""):
-    try:
-        value = getattr(obj.db, name, default)
-    except Exception:
-        return default
-    return default if value is None else value
+def _text_like(value):
+    text = _clean_inline(value)
+    if not text or _is_placeholder(text):
+        return ""
+    if len(text) < 10:
+        return ""
+    upper_ratio = sum(1 for ch in text if ch.isupper()) / max(1, sum(1 for ch in text if ch.isalpha()))
+    if text.startswith(("DH7-", "FA-", "NPC-", "OBJ-", "ROOM-")):
+        return ""
+    if upper_ratio > 0.85 and len(text) < 40:
+        return ""
+    return text
+
+
+def _append_unique(output, value, limit=8):
+    text = _text_like(value)
+    if text and text not in output:
+        output.append(text)
+    return len(output) >= limit
+
+
+def _collect_text(value, output=None, *, depth=0, limit=8):
+    if output is None:
+        output = []
+    if len(output) >= limit or depth > 5:
+        return output
+    if isinstance(value, str):
+        _append_unique(output, value, limit=limit)
+        return output
+    if isinstance(value, dict):
+        for key in TEXT_KEYS:
+            if key in value and _append_unique(output, value.get(key), limit=limit):
+                return output
+        for preferred in (
+            "orientation",
+            "narrator_answers",
+            "visible_details",
+            "room_description",
+            "sensory_facts",
+            "perception_facts",
+            "space_profile",
+            "state_presentations",
+            "conditions",
+        ):
+            if preferred in value:
+                _collect_text(value.get(preferred), output, depth=depth + 1, limit=limit)
+                if len(output) >= limit:
+                    return output
+        for key, item in value.items():
+            key_text = str(key).lower()
+            if key_text.endswith("_id") or key_text in {"id", "room_id", "object_id", "npc_id", "campaign_tags", "source"}:
+                continue
+            _collect_text(item, output, depth=depth + 1, limit=limit)
+            if len(output) >= limit:
+                return output
+        return output
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            _collect_text(item, output, depth=depth + 1, limit=limit)
+            if len(output) >= limit:
+                return output
+    return output
 
 
 def _room_description(location):
-    for attr in ("desc", "description", "long_description"):
-        value = _clean(_db_value(location, attr, ""))
+    for attr in ROOM_TEXT_ATTRS:
+        value = _text_like(_db_value(location, attr, ""))
         if value:
             return value
-    return "No hay descripcion escrita para este lugar."
+
+    fragments = []
+    for attr in EDITOR_ROOM_ATTRS:
+        _collect_text(_db_value(location, attr, None), fragments, limit=8)
+    if fragments:
+        return "\n\n".join(fragments[:6])
+
+    return "Este lugar todavía no tiene descripción narrativa importada desde el Map Editor."
+
+
+def _object_description(obj):
+    for attr in ("visible_description", "desc", "description", "look_text", "summary"):
+        value = _text_like(_db_value(obj, attr, ""))
+        if value:
+            return value
+    fragments = []
+    for attr in ("interaction_facts", "state_presentations", "perception_facts", "sensory_facts"):
+        _collect_text(_db_value(obj, attr, None), fragments, limit=3)
+    return " ".join(fragments[:2])
+
+
+def _dm_context(location):
+    context = {}
+    for attr in EDITOR_ROOM_ATTRS:
+        value = _db_value(location, attr, None)
+        if value not in (None, "", [], {}):
+            context[attr] = value
+    return context
 
 
 def _is_visible_world_object(actor, obj):
@@ -79,7 +228,7 @@ def _visible_people_and_objects(actor):
             "dbref": int(obj.id),
             "object_id": _clean(_db_value(obj, "object_id", "")) or None,
             "npc_id": _clean(_db_value(obj, "npc_id", "")) or None,
-            "description": _clean(_db_value(obj, "desc", "")) or _clean(_db_value(obj, "description", "")),
+            "description": _object_description(obj),
         }
         if bool(_db_value(obj, "is_npc", False)):
             people.append(row)
@@ -158,7 +307,16 @@ def context_action_packet(actor):
             verb = _clean(phrases[0] if phrases else action.get("name"))
             command = verb if phrases else f"{verb} {target.key}".strip()
             label = _clean(action.get("name")) or verb or f"Usar {target.key}"
-            actions.append({"id": _clean(capability.get("capability_id")), "kind": kind, "label": label, "command": command, "target": str(target.key)})
+            actions.append({
+                "id": _clean(capability.get("capability_id")),
+                "kind": kind,
+                "label": label,
+                "command": command,
+                "target": str(target.key),
+                "object_id": _clean(getattr(target.db, "object_id", "")) or None,
+                "requires_roll": bool(action.get("check")),
+                "check": action.get("check") or None,
+            })
             continue
 
         if kind == "INTERACTION":
@@ -193,14 +351,20 @@ def room_snapshot_packet(actor):
     context = context_action_packet(actor)
     return {
         "status": "ROOM_SNAPSHOT",
+        "room_name": str(location.key),
         "location": str(location.key),
         "room_id": _clean(_db_value(location, "room_id", "")) or None,
+        "room_description": _room_description(location),
         "description": _room_description(location),
         "exits": exits,
+        "visible_npcs": people,
         "people": people,
+        "visible_objects": objects,
         "objects": objects,
+        "available_actions": list(context.get("actions") or []),
         "actions": list(context.get("actions") or []),
         "pending_roll": bool(context.get("pending_roll")),
+        "dm_context": _dm_context(location),
         "build": SIZA_UI_RUNTIME_BUILD,
     }
 
@@ -217,11 +381,11 @@ def _names(rows):
 def _room_text_block(packet):
     if not packet or packet.get("status") != "ROOM_SNAPSHOT":
         return ""
-    location = _clean(packet.get("location")) or "Ubicación"
-    description = _clean(packet.get("description")) or "No hay descripcion escrita para este lugar."
+    location = _clean(packet.get("room_name") or packet.get("location")) or "Ubicación"
+    description = _clean(packet.get("room_description") or packet.get("description")) or "Este lugar todavía no tiene descripción narrativa importada desde el Map Editor."
     exits = _names(packet.get("exits"))
-    people = _names(packet.get("people"))
-    objects = _names(packet.get("objects"))
+    people = _names(packet.get("visible_npcs") or packet.get("people"))
+    objects = _names(packet.get("visible_objects") or packet.get("objects"))
     return "\n".join(
         [
             location,
@@ -233,14 +397,14 @@ def _room_text_block(packet):
     )
 
 
-def emit_room_snapshot(actor, *, visible_text=True):
+def emit_room_snapshot(actor, *, visible_text=False):
     packet = room_snapshot_packet(actor)
+    actor.msg(siza_room_snapshot=((packet,), {}))
+    actor.msg(siza_context_actions=((context_action_packet(actor),), {}))
     if visible_text:
         text = _room_text_block(packet)
         if text:
             actor.msg("\n" + text)
-    actor.msg(siza_room_snapshot=((packet,), {}))
-    actor.msg(siza_context_actions=((context_action_packet(actor),), {}))
     return packet
 
 
@@ -251,7 +415,7 @@ class CmdSizaRoomState(Command):
     help_category = "Siza"
 
     def func(self):
-        emit_room_snapshot(self.caller)
+        emit_room_snapshot(self.caller, visible_text=True)
 
 
 class CmdSizaUiContext(Command):
