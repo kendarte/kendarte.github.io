@@ -1,12 +1,15 @@
 """Safe content-only importers for SIZA Map Creator and NPC Creator exports.
 
-These functions only update existing objects identified by their stable room_id or
-npc_id. They never create, delete, move, reset, or rename world objects.
+The standard map/NPC importers only update existing objects identified by stable
+room_id or npc_id. The separate scene-prop materializer creates or updates only
+static WorldObject props authored inside a room scene manifest; it does not touch
+characters, exits, player inventory, world state, or campaign progress.
 """
 
 import json
 from pathlib import Path
 
+from evennia import create_object
 from evennia.objects.models import ObjectDB
 
 
@@ -130,6 +133,144 @@ def apply_map_file(path):
     return report
 
 
+def _scene_entity_rows(row):
+    manifest = row.get("scene_manifest")
+    if not isinstance(manifest, dict):
+        return []
+    entities = manifest.get("entities")
+    return [entry for entry in entities if isinstance(entry, dict)] if isinstance(entities, list) else []
+
+
+def _scene_prop_index():
+    indexed = {}
+    for obj in ObjectDB.objects.all():
+        object_id = str(getattr(obj.db, "object_id", "") or "").strip()
+        if object_id:
+            indexed[object_id] = obj
+    return indexed
+
+
+def preview_scene_entities_file(path):
+    """Report authored static scene props without mutating the running world."""
+    data = _read_json(path)
+    rooms = _objects_by_identifier("room_id")
+    props = _scene_prop_index()
+    report = {"kind": "scene_props", "rooms": [], "create": [], "update": [], "invalid": [], "missing_rooms": []}
+
+    for row in _room_rows(data):
+        room_id = str(row.get("room_id") or "").strip()
+        if room_id not in rooms:
+            report["missing_rooms"].append(room_id or "(sin room_id)")
+            continue
+        count = 0
+        for entity in _scene_entity_rows(row):
+            object_id = str(entity.get("object_id") or entity.get("id") or "").strip()
+            name = str(entity.get("name") or "").strip()
+            if not object_id or not name:
+                report["invalid"].append({"room_id": room_id, "entity_id": entity.get("id"), "reason": "object_id o nombre ausente"})
+                continue
+            count += 1
+            item = {"room_id": room_id, "object_id": object_id, "name": name}
+            (report["update"] if object_id in props else report["create"]).append(item)
+        report["rooms"].append({"room_id": room_id, "entities": count})
+
+    report["create_count"] = len(report["create"])
+    report["update_count"] = len(report["update"])
+    report["invalid_count"] = len(report["invalid"])
+    report["missing_room_count"] = len(report["missing_rooms"])
+    return report
+
+
+def _copy_scene_prop_fields(obj, entity, room):
+    changed = []
+    desired = {
+        "scene_entity_id": str(entity.get("id") or entity.get("object_id") or ""),
+        "desc": str(entity.get("visible_description") or entity.get("description") or ""),
+        "portable": bool(entity.get("portable", False)),
+        "hidden": bool(entity.get("hidden", False)),
+        "state": entity.get("state") if isinstance(entity.get("state"), dict) else {},
+        "interaction_facts": entity.get("interaction_facts") if isinstance(entity.get("interaction_facts"), list) else [],
+        "object_actions": entity.get("object_actions") if isinstance(entity.get("object_actions"), list) else [],
+        "state_visibility_requirements": entity.get("state_visibility_requirements") if isinstance(entity.get("state_visibility_requirements"), list) else [],
+        "canon_status": str(entity.get("canon_status") or getattr(room.db, "canon_status", "") or "prototype"),
+    }
+    for field, value in desired.items():
+        if getattr(obj.db, field, None) != value:
+            setattr(obj.db, field, value)
+            changed.append(field)
+    aliases = [str(value).strip() for value in entity.get("aliases") or [] if str(value).strip()]
+    try:
+        current_aliases = sorted(str(value) for value in obj.aliases.all())
+    except Exception:
+        current_aliases = []
+    if current_aliases != sorted(aliases):
+        try:
+            obj.aliases.clear()
+            for alias in aliases:
+                obj.aliases.add(alias)
+            changed.append("aliases")
+        except Exception:
+            pass
+    return changed
+
+
+def apply_scene_entities_file(path):
+    """Create/update only map-authored static props; never delete or move existing objects."""
+    data = _read_json(path)
+    rooms = _objects_by_identifier("room_id")
+    props = _scene_prop_index()
+    report = {
+        "kind": "scene_props",
+        "created": [],
+        "updated": [],
+        "unchanged": [],
+        "missing_rooms": [],
+        "invalid": [],
+        "conflicts": [],
+    }
+
+    for row in _room_rows(data):
+        room_id = str(row.get("room_id") or "").strip()
+        room = rooms.get(room_id)
+        if not room:
+            report["missing_rooms"].append(room_id or "(sin room_id)")
+            continue
+        for entity in _scene_entity_rows(row):
+            object_id = str(entity.get("object_id") or entity.get("id") or "").strip()
+            name = str(entity.get("name") or "").strip()
+            if not object_id or not name:
+                report["invalid"].append({"room_id": room_id, "entity_id": entity.get("id"), "reason": "object_id o nombre ausente"})
+                continue
+            prop = props.get(object_id)
+            if prop is not None and bool(getattr(prop.db, "is_npc", False)):
+                report["conflicts"].append({"room_id": room_id, "object_id": object_id, "reason": "object_id pertenece a un NPC"})
+                continue
+            created = prop is None
+            if created:
+                prop = create_object("typeclasses.siza_objects.WorldObject", key=name, location=room)
+                prop.db.object_id = object_id
+                props[object_id] = prop
+            if not created and getattr(prop, "location", None) is not room:
+                report["conflicts"].append({"room_id": room_id, "object_id": object_id, "reason": "prop existente fuera de su Room; se conserva su ubicación"})
+                continue
+            if created:
+                prop.key = name
+            elif prop.key != name:
+                prop.key = name
+            changed = _copy_scene_prop_fields(prop, entity, room)
+            item = {"room_id": room_id, "object_id": object_id, "name": name, "fields": changed}
+            if created:
+                report["created"].append(item)
+            elif changed:
+                report["updated"].append(item)
+            else:
+                report["unchanged"].append(item)
+
+    for key in ("created", "updated", "unchanged", "missing_rooms", "invalid", "conflicts"):
+        report[key + "_count"] = len(report[key])
+    return report
+
+
 def apply_npc_file(path):
     data = _read_json(path)
     npcs = _objects_by_identifier("npc_id")
@@ -161,10 +302,12 @@ def preview_files(map_path=None, npc_path=None):
     return report
 
 
-def apply_files(map_path=None, npc_path=None):
+def apply_files(map_path=None, npc_path=None, materialize_scene_props=False):
     report = {}
     if map_path:
         report["map"] = apply_map_file(map_path)
+        if materialize_scene_props:
+            report["scene_props"] = apply_scene_entities_file(map_path)
     if npc_path:
         report["npcs"] = apply_npc_file(npc_path)
     if not report:
