@@ -200,6 +200,7 @@
         }
 
         var prefixes = ["Exits:", "Characters:", "You see:"];
+        var sizaMetadataPrefixes = ["SIZA Scene Image:", "SIZA Scene Position:", "SIZA Scene Fit:", "SIZA Scene Alt:"];
         var titleIndex = -1;
         for (var i = 0; i < lines.length; i += 1) {
             if (/\(#\d+\)\s*$/.test(lines[i])) {
@@ -246,7 +247,15 @@
             exits: metadataValue(body, "Exits:"),
             characters: metadataValue(body, "Characters:"),
             visible: metadataValue(body, "You see:"),
-            notes: body.slice(lastMeta + 1)
+            sceneImage: metadataValue(body, "SIZA Scene Image:"),
+            scenePosition: metadataValue(body, "SIZA Scene Position:"),
+            sceneFit: metadataValue(body, "SIZA Scene Fit:"),
+            sceneAlt: metadataValue(body, "SIZA Scene Alt:"),
+            notes: body.slice(lastMeta + 1).filter(function (line) {
+                return !sizaMetadataPrefixes.some(function (prefix) {
+                    return line.toLowerCase().indexOf(prefix.toLowerCase()) === 0;
+                });
+            })
         };
     }
 
@@ -280,6 +289,19 @@
         summary.textContent = notes.length === 1 ? "1 dato recordado" : notes.length + " datos recordados";
     }
 
+    function renderSceneImage(room) {
+        var shell = window.SizaBookShellV02;
+        if (!shell || typeof shell.setSceneVisual !== "function") {
+            return;
+        }
+        shell.setSceneVisual({
+            url: room.sceneImage || "",
+            label: room.sceneAlt || room.title || "",
+            position: room.scenePosition || "center center",
+            fit: room.sceneFit || "cover"
+        });
+    }
+
     function renderRoomSnapshot(room) {
         var description = byId("siza-scene-description");
         var location = byId("siza-location-label");
@@ -301,6 +323,7 @@
         if (description) {
             description.textContent = room.description || "Sin descripción disponible.";
         }
+        renderSceneImage(room);
 
         setFact("siza-exits", "siza-exits-card", room.exits);
         setFact("siza-characters", "siza-characters-card", room.characters);
