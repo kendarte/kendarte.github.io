@@ -8,7 +8,7 @@ from services.object_action_engine import find_object_action
 from services.object_visibility_engine import object_visible_in_world_state
 
 
-SIZA_UI_RUNTIME_BUILD = "0.1.2-no-look-alias-runtime"
+SIZA_UI_RUNTIME_BUILD = "0.1.3-room-text-fallback"
 
 
 def _clean(value):
@@ -205,8 +205,40 @@ def room_snapshot_packet(actor):
     }
 
 
-def emit_room_snapshot(actor):
+def _names(rows):
+    output = []
+    for row in list(rows or []):
+        name = _clean((row or {}).get("name"))
+        if name and name not in output:
+            output.append(name)
+    return output
+
+
+def _room_text_block(packet):
+    if not packet or packet.get("status") != "ROOM_SNAPSHOT":
+        return ""
+    location = _clean(packet.get("location")) or "Ubicación"
+    description = _clean(packet.get("description")) or "No hay descripcion escrita para este lugar."
+    exits = _names(packet.get("exits"))
+    people = _names(packet.get("people"))
+    objects = _names(packet.get("objects"))
+    return "\n".join(
+        [
+            location,
+            description,
+            "Exits: " + (", ".join(exits) if exits else "—"),
+            "Characters: " + (", ".join(people) if people else "—"),
+            "You see: " + (", ".join(objects) if objects else "—"),
+        ]
+    )
+
+
+def emit_room_snapshot(actor, *, visible_text=True):
     packet = room_snapshot_packet(actor)
+    if visible_text:
+        text = _room_text_block(packet)
+        if text:
+            actor.msg("\n" + text)
     actor.msg(siza_room_snapshot=((packet,), {}))
     actor.msg(siza_context_actions=((context_action_packet(actor),), {}))
     return packet
