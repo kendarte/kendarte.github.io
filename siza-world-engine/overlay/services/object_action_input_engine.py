@@ -1,35 +1,54 @@
 import re
 import unicodedata
 
-from services.action_resolution_engine import stat_value
 from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.object_action_engine import authored_object_actions, begin_object_action
+from services.object_visibility_engine import object_visible_in_world_state
 
 
-OBJECT_ACTION_INPUT_BUILD = "0.56.0-narrative-object-action-input"
+OBJECT_ACTION_INPUT_BUILD = "0.57.0-room-only-object-action-render"
 INPUT_STOPWORDS = {
     "a", "al", "de", "del", "el", "la", "los", "las", "un", "una", "unos", "unas",
     "con", "en", "por", "para", "sobre", "quiero", "quisiera", "puedo", "me",
 }
-NARRATIVE_TEXT_KEYS = (
-    "narrative",
-    "narrative_text",
-    "completion_text",
-    "completed_text",
-    "result_text",
-    "success_text",
-    "response_text",
-    "observation",
-    "visible_result",
-    "after_text",
-    "text",
-)
-DESCRIPTION_KEYS = (
+DIRECT_DESCRIPTION_KEYS = (
     "visible_description",
+    "room_description",
+    "full_description",
     "description",
     "desc",
     "summary",
     "look_text",
+)
+RICH_ROOM_KEYS = (
+    "scene_manifest",
+    "sensory_facts",
+    "perception_facts",
+    "space_profile",
+    "state_presentations",
+    "conditions",
+)
+SKIP_TEXT_KEYS = {
+    "id", "room_id", "object_id", "npc_id", "exit_id", "type", "kind", "canon_status",
+    "build", "metadata", "campaign_tags", "aliases", "tags", "required_level",
+}
+PREFERRED_TEXT_KEYS = (
+    "arrival_summary",
+    "spatial_answer",
+    "time_context",
+    "current_activity",
+    "visible_description",
+    "description",
+    "summary",
+    "text",
+    "answer",
+    "observation",
+    "detail",
+    "sensory",
+    "sight",
+    "sound",
+    "smell",
+    "touch",
 )
 
 
@@ -63,44 +82,95 @@ def _plain_dict(value):
         return {}
 
 
+def _record(value):
+    try:
+        return {str(key): item for key, item in value.items()}
+    except Exception:
+        return None
+
+
 def _clean_text(value):
     return " ".join(str(value or "").replace("\r", "\n").split()).strip()
 
 
-def _first_text(container, keys=NARRATIVE_TEXT_KEYS):
-    if not isinstance(container, dict):
+def _usable_text(value):
+    text = _clean_text(value)
+    if not text:
         return ""
-    for key in keys:
-        value = container.get(key)
-        if isinstance(value, str) and value.strip():
-            return _clean_text(value)
-    for key in ("result", "results", "completion", "success", "on_complete", "outcome", "metadata"):
-        nested = container.get(key)
-        if isinstance(nested, dict):
-            found = _first_text(nested, keys)
-            if found:
-                return found
-    return ""
+    lowered = text.lower()
+    if lowered in {"true", "false", "none", "null", "prototype", "vertical_slice"}:
+        return ""
+    if len(text) < 6 and not any(ch.isspace() for ch in text):
+        return ""
+    if re.match(r"^[A-Z0-9_-]{6,}$", text):
+        return ""
+    return text
 
 
-def _db_text(obj, keys=DESCRIPTION_KEYS):
+def _collect_texts(value, output=None, depth=0, limit=10):
+    if output is None:
+        output = []
+    if len(output) >= limit or depth > 4:
+        return output
+
+    if isinstance(value, str):
+        text = _usable_text(value)
+        if text and text not in output:
+            output.append(text)
+        return output
+
+    if isinstance(value, dict):
+        for key in PREFERRED_TEXT_KEYS:
+            if key in value:
+                _collect_texts(value.get(key), output, depth + 1, limit)
+                if len(output) >= limit:
+                    return output
+        for key, item in value.items():
+            key_s = str(key or "").strip().lower()
+            if key_s in SKIP_TEXT_KEYS or key_s in PREFERRED_TEXT_KEYS:
+                continue
+            if key_s.startswith("hidden") or key_s.startswith("secret"):
+                continue
+            _collect_texts(item, output, depth + 1, limit)
+            if len(output) >= limit:
+                return output
+        return output
+
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _collect_texts(item, output, depth + 1, limit)
+            if len(output) >= limit:
+                return output
+    return output
+
+
+def _db_attr(obj, key):
+    try:
+        return getattr(getattr(obj, "db", None), key, None)
+    except Exception:
+        return None
+
+
+def _db_text(obj):
     if not obj:
         return ""
-    db = getattr(obj, "db", None)
-    for key in keys:
-        try:
-            value = getattr(db, key, None)
-        except Exception:
-            value = None
-        if isinstance(value, str) and value.strip():
-            return _clean_text(value)
+
+    for key in DIRECT_DESCRIPTION_KEYS:
+        text = _usable_text(_db_attr(obj, key))
+        if text:
+            return text
+
     try:
-        value = getattr(obj, "desc", None)
+        text = _usable_text(getattr(obj, "desc", None))
+        if text:
+            return text
     except Exception:
-        value = None
-    if isinstance(value, str) and value.strip():
-        return _clean_text(value)
-    return ""
+        pass
+
+    collected = []
+    for key in RICH_ROOM_KEYS:
+        _collect_texts(_db_attr(obj, key), collected, limit=8)
+    return "\n".join(collected[:6])
 
 
 def _object_names(obj):
@@ -249,13 +319,7 @@ def match_object_action_input(actor, raw):
             ],
         }
 
-    winner = winners[0]
-    return {
-        "matched": True,
-        "status": "MATCHED",
-        "build": OBJECT_ACTION_INPUT_BUILD,
-        **winner,
-    }
+    return {"matched": True, "status": "MATCHED", "build": OBJECT_ACTION_INPUT_BUILD, **winners[0]}
 
 
 def route_object_action_input(actor, raw, attempt_id=None):
@@ -273,6 +337,7 @@ def route_object_action_input(actor, raw, attempt_id=None):
             result = {**dict(result), "campaign_observation": observation}
     return {
         **matched,
+        "actor": actor,
         "status": result.get("status"),
         "action_result": result,
         "attempt_id": result.get("attempt_id"),
@@ -281,28 +346,18 @@ def route_object_action_input(actor, raw, attempt_id=None):
     }
 
 
-def _human_requirement_message(blockers, object_name):
-    kinds = {str(row.get("kind") or "").strip().upper() for row in blockers}
-    if kinds and kinds <= {"OBJECT_STATE"}:
-        return f"Esa acción ya no está disponible en el estado actual de {object_name}."
-    if "OBJECT_NOT_VISIBLE" in kinds:
-        return f"No puedes interactuar con {object_name} en su estado actual."
-    if "OBJECT_NOT_LOCAL" in kinds:
-        return f"{object_name} no está en tu ubicación actual."
-    if "SKILL" in kinds:
-        return "No tienes la habilidad necesaria para realizar esa acción."
-    if "KNOWLEDGE" in kinds:
-        return "No tienes el conocimiento necesario para realizar esa acción."
-    if kinds & {"WORLD_STATE", "STATE"}:
-        return "El estado actual del lugar no permite realizar esa acción."
-    return "No cumples los requisitos necesarios para realizar esa acción."
-
-
 def _visible_name(obj):
     return _clean_text(getattr(obj, "key", ""))
 
 
-def _room_snapshot_text(site, focus_obj=None):
+def _is_visible_object(obj, site):
+    try:
+        return bool(object_visible_in_world_state(obj, site=site))
+    except Exception:
+        return True
+
+
+def _room_snapshot_text(site, actor=None):
     if not site:
         return ""
 
@@ -315,14 +370,16 @@ def _room_snapshot_text(site, focus_obj=None):
     objects = []
     people = []
     for obj in list(getattr(site, "contents", []) or []):
-        if obj is focus_obj:
+        if obj is actor:
             continue
         if getattr(obj, "destination", None):
+            continue
+        if not _is_visible_object(obj, site):
             continue
         name = _visible_name(obj)
         if not name:
             continue
-        if bool(getattr(getattr(obj, "db", None), "is_npc", False)):
+        if bool(_db_attr(obj, "is_npc")):
             people.append(name)
         else:
             objects.append(name)
@@ -342,60 +399,39 @@ def _room_snapshot_text(site, focus_obj=None):
     return "\n".join(line for line in lines if str(line or "").strip())
 
 
-def _state_after_text(obj):
-    state = _plain_dict(getattr(getattr(obj, "db", None), "state", {})) if obj else {}
-    truthy = [
-        str(key).replace("_", " ")
-        for key, value in state.items()
-        if isinstance(value, bool) and value is True
-    ]
-    if not truthy:
-        return ""
-    return "Estado visible: " + ", ".join(truthy[:4]) + "."
-
-
-def _fallback_action_sentence(action_name, object_name):
-    action_n = normalize(action_name)
-    obj = object_name or "el objeto"
-    if action_n.startswith("examinar") or action_n.startswith("observar"):
-        return f"Examinas {obj} con cuidado. Te acercas lo suficiente para distinguir uso, desgaste y detalles que antes sólo eran parte del ruido del lugar."
-    if action_n.startswith("revisar"):
-        return f"Revisas {obj}. Apartas lo superficial, sigues marcas de uso reciente y confirmas qué queda realmente disponible."
-    if action_n.startswith("abrir"):
-        return f"Abres {obj}. El mecanismo cede y el lugar revela una capa más de información útil."
-    if action_n.startswith("activar") or action_n.startswith("usar"):
-        return f"Usas {obj}. La acción altera el estado inmediato del lugar y deja una consecuencia perceptible."
-    return f"Realizas {action_name} sobre {obj}. La acción queda resuelta en el mundo y cambia lo que tu personaje puede percibir desde aquí."
-
-
-def _render_completed_action(packet, action_name, object_name):
-    action = (packet or {}).get("action") or {}
-    result = (packet or {}).get("action_result") or {}
+def _current_room_text(packet):
+    actor = (packet or {}).get("actor")
     obj = (packet or {}).get("object")
-    site = getattr(obj, "location", None) if obj else None
+    site = getattr(actor, "location", None) if actor else None
+    if not site and obj:
+        site = getattr(obj, "location", None)
+    text = _room_snapshot_text(site, actor=actor)
+    return text or "Ubicación actual\nNo hay descripción visible registrada para este cuarto."
 
-    authored = _first_text(action) or _first_text(result)
-    if not authored:
-        authored = _fallback_action_sentence(action_name, object_name)
 
-    object_desc = _db_text(obj)
-    state_text = _state_after_text(obj)
-    room_text = _room_snapshot_text(site, focus_obj=None)
-
-    blocks = []
-    if room_text:
-        blocks.append(room_text)
-    blocks.append(authored)
-    if object_desc:
-        blocks.append(f"{object_name}: {object_desc}")
-    if state_text:
-        blocks.append(state_text)
-    return "\n\n".join(block for block in blocks if str(block or "").strip())
+def _human_requirement_message(blockers, object_name):
+    kinds = {str(row.get("kind") or "").strip().upper() for row in blockers}
+    if kinds and kinds <= {"OBJECT_STATE"}:
+        return f"Esa acción ya no está disponible en el estado actual de {object_name}."
+    if "OBJECT_NOT_VISIBLE" in kinds:
+        return f"No puedes interactuar con {object_name} en su estado actual."
+    if "OBJECT_NOT_LOCAL" in kinds:
+        return f"{object_name} no está en tu ubicación actual."
+    if "SKILL" in kinds:
+        return "No tienes la habilidad necesaria para realizar esa acción."
+    if "KNOWLEDGE" in kinds:
+        return "No tienes el conocimiento necesario para realizar esa acción."
+    if kinds & {"WORLD_STATE", "STATE"}:
+        return "El estado actual del lugar no permite realizar esa acción."
+    return "No cumples los requisitos necesarios para realizar esa acción."
 
 
 def render_object_action_input_result(packet):
-    """Human-facing deterministic feedback for one routed object action."""
+    """Return only the current room observation for successful/pending object-action turns."""
     status = str((packet or {}).get("status") or "")
+    if status in {"COMPLETED", "PENDING_RESOLUTION"}:
+        return _current_room_text(packet)
+
     if status == "AMBIGUOUS_OBJECT_ACTION":
         options = packet.get("options") or []
         labels = [
@@ -406,7 +442,6 @@ def render_object_action_input_result(packet):
 
     result = (packet or {}).get("action_result") or {}
     object_name = (packet or {}).get("object_name") or result.get("object_name") or "objeto"
-    action_name = (packet or {}).get("object_action_name") or result.get("object_action_name") or "acción"
 
     if status == "OBJECT_NOT_VISIBLE":
         return f"No puedes interactuar con {object_name} en su estado actual."
@@ -415,36 +450,6 @@ def render_object_action_input_result(packet):
     if status == "OBJECT_ACTION_REQUIREMENTS_UNMET":
         blockers = result.get("blockers") or []
         return _human_requirement_message(blockers, object_name)
-    if status == "PENDING_RESOLUTION":
-        mode = str(result.get("resolution_mode") or "").upper()
-        if mode == "CONFRONT":
-            action = (packet or {}).get("action") or {}
-            check = action.get("check") or {}
-            target_stat = check.get("target_stat")
-            target_obj = (packet or {}).get("object")
-            target_value = stat_value(target_obj, target_stat) if target_obj and target_stat else None
-            return (
-                f"Intentas {action_name} sobre {object_name}. La situación exige una confrontación: "
-                f"{result.get('actor_stat')} {result.get('actor_stat_value')} contra {target_stat} {target_value}. "
-                "Escribe 'tirar' para resolver."
-            )
-        if mode == "SYNCHRONIZE":
-            action = (packet or {}).get("action") or {}
-            check = action.get("check") or {}
-            metadata = check.get("metadata") or {}
-            parity = str(metadata.get("parity") or "").upper()
-            parity_text = "PAR" if parity in {"EVEN", "PAR"} else "IMPAR"
-            return (
-                f"Intentas {action_name} sobre {object_name}. La acción requiere sincronía "
-                f"{parity_text}. Escribe 'tirar' para resolver."
-            )
-        return (
-            f"Intentas {action_name} sobre {object_name}. La acción requiere una tirada de "
-            f"{result.get('actor_stat')} contra dificultad {result.get('difficulty')}. "
-            "Escribe 'tirar' para resolver."
-        )
-    if status == "COMPLETED":
-        return _render_completed_action(packet, action_name, object_name)
     if status == "BLOCKED_CHECK":
-        return f"No se pudo preparar la resolución de '{action_name}': {result.get('resolution_status')}"
-    return f"La acción '{action_name}' no pudo resolverse ahora ({status or 'UNKNOWN'})."
+        return _current_room_text(packet)
+    return f"La acción no pudo resolverse ahora ({status or 'UNKNOWN'})."
