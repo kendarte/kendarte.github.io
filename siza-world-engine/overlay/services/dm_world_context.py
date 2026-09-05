@@ -1,5 +1,6 @@
 from services.knowledge_fact_retrieval_engine import retrieve_known_facts
 from services.world_event_engine import event_sites
+from services.object_action_engine import authored_object_actions
 
 
 DM_WORLD_CONTEXT_BUILD = "dm-0.1-read-only-world-context"
@@ -37,6 +38,23 @@ def _location_packet(actor):
     }
 
 
+def _scene_manifest(site):
+    raw = _plain_dict(getattr(site.db, "scene_manifest", {})) if site else {}
+    orientation = _plain_dict(raw.get("orientation"))
+    return {
+        "orientation": {
+            "arrival_summary": str(orientation.get("arrival_summary") or ""),
+            "spatial_answer": str(orientation.get("spatial_answer") or ""),
+            "time_context": str(orientation.get("time_context") or ""),
+            "current_activity": str(orientation.get("current_activity") or ""),
+        },
+        "narrator_answers": [_plain_dict(row) for row in _plain_list(raw.get("narrator_answers"))],
+        "entities": [_plain_dict(row) for row in _plain_list(raw.get("entities"))],
+        "hidden_discoveries": [_plain_dict(row) for row in _plain_list(raw.get("hidden_discoveries"))],
+        "free_action_hooks": [_plain_dict(row) for row in _plain_list(raw.get("free_action_hooks"))],
+    }
+
+
 def _entity_packet(obj):
     return {
         "name": str(obj.key),
@@ -46,6 +64,20 @@ def _entity_packet(obj):
         "npc_id": str(getattr(obj.db, "npc_id", "") or "") or None,
         "object_id": str(getattr(obj.db, "object_id", "") or "") or None,
         "portable": bool(getattr(obj.db, "portable", False)),
+        "description": str(getattr(obj.db, "desc", "") or ""),
+        "interaction_facts": [_plain_dict(row) for row in _plain_list(getattr(obj.db, "interaction_facts", []))],
+        "object_actions": [
+            {
+                "id": str(action.get("id") or ""),
+                "name": str(action.get("name") or ""),
+                "aliases": _plain_list(action.get("aliases")),
+                "activity": str(action.get("activity") or ""),
+                "check": _plain_dict(action.get("check")),
+            }
+            for action in authored_object_actions(obj)
+        ],
+        "narrative_profile": _plain_dict(getattr(obj.db, "narrative_profile", {})) if bool(getattr(obj.db, "is_npc", False)) else {},
+        "social_affordances": [_plain_dict(row) for row in _plain_list(getattr(obj.db, "social_affordances", []))] if bool(getattr(obj.db, "is_npc", False)) else [],
     }
 
 
@@ -134,6 +166,7 @@ def build_dm_world_snapshot(actor, raw_player_input="", max_known_facts=6, fact_
 
     return {
         "location": _location_packet(actor),
+        "scene": _scene_manifest(getattr(actor, "location", None) if actor else None),
         "local_entities": _local_entities(actor),
         "inventory": _inventory(actor),
         "local_exits": _local_exits(actor),
