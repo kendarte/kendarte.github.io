@@ -408,15 +408,12 @@
             if (/^(look|l|mirar|mira)$/i.test(normalizeSpace(completedCommand))) {
                 renderExplicitLook(room);
             }
-            if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.requestContext === "function") {
-                window.SizaBookInteractionV04.requestContext();
+            if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.renderRoomSnapshotActions === "function") {
+                window.SizaBookInteractionV04.renderRoomSnapshotActions(room);
             }
             return;
         }
         appendHtml(html, cls);
-        if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.requestContext === "function") {
-            window.SizaBookInteractionV04.requestContext();
-        }
     }
 
     function onText(args, kwargs) {
