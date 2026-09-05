@@ -16,5 +16,5 @@ if not exist "%SIZA_NPC_FILE%" (
   exit /b 1
 )
 
-call "%~dp0APLICAR_CONTENIDO_EDITADO_SIZA.bat"
+call "%~dp0APLICAR_CONTENIDO_EDITADO_SIZA_CORE.bat"
 exit /b %ERRORLEVEL%
