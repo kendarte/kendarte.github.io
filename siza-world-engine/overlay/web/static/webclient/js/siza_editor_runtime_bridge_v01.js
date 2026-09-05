@@ -1,10 +1,11 @@
 (function () {
     "use strict";
 
+    var ROOM_STATE_COMMAND = "siza-room-state";
     var CONTEXT_COMMAND = "siza-ui-context";
-    var LOOK_COMMAND = "look";
-    var lastLookAt = 0;
+    var lastRoomAt = 0;
     var lastContextAt = 0;
+    var sawCharacter = false;
 
     function byId(id) {
         return document.getElementById(id);
@@ -12,6 +13,11 @@
 
     function clean(value) {
         return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+    }
+
+    function useful(value) {
+        var text = clean(value);
+        return text && text !== "—" && text !== "◇" && text !== "◊" && text !== "?";
     }
 
     function htmlToText(html) {
@@ -30,29 +36,25 @@
         return true;
     }
 
-    function requestLook() {
+    function requestRoom() {
         var now = Date.now();
-        if (now - lastLookAt < 2500) {
-            return;
-        }
-        lastLookAt = now;
-        setTimeout(function () { send(LOOK_COMMAND); }, 250);
-        setTimeout(requestContext, 700);
+        if (now - lastRoomAt < 1500) return;
+        lastRoomAt = now;
+        setTimeout(function () { send(ROOM_STATE_COMMAND); }, 120);
+        setTimeout(requestContext, 450);
     }
 
     function requestContext() {
         var now = Date.now();
-        if (now - lastContextAt < 1200) {
-            return;
-        }
+        if (now - lastContextAt < 900) return;
         lastContextAt = now;
-        setTimeout(function () { send(CONTEXT_COMMAND); }, 100);
+        setTimeout(function () { send(CONTEXT_COMMAND); }, 80);
     }
 
     function setText(id, value) {
         var node = byId(id);
         var text = clean(value);
-        if (node && text) {
+        if (node && useful(text)) {
             node.textContent = text;
             node.setAttribute("data-raw-description", text);
         }
@@ -60,27 +62,35 @@
 
     function splitItems(value) {
         var text = clean(value);
-        if (!text || text === "—") {
-            return [];
-        }
-        return text.replace(/\s+(?:and|y)\s+/gi, "\n").split(/\n|,/).map(clean).filter(Boolean);
+        if (!useful(text)) return [];
+        return text.replace(/\s+(?:and|y)\s+/gi, "\n").split(/\n|,/).map(clean).filter(useful);
     }
 
     function makeButton(label, command, className) {
+        var text = clean(label);
+        var cmd = clean(command || label);
+        if (!useful(text) || !useful(cmd)) return null;
         var button = document.createElement("button");
         button.type = "button";
         button.className = "sizaActionLink " + (className || "");
-        button.textContent = clean(label) || clean(command);
-        button.setAttribute("data-command", clean(command));
+        button.textContent = text;
+        button.setAttribute("data-command", cmd);
         button.addEventListener("click", function () {
             var client = window.SizaWorldBookClient;
+            var raw = button.getAttribute("data-command");
             if (client && typeof client.sendText === "function") {
-                client.sendText(button.getAttribute("data-command"));
+                client.sendText(raw);
             } else {
-                send(button.getAttribute("data-command"));
+                send(raw);
             }
+            setTimeout(requestRoom, 700);
         });
         return button;
+    }
+
+    function appendButton(container, label, command, className) {
+        var button = makeButton(label, command, className);
+        if (container && button) container.appendChild(button);
     }
 
     function clearActions() {
@@ -113,12 +123,49 @@
             var kind = clean(action.kind).toUpperCase();
             var command = clean(action.command || action.label);
             var label = clean(action.label || command);
-            if (!command || !label) return;
+            if (!useful(command) || !useful(label)) return;
             if (kind === "MOVEMENT") {
-                if (movement) movement.appendChild(makeButton(label, command, "isExit"));
+                appendButton(movement, label, command, "isExit");
+            } else if (kind === "INTERACTION") {
+                appendButton(interactions, label, command, "isPerson");
+            } else if (kind === "ROLL") {
+                appendButton(interactions, label, command, "isObject");
             } else {
-                if (interactions) interactions.appendChild(makeButton(label, command, kind === "INTERACTION" ? "isPerson" : "isObject"));
+                appendButton(interactions, label, command, "isObject");
             }
+        });
+        finishActions();
+    }
+
+    function renderRoomSnapshot(args) {
+        var packet = Array.isArray(args) ? args[0] : args;
+        if (!packet || typeof packet !== "object") return;
+        if (packet.status && packet.status !== "ROOM_SNAPSHOT") return;
+        sawCharacter = true;
+        setText("siza-location-label", packet.location);
+        setText("siza-scene-title", packet.location);
+        setText("siza-scene-placeholder-label", packet.location);
+        setText("siza-scene-description", packet.description);
+
+        clearActions();
+        var interactions = byId("siza-contextual-interactions");
+        var movement = byId("siza-contextual-movement");
+
+        if (Array.isArray(packet.actions) && packet.actions.length) {
+            renderContextActions(packet);
+            return;
+        }
+
+        (Array.isArray(packet.people) ? packet.people : []).forEach(function (person) {
+            var name = clean(person && person.name);
+            appendButton(interactions, "Hablar con " + name, "hablar con " + name, "isPerson");
+        });
+        (Array.isArray(packet.objects) ? packet.objects : []).forEach(function (object) {
+            var name = clean(object && object.name);
+            appendButton(interactions, "Examinar " + name, "observar " + name, "isObject");
+        });
+        (Array.isArray(packet.exits) ? packet.exits : []).forEach(function (exit) {
+            appendButton(movement, clean(exit.name), clean(exit.command || exit.name), "isExit");
         });
         finishActions();
     }
@@ -136,43 +183,37 @@
     }
 
     function parseRoom(html) {
-        var lines = htmlToText(html).split("\n").map(clean).filter(Boolean);
+        var lines = htmlToText(html).split("\n").map(clean).filter(useful);
         if (!lines.length) return null;
         var exits = parseMetadata(lines, ["Exits", "Salidas"]);
         var characters = parseMetadata(lines, ["Characters", "Personas", "Personajes"]);
         var visible = parseMetadata(lines, ["You see", "Ves", "A la vista"]);
-        var firstMeta = Math.min.apply(null, [exits.index, characters.index, visible.index].filter(function (n) { return n >= 0; }));
+        var meta = [exits.index, characters.index, visible.index].filter(function (n) { return n >= 0; });
+        if (!meta.length) return null;
+        var firstMeta = Math.min.apply(null, meta);
         if (!isFinite(firstMeta) || firstMeta <= 0) return null;
         var title = clean(lines[0].replace(/\(#\d+\)\s*$/, ""));
         var description = lines.slice(1, firstMeta).filter(function (line) {
-            return !/^(?:you become|connected session|available character|type help|command )/i.test(line);
+            return !/^(?:you become|connected session|available character|type help|command|no entiendo)/i.test(line);
         }).join(" ");
-        if (!title && !description) return null;
+        if (!useful(title) && !useful(description)) return null;
         return { title: title, description: description, exits: exits.value, characters: characters.value, visible: visible.value };
     }
 
-    function renderRoom(room) {
+    function renderParsedRoom(room) {
         if (!room) return;
         if (room.title) {
             setText("siza-location-label", room.title);
             setText("siza-scene-title", room.title);
             setText("siza-scene-placeholder-label", room.title);
         }
-        if (room.description) {
-            setText("siza-scene-description", room.description);
-        }
+        if (room.description) setText("siza-scene-description", room.description);
         clearActions();
         var interactions = byId("siza-contextual-interactions");
         var movement = byId("siza-contextual-movement");
-        splitItems(room.characters).forEach(function (name) {
-            if (interactions) interactions.appendChild(makeButton("Hablar con " + name, "hablar con " + name, "isPerson"));
-        });
-        splitItems(room.visible).forEach(function (name) {
-            if (interactions) interactions.appendChild(makeButton("Observar " + name, "observar " + name, "isObject"));
-        });
-        splitItems(room.exits).forEach(function (name) {
-            if (movement) movement.appendChild(makeButton(name, name, "isExit"));
-        });
+        splitItems(room.characters).forEach(function (name) { appendButton(interactions, "Hablar con " + name, "hablar con " + name, "isPerson"); });
+        splitItems(room.visible).forEach(function (name) { appendButton(interactions, "Examinar " + name, "observar " + name, "isObject"); });
+        splitItems(room.exits).forEach(function (name) { appendButton(movement, name, name, "isExit"); });
         finishActions();
         requestContext();
     }
@@ -189,12 +230,12 @@
         var text = htmlToText(html);
         var room = parseRoom(html);
         if (room) {
-            renderRoom(room);
+            renderParsedRoom(room);
             return;
         }
         if (/\byou become\b/i.test(text)) {
-            requestLook();
-            requestContext();
+            sawCharacter = true;
+            requestRoom();
         }
     }
 
@@ -202,16 +243,12 @@
         if (!window.Evennia || !Evennia.emitter) return false;
         Evennia.emitter.on("text", onText);
         Evennia.emitter.on("html", onText);
+        Evennia.emitter.on("siza_room_snapshot", renderRoomSnapshot);
         Evennia.emitter.on("siza_context_actions", renderContextPacket);
         Evennia.emitter.on("default", function (cmdname, args) {
+            if (cmdname === "siza_room_snapshot") renderRoomSnapshot(args);
             if (cmdname === "siza_context_actions") renderContextPacket(args);
         });
-        Evennia.emitter.on("connection_open", function () {
-            requestLook();
-            requestContext();
-        });
-        setTimeout(requestLook, 900);
-        setTimeout(requestContext, 1600);
         return true;
     }
 
