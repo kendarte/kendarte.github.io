@@ -1,0 +1,1025 @@
+{
+  "version": 2,
+  "meta": {
+    "name": "Academia Darkhaven · Zona 7",
+    "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT"
+  },
+  "map": {
+    "name": "Academia Darkhaven · Zona 7",
+    "rooms": [
+      {
+        "room_id": "DH7-ROOM-001",
+        "key": "Puerta de Darkhaven"
+      },
+      {
+        "room_id": "DH7-ROOM-002",
+        "key": "Patio Central de la Antigua Prisión"
+      },
+      {
+        "room_id": "DH7-ROOM-003",
+        "key": "Sala de Guardia"
+      },
+      {
+        "room_id": "DH7-ROOM-004",
+        "key": "Mando Regional de Sector 7"
+      },
+      {
+        "room_id": "DH7-ROOM-005",
+        "key": "Sala de Comunicaciones"
+      },
+      {
+        "room_id": "DH7-ROOM-006",
+        "key": "Dirección de Orphim Trimago"
+      },
+      {
+        "room_id": "DH7-ROOM-007",
+        "key": "Archivos de Sector 7"
+      },
+      {
+        "room_id": "DH7-ROOM-008",
+        "key": "Aulas de Darkhaven"
+      },
+      {
+        "room_id": "DH7-ROOM-009",
+        "key": "Sala de Briefing de Fireteams"
+      },
+      {
+        "room_id": "DH7-ROOM-010",
+        "key": "Patio de Entrenamiento y Esgrima"
+      },
+      {
+        "room_id": "DH7-ROOM-011",
+        "key": "Dormitorios del Fireteam 7"
+      },
+      {
+        "room_id": "DH7-ROOM-012",
+        "key": "Dormitorios Generales"
+      },
+      {
+        "room_id": "DH7-ROOM-013",
+        "key": "Comedor de Darkhaven"
+      },
+      {
+        "room_id": "DH7-ROOM-014",
+        "key": "Cocina y Taller de Berta"
+      },
+      {
+        "room_id": "DH7-ROOM-015",
+        "key": "Laboratorio de Artefactos y Reliquias"
+      },
+      {
+        "room_id": "DH7-ROOM-016",
+        "key": "Atelier de Relena Dao"
+      },
+      {
+        "room_id": "DH7-ROOM-017",
+        "key": "Taller FrameSmith de Maine"
+      },
+      {
+        "room_id": "DH7-ROOM-018",
+        "key": "Bahía de Equipos Pesados y Deep Dive Frames"
+      },
+      {
+        "room_id": "DH7-ROOM-019",
+        "key": "Depósito de Equipo Darkhaven"
+      },
+      {
+        "room_id": "DH7-ROOM-020",
+        "key": "Enfermería de Respuesta"
+      },
+      {
+        "room_id": "DH7-ROOM-021",
+        "key": "Aislamiento de Exposición"
+      },
+      {
+        "room_id": "DH7-ROOM-022",
+        "key": "Contención Compleja"
+      },
+      {
+        "room_id": "DH7-ROOM-023",
+        "key": "Sala de Observación de Anomalías"
+      },
+      {
+        "room_id": "DH7-ROOM-024",
+        "key": "Torre de Vigilancia"
+      },
+      {
+        "room_id": "DH7-ROOM-025",
+        "key": "Muelle de Despliegue"
+      }
+    ]
+  },
+  "npcs": [
+    {
+      "editor_id": "ed_npc_dh7_basiliza",
+      "key": "Basiliza",
+      "npc_id": "NPC-DH7-BASILIZA",
+      "aliases": [
+        "Gwen"
+      ],
+      "desc": "Estudiante voluntaria de estética gótica, elegante, precisa y peligrosa. Basiliza es la identidad nacida de Gwen tras sobrevivir a su caída y llega a Darkhaven buscando información sobre Trinasty.",
+      "dialogue_greeting": "Si buscas a alguien, dilo. Si buscas respuestas, pregunta mejor.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-011",
+      "current_room_key": "Dormitorios del Fireteam 7",
+      "home_room_id": "DH7-ROOM-011",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 3,
+        "COO": 3,
+        "INT": 4,
+        "PER": 4,
+        "PSI": 5
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "TRINASTY": 3,
+        "RELIQUIAS": 2
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-FIRETEAM7-SUPPORT",
+        "name": "Fireteam 7 · Support"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": true,
+        "deck_id": "starter_darkhaven_vigilancia_v01",
+        "tcg_profile": {
+          "role": "Support"
+        },
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": [
+          "DARKHAVEN",
+          "FIRETEAM-7",
+          "SUPPORT"
+        ]
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_drashton",
+      "key": "Drashton Windrago",
+      "npc_id": "NPC-DH7-DRASHTON",
+      "aliases": [
+        "Drash",
+        "Windrago"
+      ],
+      "desc": "Heredero problemático de los dragones de tormenta Windrago. Arrogante, gracioso, brutal, carismático y peligrosamente cómodo en combate.",
+      "dialogue_greeting": "Llegaste. ¿Vas a quedarte mirando o necesitas algo?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-011",
+      "current_room_key": "Dormitorios del Fireteam 7",
+      "home_room_id": "DH7-ROOM-011",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 5,
+        "AGI": 4,
+        "COO": 3,
+        "INT": 2,
+        "PER": 3,
+        "PSI": 4
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "WINDRAGO": 3,
+        "COMBATE": 3
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-FIRETEAM7-DPS2",
+        "name": "Fireteam 7 · DPS"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": true,
+        "deck_id": "vertical_dragon_thunder_classic",
+        "tcg_profile": {
+          "role": "DPS"
+        },
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": [
+          "DARKHAVEN",
+          "FIRETEAM-7",
+          "WINDRAGO",
+          "DPS"
+        ]
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_roxy",
+      "key": "Roxy Soleonus",
+      "npc_id": "NPC-DH7-ROXY",
+      "aliases": [
+        "Roxy",
+        "Soleonus"
+      ],
+      "desc": "Estudiante de la casa solar Soleonus, enviada a Darkhaven por no ajustarse a la imagen perfecta de su familia. Provocadora, socialmente brillante, atrevida y perceptiva.",
+      "dialogue_greeting": "Bueno, al menos alguien nuevo. ¿Qué quieres saber?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-011",
+      "current_room_key": "Dormitorios del Fireteam 7",
+      "home_room_id": "DH7-ROOM-011",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 3,
+        "AGI": 4,
+        "COO": 4,
+        "INT": 3,
+        "PER": 5,
+        "PSI": 3
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "SOLEONUS": 3,
+        "COMBATE": 2
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-FIRETEAM7-DPS1",
+        "name": "Fireteam 7 · DPS"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": true,
+        "deck_id": "starter_darkhaven_ruptura_v01",
+        "tcg_profile": {
+          "role": "DPS"
+        },
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": [
+          "DARKHAVEN",
+          "FIRETEAM-7",
+          "SOLEONUS",
+          "DPS"
+        ]
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_axel",
+      "key": "Axel Likabalier",
+      "npc_id": "NPC-DH7-AXEL",
+      "aliases": [
+        "Axel",
+        "Likabalier"
+      ],
+      "desc": "Joven de una casa caballeresca en decadencia. Correcto, formal y cargado por la expectativa de restaurar un linaje incapaz de producir mana fuerte.",
+      "dialogue_greeting": "¿Necesitas orientación o vienes por un asunto de servicio?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-011",
+      "current_room_key": "Dormitorios del Fireteam 7",
+      "home_room_id": "DH7-ROOM-011",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 4,
+        "AGI": 2,
+        "COO": 3,
+        "INT": 3,
+        "PER": 3,
+        "PSI": 4
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "LIKABALIER": 3,
+        "CABALLERIA": 2
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-FIRETEAM7-TANK",
+        "name": "Fireteam 7 · Tank"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": true,
+        "deck_id": "starter_darkhaven_contencion_v01",
+        "tcg_profile": {
+          "role": "Tank"
+        },
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": [
+          "DARKHAVEN",
+          "FIRETEAM-7",
+          "LIKABALIER",
+          "TANK"
+        ]
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_trimago",
+      "key": "Orphim Trimago",
+      "npc_id": "NPC-DH7-TRIMAGO",
+      "aliases": [
+        "Trimago",
+        "Director Trimago",
+        "Orphim"
+      ],
+      "desc": "Director de Darkhaven Zona 7. Carismático, oportunista, manipulador, brillante y peligrosamente encantador. Compró la antigua prisión y la convirtió en instituto.",
+      "dialogue_greeting": "Bien. Cuéntame qué necesitas y decidimos por dónde empezar.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-006",
+      "current_room_key": "Dirección de Orphim Trimago",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-006",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 3,
+        "INT": 5,
+        "PER": 5,
+        "PSI": 5
+      },
+      "knowledge": {
+        "DARKHAVEN": 5,
+        "SECTOR7": 5,
+        "POLITICA": 4,
+        "ANOMALIAS": 3
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-DIRECTOR",
+        "name": "Director de Darkhaven Zona 7"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_relena",
+      "key": "Relena Dao",
+      "npc_id": "NPC-DH7-RELENA",
+      "aliases": [
+        "Relena",
+        "Relena Dao",
+        "Pitonisa Dao"
+      ],
+      "desc": "Pitonisa de cabello morado, estudiosa de artefactos, diseñadora de uniformes, Fashion Frames y parte del sistema de creación de spells de Darkhaven.",
+      "dialogue_greeting": "Estoy trabajando. Si tienes una pregunta, hazla con precisión.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-016",
+      "current_room_key": "Atelier de Relena Dao",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-016",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 4,
+        "INT": 5,
+        "PER": 4,
+        "PSI": 5
+      },
+      "knowledge": {
+        "DARKHAVEN": 4,
+        "ARTEFACTOS": 5,
+        "FASHION_FRAMES": 5,
+        "TRINASTY": 4
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-RELENA",
+        "name": "Pitonisa · Artefactos y Fashion Frames"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_dao_a",
+      "key": "Gemela Dao A",
+      "npc_id": "NPC-DH7-DAO-A",
+      "aliases": [
+        "gemela Dao",
+        "gemela A"
+      ],
+      "desc": "Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.",
+      "dialogue_greeting": "Puedo ayudar si indicas una tarea concreta.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-016",
+      "current_room_key": "Atelier de Relena Dao",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-016",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 2,
+        "INT": 2,
+        "PER": 2,
+        "PSI": 2
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "FASHION_FRAMES": 3
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-DH7-DAO-ASSISTANT",
+        "name": "Asistente de Relena"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_dao_b",
+      "key": "Gemela Dao B",
+      "npc_id": "NPC-DH7-DAO-B",
+      "aliases": [
+        "gemela Dao",
+        "gemela B"
+      ],
+      "desc": "Homúnculo mágico creado a partir del ADN de Relena. Asistente y modelo de Fashion Frame, diseñada como candidata para portar estructuras sagradas.",
+      "dialogue_greeting": "Puedo consultar a Relena o preparar material. ¿Qué necesitas?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-016",
+      "current_room_key": "Atelier de Relena Dao",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-016",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 2,
+        "INT": 2,
+        "PER": 2,
+        "PSI": 2
+      },
+      "knowledge": {
+        "DARKHAVEN": 2,
+        "FASHION_FRAMES": 3
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-DH7-DAO-ASSISTANT",
+        "name": "Asistente de Relena"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_orlan",
+      "key": "Sir Orlan",
+      "npc_id": "NPC-DH7-ORLAN",
+      "aliases": [
+        "Orlan",
+        "Sir Orlan",
+        "capitán Orlan"
+      ],
+      "desc": "Viejo caballero y escudero de la familia Likabalier. Crió a Axel y fue aceptado en Darkhaven como capitán de guardia y mentor de esgrima.",
+      "dialogue_greeting": "¿Buscas práctica, una instrucción o una persona?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-010",
+      "current_room_key": "Patio de Entrenamiento y Esgrima",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-010",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 4,
+        "AGI": 3,
+        "COO": 5,
+        "INT": 3,
+        "PER": 4,
+        "PSI": 4
+      },
+      "knowledge": {
+        "DARKHAVEN": 3,
+        "CABALLERIA": 5,
+        "ESGRIMA": 5,
+        "LIKABALIER": 4
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-ORLAN",
+        "name": "Capitán de guardia · Mentor de esgrima"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_arlita",
+      "key": "Arlita",
+      "npc_id": "NPC-DH7-ARLITA",
+      "aliases": [
+        "Arlita",
+        "pictomante"
+      ],
+      "desc": "Pictomante de origen humilde, talentosa y amable, graduada de la Casa del Artista. Acompaña exploraciones para crear nuevas Pages a partir de criaturas, lugares y fenómenos.",
+      "dialogue_greeting": "Puedo enseñarte lo que he registrado. ¿Qué estás buscando?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-015",
+      "current_room_key": "Laboratorio de Artefactos y Reliquias",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-015",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 3,
+        "COO": 4,
+        "INT": 4,
+        "PER": 5,
+        "PSI": 4
+      },
+      "knowledge": {
+        "DARKHAVEN": 3,
+        "PICTOMANCIA": 5,
+        "PAGES": 4,
+        "ANOMALIAS": 3
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-ARLITA",
+        "name": "Pictomante de campo"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_maine",
+      "key": "Maine",
+      "npc_id": "NPC-DH7-MAINE",
+      "aliases": [
+        "Maine",
+        "FrameSmith"
+      ],
+      "desc": "Mestia / Manabeast y FrameSmith pesado. Enorme, culto, técnico e intelectual. Repara manacores, Spellblades, ManaDrivers y Deep Dive Frames.",
+      "dialogue_greeting": "No toques nada sin preguntar. Si necesitas equipo, dime para qué.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-017",
+      "current_room_key": "Taller FrameSmith de Maine",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-017",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 5,
+        "AGI": 2,
+        "COO": 5,
+        "INT": 5,
+        "PER": 3,
+        "PSI": 3
+      },
+      "knowledge": {
+        "DARKHAVEN": 3,
+        "FRAMESMITH": 5,
+        "MANACORES": 5,
+        "DEEP_DIVE": 5
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-MAINE",
+        "name": "FrameSmith pesado"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_berta",
+      "key": "Berta",
+      "npc_id": "NPC-DH7-BERTA",
+      "aliases": [
+        "Berta",
+        "cocinera"
+      ],
+      "desc": "Cocinera, alquimista, soldadora, carpintera, reparadora y consejera de Darkhaven. Su comida parece castigo, pero funciona.",
+      "dialogue_greeting": "Si vienes a comer, siéntate. Si vienes a pedir algo, dilo antes de estorbar.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-014",
+      "current_room_key": "Cocina y Taller de Berta",
+      "home_room_id": "",
+      "work_room_id": "DH7-ROOM-014",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 3,
+        "AGI": 2,
+        "COO": 4,
+        "INT": 4,
+        "PER": 4,
+        "PSI": 4
+      },
+      "knowledge": {
+        "DARKHAVEN": 4,
+        "COCINA": 5,
+        "ALQUIMIA": 4,
+        "REPARACION": 4
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "JOB-DH7-BERTA",
+        "name": "Cocinera · Alquimista · Reparadora"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_dino",
+      "key": "Dino",
+      "npc_id": "NPC-DH7-DINO",
+      "aliases": [
+        "Dino"
+      ],
+      "desc": "Estudiante terciario y asistente operativo. Funciona como fuente de rumor, comedia, reacción y textura cotidiana de Darkhaven.",
+      "dialogue_greeting": "No sé nada... bueno, depende de qué quieras saber.",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-002",
+      "current_room_key": "Patio Central de la Antigua Prisión",
+      "home_room_id": "DH7-ROOM-012",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 2,
+        "INT": 2,
+        "PER": 2,
+        "PSI": 2
+      },
+      "knowledge": {
+        "DARKHAVEN": 3,
+        "RUMORES": 4
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-DH7-STUDENT-ASSISTANT",
+        "name": "Estudiante terciario · Asistente operativo"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    },
+    {
+      "editor_id": "ed_npc_dh7_squeek",
+      "key": "Squeek",
+      "npc_id": "NPC-DH7-SQUEEK",
+      "aliases": [
+        "Squeek"
+      ],
+      "desc": "Estudiante terciario y asistente operativo. Vive entre los pasillos, rumores y pequeños trabajos que hacen sentir a Darkhaven como una institución viva.",
+      "dialogue_greeting": "Llegaste. ¿Buscas a alguien o quieres saber qué pasó hoy?",
+      "canon_status": "canon-draft",
+      "campaign_id": "DARKHAVEN-ACADEMY-EXPERIMENT",
+      "simulation_enabled": false,
+      "decision_enabled": false,
+      "current_room_id": "DH7-ROOM-002",
+      "current_room_key": "Patio Central de la Antigua Prisión",
+      "home_room_id": "DH7-ROOM-012",
+      "work_room_id": "",
+      "rest_room_id": "",
+      "adventure_stats": {
+        "FUE": 2,
+        "AGI": 2,
+        "COO": 2,
+        "INT": 2,
+        "PER": 2,
+        "PSI": 2
+      },
+      "knowledge": {
+        "DARKHAVEN": 3,
+        "RUMORES": 4
+      },
+      "knowledge_facts": [],
+      "job": {
+        "id": "ROLE-DH7-STUDENT-ASSISTANT",
+        "name": "Estudiante terciario · Asistente operativo"
+      },
+      "relationships": {},
+      "memories": [],
+      "routine": [],
+      "needs": {},
+      "need_rules": [],
+      "need_dynamics": [],
+      "decision_priorities": {
+        "DANGER": 100,
+        "EVENT": 80,
+        "NEED": 70,
+        "JOB": 60,
+        "RELATIONSHIP": 50,
+        "ROUTINE": 10
+      },
+      "decision_goals": [],
+      "virtues": {},
+      "flaws": {},
+      "combat_profile": {
+        "enabled": false,
+        "deck_id": "",
+        "tcg_profile": {},
+        "loadout": {},
+        "world_status": {},
+        "encounter_tags": []
+      }
+    }
+  ]
+}
