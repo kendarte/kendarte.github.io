@@ -11,6 +11,7 @@ from pathlib import Path
 
 from evennia import create_object
 from evennia.objects.models import ObjectDB
+from services.knowledge_fact_engine import upsert_knowledge_fact
 
 
 ROOM_CONTENT_FIELDS = (
@@ -283,8 +284,21 @@ def apply_npc_file(path):
             report["missing"].append(npc_id or "(sin npc_id)")
             continue
         changed = _copy_fields(npc, row, NPC_CONTENT_FIELDS)
+        fact_results = []
+        if isinstance(row.get("knowledge_facts"), list):
+            for fact in row.get("knowledge_facts") or []:
+                if not isinstance(fact, dict):
+                    continue
+                result = upsert_knowledge_fact(npc, fact)
+                if str(result.get("status") or "") in {"CREATED", "UPDATED"}:
+                    fact_results.append({
+                        "fact_id": result.get("fact_id"),
+                        "status": result.get("status"),
+                    })
+            if fact_results:
+                changed.append("knowledge_facts")
         target = "updated" if changed else "unchanged"
-        report[target].append({"npc_id": npc_id, "fields": changed})
+        report[target].append({"npc_id": npc_id, "fields": changed, "knowledge_facts": fact_results})
 
     report["updated_count"] = len(report["updated"])
     report["missing_count"] = len(report["missing"])
