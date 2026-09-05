@@ -273,15 +273,15 @@
         var kind = clean(action && action.kind).toUpperCase();
         var command = key(action && action.command);
         if (isMovementAction(action)) {
-            if (/^volver\\b/.test(command)) return "↶";
-            if (/^subir\\b/.test(command)) return "↑";
-            if (/^bajar\\b/.test(command)) return "↓";
-            if (/^(salir|regresar)\\b/.test(command)) return "←";
-            if (/^entrar\\b/.test(command)) return "→";
+            if (/^volver\b/.test(command)) return "↶";
+            if (/^subir\b/.test(command)) return "↑";
+            if (/^bajar\b/.test(command)) return "↓";
+            if (/^(salir|regresar)\b/.test(command)) return "←";
+            if (/^entrar\b/.test(command)) return "→";
             return "↗";
         }
-        if (kind === "TALK" || /^hablar\\b/.test(command)) return "◌";
-        if (kind === "OBJECT" || /^(observar|examinar|mirar|tomar|usar)\\b/.test(command)) return "◇";
+        if (kind === "TALK" || /^hablar\b/.test(command)) return "◌";
+        if (kind === "OBJECT" || /^(observar|examinar|mirar|tomar|usar)\b/.test(command)) return "◇";
         return "✦";
     }
 
