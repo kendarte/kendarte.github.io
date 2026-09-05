@@ -22,7 +22,7 @@ def _emit_room_after_traverse(actor):
     try:
         from commands.siza_ui_runtime_commands import emit_room_snapshot
 
-        emit_room_snapshot(actor, visible_text=True)
+        emit_room_snapshot(actor, visible_text=False)
     except Exception:
         return None
     return None
