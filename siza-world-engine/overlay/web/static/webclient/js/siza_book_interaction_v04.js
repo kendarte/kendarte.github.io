@@ -262,33 +262,57 @@
         },80);
     }
 
+    function isMovementAction(action) {
+        var kind = clean(action && action.kind).toUpperCase();
+        var command = key(action && action.command);
+        return ["MOVE", "EXIT", "TRAVEL", "ROUTE"].indexOf(kind) !== -1 ||
+            /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir)\\b/.test(command);
+    }
+
+    function appendContextAction(target, action) {
+        var command = clean(action.command);
+        var label = clean(action.label);
+        if (!target || !command || !label) {
+            return;
+        }
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "sizaContextAction";
+        button.setAttribute("data-kind", clean(action.kind).toUpperCase());
+        button.setAttribute("data-command", command);
+        button.textContent = label;
+        button.addEventListener("click", function () {
+            var client = window.SizaWorldBookClient;
+            if (client && typeof client.sendText === "function") {
+                client.sendText(command);
+            }
+        });
+        target.appendChild(button);
+    }
+
     function renderContextActions(args){
         var packet=args&&args.length?args[0]:args;
         if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
         packet=packet||{};
-        var root=byId("siza-contextual-actions"),list=byId("siza-contextual-actions-list"),empty=byId("siza-contextual-actions-empty"),location=byId("siza-contextual-actions-location");
-        if(!root||!list)return;
+        var root=byId("siza-contextual-actions");
+        var interactions=byId("siza-contextual-interactions");
+        var movement=byId("siza-contextual-movement");
+        var interactionGroup=byId("siza-contextual-interactions-group");
+        var movementGroup=byId("siza-contextual-movement-group");
+        var empty=byId("siza-contextual-actions-empty");
+        if(!root||!interactions||!movement)return;
         var actions=Array.isArray(packet.actions)?packet.actions:[];
-        list.innerHTML="";
-        actions.slice(0,12).forEach(function(action){
-            var command=clean(action.command),label=clean(action.label);
-            if(!command||!label)return;
-            var button=document.createElement("button");
-            button.type="button";
-            button.className="sizaContextAction";
-            button.setAttribute("data-kind",clean(action.kind).toUpperCase());
-            button.setAttribute("data-command",command);
-            button.textContent=label;
-            button.addEventListener("click",function(){
-                var client=window.SizaWorldBookClient;
-                if(client&&typeof client.sendText==="function")client.sendText(command);
-            });
-            list.appendChild(button);
+        interactions.innerHTML="";
+        movement.innerHTML="";
+        actions.forEach(function(action){
+            appendContextAction(isMovementAction(action)?movement:interactions,action);
         });
-        var isEmpty=list.children.length===0;
-        root.setAttribute("data-empty",isEmpty?"true":"false");
-        if(empty)empty.hidden=!isEmpty;
-        if(location)location.textContent=clean(packet.location)||choose("Escena actual","Current scene");
+        var hasInteractions=interactions.children.length>0;
+        var hasMovement=movement.children.length>0;
+        root.setAttribute("data-empty",(!hasInteractions&&!hasMovement)?"true":"false");
+        if(interactionGroup)interactionGroup.hidden=!hasInteractions;
+        if(movementGroup)movementGroup.hidden=!hasMovement;
+        if(empty)empty.hidden=hasInteractions||hasMovement;
     }
 
     function onStats(args){
