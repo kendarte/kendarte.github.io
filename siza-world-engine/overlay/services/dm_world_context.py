@@ -78,6 +78,27 @@ def _entity_packet(obj):
         ],
         "narrative_profile": _plain_dict(getattr(obj.db, "narrative_profile", {})) if bool(getattr(obj.db, "is_npc", False)) else {},
         "social_affordances": [_plain_dict(row) for row in _plain_list(getattr(obj.db, "social_affordances", []))] if bool(getattr(obj.db, "is_npc", False)) else [],
+        "dialogue_topics": [
+            {
+                "id": str(row.get("id") or ""),
+                "topic": str(row.get("topic") or row.get("label") or ""),
+                "keywords": _plain_list(row.get("keywords")),
+                "aliases": _plain_list(row.get("aliases")),
+                "enabled": bool(row.get("enabled", True)),
+            }
+            for row in _plain_list(getattr(obj.db, "dialogue_topics", []))
+            if _plain_dict(row)
+        ] if bool(getattr(obj.db, "is_npc", False)) else [],
+        "knowledge_facts": [
+            {
+                "id": str(row.get("id") or ""),
+                "topic": str(row.get("topic") or ""),
+                "aliases": _plain_list(row.get("aliases")),
+                "visibility": str(row.get("visibility") or "PUBLIC"),
+            }
+            for row in _plain_list(getattr(obj.db, "knowledge_facts", []))
+            if _plain_dict(row)
+        ] if bool(getattr(obj.db, "is_npc", False)) else [],
     }
 
 
