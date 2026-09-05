@@ -143,7 +143,13 @@
                 "metadata": {
                   "narrative_success": "Dos hojas de hierro enmarcan el paso y conservan bajo el emblema de Darkhaven la piedra trabajada de la antigua prisión."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Portones de hierro",
+                  "mirar Portones de hierro",
+                  "examinar portón",
+                  "examinar puertas"
+                ]
               },
               {
                 "id": "dh_gate:entity:portones:portones:inspeccionar",
@@ -167,7 +173,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar el portón",
+                  "revisar las puertas"
+                ]
               }
             ]
           },
@@ -212,7 +222,13 @@
                 "metadata": {
                   "narrative_success": "La garita contiene el puesto desde el que se observa el paso y se atiende el ingreso."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Garita de acceso",
+                  "mirar Garita de acceso",
+                  "examinar caseta",
+                  "examinar puesto de guardia"
+                ]
               },
               {
                 "id": "dh_gate:entity:garita:garita:revisar",
@@ -227,7 +243,11 @@
                 "metadata": {
                   "narrative_success": "El puesto permite ver el corredor de ingreso y el movimiento del patio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar la garita",
+                  "mirar el puesto de guardia"
+                ]
               }
             ]
           },
@@ -272,7 +292,13 @@
                 "metadata": {
                   "narrative_success": "Un tablero de acceso reúne avisos y el registro visible de quien entra al complejo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Tablero de ingreso",
+                  "mirar Tablero de ingreso",
+                  "examinar tablero",
+                  "examinar registro"
+                ]
               },
               {
                 "id": "dh_gate:entity:tablero:tablero:leer",
@@ -287,7 +313,11 @@
                 "metadata": {
                   "narrative_success": "Los avisos ordenan el ingreso y señalan el uso del registro."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer el tablero",
+                  "revisar el registro"
+                ]
               }
             ]
           }
@@ -509,7 +539,13 @@
                 "metadata": {
                   "narrative_success": "Las líneas de pintura separan el tránsito cotidiano de las zonas usadas para ejercicios."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Rutas marcadas",
+                  "mirar Rutas marcadas",
+                  "examinar líneas pintadas",
+                  "examinar senderos"
+                ]
               },
               {
                 "id": "dh_courtyard:entity:rutas:rutas:seguir",
@@ -524,7 +560,11 @@
                 "metadata": {
                   "narrative_success": "Las rutas pintadas conectan las alas del complejo y señalan las zonas de práctica."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "seguir las rutas",
+                  "examinar las líneas"
+                ]
               }
             ]
           },
@@ -569,7 +609,13 @@
                 "metadata": {
                   "narrative_success": "Las bancas se apoyan contra los muros y dan vista al tránsito del patio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Bancas de piedra",
+                  "mirar Bancas de piedra",
+                  "examinar bancas",
+                  "examinar asientos"
+                ]
               },
               {
                 "id": "dh_courtyard:entity:bancas:bancas:examinar",
@@ -584,7 +630,11 @@
                 "metadata": {
                   "narrative_success": "Desde las bancas se observa el paso entre las galerías y la zona central."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar las bancas",
+                  "revisar los asientos"
+                ]
               }
             ]
           },
@@ -629,7 +679,13 @@
                 "metadata": {
                   "narrative_success": "Varios tablones sostienen avisos de uso común y hojas sujetas con pinzas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Tablones de anuncios",
+                  "mirar Tablones de anuncios",
+                  "examinar tablón",
+                  "examinar anuncios"
+                ]
               },
               {
                 "id": "dh_courtyard:entity:tablones:tablones:leer",
@@ -644,7 +700,11 @@
                 "metadata": {
                   "narrative_success": "Los avisos están agrupados por actividad y zona del complejo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los anuncios",
+                  "revisar el tablón"
+                ]
               }
             ]
           }
@@ -859,7 +919,13 @@
                 "metadata": {
                   "narrative_success": "El mostrador marca el límite entre el acceso público de la sala y la zona de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mostrador de guardia",
+                  "mirar Mostrador de guardia",
+                  "examinar mostrador",
+                  "examinar barra"
+                ]
               },
               {
                 "id": "dh_guard:entity:mostrador:mostrador:examinar",
@@ -874,7 +940,11 @@
                 "metadata": {
                   "narrative_success": "La superficie se usa para recibir equipo y atender consultas de paso."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar el mostrador",
+                  "revisar la mesa de guardia"
+                ]
               }
             ]
           },
@@ -919,7 +989,13 @@
                 "metadata": {
                   "narrative_success": "Las llaves cuelgan ordenadas en una pared de soportes numerados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Pared de llaves",
+                  "mirar Pared de llaves",
+                  "examinar llaves",
+                  "examinar tablero de llaves"
+                ]
               },
               {
                 "id": "dh_guard:entity:llaves:llaves:revisar",
@@ -943,7 +1019,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar las llaves",
+                  "examinar el tablero de llaves"
+                ]
               }
             ]
           },
@@ -988,7 +1068,13 @@
                 "metadata": {
                   "narrative_success": "Las listas de turno están detrás del vidrio junto a las radios cargando."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Listas de turno",
+                  "mirar Listas de turno",
+                  "examinar turnos",
+                  "examinar listas"
+                ]
               },
               {
                 "id": "dh_guard:entity:turnos:turnos:leer",
@@ -1003,7 +1089,11 @@
                 "metadata": {
                   "narrative_success": "Las hojas muestran la organización de la guardia por tramos de servicio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer las listas de turno",
+                  "revisar los turnos"
+                ]
               }
             ]
           }
@@ -1219,7 +1309,13 @@
                 "metadata": {
                   "narrative_success": "La mesa reúne mapas, comunicados y fichas de incidente en una sola superficie de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de coordinación",
+                  "mirar Mesa de coordinación",
+                  "examinar mesa",
+                  "examinar mesa de mando"
+                ]
               },
               {
                 "id": "dh_command:entity:mesa:mesa:revisar",
@@ -1234,7 +1330,11 @@
                 "metadata": {
                   "narrative_success": "La mesa agrupa la información por zona y por tipo de incidente."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar la mesa de coordinación",
+                  "examinar los comunicados"
+                ]
               }
             ]
           },
@@ -1279,7 +1379,13 @@
                 "metadata": {
                   "narrative_success": "Los mapas están extendidos y sujetos por pesos planos en los bordes."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mapas provinciales",
+                  "mirar Mapas provinciales",
+                  "examinar mapas",
+                  "examinar mapa"
+                ]
               },
               {
                 "id": "dh_command:entity:mapas:mapas:leer",
@@ -1294,7 +1400,11 @@
                 "metadata": {
                   "narrative_success": "Los mapas muestran la relación entre las zonas de operación y los puntos marcados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los mapas",
+                  "examinar el mapa"
+                ]
               }
             ]
           },
@@ -1339,7 +1449,13 @@
                 "metadata": {
                   "narrative_success": "La pizarra conserva anotaciones recientes sobre el trabajo de la sala."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Pizarra de cambios",
+                  "mirar Pizarra de cambios",
+                  "examinar pizarra",
+                  "examinar cambios"
+                ]
               },
               {
                 "id": "dh_command:entity:pizarra:pizarra:leer",
@@ -1354,7 +1470,11 @@
                 "metadata": {
                   "narrative_success": "Las anotaciones están agrupadas en columnas de seguimiento."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer la pizarra",
+                  "revisar los cambios"
+                ]
               }
             ]
           }
@@ -1569,7 +1689,13 @@
                 "metadata": {
                   "narrative_success": "Los racks reúnen unidades de radio conectadas a estaciones de carga."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Racks de radio",
+                  "mirar Racks de radio",
+                  "examinar radios",
+                  "examinar equipo de radio"
+                ]
               },
               {
                 "id": "dh_comms:entity:radios:radios:revisar",
@@ -1584,7 +1710,11 @@
                 "metadata": {
                   "narrative_success": "Las unidades están agrupadas por estación y canal de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar las radios",
+                  "examinar el rack"
+                ]
               }
             ]
           },
@@ -1629,7 +1759,13 @@
                 "metadata": {
                   "narrative_success": "Varios auriculares descansan en soportes junto a las radios."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Auriculares de servicio",
+                  "mirar Auriculares de servicio",
+                  "examinar auriculares",
+                  "examinar cascos"
+                ]
               },
               {
                 "id": "dh_comms:entity:auriculares:auriculares:examinar",
@@ -1644,7 +1780,11 @@
                 "metadata": {
                   "narrative_success": "Cada auricular tiene un cable corto y una identificación de estación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar los auriculares",
+                  "revisar los cascos"
+                ]
               }
             ]
           },
@@ -1689,7 +1829,13 @@
                 "metadata": {
                   "narrative_success": "La mesa central conserva anotaciones y mensajes que todavía esperan respuesta."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de coordinación",
+                  "mirar Mesa de coordinación",
+                  "examinar notas",
+                  "examinar mensajes"
+                ]
               },
               {
                 "id": "dh_comms:entity:notas:notas:leer",
@@ -1704,7 +1850,11 @@
                 "metadata": {
                   "narrative_success": "Los mensajes están organizados por procedencia y prioridad de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los mensajes",
+                  "revisar las notas"
+                ]
               }
             ]
           }
@@ -1917,7 +2067,13 @@
                 "metadata": {
                   "narrative_success": "El escritorio concentra documentos de admisión y material de trabajo de la dirección."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Escritorio de dirección",
+                  "mirar Escritorio de dirección",
+                  "examinar escritorio",
+                  "examinar mesa de Trimago"
+                ]
               },
               {
                 "id": "dh_director:entity:escritorio:escritorio:examinar",
@@ -1932,7 +2088,11 @@
                 "metadata": {
                   "narrative_success": "La superficie está dividida entre documentos, instrumentos de escritura y una bandeja de entrada."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar el escritorio",
+                  "revisar la mesa de dirección"
+                ]
               }
             ]
           },
@@ -1977,7 +2137,13 @@
                 "metadata": {
                   "narrative_success": "Las vitrinas reúnen objetos recuperados en compartimentos separados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Vitrinas de objetos recuperados",
+                  "mirar Vitrinas de objetos recuperados",
+                  "examinar vitrinas",
+                  "examinar objetos recuperados"
+                ]
               },
               {
                 "id": "dh_director:entity:vitrinas:vitrinas:revisar",
@@ -2001,7 +2167,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar las vitrinas",
+                  "examinar los objetos recuperados"
+                ]
               }
             ]
           },
@@ -2046,7 +2216,13 @@
                 "metadata": {
                   "narrative_success": "Los estantes combinan volúmenes de distintos tamaños y estados de uso."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Biblioteca desigual",
+                  "mirar Biblioteca desigual",
+                  "examinar libros",
+                  "examinar estantes"
+                ]
               },
               {
                 "id": "dh_director:entity:biblioteca:biblioteca:leer",
@@ -2061,7 +2237,11 @@
                 "metadata": {
                   "narrative_success": "Los libros están ordenados de manera práctica alrededor del escritorio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los lomos",
+                  "revisar la biblioteca"
+                ]
               }
             ]
           }
@@ -2276,7 +2456,13 @@
                 "metadata": {
                   "narrative_success": "Las estanterías forman pasillos estrechos llenos de cajas y expedientes."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Estanterías de archivo",
+                  "mirar Estanterías de archivo",
+                  "examinar estantes",
+                  "examinar archivos"
+                ]
               },
               {
                 "id": "dh_archives:entity:estanterias:estanterias:recorrer",
@@ -2291,7 +2477,11 @@
                 "metadata": {
                   "narrative_success": "Cada tramo lleva una referencia visible para ubicar cajas y expedientes."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "recorrer los estantes",
+                  "examinar las estanterías"
+                ]
               }
             ]
           },
@@ -2336,7 +2526,13 @@
                 "metadata": {
                   "narrative_success": "Los gabinetes tienen sellos de colores y puertas alineadas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Gabinetes sellados",
+                  "mirar Gabinetes sellados",
+                  "examinar gabinetes",
+                  "examinar sellos"
+                ]
               },
               {
                 "id": "dh_archives:entity:gabinetes:gabinetes:revisar",
@@ -2360,7 +2556,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar los sellos",
+                  "examinar los gabinetes"
+                ]
               }
             ]
           },
@@ -2405,7 +2605,13 @@
                 "metadata": {
                   "narrative_success": "La mesa sostiene lámparas verdes, guantes de algodón y archivos abiertos."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de consulta",
+                  "mirar Mesa de consulta",
+                  "examinar mesa",
+                  "examinar guantes"
+                ]
               },
               {
                 "id": "dh_archives:entity:consulta:consulta:leer",
@@ -2420,7 +2626,11 @@
                 "metadata": {
                   "narrative_success": "Los archivos abiertos están dispuestos para una revisión cuidadosa."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los archivos abiertos",
+                  "revisar la mesa de consulta"
+                ]
               }
             ]
           }
@@ -2637,7 +2847,13 @@
                 "metadata": {
                   "narrative_success": "Las pizarras conservan trazos de instrucción y marcas de ejercicios."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Pizarras gastadas",
+                  "mirar Pizarras gastadas",
+                  "examinar pizarras",
+                  "examinar pizarra"
+                ]
               },
               {
                 "id": "dh_classrooms:entity:pizarras:pizarras:leer",
@@ -2652,7 +2868,11 @@
                 "metadata": {
                   "narrative_success": "Los trazos muestran el desarrollo reciente de una lección práctica."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer la pizarra",
+                  "revisar las pizarras"
+                ]
               }
             ]
           },
@@ -2697,7 +2917,13 @@
                 "metadata": {
                   "narrative_success": "Los bancos se pueden reorganizar para ejercicios y discusión."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Bancos móviles",
+                  "mirar Bancos móviles",
+                  "examinar bancos",
+                  "examinar asientos"
+                ]
               },
               {
                 "id": "dh_classrooms:entity:bancos:bancos:mover",
@@ -2712,7 +2938,11 @@
                 "metadata": {
                   "narrative_success": "Los bancos tienen marcas de uso y se desplazan con facilidad."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "mover un banco",
+                  "examinar los bancos"
+                ]
               }
             ]
           },
@@ -2757,7 +2987,13 @@
                 "metadata": {
                   "narrative_success": "Los paneles reciben marcas de ejercicios y pruebas controladas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Paneles de práctica",
+                  "mirar Paneles de práctica",
+                  "examinar paneles",
+                  "examinar práctica"
+                ]
               },
               {
                 "id": "dh_classrooms:entity:paneles:paneles:inspeccionar",
@@ -2781,7 +3017,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar los paneles",
+                  "revisar las marcas de práctica"
+                ]
               }
             ]
           }
@@ -2996,7 +3236,13 @@
                 "metadata": {
                   "narrative_success": "El plano modular ocupa la mesa y permite ordenar rutas con piezas movibles."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Plano modular",
+                  "mirar Plano modular",
+                  "examinar plano",
+                  "examinar mapa táctico"
+                ]
               },
               {
                 "id": "dh_briefing:entity:plano:plano:examinar",
@@ -3011,7 +3257,11 @@
                 "metadata": {
                   "narrative_success": "Las piezas del plano representan sectores y rutas de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar el plano",
+                  "revisar el mapa táctico"
+                ]
               }
             ]
           },
@@ -3056,7 +3306,13 @@
                 "metadata": {
                   "narrative_success": "Las fotografías están sujetas en las paredes junto a los mapas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Fotografías de campo",
+                  "mirar Fotografías de campo",
+                  "examinar fotos",
+                  "examinar fotografías"
+                ]
               },
               {
                 "id": "dh_briefing:entity:fotografias:fotografias:leer",
@@ -3080,7 +3336,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar las fotografías",
+                  "examinar las fotos"
+                ]
               }
             ]
           },
@@ -3125,7 +3385,13 @@
                 "metadata": {
                   "narrative_success": "Las tablillas recogen evaluaciones y listas de equipo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Tablillas de evaluación",
+                  "mirar Tablillas de evaluación",
+                  "examinar tablillas",
+                  "examinar evaluaciones"
+                ]
               },
               {
                 "id": "dh_briefing:entity:tablillas:tablillas:leer",
@@ -3140,7 +3406,11 @@
                 "metadata": {
                   "narrative_success": "Las tablillas están organizadas por equipo y actividad."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer las tablillas",
+                  "revisar evaluaciones"
+                ]
               }
             ]
           }
@@ -3356,7 +3626,13 @@
                 "metadata": {
                   "narrative_success": "Las placas de impacto ocupan una franja del suelo para recibir pruebas controladas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Placas de impacto",
+                  "mirar Placas de impacto",
+                  "examinar placas",
+                  "examinar blancos"
+                ]
               },
               {
                 "id": "dh_training:entity:placas:placas:examinar",
@@ -3371,7 +3647,11 @@
                 "metadata": {
                   "narrative_success": "Las placas muestran marcas de uso de distintos ejercicios."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar las placas",
+                  "revisar los blancos"
+                ]
               }
             ]
           },
@@ -3416,7 +3696,13 @@
                 "metadata": {
                   "narrative_success": "Los armeros guardan equipo destinado a las prácticas del patio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Armeros de práctica",
+                  "mirar Armeros de práctica",
+                  "examinar armeros",
+                  "examinar armas de entrenamiento"
+                ]
               },
               {
                 "id": "dh_training:entity:armeros:armeros:revisar",
@@ -3440,7 +3726,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar los armeros",
+                  "examinar las armas de práctica"
+                ]
               }
             ]
           },
@@ -3485,7 +3775,13 @@
                 "metadata": {
                   "narrative_success": "Los postes delimitan una zona de práctica para ejercicios de esgrima."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Postes de esgrima",
+                  "mirar Postes de esgrima",
+                  "examinar postes",
+                  "examinar esgrima"
+                ]
               },
               {
                 "id": "dh_training:entity:postes:postes:probar",
@@ -3500,7 +3796,11 @@
                 "metadata": {
                   "narrative_success": "La separación de los postes marca un recorrido de trabajo técnico."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "probar un poste de esgrima",
+                  "examinar los postes"
+                ]
               }
             ]
           }
@@ -3715,7 +4015,13 @@
                 "metadata": {
                   "narrative_success": "La mesa común reúne piezas, notas y tazas olvidadas por quienes usan la sala."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa común",
+                  "mirar Mesa común",
+                  "examinar mesa",
+                  "examinar mesa central"
+                ]
               },
               {
                 "id": "dh_dorm_ft7:entity:mesa:mesa:revisar",
@@ -3730,7 +4036,11 @@
                 "metadata": {
                   "narrative_success": "Las piezas y notas están agrupadas por quien las dejó en la mesa."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar la mesa común",
+                  "examinar las notas"
+                ]
               }
             ]
           },
@@ -3775,7 +4085,13 @@
                 "metadata": {
                   "narrative_success": "Los casilleros marcan el espacio reservado para el equipo personal."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Casilleros personales",
+                  "mirar Casilleros personales",
+                  "examinar casilleros",
+                  "examinar locker"
+                ]
               },
               {
                 "id": "dh_dorm_ft7:entity:casilleros:casilleros:examinar",
@@ -3799,7 +4115,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "examinar los casilleros",
+                  "revisar los lockers"
+                ]
               }
             ]
           },
@@ -3844,7 +4164,13 @@
                 "metadata": {
                   "narrative_success": "Las antiguas celdas ahora contienen camas y pertenencias de quienes viven aquí."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Celdas adaptadas",
+                  "mirar Celdas adaptadas",
+                  "examinar celdas",
+                  "examinar habitaciones"
+                ]
               },
               {
                 "id": "dh_dorm_ft7:entity:celdas:celdas:recorrer",
@@ -3859,7 +4185,11 @@
                 "metadata": {
                   "narrative_success": "Las puertas y muros conservan la medida original, mientras el interior responde al uso residencial."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "recorrer las celdas",
+                  "examinar las habitaciones"
+                ]
               }
             ]
           }
@@ -4073,7 +4403,13 @@
                 "metadata": {
                   "narrative_success": "La galería enlaza las puertas de las habitaciones y concentra el tránsito del bloque."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Galería central",
+                  "mirar Galería central",
+                  "examinar galería",
+                  "examinar pasillo"
+                ]
               },
               {
                 "id": "dh_dorm_general:entity:galeria:galeria:recorrer",
@@ -4088,7 +4424,11 @@
                 "metadata": {
                   "narrative_success": "Las puertas iguales se repiten a ambos lados y los tablones rompen la regularidad."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "recorrer la galería",
+                  "examinar el pasillo"
+                ]
               }
             ]
           },
@@ -4133,7 +4473,13 @@
                 "metadata": {
                   "narrative_success": "Pequeños tablones acompañan las puertas con marcas y avisos de sus ocupantes."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Tablones personales",
+                  "mirar Tablones personales",
+                  "examinar tablones",
+                  "examinar avisos"
+                ]
               },
               {
                 "id": "dh_dorm_general:entity:tablones:tablones:leer",
@@ -4148,7 +4494,11 @@
                 "metadata": {
                   "narrative_success": "Cada tablón muestra información de uso cotidiano de una habitación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los tablones",
+                  "revisar los avisos"
+                ]
               }
             ]
           },
@@ -4193,7 +4543,13 @@
                 "metadata": {
                   "narrative_success": "La ropa tendida cruza algunos tramos de la galería."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Ropa tendida",
+                  "mirar Ropa tendida",
+                  "examinar ropa",
+                  "examinar tendidos"
+                ]
               },
               {
                 "id": "dh_dorm_general:entity:ropa:ropa:examinar",
@@ -4217,7 +4573,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "examinar la ropa",
+                  "revisar los tendidos"
+                ]
               }
             ]
           }
@@ -4437,7 +4797,13 @@
                 "metadata": {
                   "narrative_success": "Las mesas de madera agrupan a quienes comen o conversan en el salón."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesas largas",
+                  "mirar Mesas largas",
+                  "examinar mesas",
+                  "examinar mesa"
+                ]
               },
               {
                 "id": "dh_dining:entity:mesas:mesas:examinar",
@@ -4452,7 +4818,11 @@
                 "metadata": {
                   "narrative_success": "Las bandejas y las marcas de uso muestran qué partes del salón se ocupan con más frecuencia."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar las mesas",
+                  "revisar el comedor"
+                ]
               }
             ]
           },
@@ -4497,7 +4867,13 @@
                 "metadata": {
                   "narrative_success": "Las bandejas se apilan cerca de la cocina junto a los platos usados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Bandejas de metal",
+                  "mirar Bandejas de metal",
+                  "examinar bandejas",
+                  "examinar platos"
+                ]
               },
               {
                 "id": "dh_dining:entity:bandejas:bandejas:revisar",
@@ -4512,7 +4888,11 @@
                 "metadata": {
                   "narrative_success": "Las bandejas vuelven hacia la cocina por una zona de recogida."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar las bandejas",
+                  "examinar los platos"
+                ]
               }
             ]
           },
@@ -4557,7 +4937,13 @@
                 "metadata": {
                   "narrative_success": "Los avisos se concentran en un panel junto a las mesas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Avisos del comedor",
+                  "mirar Avisos del comedor",
+                  "examinar avisos",
+                  "examinar tablón"
+                ]
               },
               {
                 "id": "dh_dining:entity:avisos:avisos:leer",
@@ -4572,7 +4958,11 @@
                 "metadata": {
                   "narrative_success": "El panel combina horarios de uso y mensajes de la vida diaria."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los avisos",
+                  "revisar el tablón del comedor"
+                ]
               }
             ]
           }
@@ -4793,7 +5183,13 @@
                 "metadata": {
                   "narrative_success": "Dos fogones sostienen ollas y utensilios de preparación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Fogones",
+                  "mirar Fogones",
+                  "examinar fogones",
+                  "examinar cocina"
+                ]
               },
               {
                 "id": "dh_kitchen:entity:fogones:fogones:examinar",
@@ -4808,7 +5204,11 @@
                 "metadata": {
                   "narrative_success": "Los utensilios están colocados para el trabajo continuo de cocina."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar los fogones",
+                  "revisar las ollas"
+                ]
               }
             ]
           },
@@ -4853,7 +5253,13 @@
                 "metadata": {
                   "narrative_success": "La mesa de corte reúne ingredientes, frascos y herramientas pequeñas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de corte",
+                  "mirar Mesa de corte",
+                  "examinar mesa de corte",
+                  "examinar mesa"
+                ]
               },
               {
                 "id": "dh_kitchen:entity:mesa_corte:mesa_corte:revisar",
@@ -4868,7 +5274,11 @@
                 "metadata": {
                   "narrative_success": "Los frascos están marcados y separados de las herramientas de cocina."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar la mesa de corte",
+                  "examinar los frascos"
+                ]
               }
             ]
           },
@@ -4913,7 +5323,13 @@
                 "metadata": {
                   "narrative_success": "El banco de reparación combina herramientas, soldadura y madera apilada."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Banco de herramientas",
+                  "mirar Banco de herramientas",
+                  "examinar banco",
+                  "examinar herramientas"
+                ]
               },
               {
                 "id": "dh_kitchen:entity:banco:banco:inspeccionar",
@@ -4937,7 +5353,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar el banco",
+                  "revisar las herramientas"
+                ]
               }
             ]
           }
@@ -5153,7 +5573,13 @@
                 "metadata": {
                   "narrative_success": "Las vitrinas protegen objetos en compartimentos cerrados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Vitrinas selladas",
+                  "mirar Vitrinas selladas",
+                  "examinar vitrinas",
+                  "examinar reliquias"
+                ]
               },
               {
                 "id": "dh_relic_lab:entity:vitrinas:vitrinas:examinar",
@@ -5177,7 +5603,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "examinar las vitrinas",
+                  "revisar las reliquias"
+                ]
               }
             ]
           },
@@ -5222,7 +5652,13 @@
                 "metadata": {
                   "narrative_success": "Las bandejas sostienen material clasificado junto a instrumentos de observación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Bandejas de estudio",
+                  "mirar Bandejas de estudio",
+                  "examinar bandejas",
+                  "examinar material clasificado"
+                ]
               },
               {
                 "id": "dh_relic_lab:entity:bandejas:bandejas:revisar",
@@ -5237,7 +5673,11 @@
                 "metadata": {
                   "narrative_success": "El material está separado por bandeja y acompañado de una referencia corta."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar las bandejas",
+                  "examinar el material"
+                ]
               }
             ]
           },
@@ -5282,7 +5722,13 @@
                 "metadata": {
                   "narrative_success": "Los diagramas cubren una parte de las mesas y muros cercanos."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Diagramas de trabajo",
+                  "mirar Diagramas de trabajo",
+                  "examinar diagramas",
+                  "examinar planos"
+                ]
               },
               {
                 "id": "dh_relic_lab:entity:diagramas:diagramas:leer",
@@ -5297,7 +5743,11 @@
                 "metadata": {
                   "narrative_success": "Los trazos describen posiciones de observación y manejo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los diagramas",
+                  "revisar los planos"
+                ]
               }
             ]
           }
@@ -5513,7 +5963,13 @@
                 "metadata": {
                   "narrative_success": "Los maniquíes sostienen piezas de uniforme y pruebas de estructura."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Maniquíes de prueba",
+                  "mirar Maniquíes de prueba",
+                  "examinar maniquíes",
+                  "examinar maniquí"
+                ]
               },
               {
                 "id": "dh_fashion:entity:maniqueries:maniqueries:examinar",
@@ -5528,7 +5984,11 @@
                 "metadata": {
                   "narrative_success": "Las piezas están sujetas en capas para comprobar su ajuste."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar los maniquíes",
+                  "revisar las piezas de uniforme"
+                ]
               }
             ]
           },
@@ -5573,7 +6033,13 @@
                 "metadata": {
                   "narrative_success": "Los moldes y patrones ocupan una mesa de trabajo junto a diagramas de estructura."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Moldes y patrones",
+                  "mirar Moldes y patrones",
+                  "examinar moldes",
+                  "examinar patrones"
+                ]
               },
               {
                 "id": "dh_fashion:entity:patrones:patrones:leer",
@@ -5588,7 +6054,11 @@
                 "metadata": {
                   "narrative_success": "Las líneas de los patrones muestran cómo se distribuye una pieza de uniforme."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los patrones",
+                  "revisar los moldes"
+                ]
               }
             ]
           },
@@ -5633,7 +6103,13 @@
                 "metadata": {
                   "narrative_success": "Las herramientas finas están alineadas con cuidado junto a las pruebas de color."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Herramientas finas",
+                  "mirar Herramientas finas",
+                  "examinar herramientas",
+                  "examinar instrumentos"
+                ]
               },
               {
                 "id": "dh_fashion:entity:herramientas:herramientas:revisar",
@@ -5657,7 +6133,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar las herramientas",
+                  "inspeccionar los instrumentos"
+                ]
               }
             ]
           }
@@ -5879,7 +6359,13 @@
                 "metadata": {
                   "narrative_success": "El puente grúa recorre el techo sobre el área de trabajo pesado."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Puente grúa",
+                  "mirar Puente grúa",
+                  "examinar grúa",
+                  "examinar puente"
+                ]
               },
               {
                 "id": "dh_framesmith:entity:grua:grua:examinar",
@@ -5894,7 +6380,11 @@
                 "metadata": {
                   "narrative_success": "Los rieles permiten mover piezas pesadas entre los bancos y la zona limpia."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar la grúa",
+                  "revisar el puente grúa"
+                ]
               }
             ]
           },
@@ -5939,7 +6429,13 @@
                 "metadata": {
                   "narrative_success": "Los bancos soportan piezas demasiado pesadas para mover a mano."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Bancos reforzados",
+                  "mirar Bancos reforzados",
+                  "examinar bancos",
+                  "examinar mesa de Maine"
+                ]
               },
               {
                 "id": "dh_framesmith:entity:bancos:bancos:revisar",
@@ -5954,7 +6450,11 @@
                 "metadata": {
                   "narrative_success": "Las piezas se mantienen sujetas con apoyos y herramientas de precisión."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar los bancos",
+                  "examinar las piezas"
+                ]
               }
             ]
           },
@@ -5999,7 +6499,13 @@
                 "metadata": {
                   "narrative_success": "Varios núcleos abiertos están conectados a cables de trabajo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Núcleos abiertos",
+                  "mirar Núcleos abiertos",
+                  "examinar núcleos",
+                  "examinar manacores"
+                ]
               },
               {
                 "id": "dh_framesmith:entity:nucleos:nucleos:inspeccionar",
@@ -6023,7 +6529,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar los núcleos",
+                  "revisar los manacores"
+                ]
               }
             ]
           }
@@ -6239,7 +6749,13 @@
                 "metadata": {
                   "narrative_success": "Los armazones descansan sobre soportes de mantenimiento con espacio libre a su alrededor."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Deep Dive Frames",
+                  "mirar Deep Dive Frames",
+                  "examinar frames",
+                  "examinar armazones"
+                ]
               },
               {
                 "id": "dh_heavy:entity:frames:frames:examinar",
@@ -6263,7 +6779,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "examinar los frames",
+                  "revisar los armazones"
+                ]
               }
             ]
           },
@@ -6308,7 +6828,13 @@
                 "metadata": {
                   "narrative_success": "Mangueras y líneas unen los equipos a puntos de revisión."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Líneas de diagnóstico",
+                  "mirar Líneas de diagnóstico",
+                  "examinar mangueras",
+                  "examinar diagnóstico"
+                ]
               },
               {
                 "id": "dh_heavy:entity:lineas:lineas:seguir",
@@ -6323,7 +6849,11 @@
                 "metadata": {
                   "narrative_success": "Las líneas conducen a los puntos de diagnóstico de cada armazón."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "seguir las líneas",
+                  "revisar las mangueras"
+                ]
               }
             ]
           },
@@ -6368,7 +6898,13 @@
                 "metadata": {
                   "narrative_success": "Los contenedores están alineados contra el muro y dejan libre el espacio de maniobra."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Contenedores de carga",
+                  "mirar Contenedores de carga",
+                  "examinar contenedores",
+                  "examinar cajas"
+                ]
               },
               {
                 "id": "dh_heavy:entity:contenedores:contenedores:revisar",
@@ -6383,7 +6919,11 @@
                 "metadata": {
                   "narrative_success": "Los contenedores llevan marcas de uso para el traslado de equipo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar los contenedores",
+                  "examinar las cajas de carga"
+                ]
               }
             ]
           }
@@ -6597,7 +7137,13 @@
                 "metadata": {
                   "narrative_success": "Las estanterías suben hasta el techo y organizan el equipo por números."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Estanterías numeradas",
+                  "mirar Estanterías numeradas",
+                  "examinar estantes",
+                  "examinar inventario"
+                ]
               },
               {
                 "id": "dh_storage:entity:estantes:estantes:recorrer",
@@ -6612,7 +7158,11 @@
                 "metadata": {
                   "narrative_success": "Las etiquetas permiten localizar categorías de equipo y suministros."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "recorrer los estantes",
+                  "examinar el inventario"
+                ]
               }
             ]
           },
@@ -6657,7 +7207,13 @@
                 "metadata": {
                   "narrative_success": "Los detectores se guardan en cajas identificadas dentro de un tramo de estantería."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Detectores de respuesta",
+                  "mirar Detectores de respuesta",
+                  "examinar detectores",
+                  "examinar instrumentos"
+                ]
               },
               {
                 "id": "dh_storage:entity:detectores:detectores:revisar",
@@ -6681,7 +7237,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar los detectores",
+                  "examinar los instrumentos"
+                ]
               }
             ]
           },
@@ -6726,7 +7286,13 @@
                 "metadata": {
                   "narrative_success": "La mesa registra préstamos y devoluciones del equipo almacenado."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de control",
+                  "mirar Mesa de control",
+                  "examinar mesa",
+                  "examinar registro de préstamos"
+                ]
               },
               {
                 "id": "dh_storage:entity:control:control:leer",
@@ -6741,7 +7307,11 @@
                 "metadata": {
                   "narrative_success": "El registro ordena cada movimiento por número de equipo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer el registro de préstamos",
+                  "revisar la mesa de control"
+                ]
               }
             ]
           }
@@ -6957,7 +7527,13 @@
                 "metadata": {
                   "narrative_success": "Las camillas dividen el espacio de atención rápida en puestos separados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Camillas",
+                  "mirar Camillas",
+                  "examinar camillas",
+                  "examinar camas"
+                ]
               },
               {
                 "id": "dh_infirmary:entity:camillas:camillas:examinar",
@@ -6972,7 +7548,11 @@
                 "metadata": {
                   "narrative_success": "Cada camilla tiene acceso a un carro médico y un biombo."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar las camillas",
+                  "revisar los puestos de atención"
+                ]
               }
             ]
           },
@@ -7017,7 +7597,13 @@
                 "metadata": {
                   "narrative_success": "Los carros médicos agrupan suministros para atención rápida."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Carros médicos",
+                  "mirar Carros médicos",
+                  "examinar carros",
+                  "examinar suministros"
+                ]
               },
               {
                 "id": "dh_infirmary:entity:carros:carros:revisar",
@@ -7032,7 +7618,11 @@
                 "metadata": {
                   "narrative_success": "Los cajones se distinguen por marcas de color."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar los carros médicos",
+                  "examinar los suministros"
+                ]
               }
             ]
           },
@@ -7077,7 +7667,13 @@
                 "metadata": {
                   "narrative_success": "El gabinete guarda suministros marcados por colores."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Gabinete de suministros",
+                  "mirar Gabinete de suministros",
+                  "examinar gabinete",
+                  "examinar material médico"
+                ]
               },
               {
                 "id": "dh_infirmary:entity:gabinete:gabinete:inspeccionar",
@@ -7101,7 +7697,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar el gabinete",
+                  "revisar el material médico"
+                ]
               }
             ]
           }
@@ -7313,7 +7913,13 @@
                 "metadata": {
                   "narrative_success": "El lavamanos ocupa la antesala antes de las cámaras selladas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Lavamanos de antesala",
+                  "mirar Lavamanos de antesala",
+                  "examinar lavamanos",
+                  "examinar lavabo"
+                ]
               },
               {
                 "id": "dh_isolation:entity:lavamanos:lavamanos:examinar",
@@ -7328,7 +7934,11 @@
                 "metadata": {
                   "narrative_success": "El área de lavado queda separada de las cámaras por una línea de paso clara."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar el lavamanos",
+                  "revisar la antesala"
+                ]
               }
             ]
           },
@@ -7373,7 +7983,13 @@
                 "metadata": {
                   "narrative_success": "Los armarios guardan equipo de protección junto a la antesala."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Armarios de protección",
+                  "mirar Armarios de protección",
+                  "examinar armarios",
+                  "examinar protección"
+                ]
               },
               {
                 "id": "dh_isolation:entity:armarios:armarios:revisar",
@@ -7397,7 +8013,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar los armarios",
+                  "examinar el equipo de protección"
+                ]
               }
             ]
           },
@@ -7442,7 +8062,13 @@
                 "metadata": {
                   "narrative_success": "Las puertas de las cámaras combinan mirillas, luces de estado y juntas gruesas."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Puertas selladas",
+                  "mirar Puertas selladas",
+                  "examinar puertas",
+                  "examinar cámaras"
+                ]
               },
               {
                 "id": "dh_isolation:entity:puertas:puertas:inspeccionar",
@@ -7457,7 +8083,11 @@
                 "metadata": {
                   "narrative_success": "Cada puerta muestra su estado mediante una luz y un cierre visible."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "inspeccionar las puertas",
+                  "revisar las cámaras"
+                ]
               }
             ]
           }
@@ -7673,7 +8303,13 @@
                 "metadata": {
                   "narrative_success": "Los paneles muestran información de los compartimentos y sus procedimientos."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Paneles de lectura",
+                  "mirar Paneles de lectura",
+                  "examinar paneles",
+                  "examinar lecturas"
+                ]
               },
               {
                 "id": "dh_containment:entity:paneles:paneles:leer",
@@ -7688,7 +8324,11 @@
                 "metadata": {
                   "narrative_success": "Cada panel corresponde a una puerta o vitrina del bloque."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los paneles",
+                  "revisar las lecturas"
+                ]
               }
             ]
           },
@@ -7733,7 +8373,13 @@
                 "metadata": {
                   "narrative_success": "Los anclajes están fijados al suelo y a los muros cerca de los compartimentos."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Anclajes de contención",
+                  "mirar Anclajes de contención",
+                  "examinar anclajes",
+                  "examinar sujeciones"
+                ]
               },
               {
                 "id": "dh_containment:entity:anclajes:anclajes:inspeccionar",
@@ -7757,7 +8403,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar los anclajes",
+                  "revisar las sujeciones"
+                ]
               }
             ]
           },
@@ -7802,7 +8452,13 @@
                 "metadata": {
                   "narrative_success": "Las vitrinas de transporte esperan junto al corredor con cierres visibles."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Vitrinas de transporte",
+                  "mirar Vitrinas de transporte",
+                  "examinar vitrinas",
+                  "examinar casos"
+                ]
               },
               {
                 "id": "dh_containment:entity:vitrinas:vitrinas:revisar",
@@ -7817,7 +8473,11 @@
                 "metadata": {
                   "narrative_success": "Los cierres y las asas muestran que cada vitrina está preparada para un procedimiento específico."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar las vitrinas de transporte",
+                  "examinar los cierres"
+                ]
               }
             ]
           }
@@ -8029,7 +8689,13 @@
                 "metadata": {
                   "narrative_success": "El vidrio protegido ocupa casi todo el campo de vista hacia la zona de contención."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Vidrio de observación",
+                  "mirar Vidrio de observación",
+                  "examinar vidrio",
+                  "examinar ventana"
+                ]
               },
               {
                 "id": "dh_observation:entity:vidrio:vidrio:examinar",
@@ -8044,7 +8710,11 @@
                 "metadata": {
                   "narrative_success": "El cristal permite observar el bloque sin cruzar el límite de la galería."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar el vidrio",
+                  "mirar hacia contención"
+                ]
               }
             ]
           },
@@ -8089,7 +8759,13 @@
                 "metadata": {
                   "narrative_success": "Los monitores acompañan la vista directa con lecturas de seguimiento."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Monitores de observación",
+                  "mirar Monitores de observación",
+                  "examinar monitores",
+                  "examinar pantallas"
+                ]
               },
               {
                 "id": "dh_observation:entity:monitores:monitores:revisar",
@@ -8113,7 +8789,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "revisar los monitores",
+                  "examinar las pantallas"
+                ]
               }
             ]
           },
@@ -8158,7 +8838,13 @@
                 "metadata": {
                   "narrative_success": "Los cuadernos quedan al alcance de los asientos escalonados."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Cuadernos de registro",
+                  "mirar Cuadernos de registro",
+                  "examinar cuadernos",
+                  "examinar registros"
+                ]
               },
               {
                 "id": "dh_observation:entity:cuadernos:cuadernos:leer",
@@ -8173,7 +8859,11 @@
                 "metadata": {
                   "narrative_success": "Cada cuaderno conserva entradas ordenadas por observación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer los cuadernos",
+                  "revisar los registros"
+                ]
               }
             ]
           }
@@ -8390,7 +9080,13 @@
                 "metadata": {
                   "narrative_success": "Los prismáticos descansan cerca de los ventanales para observar a distancia."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Prismáticos",
+                  "mirar Prismáticos",
+                  "examinar prismáticos",
+                  "examinar binoculares"
+                ]
               },
               {
                 "id": "dh_tower:entity:prismaticos:prismaticos:usar",
@@ -8405,7 +9101,11 @@
                 "metadata": {
                   "narrative_success": "El aumento acerca los muros, las rutas del patio y la línea del mar."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "usar los prismáticos",
+                  "mirar con binoculares"
+                ]
               }
             ]
           },
@@ -8450,7 +9150,13 @@
                 "metadata": {
                   "narrative_success": "La mesa reúne material de vigilancia y un espacio de anotación."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Mesa de guardia",
+                  "mirar Mesa de guardia",
+                  "examinar mesa",
+                  "examinar puesto de guardia"
+                ]
               },
               {
                 "id": "dh_tower:entity:mesa:mesa:revisar",
@@ -8465,7 +9171,11 @@
                 "metadata": {
                   "narrative_success": "La mesa deja libre una vista hacia los ventanales estrechos."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar la mesa de guardia",
+                  "examinar el puesto"
+                ]
               }
             ]
           },
@@ -8510,7 +9220,13 @@
                 "metadata": {
                   "narrative_success": "Las marcas de distancia señalan referencias visibles desde la torre."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Marcas de distancia",
+                  "mirar Marcas de distancia",
+                  "examinar marcas",
+                  "examinar distancias"
+                ]
               },
               {
                 "id": "dh_tower:entity:marcas:marcas:leer",
@@ -8525,7 +9241,11 @@
                 "metadata": {
                   "narrative_success": "Las marcas ordenan los puntos de vigilancia por distancia."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "leer las marcas de distancia",
+                  "examinar las referencias"
+                ]
               }
             ]
           }
@@ -8745,7 +9465,13 @@
                 "metadata": {
                   "narrative_success": "La rampa baja desde el complejo hacia el borde del agua."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Rampa de concreto",
+                  "mirar Rampa de concreto",
+                  "examinar rampa",
+                  "examinar salida"
+                ]
               },
               {
                 "id": "dh_deployment:entity:rampa:rampa:recorrer",
@@ -8760,7 +9486,11 @@
                 "metadata": {
                   "narrative_success": "La pendiente conecta la plataforma con el muelle de servicio."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "recorrer la rampa",
+                  "examinar la salida al agua"
+                ]
               }
             ]
           },
@@ -8805,7 +9535,13 @@
                 "metadata": {
                   "narrative_success": "Los amarres fijan el muelle y los puntos de carga junto al agua."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Amarres de servicio",
+                  "mirar Amarres de servicio",
+                  "examinar amarres",
+                  "examinar cuerdas"
+                ]
               },
               {
                 "id": "dh_deployment:entity:amarres:amarres:inspeccionar",
@@ -8829,7 +9565,11 @@
                   "metadata": {
                     "formula": "d6 + actor_stat >= difficulty"
                   }
-                }
+                },
+                "input_phrases": [
+                  "inspeccionar los amarres",
+                  "revisar las cuerdas"
+                ]
               }
             ]
           },
@@ -8874,7 +9614,13 @@
                 "metadata": {
                   "narrative_success": "Las cajas estancas protegen equipo de viaje y materiales de salida."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "examinar Cajas estancas",
+                  "mirar Cajas estancas",
+                  "examinar cajas",
+                  "examinar equipo de viaje"
+                ]
               },
               {
                 "id": "dh_deployment:entity:cajas:cajas:revisar",
@@ -8889,7 +9635,11 @@
                 "metadata": {
                   "narrative_success": "Las cajas llevan marcas de carga y protegen su contenido del agua."
                 },
-                "check": null
+                "check": null,
+                "input_phrases": [
+                  "revisar las cajas estancas",
+                  "examinar el equipo de viaje"
+                ]
               }
             ]
           }
