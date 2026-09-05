@@ -658,3 +658,75 @@ body {
     line-height: 1.1;
     text-align: left;
 }
+
+
+/* Action icons retain their full command as a hover/focus label. */
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction {
+    position: relative;
+    box-sizing: border-box;
+    display: grid !important;
+    width: 34px;
+    min-width: 34px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 !important;
+    place-items: center;
+    overflow: visible;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 17px !important;
+    font-weight: 700;
+    line-height: 1 !important;
+    text-align: center;
+    cursor: pointer;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction::after {
+    position: absolute;
+    z-index: 40;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(230px, calc(100vw - 36px));
+    padding: 7px 9px;
+    border: 1px solid #a89462;
+    background: #152428;
+    color: #fff3ce;
+    box-shadow: 2px 3px 0 rgba(16, 19, 17, .34);
+    content: attr(data-tooltip);
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .015em;
+    line-height: 1.2;
+    text-align: left;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .12s ease, transform .12s ease;
+    visibility: hidden;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction:hover,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction:focus-visible {
+    border-color: #d4b55a !important;
+    background: #fff1bf !important;
+    outline: 1px solid #284a4d;
+    outline-offset: 2px;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction:hover::after,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextAction:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+
+#siza-book-client:not([data-mode="COMBAT"]) .sizaStoryPage,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaStoryCopy,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaFolioObservation,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActions,
+#siza-book-client:not([data-mode="COMBAT"]) .sizaContextualActionsList {
+    overflow: visible !important;
+}
