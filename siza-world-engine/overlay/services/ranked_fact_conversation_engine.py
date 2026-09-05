@@ -124,6 +124,43 @@ def select_best_known_topic_fact(npc, topic):
     }
 
 
+
+def select_authored_dialogue_topic(npc, topic):
+    """Return a matching authored conversation response without inferring facts or targets."""
+    if not npc or not str(topic or "").strip():
+        return None
+
+    ranked = []
+    for index, raw in enumerate(_plain_list(getattr(npc.db, "dialogue_topics", []))):
+        item = _plain_dict(raw)
+        if not item or not bool(item.get("enabled", True)):
+            continue
+        response = str(item.get("response") or "").strip()
+        topic_id = str(item.get("id") or "").strip()
+        if not response or not topic_id:
+            continue
+        aliases = list(_plain_list(item.get("keywords"))) + list(_plain_list(item.get("aliases")))
+        candidate = {
+            "topic": str(item.get("topic") or item.get("label") or topic_id).strip(),
+            "aliases": aliases,
+        }
+        score = fact_topic_match_score(candidate, topic)
+        if score <= 0:
+            continue
+        ranked.append((int(score), -int(index), item, response))
+
+    if not ranked:
+        return None
+    ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    score, _neg_index, item, response = ranked[0]
+    return {
+        "dialogue_topic": dict(item),
+        "dialogue_topic_id": str(item.get("id") or ""),
+        "response_text": response,
+        "score": int(score),
+        "build": RANKED_FACT_CONVERSATION_BUILD,
+    }
+
 def _same_language_text(text, language):
     value = str(text or "").strip()
     if not value:
@@ -200,6 +237,24 @@ def resolve_ranked_talk_with_disclosure_and_acquisition(
             "response_text": greeting,
             "knowledge_acquisition": acquisition,
             "selected_fact_id": None,
+            "build": RANKED_FACT_CONVERSATION_BUILD,
+        }
+
+    authored = select_authored_dialogue_topic(npc, topic)
+    if authored:
+        _record_conversation(actor, npc, topic, outcome="authored_dialogue")
+        return {
+            "status": "INTERACTION_EXECUTED",
+            "executed": True,
+            "response_text": authored.get("response_text"),
+            "knowledge_acquisition": {
+                "status": "AUTHORED_DIALOGUE",
+                "acquired": False,
+                "build": RANKED_FACT_CONVERSATION_BUILD,
+            },
+            "selected_fact_id": None,
+            "dialogue_topic_id": authored.get("dialogue_topic_id"),
+            "topic": topic,
             "build": RANKED_FACT_CONVERSATION_BUILD,
         }
 
