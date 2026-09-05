@@ -15,6 +15,7 @@ class Room(DefaultRoom):
         self.db.settlement_id = None
         self.db.district_id = None
         self.db.canon_status = "prototype"
+        self.db.scene_image = {"src": "", "alt": "", "position": "center center", "fit": "cover"}
 
         # Obvious authored sensory facts. Entering/looking does not roll for these.
         self.db.sensory_facts = {
@@ -50,6 +51,31 @@ class Room(DefaultRoom):
         # room world_state. They augment, never replace, the room's normal description.
         self.db.state_presentations = []
 
+    def _scene_image_metadata(self):
+        raw = getattr(self.db, "scene_image", {})
+        try:
+            image = dict(raw or {})
+        except (TypeError, ValueError):
+            return ""
+
+        def plain(value):
+            return str(value or "").replace("\r", "").replace("\n", "").strip()
+
+        src = plain(image.get("src"))
+        if not src:
+            return ""
+        position = plain(image.get("position")) or "center center"
+        fit = plain(image.get("fit")) or "cover"
+        alt = plain(image.get("alt"))
+        return "\n".join(
+            (
+                f"SIZA Scene Image: {src}",
+                f"SIZA Scene Position: {position}",
+                f"SIZA Scene Fit: {fit}",
+                f"SIZA Scene Alt: {alt}",
+            )
+        )
+
     def filter_visible(self, obj_list, looker, **kwargs):
         """Preserve Evennia visibility locks, then apply optional Siza world_state visibility gates."""
         visible = super().filter_visible(obj_list, looker, **kwargs)
@@ -59,8 +85,7 @@ class Room(DefaultRoom):
         """Preserve Evennia's normal room appearance and append active state-authored text."""
         base = super().return_appearance(looker, **kwargs)
         state_text = render_room_state_text(self)
-        if not state_text:
-            return base
-        if not base:
-            return state_text
-        return f"{base}\n{state_text}"
+        if state_text:
+            base = state_text if not base else f"{base}\n{state_text}"
+        metadata = self._scene_image_metadata()
+        return f"{base}\n{metadata}" if metadata else base
