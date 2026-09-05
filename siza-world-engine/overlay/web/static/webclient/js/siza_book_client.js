@@ -190,6 +190,11 @@
         return -1;
     }
 
+    function isSystemTranscriptLine(line) {
+        var text = normalizeSpace(line);
+        return /^(?:character <name>.*|available character\(s\).*|you become .+\.|command ['"]siza-ui-context['"] is not available\..*|type ["']help["'] for help\.)$/i.test(text);
+    }
+
     function parseRoomSnapshot(html) {
         var lines = htmlToText(html)
             .split("\n")
@@ -243,7 +248,9 @@
             key: rawTitle,
             title: cleanTitle,
             dbref: dbrefMatch ? dbrefMatch[1] : "",
-            description: body.slice(1, firstMeta).join(" "),
+            description: body.slice(1, firstMeta).filter(function (line) {
+                return !isSystemTranscriptLine(line);
+            }).join(" "),
             exits: metadataValue(body, "Exits:"),
             characters: metadataValue(body, "Characters:"),
             visible: metadataValue(body, "You see:"),
@@ -252,7 +259,7 @@
             sceneFit: metadataValue(body, "SIZA Scene Fit:"),
             sceneAlt: metadataValue(body, "SIZA Scene Alt:"),
             notes: body.slice(lastMeta + 1).filter(function (line) {
-                return !sizaMetadataPrefixes.some(function (prefix) {
+                return !isSystemTranscriptLine(line) && !sizaMetadataPrefixes.some(function (prefix) {
                     return line.toLowerCase().indexOf(prefix.toLowerCase()) === 0;
                 });
             })
