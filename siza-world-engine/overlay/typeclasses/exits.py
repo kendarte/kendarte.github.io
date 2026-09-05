@@ -18,6 +18,16 @@ def _plain_string_list(value):
     return output
 
 
+def _emit_room_after_traverse(actor):
+    try:
+        from commands.siza_ui_runtime_commands import emit_room_snapshot
+
+        emit_room_snapshot(actor, visible_text=True)
+    except Exception:
+        return None
+    return None
+
+
 class Exit(DefaultExit):
     """Persistent Siza Exit. Geometry and door state are authoritative here."""
 
@@ -79,6 +89,7 @@ class Exit(DefaultExit):
                 },
             },
         )
+        _emit_room_after_traverse(traversing_object)
         if traversing_object.db.siza_narration:
             narrate_move_async(
                 traversing_object,
