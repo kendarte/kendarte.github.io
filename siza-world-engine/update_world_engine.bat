@@ -4,6 +4,7 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 set "SIZA_DARKHAVEN_MAP=%CD%\map-creator\presets\darkhaven-academy.siza-map.json"
+set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-editor-runtime-bridge&force=3"
 
 echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
@@ -144,7 +145,8 @@ echo Contenido profundo del Map Creator fue aplicado a Darkhaven.
 echo World Tick Siza fue garantizado como script unico.
 echo Faro Ahogado permanece instalado como contenido disponible, pero ya no es el arranque local por defecto.
 echo Siza Arena fue sincronizado al webclient local.
-echo Vuelva a conectar al webclient si se desconecto.
+echo Abriendo webclient actualizado...
+start "" "%SIZA_WEBCLIENT_URL%"
 echo.
 if "%NO_PAUSE%"=="0" pause
 exit /b 0
