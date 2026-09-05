@@ -117,9 +117,9 @@ def _context_action_packet(actor):
             action = find_object_action(actor, target, capability.get("object_action_id"), eligible_only=True)
             if not action:
                 continue
-            phrases = list(action.get("input_phrases") or [])
+            phrases = [str(value).strip() for value in list(action.get("input_phrases") or []) if str(value or "").strip()]
             verb = str(phrases[0] if phrases else action.get("name") or "").strip()
-            command = f"{verb} {target.key}".strip()
+            command = verb if phrases else f"{verb} {target.key}".strip()
             actions.append(
                 {
                     "id": str(capability.get("capability_id") or ""),
