@@ -4,7 +4,7 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 set "SIZA_DARKHAVEN_MAP=%CD%\map-creator\presets\darkhaven-academy.siza-map.json"
-set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-room-only-action-render&force=8"
+set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-stable-room-actions&force=9"
 
 echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
