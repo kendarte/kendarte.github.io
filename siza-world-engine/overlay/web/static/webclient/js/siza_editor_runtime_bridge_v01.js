@@ -9,8 +9,6 @@
     var bindTries = 0;
     var lookBurstActive = false;
     var lastRoomSignature = "";
-    var outputObserver = null;
-    var suppressingOutput = false;
 
     function byId(id) {
         return document.getElementById(id);
@@ -55,6 +53,15 @@
             .replace(/(\S)(You see\s*:)/g, "$1\n$2");
     }
 
+    function restoreTextWindow() {
+        var output = byId("siza-messagewindow");
+        if (!output) return;
+        output.removeAttribute("aria-hidden");
+        output.style.display = "";
+        output.style.visibility = "";
+        output.style.opacity = "";
+    }
+
     function send(command) {
         if (!window.Evennia || typeof Evennia.isConnected !== "function" || !Evennia.isConnected()) {
             return false;
@@ -70,10 +77,10 @@
     function requestLookBurst() {
         if (lookBurstActive) return;
         lookBurstActive = true;
-        [150, 900, 1800, 3200].forEach(function (delay) {
+        [250, 1100, 2400].forEach(function (delay) {
             window.setTimeout(requestLookOnce, delay);
         });
-        window.setTimeout(function () { lookBurstActive = false; }, 3600);
+        window.setTimeout(function () { lookBurstActive = false; }, 2800);
     }
 
     function setPanelText(id, value) {
@@ -83,36 +90,6 @@
         node.textContent = text;
         node.style.whiteSpace = "pre-line";
         node.setAttribute("data-raw-description", text);
-    }
-
-    function clearInitialPlaceholder() {
-        var node = byId("siza-scene-description");
-        if (!node) return;
-        if (/^the current location will be described here\.?$/i.test(clean(node.textContent))) {
-            node.textContent = "Cargando observación del lugar…";
-        }
-        node.style.whiteSpace = "pre-line";
-    }
-
-    function hideTransportLog() {
-        var output = byId("siza-messagewindow");
-        if (!output) return;
-        output.setAttribute("aria-hidden", "true");
-        output.style.display = "none";
-    }
-
-    function clearTransportLog() {
-        var output = byId("siza-messagewindow");
-        if (!output || suppressingOutput) return;
-        suppressingOutput = true;
-        output.innerHTML = "";
-        suppressingOutput = false;
-    }
-
-    function splitItems(value) {
-        var text = clean(value);
-        if (!useful(text)) return [];
-        return text.replace(/\s+(?:and|y)\s+/gi, "\n").split(/\n|,/).map(clean).filter(useful);
     }
 
     function parseMetadata(lines, names) {
@@ -128,7 +105,7 @@
     }
 
     function isSystemLine(line) {
-        return /^(?:the current location will be described here|you become|connected session|available character|type help|command|no entiendo|help -|charcreate|chardelete|ic\b|public\b|\[object action\]|intentas\b|escribe\b|la accion requiere|la acción requiere|accion enviada|acción enviada|el world engine no devolvio|el world engine no devolvió)/i.test(clean(line));
+        return /^(?:the current location will be described here|you become|connected session|available character|type help|command|no entiendo|help -|charcreate|chardelete|ic\b|public\b|accion enviada|acción enviada|el world engine no devolvio|el world engine no devolvió)/i.test(clean(line));
     }
 
     function parseRoomText(raw) {
@@ -150,9 +127,6 @@
 
         var title = clean(header[0].replace(/\(#\d+\)\s*$/, ""));
         var description = cleanBlock(header.slice(1).join("\n"));
-        if (!description && title && !/^(?:salidas|ves|personas|characters|exits|you see)\s*:/i.test(title)) {
-            description = title;
-        }
         if (!useful(title) && !useful(description)) return null;
         return {
             title: title || "Ubicación actual",
@@ -187,7 +161,8 @@
             if (placeholder) placeholder.textContent = room.title;
         }
 
-        setPanelText("siza-scene-description", buildObservation(room));
+        var observation = buildObservation(room);
+        if (observation) setPanelText("siza-scene-description", observation);
 
         if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.renderRoomSnapshotActions === "function") {
             window.SizaBookInteractionV04.renderRoomSnapshotActions(room);
@@ -208,17 +183,15 @@
         if (empty) empty.hidden = hasInteractions || hasMovement;
     }
 
-    function scrapeOutput() {
-        if (suppressingOutput) return;
+    function readCurrentOutput() {
         var output = byId("siza-messagewindow");
         if (!output) return;
-        var text = htmlToText(output.innerHTML || output.textContent || "");
-        var room = parseRoomText(text);
+        var room = parseRoomText(htmlToText(output.innerHTML || output.textContent || ""));
         if (room) renderRoom(room);
-        clearTransportLog();
     }
 
     function onText(args) {
+        restoreTextWindow();
         var html = args && args.length ? args[0] : "";
         var text = htmlToText(html);
         if (/\byou become\b/i.test(text) || /\bentras en\b/i.test(text)) {
@@ -226,35 +199,20 @@
         }
         var room = parseRoomText(text);
         if (room) renderRoom(room);
-        window.setTimeout(scrapeOutput, 10);
-    }
-
-    function bindOutputObserver() {
-        var output = byId("siza-messagewindow");
-        if (!output || outputObserver) return;
-        outputObserver = new MutationObserver(function () {
-            window.setTimeout(scrapeOutput, 10);
-        });
-        outputObserver.observe(output, { childList: true, subtree: true, characterData: true });
-        hideTransportLog();
-        scrapeOutput();
+        window.setTimeout(readCurrentOutput, 30);
     }
 
     function bind() {
         if (bound) return true;
         if (!window.Evennia || !Evennia.emitter) return false;
         bound = true;
-        clearInitialPlaceholder();
-        hideTransportLog();
-        bindOutputObserver();
+        restoreTextWindow();
         revealActionGroups();
 
         Evennia.emitter.on("text", onText);
         Evennia.emitter.on("html", onText);
         Evennia.emitter.on("connection_open", function () {
-            clearInitialPlaceholder();
-            hideTransportLog();
-            bindOutputObserver();
+            restoreTextWindow();
             revealActionGroups();
             requestLookBurst();
         });
@@ -262,12 +220,11 @@
             window.setTimeout(revealActionGroups, 20);
         });
 
-        [250, 1000, 2200].forEach(function (delay) {
+        [300, 1200, 2600].forEach(function (delay) {
             window.setTimeout(function () {
-                clearInitialPlaceholder();
-                hideTransportLog();
-                bindOutputObserver();
+                restoreTextWindow();
                 revealActionGroups();
+                readCurrentOutput();
                 requestLookBurst();
             }, delay);
         });
