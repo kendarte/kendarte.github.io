@@ -129,7 +129,2009 @@ const npcs=[
    knowledge:{DARKHAVEN:3,RUMORES:4},job:{id:'ROLE-DH7-STUDENT-ASSISTANT',name:'Estudiante terciario · Asistente operativo'},home_room_id:'DH7-ROOM-012'
  })
 ];
-const project={version:2,meta:{name:'Academia Darkhaven · Zona 7',campaign_id:'DARKHAVEN-ACADEMY-EXPERIMENT'},map:{name:'Academia Darkhaven · Zona 7',rooms},npcs};
+const authoredNpcData={
+  "NPC-DH7-BASILIZA": {
+    "narrative_profile": {
+      "public_presence": "Basiliza ocupa una de las celdas adaptadas del Fireteam 7 con una presencia elegante y precisa.",
+      "visible_activity": "Ordena piezas y notas en la mesa común del Fireteam 7.",
+      "current_goal": "Mantener listo su papel de apoyo dentro del Fireteam 7 y seguir fuentes sobre Trinasty.",
+      "stance": "Escucha primero, mide la pregunta y responde con precisión.",
+      "speech_style": "Frases breves, directas y elegidas con cuidado.",
+      "boundaries": [
+        "Distingue los hechos de las conjeturas cuando habla de Trinasty.",
+        "Comparte información de la vida del Fireteam desde su experiencia directa."
+      ],
+      "narrator_facts": [
+        "Basiliza es una estudiante voluntaria vinculada al Fireteam 7.",
+        "Su búsqueda de información sobre Trinasty forma parte de su presencia en Darkhaven."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-BASILIZA:darkhaven",
+        "topic": "Darkhaven",
+        "aliases": [
+          "academia",
+          "instituto",
+          "zona 7"
+        ],
+        "response": "Darkhaven funciona dentro de una antigua prisión adaptada como instituto; el Fireteam 7 ocupa cuatro celdas convertidas en dormitorios y sala común.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BASILIZA:fireteam7",
+        "topic": "Fireteam 7",
+        "aliases": [
+          "equipo",
+          "dormitorios",
+          "apoyo"
+        ],
+        "response": "El Fireteam 7 usa la sala común para dejar equipo, notas y piezas entre tareas; cada integrante conserva su propio espacio en las celdas adaptadas.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BASILIZA:trinasty",
+        "topic": "Trinasty",
+        "aliases": [
+          "investigación",
+          "investigacion"
+        ],
+        "response": "Trinasty es el asunto que Basiliza está investigando. Trata cada dato como una fuente que debe poder revisarse.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-BASILIZA:quien",
+        "topic": "Quién es Basiliza",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Basiliza"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Basiliza"
+        ],
+        "response": "Soy Basiliza. Formo parte del Fireteam 7 y estoy aquí para hacer el trabajo con cuidado.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BASILIZA:fireteam",
+        "topic": "El Fireteam 7",
+        "keywords": [
+          "fireteam",
+          "equipo",
+          "dormitorios"
+        ],
+        "aliases": [
+          "fireteam",
+          "equipo",
+          "dormitorios"
+        ],
+        "response": "El equipo comparte esta sala y sale desde aquí cuando corresponde. Las piezas sobre la mesa muestran en qué se está trabajando.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BASILIZA:trinasty",
+        "topic": "Trinasty",
+        "keywords": [
+          "Trinasty",
+          "investigación",
+          "investigacion"
+        ],
+        "aliases": [
+          "Trinasty",
+          "investigación",
+          "investigacion"
+        ],
+        "response": "Estoy reuniendo fuentes sobre Trinasty. Una respuesta útil empieza por separar lo visto de lo supuesto.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-BASILIZA:preguntar",
+        "label": "Preguntar por su investigación",
+        "input_phrases": [
+          "preguntar a Basiliza por Trinasty",
+          "hablar con Basiliza de Trinasty"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Basiliza ordena lo que sabe por fuentes y señala qué parte procede de su búsqueda.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BASILIZA:persuadir",
+        "label": "Pedir una explicación más detallada",
+        "input_phrases": [
+          "insistir a Basiliza",
+          "pedir detalles a Basiliza"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-BASILIZA:persuadir",
+          "trigger": "OPPOSITION",
+          "mode": "CONFRONT",
+          "stat": "COO",
+          "target_stat": "PER",
+          "metadata": {
+            "resolution": "comparación enfrentada"
+          }
+        },
+        "success": "Basiliza valora la forma de la pregunta antes de ampliar su respuesta.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-DRASHTON": {
+    "narrative_profile": {
+      "public_presence": "Drashton ocupa el espacio del Fireteam 7 con confianza visible y atención a cualquier reto cercano.",
+      "visible_activity": "Revisa equipo de práctica y comenta el movimiento del patio desde la sala común.",
+      "current_goal": "Mantenerse listo para la parte ofensiva del Fireteam 7.",
+      "stance": "Recibe la conversación como un desafío social o práctico.",
+      "speech_style": "Rápido, gracioso y frontal.",
+      "boundaries": [
+        "Habla de combate desde su experiencia y su entrenamiento.",
+        "Describe su linaje Windrago como parte de su historia personal."
+      ],
+      "narrator_facts": [
+        "Drashton Windrago es integrante ofensivo del Fireteam 7.",
+        "Su presencia transforma un intercambio simple en una prueba de carácter."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-DRASHTON:combate",
+        "topic": "Combate",
+        "aliases": [
+          "práctica",
+          "practica",
+          "esgrima"
+        ],
+        "response": "Drashton conoce la práctica de combate y el patio de entrenamiento como lugares de trabajo; habla de ellos desde el uso, las posturas y el ritmo.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DRASHTON:windrago",
+        "topic": "Windrago",
+        "aliases": [
+          "dragones de tormenta",
+          "linaje"
+        ],
+        "response": "Drashton es heredero de los dragones de tormenta Windrago y lleva esa historia con una seguridad muy visible.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DRASHTON:fireteam7",
+        "topic": "Fireteam 7",
+        "aliases": [
+          "equipo",
+          "dormitorios"
+        ],
+        "response": "El Fireteam 7 comparte los dormitorios adaptados y organiza allí el equipo antes de salir.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-DRASHTON:quien",
+        "topic": "Quién es Drashton",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Drashton"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Drashton"
+        ],
+        "response": "Drashton Windrago. Si quieres conocerme, empieza por hacer una pregunta que merezca tiempo.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DRASHTON:combate",
+        "topic": "Entrenamiento",
+        "keywords": [
+          "combate",
+          "entrenamiento",
+          "esgrima"
+        ],
+        "aliases": [
+          "combate",
+          "entrenamiento",
+          "esgrima"
+        ],
+        "response": "El patio de entrenamiento sirve para repetir una técnica hasta que el cuerpo deja de discutirla.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DRASHTON:equipo",
+        "topic": "Fireteam 7",
+        "keywords": [
+          "fireteam",
+          "equipo"
+        ],
+        "aliases": [
+          "fireteam",
+          "equipo"
+        ],
+        "response": "El equipo funciona cuando cada quien llega preparado. La mesa común deja claro quién revisó qué.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-DRASHTON:preguntar",
+        "label": "Preguntar por entrenamiento",
+        "input_phrases": [
+          "preguntar a Drashton por combate",
+          "hablar con Drashton de entrenamiento"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Drashton responde con una observación práctica sobre el patio y el ritmo de un ejercicio.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DRASHTON:retar",
+        "label": "Retarlo a una comparación de técnica",
+        "input_phrases": [
+          "retar a Drashton",
+          "provocar a Drashton"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-DRASHTON:retar",
+          "trigger": "OPPOSITION",
+          "mode": "CONFRONT",
+          "stat": "AGI",
+          "target_stat": "AGI",
+          "metadata": {
+            "resolution": "comparación enfrentada"
+          }
+        },
+        "success": "Drashton recibe el reto como una comparación abierta de técnica.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-ROXY": {
+    "narrative_profile": {
+      "public_presence": "Roxy se mueve con soltura por la sala común y mantiene la atención en las personas antes que en el mobiliario.",
+      "visible_activity": "Observa el tránsito del equipo y recoge señales de la conversación cotidiana.",
+      "current_goal": "Sostener su lugar dentro del Fireteam 7 y entender la dinámica social de Darkhaven.",
+      "stance": "Provocadora, perceptiva y abierta al intercambio directo.",
+      "speech_style": "Aguda, social y rápida para encontrar el punto de interés.",
+      "boundaries": [
+        "Habla de la casa Soleonus desde su propia experiencia.",
+        "Diferencia los rumores de las observaciones que ha visto personalmente."
+      ],
+      "narrator_facts": [
+        "Roxy Soleonus integra la parte ofensiva del Fireteam 7.",
+        "Su atención está puesta en las relaciones y el movimiento cotidiano de Darkhaven."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-ROXY:darkhaven",
+        "topic": "Darkhaven",
+        "aliases": [
+          "academia",
+          "patio",
+          "vida diaria"
+        ],
+        "response": "Darkhaven se nota mejor en el patio, el comedor y los pasillos: ahí se cruzan los horarios, los grupos y las conversaciones.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ROXY:soleonus",
+        "topic": "Soleonus",
+        "aliases": [
+          "casa solar",
+          "familia"
+        ],
+        "response": "Roxy procede de la casa solar Soleonus y llegó a Darkhaven porque su forma de estar en el mundo chocaba con la imagen que su familia esperaba.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ROXY:fireteam7",
+        "topic": "Fireteam 7",
+        "aliases": [
+          "equipo",
+          "dormitorios"
+        ],
+        "response": "El Fireteam 7 comparte espacio y tareas; Roxy observa con rapidez cómo cambia la energía de la sala cuando alguien llega.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-ROXY:quien",
+        "topic": "Quién es Roxy",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Roxy"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Roxy"
+        ],
+        "response": "Soy Roxy Soleonus. Puedes preguntar lo que quieras; la pregunta dirá bastante de ti.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ROXY:darkhaven",
+        "topic": "La vida en Darkhaven",
+        "keywords": [
+          "Darkhaven",
+          "patio",
+          "comedor",
+          "rumores"
+        ],
+        "aliases": [
+          "Darkhaven",
+          "patio",
+          "comedor",
+          "rumores"
+        ],
+        "response": "El patio y el comedor muestran quién se junta con quién y qué grupo acaba de volver de una tarea.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ROXY:soleonus",
+        "topic": "Soleonus",
+        "keywords": [
+          "Soleonus",
+          "casa solar",
+          "familia"
+        ],
+        "aliases": [
+          "Soleonus",
+          "casa solar",
+          "familia"
+        ],
+        "response": "Mi familia valora una imagen muy concreta. Darkhaven deja espacio para demostrar otra cosa.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-ROXY:preguntar",
+        "label": "Preguntar por la vida social",
+        "input_phrases": [
+          "preguntar a Roxy por Darkhaven",
+          "hablar con Roxy de rumores"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Roxy separa una observación clara de lo que solo circula como comentario.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ROXY:leer",
+        "label": "Intentar leer su reacción",
+        "input_phrases": [
+          "leer a Roxy",
+          "examinar la reacción de Roxy"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-ROXY:leer",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 7,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Roxy nota la atención y responde con una expresión difícil de pasar por alto.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-AXEL": {
+    "narrative_profile": {
+      "public_presence": "Axel mantiene una postura formal incluso en la sala común del Fireteam 7.",
+      "visible_activity": "Revisa su equipo y mantiene ordenado el espacio que le corresponde.",
+      "current_goal": "Cumplir su papel defensivo dentro del Fireteam 7 y sostener la responsabilidad que asocia a su linaje.",
+      "stance": "Correcto, atento al servicio y dispuesto a orientar con claridad.",
+      "speech_style": "Formal, medido y directo.",
+      "boundaries": [
+        "Habla de la casa Likabalier con seriedad y contexto.",
+        "Da orientación práctica cuando la pregunta se refiere al servicio o al complejo."
+      ],
+      "narrator_facts": [
+        "Axel Likabalier es el integrante defensivo del Fireteam 7.",
+        "Su historia está atravesada por una casa caballeresca en decadencia y por una expectativa de restauración."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-AXEL:servicio",
+        "topic": "Servicio en Darkhaven",
+        "aliases": [
+          "orientación",
+          "orientacion",
+          "guardia"
+        ],
+        "response": "Axel entiende el servicio como atención al lugar, al equipo y a la persona que necesita una orientación clara.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-AXEL:likabalier",
+        "topic": "Likabalier",
+        "aliases": [
+          "casa caballeresca",
+          "linaje"
+        ],
+        "response": "Axel procede de la casa Likabalier, una casa caballeresca marcada por la decadencia y por la expectativa de recuperar su lugar.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-AXEL:fireteam7",
+        "topic": "Fireteam 7",
+        "aliases": [
+          "equipo",
+          "defensa"
+        ],
+        "response": "Dentro del Fireteam 7, Axel ocupa una función defensiva y prepara su equipo antes de que el grupo se mueva.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-AXEL:quien",
+        "topic": "Quién es Axel",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Axel"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Axel"
+        ],
+        "response": "Soy Axel Likabalier. Si necesitas una orientación concreta, puedo darte un punto de partida.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-AXEL:servicio",
+        "topic": "Servicio y guardia",
+        "keywords": [
+          "servicio",
+          "guardia",
+          "orientación",
+          "orientacion"
+        ],
+        "aliases": [
+          "servicio",
+          "guardia",
+          "orientación",
+          "orientacion"
+        ],
+        "response": "El servicio empieza por saber qué lugar ocupas, qué salida usas y a quién corresponde cada decisión.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-AXEL:linaje",
+        "topic": "Likabalier",
+        "keywords": [
+          "Likabalier",
+          "linaje",
+          "casa"
+        ],
+        "aliases": [
+          "Likabalier",
+          "linaje",
+          "casa"
+        ],
+        "response": "Likabalier es mi casa. Su historia pesa, pero cada tarea sigue siendo una tarea presente.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-AXEL:preguntar",
+        "label": "Pedir orientación de servicio",
+        "input_phrases": [
+          "preguntar a Axel por orientación",
+          "pedir ayuda a Axel"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Axel responde con una referencia clara a la sala y a la ruta que corresponde.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-AXEL:persuadir",
+        "label": "Pedirle una explicación personal",
+        "input_phrases": [
+          "insistir a Axel",
+          "pedir detalles a Axel"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-AXEL:persuadir",
+          "trigger": "OPPOSITION",
+          "mode": "CONFRONT",
+          "stat": "COO",
+          "target_stat": "PER",
+          "metadata": {
+            "resolution": "comparación enfrentada"
+          }
+        },
+        "success": "Axel atiende la pregunta cuando percibe respeto por lo que se está pidiendo.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-TRIMAGO": {
+    "narrative_profile": {
+      "public_presence": "Orphim Trimago ocupa el despacho de dirección como alguien habituado a recibir informes y tomar decisiones.",
+      "visible_activity": "Ordena documentos de admisión y revisa material de trabajo sobre el escritorio.",
+      "current_goal": "Dirigir Darkhaven Zona 7 y mantener un panorama claro de sus operaciones e investigación.",
+      "stance": "Encantador, estratégico y atento a la utilidad de cada conversación.",
+      "speech_style": "Cordial, preciso y capaz de convertir una pregunta en una negociación.",
+      "boundaries": [
+        "Distingue la información institucional de los detalles que requieren una fuente concreta.",
+        "Habla de Darkhaven desde la responsabilidad de su dirección."
+      ],
+      "narrator_facts": [
+        "Orphim Trimago dirige Darkhaven Zona 7.",
+        "Transformó la antigua prisión en un instituto."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-TRIMAGO:darkhaven",
+        "topic": "Darkhaven",
+        "aliases": [
+          "instituto",
+          "academia",
+          "antigua prisión"
+        ],
+        "response": "Darkhaven ocupa una antigua prisión que Orphim Trimago convirtió en instituto. Sus alas conservan la piedra original y han sido adaptadas para enseñanza, respuesta e investigación.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-TRIMAGO:sector7",
+        "topic": "Sector 7",
+        "aliases": [
+          "mando",
+          "región",
+          "region"
+        ],
+        "response": "La dirección de Sector 7 coordina el trabajo que llega desde las salas operativas, comunicaciones y los equipos de campo.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-TRIMAGO:direccion",
+        "topic": "Dirección",
+        "aliases": [
+          "admisión",
+          "admision",
+          "director"
+        ],
+        "response": "El despacho concentra documentos de admisión, objetos recuperados y una vista directa al patio, lo que permite seguir la vida diaria del complejo.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-TRIMAGO:quien",
+        "topic": "Quién es Orphim Trimago",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Trimago",
+          "director"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Trimago",
+          "director"
+        ],
+        "response": "Soy Orphim Trimago, director de Darkhaven Zona 7. Una pregunta clara permite decidir por dónde empezar.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-TRIMAGO:darkhaven",
+        "topic": "La institución",
+        "keywords": [
+          "Darkhaven",
+          "instituto",
+          "academia"
+        ],
+        "aliases": [
+          "Darkhaven",
+          "instituto",
+          "academia"
+        ],
+        "response": "Darkhaven reúne enseñanza, preparación y respuesta en una estructura que antes tuvo otro propósito.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-TRIMAGO:admisiones",
+        "topic": "Admisiones",
+        "keywords": [
+          "admisión",
+          "admision",
+          "ingreso"
+        ],
+        "aliases": [
+          "admisión",
+          "admision",
+          "ingreso"
+        ],
+        "response": "Los documentos de admisión se trabajan aquí; cada ingreso necesita una lectura clara de la persona y del lugar que va a ocupar.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-TRIMAGO:preguntar",
+        "label": "Pedir una explicación institucional",
+        "input_phrases": [
+          "preguntar a Trimago por Darkhaven",
+          "hablar con Trimago de la academia"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Trimago organiza la respuesta desde el origen del instituto y el uso actual de sus alas.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-TRIMAGO:persuadir",
+        "label": "Solicitar una decisión personal",
+        "input_phrases": [
+          "pedir una decisión a Trimago",
+          "insistir a Trimago"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-TRIMAGO:persuadir",
+          "trigger": "OPPOSITION",
+          "mode": "CONFRONT",
+          "stat": "COO",
+          "target_stat": "PER",
+          "metadata": {
+            "resolution": "comparación enfrentada"
+          }
+        },
+        "success": "Trimago evalúa la petición como una decisión que debe sostenerse con razones.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-RELENA": {
+    "narrative_profile": {
+      "public_presence": "Relena trabaja rodeada de maniquíes, telas tratadas, moldes y estructuras de Fashion Frame.",
+      "visible_activity": "Ajusta una pieza de uniforme entre diagramas de estructura y herramientas finas.",
+      "current_goal": "Desarrollar artefactos, uniformes, Fashion Frames y herramientas de creación de spells para Darkhaven.",
+      "stance": "Concentrada, técnica y dispuesta a enseñar cuando la pregunta tiene precisión.",
+      "speech_style": "Exacta, especializada y orientada al proceso.",
+      "boundaries": [
+        "Habla de artefactos desde los materiales y las pruebas que están presentes.",
+        "Mantiene las conclusiones sobre Trinasty ligadas a fuentes y piezas observables."
+      ],
+      "narrator_facts": [
+        "Relena Dao es pitonisa y diseñadora de artefactos, uniformes y Fashion Frames.",
+        "El atelier es su espacio de trabajo y prueba."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-RELENA:artefactos",
+        "topic": "Artefactos",
+        "aliases": [
+          "reliquias",
+          "laboratorio"
+        ],
+        "response": "Los artefactos se estudian en mesas, bandejas y vitrinas selladas. Relena distingue el material, la estructura y el procedimiento de observación.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-RELENA:fashion",
+        "topic": "Fashion Frames",
+        "aliases": [
+          "uniformes",
+          "frames"
+        ],
+        "response": "Los Fashion Frames combinan estructura, ajuste y material. En el atelier, los moldes y los maniquíes sirven para comprobar cada pieza.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-RELENA:spells",
+        "topic": "Creación de spells",
+        "aliases": [
+          "spells",
+          "hechizos",
+          "magia"
+        ],
+        "response": "La creación de spells en Darkhaven forma parte del trabajo técnico que Relena desarrolla junto a las estructuras y los materiales de prueba.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-RELENA:quien",
+        "topic": "Quién es Relena",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Relena"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Relena"
+        ],
+        "response": "Relena Dao. Trabajo con artefactos, uniformes y Fashion Frames. Formula la pregunta con precisión.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-RELENA:fashion",
+        "topic": "Fashion Frames",
+        "keywords": [
+          "Fashion Frame",
+          "uniformes",
+          "estructuras"
+        ],
+        "aliases": [
+          "Fashion Frame",
+          "uniformes",
+          "estructuras"
+        ],
+        "response": "Un Fashion Frame exige ajuste, material y una estructura que responda al cuerpo y a su uso.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-RELENA:artefactos",
+        "topic": "Reliquias y artefactos",
+        "keywords": [
+          "artefactos",
+          "reliquias",
+          "laboratorio"
+        ],
+        "aliases": [
+          "artefactos",
+          "reliquias",
+          "laboratorio"
+        ],
+        "response": "Las reliquias se observan con instrumentos y procedimientos. La vitrina, la bandeja y el diagrama cumplen funciones distintas.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-RELENA:preguntar",
+        "label": "Preguntar por una pieza del atelier",
+        "input_phrases": [
+          "preguntar a Relena por un uniforme",
+          "hablar con Relena de Fashion Frames"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Relena señala el molde, la prueba de color o la estructura que corresponde a la pregunta.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-RELENA:interpretar",
+        "label": "Pedir una lectura técnica",
+        "input_phrases": [
+          "pedir a Relena que interprete una pieza",
+          "insistir en detalles técnicos"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-RELENA:interpretar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "INT",
+          "difficulty": 7,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Relena revisa el lenguaje de la pregunta antes de convertirlo en una explicación técnica.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-DAO-A": {
+    "narrative_profile": {
+      "public_presence": "La Gemela Dao A acompaña el trabajo del atelier como asistente y modelo de Fashion Frame.",
+      "visible_activity": "Clasifica material de prueba junto a los moldes y maniquíes.",
+      "current_goal": "Preparar el material que Relena necesita para su trabajo de diseño y estructura.",
+      "stance": "Eficiente, concreta y centrada en una tarea definida.",
+      "speech_style": "Breve, literal y orientada a acciones claras.",
+      "boundaries": [
+        "Explica el material que está preparando y remite las decisiones de diseño a Relena.",
+        "Comparte información sobre el orden de trabajo del atelier."
+      ],
+      "narrator_facts": [
+        "La Gemela Dao A es un homúnculo mágico creado a partir del ADN de Relena.",
+        "Asiste en el trabajo de Fashion Frame y en la preparación de material."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-DAO-A:atelier",
+        "topic": "Atelier",
+        "aliases": [
+          "taller",
+          "Relena"
+        ],
+        "response": "El atelier reúne maniquíes, bastidores, telas tratadas, moldes y herramientas para preparar estructuras de Fashion Frame.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-A:fashion",
+        "topic": "Fashion Frames",
+        "aliases": [
+          "frames",
+          "uniformes"
+        ],
+        "response": "Las piezas se preparan sobre moldes y maniquíes antes de que Relena ajuste su estructura.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-A:tarea",
+        "topic": "Trabajo actual",
+        "aliases": [
+          "material",
+          "prueba",
+          "preparar"
+        ],
+        "response": "La tarea actual consiste en clasificar material de prueba y mantener disponibles las piezas que Relena está ajustando.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-DAO-A:quien",
+        "topic": "Quién es la Gemela Dao A",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Dao A"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Dao A"
+        ],
+        "response": "Soy una asistente de Relena. Puedo preparar material o señalar la estación de trabajo correspondiente.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-A:atelier",
+        "topic": "El atelier",
+        "keywords": [
+          "atelier",
+          "taller",
+          "material"
+        ],
+        "aliases": [
+          "atelier",
+          "taller",
+          "material"
+        ],
+        "response": "Cada mesa tiene una función: moldes, color, estructura o herramientas finas.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-A:tarea",
+        "topic": "La tarea actual",
+        "keywords": [
+          "qué haces",
+          "que haces",
+          "preparar"
+        ],
+        "aliases": [
+          "qué haces",
+          "que haces",
+          "preparar"
+        ],
+        "response": "Estoy preparando material de prueba para el trabajo de Relena.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-DAO-A:preguntar",
+        "label": "Pedir preparación de material",
+        "input_phrases": [
+          "pedir material a Dao A",
+          "preguntar a Dao A por el atelier"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "La asistente identifica el material y la estación de trabajo correspondiente.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-A:observar",
+        "label": "Observar su procedimiento",
+        "input_phrases": [
+          "observar a Dao A",
+          "examinar el trabajo de Dao A"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-DAO-A:observar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 6,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "La secuencia de clasificación deja claro cómo se agrupan las piezas de prueba.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-DAO-B": {
+    "narrative_profile": {
+      "public_presence": "La Gemela Dao B acompaña el atelier como asistente y modelo de Fashion Frame.",
+      "visible_activity": "Prepara piezas y consulta material para el siguiente ajuste de Relena.",
+      "current_goal": "Mantener ordenadas las piezas, modelos y consultas que sostienen el trabajo del atelier.",
+      "stance": "Atenta, funcional y abierta a una tarea concreta.",
+      "speech_style": "Clara y directa, con referencias al material presente.",
+      "boundaries": [
+        "Explica el material disponible y consulta a Relena cuando una decisión requiere diseño.",
+        "Distingue el trabajo de preparación de la decisión técnica."
+      ],
+      "narrator_facts": [
+        "La Gemela Dao B es un homúnculo mágico creado a partir del ADN de Relena.",
+        "Asiste en el atelier y puede consultar a Relena o preparar material."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-DAO-B:atelier",
+        "topic": "Atelier",
+        "aliases": [
+          "taller",
+          "Relena"
+        ],
+        "response": "El atelier se organiza alrededor de maniquíes, bastidores, telas y patrones de trabajo.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-B:fashion",
+        "topic": "Fashion Frames",
+        "aliases": [
+          "frames",
+          "uniformes"
+        ],
+        "response": "Las piezas de Fashion Frame pasan por modelos, moldes y pruebas antes de una revisión de estructura.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-B:consulta",
+        "topic": "Consulta a Relena",
+        "aliases": [
+          "preguntar",
+          "material"
+        ],
+        "response": "Dao B puede preparar material y llevar una consulta a Relena cuando la pregunta se refiere al trabajo del atelier.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-DAO-B:quien",
+        "topic": "Quién es la Gemela Dao B",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Dao B"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Dao B"
+        ],
+        "response": "Soy una asistente de Relena. Puedo consultar, preparar material y señalar dónde se está trabajando.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-B:atelier",
+        "topic": "El atelier",
+        "keywords": [
+          "atelier",
+          "taller",
+          "patrones"
+        ],
+        "aliases": [
+          "atelier",
+          "taller",
+          "patrones"
+        ],
+        "response": "Los patrones y los bastidores muestran qué piezas están en preparación y qué modelos están siendo revisados.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-B:consulta",
+        "topic": "Consultar a Relena",
+        "keywords": [
+          "Relena",
+          "consulta",
+          "pregunta"
+        ],
+        "aliases": [
+          "Relena",
+          "consulta",
+          "pregunta"
+        ],
+        "response": "Puedo organizar la consulta y preparar el material que acompañe la pregunta.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-DAO-B:preguntar",
+        "label": "Pedir una consulta de atelier",
+        "input_phrases": [
+          "pedir a Dao B que consulte",
+          "preguntar a Dao B por Relena"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "La asistente identifica la pieza o consulta que puede trasladar a Relena.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DAO-B:observar",
+        "label": "Observar la preparación de piezas",
+        "input_phrases": [
+          "observar a Dao B",
+          "examinar el trabajo de Dao B"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-DAO-B:observar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 6,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "La preparación muestra la diferencia entre un molde, una prueba de color y una pieza estructural.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-ORLAN": {
+    "narrative_profile": {
+      "public_presence": "Sir Orlan ocupa el patio de entrenamiento como capitán de guardia y mentor de esgrima.",
+      "visible_activity": "Supervisa la zona de práctica y el orden del equipo de entrenamiento.",
+      "current_goal": "Mantener la seguridad del complejo y formar con disciplina a quienes entrenan esgrima.",
+      "stance": "Sereno, exigente y accesible para una pregunta concreta.",
+      "speech_style": "Formal, instructivo y preciso.",
+      "boundaries": [
+        "Habla de guardia y esgrima desde procedimientos y técnica.",
+        "Trata los asuntos de Axel y Likabalier con el cuidado de quien conoce a ambos."
+      ],
+      "narrator_facts": [
+        "Sir Orlan es capitán de guardia y mentor de esgrima en Darkhaven.",
+        "Fue escudero de la familia Likabalier y crió a Axel."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-ORLAN:guardia",
+        "topic": "Guardia",
+        "aliases": [
+          "seguridad",
+          "acceso"
+        ],
+        "response": "La guardia atiende los accesos, el equipo y la circulación del complejo. La Sala de Guardia concentra llaves, turnos y revisión de material.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ORLAN:esgrima",
+        "topic": "Esgrima",
+        "aliases": [
+          "entrenamiento",
+          "patio"
+        ],
+        "response": "El patio de entrenamiento está dividido por arena, placas de impacto y postes de esgrima. Cada zona sirve a un tipo de práctica.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ORLAN:likabalier",
+        "topic": "Likabalier y Axel",
+        "aliases": [
+          "Axel",
+          "casa Likabalier"
+        ],
+        "response": "Orlan fue escudero de la familia Likabalier y conoce a Axel desde su crianza; su mentoría combina esa historia con la disciplina de entrenamiento.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-ORLAN:quien",
+        "topic": "Quién es Sir Orlan",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Orlan"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Orlan"
+        ],
+        "response": "Sir Orlan. Si buscas práctica, instrucción o una persona, plantea el asunto con claridad.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ORLAN:esgrima",
+        "topic": "Práctica de esgrima",
+        "keywords": [
+          "esgrima",
+          "entrenamiento",
+          "técnica"
+        ],
+        "aliases": [
+          "esgrima",
+          "entrenamiento",
+          "técnica"
+        ],
+        "response": "La esgrima empieza por la postura, la distancia y la repetición. El patio ya tiene las zonas para trabajar cada parte.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ORLAN:guardia",
+        "topic": "Guardia de Darkhaven",
+        "keywords": [
+          "guardia",
+          "seguridad",
+          "acceso"
+        ],
+        "aliases": [
+          "guardia",
+          "seguridad",
+          "acceso"
+        ],
+        "response": "La guardia ordena los accesos y el equipo. El registro y las llaves existen para que cada salida sea verificable.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-ORLAN:preguntar",
+        "label": "Pedir una instrucción de esgrima",
+        "input_phrases": [
+          "preguntar a Orlan por esgrima",
+          "pedir instrucción a Orlan"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Orlan sitúa la respuesta en la postura, la distancia y el área de práctica.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ORLAN:demostrar",
+        "label": "Solicitar una corrección de técnica",
+        "input_phrases": [
+          "mostrar técnica a Orlan",
+          "pedir corrección a Orlan"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-ORLAN:demostrar",
+          "trigger": "OPPOSITION",
+          "mode": "CONFRONT",
+          "stat": "AGI",
+          "target_stat": "PER",
+          "metadata": {
+            "resolution": "comparación enfrentada"
+          }
+        },
+        "success": "Orlan observa el gesto y responde desde una corrección concreta.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-ARLITA": {
+    "narrative_profile": {
+      "public_presence": "Arlita trabaja entre vitrinas, bandejas y diagramas como pictomante de campo.",
+      "visible_activity": "Revisa material de observación y ordena registros para convertir hallazgos en Pages.",
+      "current_goal": "Registrar criaturas, lugares y fenómenos para crear nuevas Pages durante exploraciones.",
+      "stance": "Amable, curiosa y orientada a la observación concreta.",
+      "speech_style": "Explicativa, visual y atenta a los detalles.",
+      "boundaries": [
+        "Distingue lo que ha registrado de lo que aún requiere observación.",
+        "Habla de Pages como resultado de criaturas, lugares y fenómenos documentados."
+      ],
+      "narrator_facts": [
+        "Arlita es pictomante de campo y graduada de la Casa del Artista.",
+        "Acompaña exploraciones para crear nuevas Pages a partir de registros."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-ARLITA:pictomancia",
+        "topic": "Pictomancia",
+        "aliases": [
+          "pictomante",
+          "Pages"
+        ],
+        "response": "La pictomancia de Arlita parte de registrar criaturas, lugares y fenómenos con suficiente detalle para transformarlos en nuevas Pages.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ARLITA:pages",
+        "topic": "Pages",
+        "aliases": [
+          "páginas",
+          "paginas",
+          "registro"
+        ],
+        "response": "Una Page nace de un registro de campo: lo que se ve, se escucha, se mide o se observa en un lugar o fenómeno.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ARLITA:laboratorio",
+        "topic": "Laboratorio de reliquias",
+        "aliases": [
+          "vitrinas",
+          "bandejas",
+          "artefactos"
+        ],
+        "response": "El laboratorio organiza material en vitrinas selladas, bandejas y diagramas para que la observación tenga un procedimiento claro.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-ARLITA:quien",
+        "topic": "Quién es Arlita",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Arlita"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Arlita"
+        ],
+        "response": "Soy Arlita. Registro criaturas, lugares y fenómenos para convertir una observación útil en una Page.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ARLITA:pages",
+        "topic": "Crear Pages",
+        "keywords": [
+          "Pages",
+          "páginas",
+          "paginas",
+          "pictomancia"
+        ],
+        "aliases": [
+          "Pages",
+          "páginas",
+          "paginas",
+          "pictomancia"
+        ],
+        "response": "Una Page depende de un registro concreto: el lugar, el fenómeno y los detalles que permiten volver a describirlo.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ARLITA:laboratorio",
+        "topic": "El laboratorio",
+        "keywords": [
+          "laboratorio",
+          "reliquias",
+          "artefactos"
+        ],
+        "aliases": [
+          "laboratorio",
+          "reliquias",
+          "artefactos"
+        ],
+        "response": "Las bandejas y vitrinas permiten observar material sin perder la referencia de dónde está cada cosa.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-ARLITA:preguntar",
+        "label": "Preguntar por una Page",
+        "input_phrases": [
+          "preguntar a Arlita por Pages",
+          "hablar con Arlita de pictomancia"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Arlita explica qué observación haría falta para convertir un hallazgo en un registro útil.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-ARLITA:comparar",
+        "label": "Pedir que compare un registro",
+        "input_phrases": [
+          "pedir a Arlita que compare registros",
+          "mostrar un detalle a Arlita"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-ARLITA:comparar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 7,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Arlita compara los rasgos observables y señala cuáles sostienen una descripción.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-MAINE": {
+    "narrative_profile": {
+      "public_presence": "Maine llena el taller pesado con una presencia grande, técnica y concentrada.",
+      "visible_activity": "Revisa un núcleo abierto y separa herramientas de precisión en un banco reforzado.",
+      "current_goal": "Reparar manacores, Spellblades, ManaDrivers y Deep Dive Frames que pasan por el taller.",
+      "stance": "Cauto con el equipo y generoso con una pregunta formulada con propósito.",
+      "speech_style": "Técnico, concreto y paciente con los detalles.",
+      "boundaries": [
+        "Explica el equipo desde sus piezas, soportes y procedimientos de calibración.",
+        "Mantiene el manejo de piezas pesadas ligado al orden de trabajo del taller."
+      ],
+      "narrator_facts": [
+        "Maine es un FrameSmith pesado, técnico e intelectual.",
+        "Trabaja con manacores, Spellblades, ManaDrivers y Deep Dive Frames."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-MAINE:framesmith",
+        "topic": "FrameSmith",
+        "aliases": [
+          "taller",
+          "reparación",
+          "reparacion"
+        ],
+        "response": "El trabajo de FrameSmith usa bancos reforzados, puente grúa, herramientas de precisión y una zona limpia de calibración.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-MAINE:manacores",
+        "topic": "Manacores",
+        "aliases": [
+          "núcleos",
+          "nucleos"
+        ],
+        "response": "Los manacores abiertos se conectan a cables de trabajo y marcas de calibración; cada ajuste debe conservar su referencia.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-MAINE:deepdive",
+        "topic": "Deep Dive Frames",
+        "aliases": [
+          "frames",
+          "bahía",
+          "bahia"
+        ],
+        "response": "Los Deep Dive Frames descansan en soportes de mantenimiento y se conectan a mangueras y líneas de diagnóstico en la bahía pesada.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-MAINE:quien",
+        "topic": "Quién es Maine",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Maine"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Maine"
+        ],
+        "response": "Maine. Si necesitas equipo, empieza por decir para qué lo necesitas.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-MAINE:taller",
+        "topic": "El taller FrameSmith",
+        "keywords": [
+          "taller",
+          "FrameSmith",
+          "reparación",
+          "reparacion"
+        ],
+        "aliases": [
+          "taller",
+          "FrameSmith",
+          "reparación",
+          "reparacion"
+        ],
+        "response": "Las piezas pesadas se mueven con el puente grúa; la calibración ocupa el área limpia para que cada lectura conserve contexto.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-MAINE:frames",
+        "topic": "Deep Dive Frames",
+        "keywords": [
+          "Deep Dive",
+          "frames",
+          "manacores"
+        ],
+        "aliases": [
+          "Deep Dive",
+          "frames",
+          "manacores"
+        ],
+        "response": "Un Frame de Deep Dive se revisa por soportes, líneas de diagnóstico y el estado de sus núcleos. Cada parte depende de la otra.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-MAINE:preguntar",
+        "label": "Preguntar por una reparación",
+        "input_phrases": [
+          "preguntar a Maine por una reparación",
+          "hablar con Maine de manacores"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Maine sitúa la respuesta en la pieza, el banco de trabajo y la fase de calibración.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-MAINE:diagnosticar",
+        "label": "Pedir una lectura técnica",
+        "input_phrases": [
+          "pedir a Maine que diagnostique",
+          "mostrar un núcleo a Maine"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-MAINE:diagnosticar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "INT",
+          "difficulty": 7,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Maine revisa el dato técnico antes de dar una conclusión.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-BERTA": {
+    "narrative_profile": {
+      "public_presence": "Berta domina la cocina-taller entre fogones, frascos, herramientas y madera.",
+      "visible_activity": "Alterna la preparación de comida con la revisión de una herramienta en el banco de trabajo.",
+      "current_goal": "Sostener la comida, la alquimia y las reparaciones cotidianas que mantienen vivo a Darkhaven.",
+      "stance": "Práctica, franca y disponible para quien llega con una necesidad concreta.",
+      "speech_style": "Seco, cotidiano y lleno de comparaciones de trabajo.",
+      "boundaries": [
+        "Explica la cocina y las reparaciones desde los materiales presentes.",
+        "Distingue una solicitud concreta de una conversación que todavía busca su propósito."
+      ],
+      "narrator_facts": [
+        "Berta es cocinera, alquimista, soldadora, carpintera, reparadora y consejera de Darkhaven.",
+        "La cocina y el taller comparten su espacio de trabajo."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-BERTA:cocina",
+        "topic": "Cocina",
+        "aliases": [
+          "comedor",
+          "comida",
+          "fogones"
+        ],
+        "response": "La cocina se organiza alrededor de dos fogones, una mesa de corte y los frascos de preparación; el comedor queda al frente.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BERTA:reparacion",
+        "topic": "Reparación",
+        "aliases": [
+          "reparación",
+          "reparacion",
+          "herramientas"
+        ],
+        "response": "El banco de herramientas permite soldar, trabajar madera y reparar material cotidiano sin separar ese trabajo de la cocina.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BERTA:darkhaven",
+        "topic": "Vida de Darkhaven",
+        "aliases": [
+          "academia",
+          "cotidiano"
+        ],
+        "response": "El comedor y la cocina muestran el ritmo diario de Darkhaven: bandejas, avisos, conversaciones y trabajo de servicio.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-BERTA:quien",
+        "topic": "Quién es Berta",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Berta"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Berta"
+        ],
+        "response": "Berta. Si vienes a comer, siéntate. Si tienes una necesidad concreta, dilo de una vez.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BERTA:cocina",
+        "topic": "La cocina",
+        "keywords": [
+          "cocina",
+          "comida",
+          "fogones"
+        ],
+        "aliases": [
+          "cocina",
+          "comida",
+          "fogones"
+        ],
+        "response": "Los fogones y la mesa de corte hacen el trabajo de comida; cada frasco tiene su uso y su lugar.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BERTA:reparacion",
+        "topic": "Reparaciones",
+        "keywords": [
+          "reparación",
+          "reparacion",
+          "soldadura",
+          "madera"
+        ],
+        "aliases": [
+          "reparación",
+          "reparacion",
+          "soldadura",
+          "madera"
+        ],
+        "response": "El banco sirve para arreglar lo que llega. La herramienta adecuada ahorra tiempo y manos quemadas.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-BERTA:preguntar",
+        "label": "Pedir ayuda práctica",
+        "input_phrases": [
+          "pedir ayuda a Berta",
+          "preguntar a Berta por reparaciones"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Berta responde desde el fogón, la mesa de corte o el banco según la necesidad presentada.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-BERTA:ayudar",
+        "label": "Ofrecer ayuda en el taller",
+        "input_phrases": [
+          "ofrecer ayuda a Berta",
+          "ayudar a Berta"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-BERTA:ayudar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "COO",
+          "difficulty": 6,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Berta valora la disposición y señala una tarea que corresponde al espacio de trabajo.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-DINO": {
+    "narrative_profile": {
+      "public_presence": "Dino cruza el patio central como asistente operativo y observador de la vida cotidiana.",
+      "visible_activity": "Lleva mensajes o pequeños encargos entre las rutas marcadas y los tablones del patio.",
+      "current_goal": "Resolver encargos cotidianos y mantenerse al tanto de lo que se comenta en Darkhaven.",
+      "stance": "Cercano, curioso y sensible a la atención del momento.",
+      "speech_style": "Casual, rápido y con gusto por una historia bien contada.",
+      "boundaries": [
+        "Distingue los rumores de los hechos que ha visto durante sus encargos.",
+        "Puede orientar sobre la circulación y los tablones del patio."
+      ],
+      "narrator_facts": [
+        "Dino es estudiante terciario y asistente operativo.",
+        "Su presencia aporta reacción y textura cotidiana al patio de Darkhaven."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-DINO:patio",
+        "topic": "Patio central",
+        "aliases": [
+          "rutas",
+          "tablones",
+          "bancas"
+        ],
+        "response": "El patio central une las alas del complejo. Las rutas pintadas ordenan el tránsito y los tablones reúnen avisos de uso común.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DINO:darkhaven",
+        "topic": "Darkhaven",
+        "aliases": [
+          "academia",
+          "pasillos",
+          "comedor"
+        ],
+        "response": "Dino conoce Darkhaven por los pequeños encargos que lo llevan entre el patio, los pasillos, el comedor y las salas de trabajo.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DINO:rumores",
+        "topic": "Rumores",
+        "aliases": [
+          "comentarios",
+          "qué pasó",
+          "que paso"
+        ],
+        "response": "Dino escucha comentarios mientras cruza el complejo; puede decir de qué lugar surgió un rumor y qué parte ha visto personalmente.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-DINO:quien",
+        "topic": "Quién es Dino",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Dino"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Dino"
+        ],
+        "response": "Dino. Hago encargos, llevo mensajes y escucho bastante mientras camino.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DINO:patio",
+        "topic": "El patio",
+        "keywords": [
+          "patio",
+          "rutas",
+          "tablones"
+        ],
+        "aliases": [
+          "patio",
+          "rutas",
+          "tablones"
+        ],
+        "response": "Las líneas del suelo mantienen el tránsito ordenado. Los tablones junto a las galerías suelen dar la mejor orientación rápida.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DINO:rumores",
+        "topic": "Comentarios del día",
+        "keywords": [
+          "rumores",
+          "qué pasó",
+          "que paso",
+          "comentarios"
+        ],
+        "aliases": [
+          "rumores",
+          "qué pasó",
+          "que paso",
+          "comentarios"
+        ],
+        "response": "Puedo decir de dónde salió un comentario y si lo escuché de alguien o lo vi durante un encargo.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-DINO:preguntar",
+        "label": "Preguntar por el movimiento del patio",
+        "input_phrases": [
+          "preguntar a Dino por el patio",
+          "hablar con Dino de rumores"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Dino sitúa la respuesta en una ruta, un tablón o un encargo que acaba de realizar.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-DINO:observar",
+        "label": "Seguir su recorrido",
+        "input_phrases": [
+          "seguir a Dino",
+          "observar a Dino"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-DINO:observar",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 6,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "El recorrido de Dino conecta el patio con las tareas pequeñas que sostienen el día a día.",
+        "canon_status": "prototype"
+      }
+    ]
+  },
+  "NPC-DH7-SQUEEK": {
+    "narrative_profile": {
+      "public_presence": "Squeek se mueve por el patio y los pasillos como asistente operativo atento a los pequeños cambios del día.",
+      "visible_activity": "Recoge un encargo y mira los tablones antes de seguir una ruta marcada.",
+      "current_goal": "Completar trabajos pequeños, mantener vivo el intercambio cotidiano y reunir contexto de lo que ocurre alrededor.",
+      "stance": "Abierto, receptivo y capaz de cambiar de tono al notar interés.",
+      "speech_style": "Ágil, expresivo y dispuesto a convertir un detalle en conversación.",
+      "boundaries": [
+        "Distingue lo que sabe de primera mano de lo que circula como rumor.",
+        "Puede orientar hacia personas y zonas desde sus recorridos cotidianos."
+      ],
+      "narrator_facts": [
+        "Squeek es estudiante terciario y asistente operativo.",
+        "Vive entre pasillos, rumores y pequeños trabajos de Darkhaven."
+      ]
+    },
+    "knowledge_facts": [
+      {
+        "id": "NPC-DH7-SQUEEK:patio",
+        "topic": "Patio central",
+        "aliases": [
+          "rutas",
+          "tablones",
+          "salidas"
+        ],
+        "response": "El patio central funciona como cruce entre alas; las rutas marcadas y los tablones ayudan a elegir a dónde dirigirse.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-SQUEEK:personas",
+        "topic": "Buscar personas",
+        "aliases": [
+          "dónde está",
+          "donde esta",
+          "quién está",
+          "quien esta"
+        ],
+        "response": "Squeek puede orientar desde los recorridos y encargos que ve en el patio, siempre que la persona haya pasado por una zona visible.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-SQUEEK:rumores",
+        "topic": "Rumores",
+        "aliases": [
+          "comentarios",
+          "pasó hoy",
+          "paso hoy"
+        ],
+        "response": "Los rumores cambian de forma cuando cruzan el comedor, el patio y los pasillos. Squeek puede indicar el punto donde escuchó uno.",
+        "visibility": "PUBLIC",
+        "canon_status": "prototype"
+      }
+    ],
+    "dialogue_topics": [
+      {
+        "id": "NPC-DH7-SQUEEK:quien",
+        "topic": "Quién es Squeek",
+        "keywords": [
+          "quién eres",
+          "quien eres",
+          "Squeek"
+        ],
+        "aliases": [
+          "quién eres",
+          "quien eres",
+          "Squeek"
+        ],
+        "response": "Squeek. Si buscas a alguien o quieres saber qué se comenta hoy, pregunta por un lugar o una persona.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-SQUEEK:orientacion",
+        "topic": "Orientarse en Darkhaven",
+        "keywords": [
+          "dónde estoy",
+          "donde estoy",
+          "salidas",
+          "patio"
+        ],
+        "aliases": [
+          "dónde estoy",
+          "donde estoy",
+          "salidas",
+          "patio"
+        ],
+        "response": "Desde el patio puedes leer las rutas marcadas y elegir una galería. Los tablones ayudan a ubicar la actividad de cada zona.",
+        "enabled": true,
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-SQUEEK:rumores",
+        "topic": "Rumores del día",
+        "keywords": [
+          "rumores",
+          "qué pasó",
+          "que paso",
+          "hoy"
+        ],
+        "aliases": [
+          "rumores",
+          "qué pasó",
+          "que paso",
+          "hoy"
+        ],
+        "response": "Puedo decir dónde escuché un comentario y qué parte corresponde a alguien que lo contó en el camino.",
+        "enabled": true,
+        "canon_status": "prototype"
+      }
+    ],
+    "social_affordances": [
+      {
+        "id": "NPC-DH7-SQUEEK:preguntar",
+        "label": "Preguntar por una persona o zona",
+        "input_phrases": [
+          "preguntar a Squeek por alguien",
+          "pedir orientación a Squeek"
+        ],
+        "requires_player_initiative": true,
+        "check": null,
+        "success": "Squeek vincula la respuesta a un recorrido, una galería o el último lugar donde vio movimiento.",
+        "canon_status": "prototype"
+      },
+      {
+        "id": "NPC-DH7-SQUEEK:seguir",
+        "label": "Seguir un comentario hasta su origen",
+        "input_phrases": [
+          "seguir un rumor con Squeek",
+          "pedir a Squeek el origen de un rumor"
+        ],
+        "requires_player_initiative": true,
+        "check": {
+          "id": "NPC-DH7-SQUEEK:seguir",
+          "trigger": "OBSTACLE",
+          "mode": "DIRECT",
+          "stat": "PER",
+          "difficulty": 7,
+          "metadata": {
+            "formula": "d6 + actor_stat >= difficulty"
+          }
+        },
+        "success": "Squeek separa el recorrido del comentario de la persona que lo puso en circulación.",
+        "canon_status": "prototype"
+      }
+    ]
+  }
+};
+for(const npc of npcs){const authored=authoredNpcData[npc.npc_id]||{};npc.narrative_profile=authored.narrative_profile||{};npc.knowledge_facts=authored.knowledge_facts||[];npc.dialogue_topics=authored.dialogue_topics||[];npc.social_affordances=authored.social_affordances||[];}
+const project={version:3,meta:{name:'Academia Darkhaven · Zona 7',campaign_id:'DARKHAVEN-ACADEMY-EXPERIMENT'},map:{name:'Academia Darkhaven · Zona 7',rooms},npcs};
 localStorage.setItem('siza_npc_creator_v2',JSON.stringify(project));
 location.replace('./');
 </script>
