@@ -108,9 +108,15 @@
         var url = normalize(data.url);
         if (url) {
             media.style.backgroundImage = "url(\"" + url.replace(/\"/g, "%22") + "\")";
+            media.style.backgroundPosition = normalize(data.position) || "center center";
+            media.style.backgroundSize = normalize(data.fit) === "contain" ? "contain" : "cover";
+            media.style.backgroundRepeat = "no-repeat";
             visual.setAttribute("data-has-image", "true");
         } else {
             media.style.backgroundImage = "";
+            media.style.backgroundPosition = "";
+            media.style.backgroundSize = "";
+            media.style.backgroundRepeat = "";
             visual.setAttribute("data-has-image", "false");
         }
 
