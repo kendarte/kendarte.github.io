@@ -16,6 +16,19 @@ class Room(DefaultRoom):
         self.db.district_id = None
         self.db.canon_status = "prototype"
         self.db.scene_image = {"src": "", "alt": "", "position": "center center", "fit": "cover"}
+        self.db.scene_manifest = {
+            "version": 1,
+            "orientation": {
+                "arrival_summary": "",
+                "spatial_answer": "",
+                "time_context": "",
+                "current_activity": "",
+            },
+            "narrator_answers": [],
+            "entities": [],
+            "hidden_discoveries": [],
+            "free_action_hooks": [],
+        }
 
         # Obvious authored sensory facts. Entering/looking does not roll for these.
         self.db.sensory_facts = {
