@@ -6,7 +6,7 @@ title SIZA - Arranque completo
 
 set "SIZA_PYTHON=%CD%\.venv\Scripts\python.exe"
 set "SIZA_RUNTIME=%CD%\runtime"
-set "SIZA_WEBCLIENT=http://127.0.0.1:4001/webclient/?siza_build=20260905-room-authoring"
+set "SIZA_WEBCLIENT=http://127.0.0.1:4001/webclient/?siza_build=20260905-room-authoring-v2"
 set "SIZA_OLLAMA_MODEL=qwen3:8b"
 set "SIZA_OLLAMA_ENDPOINT=http://127.0.0.1:11434/api/chat"
 set "SIZA_STATUS_FILE=%TEMP%\siza_evennia_status_%RANDOM%_%RANDOM%.txt"
