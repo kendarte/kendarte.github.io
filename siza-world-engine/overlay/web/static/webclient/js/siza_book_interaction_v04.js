@@ -266,7 +266,7 @@
         var kind = clean(action && action.kind).toUpperCase();
         var command = key(action && action.command);
         return ["MOVE", "EXIT", "TRAVEL", "ROUTE"].indexOf(kind) !== -1 ||
-            /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir)\\b/.test(command);
+            /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir)\b/.test(command);
     }
 
     function appendContextAction(target, action) {
