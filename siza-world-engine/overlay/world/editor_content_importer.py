@@ -13,6 +13,7 @@ from evennia.objects.models import ObjectDB
 ROOM_CONTENT_FIELDS = (
     "desc",
     "scene_image",
+    "scene_manifest",
     "canon_status",
     "sensory_facts",
     "space_profile",
@@ -27,6 +28,8 @@ NPC_CONTENT_FIELDS = (
     "desc",
     "dialogue_greeting",
     "dialogue_topics",
+    "narrative_profile",
+    "social_affordances",
     "canon_status",
 )
 
