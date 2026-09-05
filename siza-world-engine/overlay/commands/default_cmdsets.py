@@ -94,6 +94,7 @@ from commands.siza_commands import (
     CmdSizaStatus,
     CmdSizaWorldCheck,
 )
+from commands.siza_ui_runtime_commands import CmdSizaRoomState, CmdSizaUiContext, CmdSizaUiStats
 from commands.time_commands import (
     CmdSizaTime,
     CmdSizaTimeAdvance,
@@ -289,6 +290,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdSizaDMSignal())
         self.add(CmdSizaDMAdvance())
         self.add(CmdSizaValidateDMV01())
+        self.add(CmdSizaRoomState())
+        self.add(CmdSizaUiContext())
+        self.add(CmdSizaUiStats())
         self.add(CmdSizaNoMatchV861())
 
 
