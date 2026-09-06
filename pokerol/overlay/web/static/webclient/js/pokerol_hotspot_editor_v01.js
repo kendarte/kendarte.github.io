@@ -77,6 +77,7 @@
   }
   function applyOverride(actor,ov){
     if(!actor||!ov)return;
+    if(actor.dataset.pkWorldDbref){actor.classList.toggle('pkHotspotHidden',!!ov.hidden);return}
     var label=labelNode(actor);if(label&&ov.name)label.textContent=ov.name;
     if(Number.isFinite(Number(ov.x)))actor.style.left=Number(ov.x)+'%';
     if(Number.isFinite(Number(ov.y)))actor.style.bottom=Number(ov.y)+'%';
@@ -139,6 +140,8 @@
         var row=(data.custom||[]).find(function(r){return r.id===hotKey});
         if(!row){row={id:hotKey};data.custom.push(row)}
         row.name=name;row.command=cmd;row.x=x;row.y=y;
+      }else if(selected.dataset.pkWorldDbref){
+        data.overrides[hotKey]={hidden:selected.classList.contains('pkHotspotHidden')};
       }else{
         data.overrides[hotKey]={name:name,x:x,y:y,hidden:selected.classList.contains('pkHotspotHidden')};
       }
