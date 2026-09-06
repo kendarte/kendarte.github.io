@@ -9,6 +9,7 @@ from services.pokemon_battle_runtime import (
     start_pokemon_battle,
     submit_player_battle_action,
 )
+from services.pokemon_party_engine import active_pokemon
 
 
 def _decode_token(token):
@@ -110,9 +111,10 @@ class CmdPokerolBattleTest(Command):
     locks = "cmd:perm(Admin)"
 
     def func(self):
+        player = active_pokemon(self.caller) or _demo_pikachu()
         result = start_pokemon_battle(
             self.caller,
-            _demo_pikachu(),
+            player,
             _demo_caterpie(),
             battle_kind="WILD",
             source_event_id="DEMO",
@@ -155,7 +157,8 @@ class CmdPokerolBattleCapture(Command):
     locks = "cmd:all()"
 
     def func(self):
-        result = submit_player_battle_action(self.caller, {"type": "CAPTURE", "ball_multiplier": 1.0})
+        item_id = str(self.args or "").strip().upper() or "POKE_BALL"
+        result = submit_player_battle_action(self.caller, {"type": "CAPTURE", "item_id": item_id})
         self.caller.msg(str(result.get("status")))
 
 
