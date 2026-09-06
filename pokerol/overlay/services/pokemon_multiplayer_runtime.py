@@ -16,7 +16,7 @@ from services.pokemon_party_engine import (
 from typeclasses.pokemon_battle_session import participant_id
 
 
-MULTI_RUNTIME_BUILD = "0.1.1-switch-turn-runtime"
+MULTI_RUNTIME_BUILD = "0.2.0-outcome-switch-runtime"
 
 
 def _dict(value):
@@ -67,6 +67,7 @@ def _write_state_to_session(session, state):
     session.db.phase = _text(state.get("phase")).upper() or "COMMAND"
     session.db.status = _text(state.get("status")).upper() or "ACTIVE"
     session.db.log = _clone(_list(state.get("log"))[-220:])
+    session.db.outcome = _text(state.get("outcome")).upper()
     session.db.winning_team = _text(state.get("winning_team")).upper()
     session.db.updated_at = int(time())
     if _text(session.db.status).upper() == "COMPLETE":
@@ -120,13 +121,13 @@ def _mark_forced_switches(session):
             required.append(pid)
     session.db.combatants = combatants
     if required:
-        # If resolve_locked_round stopped on an apparent winner, it did not yet
-        # advance the turn. Do it here once before the replacement phase.
         if was_complete:
             session.db.turn = max(1, _int(session.db.turn, 1)) + 1
         session.db.status = "ACTIVE"
         session.db.phase = "SWITCH"
+        session.db.outcome = ""
         session.db.winning_team = ""
+        session.db.completed_at = None
         session.db.pending_orders = {}
         session.db.updated_at = int(time())
         session.append_log("FORCED_SWITCH", "Se requieren reemplazos antes de continuar.", participant_ids=required)
@@ -244,6 +245,8 @@ def submit_multiplayer_switch(actor, slot):
     if not remaining:
         session.db.phase = "COMMAND"
         session.db.status = "ACTIVE"
+        session.db.outcome = ""
+        session.db.winning_team = ""
         session.db.pending_orders = {}
         session.db.updated_at = int(time())
         session.append_log("COMMAND", "Todos los reemplazos están listos. Continúa el turno compartido.")
