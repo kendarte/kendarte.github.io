@@ -34,5 +34,11 @@ cd "$RUNTIME"
 echo "[POKEROL] Migrando DB de prueba..."
 python -m evennia migrate
 
-echo "[POKEROL] Iniciando Evennia en puerto ${PORT}..."
+if command -v nginx >/dev/null 2>&1; then
+  echo "[POKEROL] Iniciando proxy HTTP/WebSocket en puerto ${PORT}..."
+  nginx -t
+  nginx
+fi
+
+echo "[POKEROL] Iniciando Evennia HTTP interno 4003 + WebSocket 4002..."
 exec python -m evennia start --log
