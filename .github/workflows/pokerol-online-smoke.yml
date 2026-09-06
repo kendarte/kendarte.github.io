@@ -24,6 +24,9 @@ jobs:
           docker run -d --name pokerol-smoke-run \
             -e PORT=4001 \
             -e POKEROL_SOLO_TEST_MODE=1 \
+            -e EVENNIA_SUPERUSER_USERNAME=SmokeAdmin \
+            -e EVENNIA_SUPERUSER_PASSWORD=SmokeOnly-LocalRunner-9274 \
+            -e EVENNIA_SUPERUSER_EMAIL= \
             -p 4001:4001 \
             pokerol-smoke
 
@@ -38,9 +41,9 @@ jobs:
             echo '=== POKEROL logs ==='
             docker logs pokerol-smoke-run || true
             echo '=== Evennia process list ==='
-            docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
+            timeout 5s docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
             echo '=== Evennia status ==='
-            docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
+            timeout 5s docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
           } > /tmp/pokerol-diagnostics.txt 2>&1
           cat /tmp/pokerol-diagnostics.txt
 
