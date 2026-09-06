@@ -21,6 +21,7 @@ from services.pokemon_battle_engine import (
     resolve_player_action,
 )
 from services.pokemon_battle_environment_engine import (
+    compatible_environment_targets,
     environment_targets,
     execute_battle_environment_request,
 )
@@ -39,7 +40,7 @@ from services.pokemon_party_engine import (
 )
 
 
-RUNTIME_BUILD = "0.6.0-initiative-medium-physics"
+RUNTIME_BUILD = "0.7.0-authoritative-world-target-map"
 
 
 def _dict(value):
@@ -101,6 +102,18 @@ def _apply_contact_medium(battle_pokemon, source_profile):
         battle_pokemon.pop("contact_medium_kind", None)
 
 
+def _world_target_map(actor, battle_packet):
+    output = {}
+    player = _dict(_dict(battle_packet).get("player"))
+    for move in _list(player.get("moves")):
+        move = _dict(move)
+        move_id = _text(move.get("move_id"))
+        if not move_id or not bool(move.get("world_enabled")):
+            continue
+        output[move_id] = compatible_environment_targets(actor, move)
+    return output
+
+
 def _public_state(actor, battle):
     packet = public_battle_state(battle)
     for key in list(packet.keys()):
@@ -109,6 +122,7 @@ def _public_state(actor, battle):
     packet["party_state"] = party_state(actor)
     packet["bag_state"] = bag_state(actor)
     packet["environment_targets"] = environment_targets(actor)
+    packet["world_move_targets"] = _world_target_map(actor, packet)
     return packet
 
 
