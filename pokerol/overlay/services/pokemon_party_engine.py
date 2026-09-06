@@ -4,7 +4,7 @@ from copy import deepcopy
 from uuid import uuid4
 
 
-PARTY_BUILD = "0.1.0-persistent-party"
+PARTY_BUILD = "0.2.0-status-pp-party"
 PARTY_LIMIT = 6
 
 
@@ -58,6 +58,7 @@ def normalize_owned_pokemon(profile, *, owner_id=""):
     p["hp_max"] = hp_max
     p["hp_current"] = max(0, min(hp_max, _int(p.get("hp_current"), hp_max)))
     p["status"] = _text(p.get("status")).upper() or "OK"
+    p["status_turns"] = max(0, _int(p.get("status_turns"), 0))
     p.setdefault("experience", 0)
     p.setdefault("bond", 0)
     p.setdefault("trust", 0)
@@ -165,8 +166,24 @@ def battle_profile_for_slot(actor, slot):
     return p
 
 
+def set_party_slot_profile(actor, slot, profile):
+    if not actor:
+        return {"accepted": False, "status": "NO_ACTOR", "build": PARTY_BUILD}
+    party = _party(actor)
+    index = _int(slot, -1)
+    if index < 0 or index >= len(party):
+        return {"accepted": False, "status": "INVALID_PARTY_SLOT", "build": PARTY_BUILD}
+    current_id = _text(party[index].get("entity_id"))
+    incoming = normalize_owned_pokemon(profile, owner_id=_owner_id(actor))
+    if current_id and _text(incoming.get("entity_id")) != current_id:
+        return {"accepted": False, "status": "PARTY_IDENTITY_MISMATCH", "build": PARTY_BUILD}
+    party[index] = incoming
+    _write_party(actor, party)
+    return {"accepted": True, "status": "PARTY_SLOT_UPDATED", "slot": index, "pokemon": _clone(incoming), "build": PARTY_BUILD}
+
+
 def update_owned_from_battle(actor, battle_pokemon):
-    """Persist HP/status/level/moves for the exact owned instance represented in battle."""
+    """Persist owned state that should survive battle; stages/volatile effects reset on switch/end."""
     if not actor:
         return False
     battle = _dict(battle_pokemon)
@@ -179,7 +196,7 @@ def update_owned_from_battle(actor, battle_pokemon):
         if _text(current.get("entity_id")) != entity_id:
             continue
         next_row = _clone(current)
-        for key in ("level", "hp_max", "hp_current", "status"):
+        for key in ("level", "hp_max", "hp_current", "status", "status_turns"):
             if key in battle:
                 next_row[key] = _clone(battle[key])
         if battle.get("moves"):
