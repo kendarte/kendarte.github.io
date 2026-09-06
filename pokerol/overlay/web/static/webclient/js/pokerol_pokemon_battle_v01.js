@@ -1,8 +1,10 @@
 (function(){
 "use strict";
-var BUILD="0.2.2-red-plus-forced-switch";
+var BUILD="0.3.0-red-plus-items-status";
 var state=null;
 var menuMode="ACTION";
+var pendingItemId="";
+var pendingItemSlot=null;
 function byId(id){return document.getElementById(id)}
 function text(v){return String(v==null?"":v).trim()}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
@@ -10,6 +12,7 @@ function esc(v){return text(v).replace(/[&<>"']/g,function(c){return({"&":"&amp;
 function pct(cur,max){max=Math.max(1,Number(max)||1);return Math.max(0,Math.min(100,(Number(cur)||0)/max*100))}
 function battleReady(){return !!state&&text(state.status)==="ACTIVE"&&text(state.phase)==="COMMAND"}
 function forcedSwitch(){return !!(state&&state.forced_switch)}
+function clearPendingItem(){pendingItemId="";pendingItemSlot=null}
 function ensure(){
   var root=byId("pokerol-pokemon-battle");
   if(root)return root;
@@ -33,11 +36,12 @@ function ensure(){
   byId("pkb-return").onclick=function(){closeBattle()};
   return root;
 }
+function statusLabel(p){var s=text(p&&p.status).toUpperCase();return s&&s!=="OK"?'<span class="pkbStatus">'+esc(s)+'</span>':''}
 function infoHtml(p){
   var types=(p.types||[]).map(function(t){return '<span>'+esc(t)+'</span>'}).join('');
   var hp=pct(p.hp_current,p.hp_max);
   return '<div class="pkbNameRow"><span>'+esc(p.name||p.species_name||"Pokémon")+'</span><span>Lv '+esc(p.level)+'</span></div>'
-    +'<div class="pkbTypes">'+types+'</div>'
+    +'<div class="pkbTypes">'+types+statusLabel(p)+'</div>'
     +'<div class="pkbHpRow"><span class="pkbHpLabel">HP</span><div class="pkbHpTrack"><div class="pkbHpFill" style="width:'+hp+'%"></div></div></div>'
     +'<div class="pkbHpText">'+esc(p.hp_current)+' / '+esc(p.hp_max)+'</div>';
 }
@@ -49,8 +53,12 @@ function spriteHtml(p,side){
   var name=text(p.name||p.species_name||"?");
   return '<div class="pkbFallback">'+esc(name.slice(0,2).toUpperCase())+'</div>';
 }
-function moveButton(m,disabled){
-  return '<button class="pkbMove" data-move="'+esc(m.move_id)+'" '+(disabled?'disabled':'')+'><b>'+esc(m.name||m.move_id)+'</b><small>'+esc(m.pokemon_type||"")+' · POT '+esc(m.power||0)+' · ACC '+esc(m.accuracy||100)+'</small></button>';
+function moveButton(m,disabled,selectAttr){
+  var ppMax=Number(m.pp_max!=null?m.pp_max:m.pp)||0;
+  var ppCur=Number(m.pp_current!=null?m.pp_current:ppMax);
+  var noPP=ppMax>0&&ppCur<=0;
+  var attr=selectAttr||'data-move';
+  return '<button class="pkbMove" '+attr+'="'+esc(m.move_id)+'" '+(disabled||noPP?'disabled':'')+'><b>'+esc(m.name||m.move_id)+'</b><small>'+esc(m.pokemon_type||"")+' · PP '+esc(ppCur)+'/'+esc(ppMax)+' · POT '+esc(m.power||0)+'</small></button>';
 }
 function outcomeText(v){
   var map={PLAYER_WIN:"VICTORIA",PLAYER_LOSS:"DERROTA",DRAW:"EMPATE",CAPTURED:"¡CAPTURADO!",ESCAPED:"ESCAPASTE",ABANDONED:"BATALLA TERMINADA"};
@@ -58,27 +66,42 @@ function outcomeText(v){
 }
 function menuTitle(value){
   if(forcedSwitch()&&value==="PARTY")return "ELIGE REEMPLAZO";
-  var map={ACTION:"¿QUÉ HARÁ?",MOVE:"ELIGE MOVIMIENTO",PARTY:"POKÉMON",BAG:"BOLSA"};
+  var map={ACTION:"¿QUÉ HARÁ?",MOVE:"ELIGE MOVIMIENTO",PARTY:"POKÉMON",BAG:"BOLSA",ITEM_TARGET:"¿A QUIÉN?",ITEM_MOVE:"¿QUÉ MOVIMIENTO?"};
   return map[value]||"ORDEN";
 }
 function setMenuMode(next){
   if(forcedSwitch()&&next!=="PARTY")next="PARTY";
+  if(next==="ACTION")clearPendingItem();
   menuMode=next;
   renderMenu();
 }
 function partyRows(){return state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[]}
+function partyAt(slot){return partyRows().find(function(p){return Number(p.party_slot)===Number(slot)})||null}
 function bagItems(){return state&&state.bag_state&&state.bag_state.items&&typeof state.bag_state.items==="object"?state.bag_state.items:{}}
-function partySlotHtml(p,disabled){
+function bagProfiles(){return state&&state.bag_state&&state.bag_state.profiles&&typeof state.bag_state.profiles==="object"?state.bag_state.profiles:{}}
+function bagProfile(itemId){return bagProfiles()[itemId]||{kind:/_BALL$/i.test(itemId)?"CAPTURE":"UNKNOWN",battle_usable:false,label:itemId.replace(/_/g," ")}}
+function partySlotHtml(p,disabled,mode){
   var slot=Number(p.party_slot)||0;
   var name=text(p.nickname||p.species_name||"Pokémon");
   var sprite=p.sprite&&text(p.sprite.icon||p.sprite.front);
   var icon=sprite?'<img class="pkbPartyIcon" src="'+esc(sprite)+'" alt="">':'<span class="pkbPartyInitial">'+esc(name.slice(0,1))+'</span>';
   var hp=esc(p.hp_current)+'/'+esc(p.hp_max);
   var flags=(p.active?' ACTIVO':'')+(Number(p.hp_current)<=0?' K.O.':'');
-  return '<button class="pkbPartySlot" data-slot="'+slot+'" '+(disabled||p.active||Number(p.hp_current)<=0?'disabled':'')+'>'+icon+'<span><b>'+esc(name)+'</b><small>Lv '+esc(p.level)+' · HP '+hp+' · '+esc(p.status||'OK')+flags+'</small></span></button>';
+  var block=disabled;
+  if(mode==="SWITCH")block=block||p.active||Number(p.hp_current)<=0;
+  return '<button class="pkbPartySlot" data-slot="'+slot+'" '+(block?'disabled':'')+'>'+icon+'<span><b>'+esc(name)+'</b><small>Lv '+esc(p.level)+' · HP '+hp+' · '+esc(p.status||'OK')+flags+'</small></span></button>';
 }
-function itemLabel(itemId){return text(itemId).replace(/_/g,' ')}
-function isBall(itemId){return /_BALL$/i.test(text(itemId))}
+function itemLabel(itemId,profile){return text(profile&&profile.label)||text(itemId).replace(/_/g,' ')}
+function itemTargetEligible(profile,p){
+  if(!profile||!p)return false;
+  var kind=text(profile.kind).toUpperCase(),hp=Number(p.hp_current)||0,hpMax=Math.max(1,Number(p.hp_max)||1),status=text(p.status).toUpperCase()||"OK";
+  if(kind==="HEAL")return hp>0&&hp<hpMax;
+  if(kind==="CURE")return status===text(profile.status).toUpperCase();
+  if(kind==="CURE_ALL")return status!=="OK";
+  if(kind==="REVIVE")return hp<=0;
+  if(kind==="PP"||kind==="PP_FULL")return Array.isArray(p.moves)&&p.moves.some(function(m){var max=Number(m.pp_max!=null?m.pp_max:m.pp)||0,cur=Number(m.pp_current!=null?m.pp_current:max);return cur<max});
+  return false;
+}
 function renderMenu(){
   ensure();
   if(forcedSwitch())menuMode="PARTY";
@@ -86,31 +109,68 @@ function renderMenu(){
   if(!body)return;
   byId("pkb-menu-title").textContent=menuTitle(menuMode);
   var disabled=!battleReady();
+
   if(menuMode==="MOVE"){
     var moves=(state&&state.player&&state.player.moves)||[];
     body.innerHTML='<div class="pkbMoveGrid">'+(moves.map(function(m){return moveButton(m,disabled)}).join('')||'<div class="pkbStubText">SIN MOVIMIENTOS.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
     Array.prototype.forEach.call(body.querySelectorAll("[data-move]"),function(btn){btn.onclick=function(){sendAction({type:"MOVE",move_id:btn.getAttribute("data-move")})}});
-    var backMove=byId("pkb-back");if(backMove)backMove.onclick=function(){setMenuMode("ACTION")};
+    byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
     return;
   }
+
   if(menuMode==="PARTY"){
     var party=partyRows();
     var intro=forcedSwitch()?'<div class="pkbStubText">TU POKÉMON ESTÁ FUERA DE COMBATE. ELIGE OTRO POKÉMON CAPAZ DE CONTINUAR.</div>':'';
     var back=forcedSwitch()?'':'<button class="pkbBack" id="pkb-back">ATRÁS</button>';
-    body.innerHTML=intro+'<div class="pkbPartyList">'+(party.length?party.map(function(p){return partySlotHtml(p,disabled)}).join(''):'<div class="pkbStubText">NO HAY PARTY PERSISTENTE.</div>')+'</div>'+back;
+    body.innerHTML=intro+'<div class="pkbPartyList">'+(party.length?party.map(function(p){return partySlotHtml(p,disabled,"SWITCH")}).join(''):'<div class="pkbStubText">NO HAY PARTY PERSISTENTE.</div>')+'</div>'+back;
     Array.prototype.forEach.call(body.querySelectorAll("[data-slot]"),function(btn){btn.onclick=function(){sendAction({type:"SWITCH",slot:Number(btn.getAttribute("data-slot"))})}});
     var partyBack=byId("pkb-back");if(partyBack)partyBack.onclick=function(){setMenuMode("ACTION")};
     return;
   }
+
   if(menuMode==="BAG"){
-    var items=bagItems();
+    var items=bagItems(),profiles=bagProfiles();
     var keys=Object.keys(items).filter(function(k){return Number(items[k])>0});
     var wild=state&&text(state.battle_kind)==="WILD";
-    body.innerHTML='<div class="pkbBagList">'+(keys.length?keys.map(function(k){var usable=isBall(k)&&wild&&!disabled;return '<button class="pkbBagItem" data-item="'+esc(k)+'" '+(!usable?'disabled':'')+'><b>'+esc(itemLabel(k))+'</b><small>x'+esc(items[k])+(isBall(k)?' · CAPTURA':' · FUERA DE BATALLA')+'</small></button>'}).join(''):'<div class="pkbStubText">BOLSA VACÍA.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
-    Array.prototype.forEach.call(body.querySelectorAll("[data-item]"),function(btn){btn.onclick=function(){var item=btn.getAttribute("data-item");if(isBall(item))sendAction({type:"CAPTURE",item_id:item})}});
+    body.innerHTML='<div class="pkbBagList">'+(keys.length?keys.map(function(k){
+      var p=profiles[k]||bagProfile(k),kind=text(p.kind).toUpperCase();
+      var capture=kind==="CAPTURE",support=!!p.battle_usable&&!capture&&kind!=="CAPTURE_RESERVED"&&kind!=="UNKNOWN";
+      var usable=!disabled&&((capture&&wild)||support);
+      var note=capture?'CAPTURA':support?kind:'NO USABLE EN BATALLA';
+      return '<button class="pkbBagItem" data-item="'+esc(k)+'" '+(!usable?'disabled':'')+'><b>'+esc(itemLabel(k,p))+'</b><small>x'+esc(items[k])+' · '+esc(note)+'</small></button>';
+    }).join(''):'<div class="pkbStubText">BOLSA VACÍA.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-item]"),function(btn){btn.onclick=function(){
+      var item=btn.getAttribute("data-item"),profile=bagProfile(item),kind=text(profile.kind).toUpperCase();
+      if(kind==="CAPTURE")sendAction({type:"CAPTURE",item_id:item});
+      else{pendingItemId=item;pendingItemSlot=null;setMenuMode("ITEM_TARGET")}
+    }});
     byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
     return;
   }
+
+  if(menuMode==="ITEM_TARGET"){
+    var targetProfile=bagProfile(pendingItemId),targetParty=partyRows();
+    body.innerHTML='<div class="pkbStubText">'+esc(itemLabel(pendingItemId,targetProfile))+'</div><div class="pkbPartyList">'+targetParty.map(function(p){return partySlotHtml(p,disabled||!itemTargetEligible(targetProfile,p),"ITEM")}).join('')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-slot]"),function(btn){btn.onclick=function(){
+      pendingItemSlot=Number(btn.getAttribute("data-slot"));
+      if(targetProfile.requires_move)setMenuMode("ITEM_MOVE");
+      else sendAction({type:"ITEM",item_id:pendingItemId,slot:pendingItemSlot});
+    }});
+    byId("pkb-back").onclick=function(){pendingItemSlot=null;setMenuMode("BAG")};
+    return;
+  }
+
+  if(menuMode==="ITEM_MOVE"){
+    var target=partyAt(pendingItemSlot),itemP=bagProfile(pendingItemId),itemMoves=target&&Array.isArray(target.moves)?target.moves:[];
+    body.innerHTML='<div class="pkbStubText">'+esc(itemLabel(pendingItemId,itemP))+' → '+esc(target&&(target.nickname||target.species_name)||"POKÉMON")+'</div><div class="pkbMoveGrid">'+itemMoves.map(function(m){
+      var max=Number(m.pp_max!=null?m.pp_max:m.pp)||0,cur=Number(m.pp_current!=null?m.pp_current:max),full=cur>=max;
+      return moveButton(m,disabled||full,'data-item-move');
+    }).join('')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-item-move]"),function(btn){btn.onclick=function(){sendAction({type:"ITEM",item_id:pendingItemId,slot:pendingItemSlot,move_id:btn.getAttribute("data-item-move")})}});
+    byId("pkb-back").onclick=function(){setMenuMode("ITEM_TARGET")};
+    return;
+  }
+
   body.innerHTML='<div class="pkbActionGrid">'
     +'<button class="pkbAction" id="pkb-fight" '+(disabled?'disabled':'')+'>FIGHT</button>'
     +'<button class="pkbAction" id="pkb-party" '+(disabled?'disabled':'')+'>POKÉMON</button>'
@@ -142,7 +202,7 @@ function render(packet){
   byId("pkb-enemy-info").innerHTML=infoHtml(state.enemy||{});
   byId("pkb-player-sprite").innerHTML=spriteHtml(state.player||{},"PLAYER");
   byId("pkb-enemy-sprite").innerHTML=spriteHtml(state.enemy||{},"ENEMY");
-  var log=(state.log||[]).slice(-6);
+  var log=(state.log||[]).slice(-7);
   byId("pkb-log").innerHTML=log.map(function(row){return '<div class="pkbLogLine">'+esc(row.text||row.kind||"")+'</div>'}).join('')||'<div class="pkbLogLine">¿Qué hará '+esc(state.player&&state.player.name||"tu Pokémon")+'?</div>';
   if(text(state.status)==="COMPLETE"){
     byId("pkb-outcome-title").textContent=outcomeText(state.outcome);
@@ -171,12 +231,13 @@ function disableCommands(){
 function closeBattle(){
   var root=ensure();
   root.removeAttribute("data-open");root.removeAttribute("data-complete");root.removeAttribute("data-forced-switch");
-  state=null;menuMode="ACTION";
+  state=null;menuMode="ACTION";clearPendingItem();
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION");
 }
 function onState(args){
   var packet=args&&args[0];
   if(!packet||typeof packet!=="object")return;
+  clearPendingItem();
   menuMode=packet.forced_switch?"PARTY":"ACTION";
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("COMBAT");
   render(packet);
@@ -189,7 +250,12 @@ function onError(args){
 }
 function onKey(event){
   if(!state||!byId("pokerol-pokemon-battle")||byId("pokerol-pokemon-battle").getAttribute("data-open")!=="true")return;
-  if(event.key==="Escape"&&menuMode!=="ACTION"&&!forcedSwitch()){event.preventDefault();setMenuMode("ACTION")}
+  if(event.key==="Escape"&&menuMode!=="ACTION"&&!forcedSwitch()){
+    event.preventDefault();
+    if(menuMode==="ITEM_MOVE")setMenuMode("ITEM_TARGET");
+    else if(menuMode==="ITEM_TARGET")setMenuMode("BAG");
+    else setMenuMode("ACTION");
+  }
 }
 function init(){
   ensure();document.addEventListener("keydown",onKey);
