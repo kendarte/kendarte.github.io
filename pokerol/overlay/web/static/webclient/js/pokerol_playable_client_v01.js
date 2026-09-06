@@ -1,11 +1,14 @@
 (function(){
   'use strict';
-  var BUILD='0.4.1-pokerol-native-ui-protocol';
+  var BUILD='0.5.0-scene-template-background-loader';
   var emitterBound=false;
   var lastSnapshot=null;
   var lastActions=null;
   var lastNarratedRoomKey='';
   var currentSpeaker='NARRADOR';
+  var currentRoomVisualKey='';
+  var currentBgObjectUrl='';
+  var visualDbPromise=null;
 
   function byId(id){return document.getElementById(id)}
   function clean(value){return String(value==null?'':value).replace(/\s+/g,' ').trim()}
@@ -47,7 +50,7 @@
   function commandForTarget(name,actions){
     var wanted=clean(name).toLowerCase();
     var matches=actions.filter(function(a){return a&&clean(a.target||a.name).toLowerCase()===wanted&&clean(a.command)});
-    var priority=['TALK','INTERACT','USE','PERCEPTION'];
+    var priority=['TALK','INTERACTION','INTERACT','OBJECT_ACTION','USE','PERCEPTION'];
     for(var p=0;p<priority.length;p++){
       var found=matches.find(function(a){return clean(a.kind).toUpperCase()===priority[p]});
       if(found)return clean(found.command);
@@ -65,12 +68,109 @@
     if(/pallet|viridian|pueblo|ciudad|plaza|calle|puerta/.test(hay))return 'town';
     return 'generic';
   }
+
+  function visualKey(packet){
+    var roomId=clean(packet&&packet.room_id);
+    if(roomId)return roomId;
+    var name=clean(packet&&(packet.room_name||packet.location));
+    return name?'ROOMNAME:'+name.toLowerCase():'UNASSIGNED';
+  }
+  function setBgStatus(text){
+    var node=byId('pk-bg-status');if(!node)return;
+    var value=clean(text);node.textContent=value;
+    if(value)node.classList.add('pkVisible');else node.classList.remove('pkVisible');
+  }
+  function releaseObjectUrl(){
+    if(currentBgObjectUrl){try{URL.revokeObjectURL(currentBgObjectUrl)}catch(e){}currentBgObjectUrl=''}
+  }
+  function openVisualDb(){
+    if(visualDbPromise)return visualDbPromise;
+    visualDbPromise=new Promise(function(resolve,reject){
+      if(!window.indexedDB){reject(new Error('IndexedDB no disponible'));return}
+      var req=indexedDB.open('pokerol_visuals_v1',1);
+      req.onupgradeneeded=function(ev){
+        var db=ev.target.result;
+        if(!db.objectStoreNames.contains('room_backgrounds'))db.createObjectStore('room_backgrounds',{keyPath:'roomKey'});
+      };
+      req.onsuccess=function(){resolve(req.result)};
+      req.onerror=function(){reject(req.error||new Error('No se pudo abrir IndexedDB'))};
+    });
+    return visualDbPromise;
+  }
+  function getSavedBackground(roomKey){
+    return openVisualDb().then(function(db){return new Promise(function(resolve,reject){
+      var tx=db.transaction('room_backgrounds','readonly');
+      var req=tx.objectStore('room_backgrounds').get(roomKey);
+      req.onsuccess=function(){resolve(req.result||null)};req.onerror=function(){reject(req.error)};
+    })});
+  }
+  function saveBackground(roomKey,file){
+    return openVisualDb().then(function(db){return new Promise(function(resolve,reject){
+      var tx=db.transaction('room_backgrounds','readwrite');
+      tx.oncomplete=function(){resolve(true)};tx.onerror=function(){reject(tx.error)};
+      tx.objectStore('room_backgrounds').put({roomKey:roomKey,blob:file,name:file.name||'background',type:file.type||'',updatedAt:Date.now()});
+    })});
+  }
+  function deleteBackground(roomKey){
+    return openVisualDb().then(function(db){return new Promise(function(resolve,reject){
+      var tx=db.transaction('room_backgrounds','readwrite');
+      tx.oncomplete=function(){resolve(true)};tx.onerror=function(){reject(tx.error)};
+      tx.objectStore('room_backgrounds').delete(roomKey);
+    })});
+  }
+  function serverBackgroundUrl(packet){return clean(packet.scene_image||packet.background_image||packet.room_image||(packet.visual&&packet.visual.background)||'')}
+  function applyServerBackground(packet){
+    var bg=byId('pk-stage-bg');if(!bg)return;
+    releaseObjectUrl();
+    var url=serverBackgroundUrl(packet);
+    if(url)bg.style.backgroundImage='url("'+url.replace(/"/g,'%22')+'")';else bg.style.backgroundImage='';
+    setBgStatus(url?'WORLD BACKGROUND':'');
+  }
+  function applySavedBackground(record,roomKey){
+    if(!record||!record.blob||roomKey!==currentRoomVisualKey)return false;
+    var bg=byId('pk-stage-bg');if(!bg)return false;
+    releaseObjectUrl();currentBgObjectUrl=URL.createObjectURL(record.blob);
+    bg.style.backgroundImage='url("'+currentBgObjectUrl+'")';
+    setBgStatus('LOCAL · '+clean(record.name||'BACKGROUND'));
+    return true;
+  }
   function renderBackground(packet){
     var stage=byId('pk-stage'),bg=byId('pk-stage-bg');if(!stage||!bg)return;
     ['town','route','forest','water','interior','generic'].forEach(function(v){stage.classList.remove('pkBiome-'+v)});
     stage.classList.add('pkBiome-'+classifyBiome(packet));
-    var url=clean(packet.scene_image||packet.background_image||packet.room_image||(packet.visual&&packet.visual.background)||'');
-    if(url)bg.style.backgroundImage='url("'+url.replace(/"/g,'%22')+'")';else bg.style.backgroundImage='';
+    currentRoomVisualKey=visualKey(packet);
+    applyServerBackground(packet);
+    var key=currentRoomVisualKey;
+    getSavedBackground(key).then(function(record){
+      if(key!==currentRoomVisualKey)return;
+      if(record)applySavedBackground(record,key);
+    }).catch(function(){/* visual fallback stays active */});
+  }
+  function bindBackgroundLoader(){
+    var load=byId('pk-load-background'),reset=byId('pk-reset-background'),file=byId('pk-background-file');
+    if(load&&file)load.addEventListener('click',function(){if(!lastSnapshot){setDialogue('Primero entra a un lugar del mundo.','SISTEMA',false);return}file.value='';file.click()});
+    if(file)file.addEventListener('change',function(){
+      var selected=file.files&&file.files[0];if(!selected)return;
+      if(!/^image\//i.test(selected.type||'')){setDialogue('Ese archivo no es una imagen.','SISTEMA',false);return}
+      var key=visualKey(lastSnapshot||{});currentRoomVisualKey=key;
+      setBgStatus('GUARDANDO…');
+      saveBackground(key,selected).then(function(){
+        return getSavedBackground(key);
+      }).then(function(record){
+        if(key===currentRoomVisualKey)applySavedBackground(record,key);
+        setDialogue('Background guardado para este Room en este navegador.','SISTEMA',false);
+        appendSystem('Background local asignado a '+key+': '+selected.name);
+      }).catch(function(err){
+        setBgStatus('NO GUARDADO');setDialogue('No se pudo guardar el background en el navegador.','SISTEMA',false);if(window.console)console.error(err);
+      });
+    });
+    if(reset)reset.addEventListener('click',function(){
+      if(!lastSnapshot)return;
+      var key=visualKey(lastSnapshot);deleteBackground(key).then(function(){
+        if(key===currentRoomVisualKey)applyServerBackground(lastSnapshot);
+        setDialogue('Background local eliminado. Vuelve el fondo del World Engine.','SISTEMA',false);
+      }).catch(function(){setDialogue('No se pudo borrar el background local.','SISTEMA',false)});
+    });
   }
 
   function renderExits(packet){
@@ -96,7 +196,7 @@
     var count=Math.min(rows.length,5);rows.slice(0,5).forEach(function(entry,index){
       var row=entry.row,name=rowName(row);if(!name)return;
       var actor=document.createElement('button');actor.type='button';actor.className='pkActor';actor.dataset.kind=entry.kind;
-      var x=count<=1?50:18+(64*(index/(count-1)));actor.style.left=x+'%';
+      var x=count<=1?55:25+(60*(index/(count-1)));actor.style.left=x+'%';
       var img=imageOf(row);
       if(img){var image=document.createElement('img');image.className='pkActorSprite';image.src=img;image.alt=name;actor.appendChild(image)}
       else{var placeholder=document.createElement('span');placeholder.className='pkActorPlaceholder';actor.appendChild(placeholder)}
@@ -155,7 +255,7 @@
     Evennia.emitter.on('text',onText);Evennia.emitter.on('prompt',onPrompt);Evennia.emitter.on('connection_open',onConnectionOpen);Evennia.emitter.on('connection_close',onConnectionClose);Evennia.emitter.on('default',onDefault);emitterBound=true;return true;
   }
   function init(){
-    document.title='POKEROL';bind('pk-look','look');bind('pk-party','equipo');bind('pk-bag','bolsa');bind('pk-test','solo-prueba');bindManualEcho();bindHistory();
+    document.title='POKEROL';bind('pk-look','look');bind('pk-party','equipo');bind('pk-bag','bolsa');bind('pk-test','solo-prueba');bindManualEcho();bindHistory();bindBackgroundLoader();
     var field=byId('inputfield');if(field){field.setAttribute('placeholder','¿Qué haces?');window.setTimeout(function(){field.focus()},250)}
     appendSystem('POKEROL listo.');setDialogue('Inicia sesión o crea tu entrenador para comenzar.','SISTEMA',false);
     if(lastSnapshot)renderSnapshot(lastSnapshot);else if(lastActions)renderActions(lastActions);
