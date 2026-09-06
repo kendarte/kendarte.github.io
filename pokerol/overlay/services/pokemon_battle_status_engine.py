@@ -7,8 +7,13 @@ owns turn sequencing and HP authority.
 
 from copy import deepcopy
 
+from services.pokemon_battle_position_engine import (
+    position_accuracy_multiplier,
+    position_speed_multiplier,
+)
 
-STATUS_BUILD = "0.1.0-status-stage-runtime"
+
+STATUS_BUILD = "0.2.0-status-position-runtime"
 MAJOR_STATUSES = {"OK", "BURN", "POISON", "PARALYSIS", "SLEEP", "FREEZE"}
 STAGE_KEYS = ("ATK", "DEF", "SPA", "SPD", "SPE", "ACC", "EVA")
 
@@ -85,7 +90,8 @@ def stage_multiplier(stage):
 def accuracy_multiplier(attacker, defender):
     a = _dict(_dict(attacker).get("battle_stages")).get("ACC", 0)
     e = _dict(_dict(defender).get("battle_stages")).get("EVA", 0)
-    return stage_multiplier(_int(a, 0) - _int(e, 0))
+    stage = stage_multiplier(_int(a, 0) - _int(e, 0))
+    return max(0.20, min(3.0, stage * position_accuracy_multiplier(attacker, defender)))
 
 
 def effective_stat(pokemon, stat):
@@ -98,6 +104,8 @@ def effective_stat(pokemon, stat):
         value *= 0.75
     if key == "SPE" and status == "PARALYSIS":
         value *= 0.50
+    if key == "SPE":
+        value *= position_speed_multiplier(pokemon)
     return max(1, int(value))
 
 
