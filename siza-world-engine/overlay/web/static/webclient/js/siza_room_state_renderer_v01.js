@@ -3,12 +3,12 @@
 
     if (window.SizaRoomStateRendererV01) return;
 
-    var BUILD = "20260905-room-state-renderer-v3-action-cap";
-    var MAX_VISIBLE_PER_GROUP = 5;
+    var BUILD = "20260905-room-state-renderer-v4-ooc-safe";
     var requested = false;
     var lastRequestAt = 0;
     var lastSignature = "";
     var hasRoomState = false;
+    var outOfCharacter = false;
 
     function byId(id) {
         return document.getElementById(id);
@@ -61,79 +61,30 @@
         if (wrap) wrap.hidden = !text;
     }
 
-    function actionKind(action) {
-        return clean(action && action.kind).toUpperCase();
-    }
-
-    function actionCommand(action) {
-        return clean(action && action.command).toLowerCase();
-    }
-
-    function isMovementAction(action) {
-        var kind = actionKind(action);
-        var command = actionCommand(action);
-        return ["MOVE", "MOVEMENT", "EXIT", "TRAVEL", "ROUTE"].indexOf(kind) !== -1 ||
-            /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir|regresar)\b/.test(command);
-    }
-
-    function interactionPriority(action) {
-        var kind = actionKind(action);
-        if (kind === "ROLL") return 0;
-        if (kind === "INTERACTION" || kind === "TALK") return 10;
-        if (kind === "OBJECT_ACTION" && !!(action && (action.requires_roll || action.check))) return 20;
-        if (kind === "OBJECT_ACTION") return 30;
-        if (kind === "PERCEPTION" || kind === "OBJECT") return 40;
-        return 90;
-    }
-
-    function movementPriority(action) {
-        var command = actionCommand(action);
-        if (/^(ir|entrar|seguir|cruzar|tomar)\b/.test(command)) return 10;
-        if (/^(volver|regresar|salir)\b/.test(command)) return 20;
-        return 30;
-    }
-
-    function sortActions(actions, priorityFn) {
-        return actions.slice().sort(function (a, b) {
-            var pa = priorityFn(a);
-            var pb = priorityFn(b);
-            if (pa !== pb) return pa - pb;
-            return clean(a && a.label).localeCompare(clean(b && b.label));
-        });
-    }
-
-    function cappedActions(actions) {
-        var all = Array.isArray(actions) ? actions.slice() : [];
-        var movement = [];
-        var interactions = [];
-        all.forEach(function (action) {
-            if (isMovementAction(action)) movement.push(action);
-            else interactions.push(action);
-        });
-        return sortActions(interactions, interactionPriority).slice(0, MAX_VISIBLE_PER_GROUP)
-            .concat(sortActions(movement, movementPriority).slice(0, MAX_VISIBLE_PER_GROUP));
-    }
-
     function actionPacket(packet) {
         var actions = packet.available_actions || packet.actions || [];
         if (!Array.isArray(actions)) actions = [];
-        var visible = cappedActions(actions);
         return {
             location: packet.room_name || packet.location || "",
             room_id: packet.room_id || null,
-            actions: visible,
-            full_action_count: actions.length,
-            hidden_action_count: Math.max(0, actions.length - visible.length),
-            max_visible_per_group: MAX_VISIBLE_PER_GROUP,
+            actions: actions,
             pending_roll: !!packet.pending_roll,
             build: packet.build || BUILD
         };
+    }
+
+    function applyButtonCap() {
+        if (window.SizaActionButtonCapV01 && typeof window.SizaActionButtonCapV01.apply === "function") {
+            window.SizaActionButtonCapV01.apply();
+        }
     }
 
     function renderActions(packet) {
         if (window.SizaBookInteractionV04 && typeof window.SizaBookInteractionV04.renderContextActions === "function") {
             window.SizaBookInteractionV04.renderContextActions(actionPacket(packet));
         }
+        window.setTimeout(applyButtonCap, 20);
+        window.setTimeout(applyButtonCap, 120);
     }
 
     function buildObservation(packet) {
@@ -155,6 +106,7 @@
         packet = packet || {};
         if (packet.status && packet.status !== "ROOM_SNAPSHOT") return;
         hasRoomState = true;
+        outOfCharacter = false;
 
         var title = clean(packet.room_name || packet.location || "Ubicación actual");
         var observation = buildObservation(packet);
@@ -177,6 +129,7 @@
     }
 
     function requestRoomState(force) {
+        if (outOfCharacter) return;
         var now = Date.now();
         if (!force && now - lastRequestAt < 900) return;
         lastRequestAt = now;
@@ -184,8 +137,8 @@
         Evennia.msg("text", ["siza-room-state"], {});
     }
 
-    function requestInitialRoomState() {
-        if (requested) return;
+    function requestRoomStateBurst() {
+        if (requested || outOfCharacter) return;
         requested = true;
         [250, 900, 1800].forEach(function (delay) {
             window.setTimeout(function () { requestRoomState(true); }, delay);
@@ -193,19 +146,29 @@
         window.setTimeout(function () { requested = false; }, 2400);
     }
 
+    function textLooksOoc(value) {
+        return /out-of-character|available character\(s\)|connected session\(s\)|charcreate\s+<name>|ic\s+<name>/i.test(String(value || ""));
+    }
+
     function shouldRefreshAfterText(value) {
         var text = clean(value).toLowerCase();
-        if (!hasRoomState) return /you become|entras en|you arrive|you see|exits:|salidas:/i.test(text);
         if (!text) return false;
+        if (textLooksOoc(text)) return false;
         if (/command ['"]?siza-room-state/i.test(text)) return false;
         if (/the current location will be described here/i.test(text)) return false;
-        return true;
+        if (!hasRoomState) return /you become|entras en|you arrive|you see|exits:|salidas:/i.test(text);
+        return /entras en|sales hacia|examinas|revisas|hablas|tiras|ves:|salidas:/i.test(text);
     }
 
     function onText(args) {
         var value = args && args.length ? String(args[0] || "") : "";
+        if (textLooksOoc(value)) {
+            outOfCharacter = true;
+            return;
+        }
         if (/you become/i.test(value)) {
-            requestInitialRoomState();
+            outOfCharacter = false;
+            requestRoomStateBurst();
             return;
         }
         if (shouldRefreshAfterText(value)) {
@@ -217,9 +180,7 @@
         if (!window.Evennia || !Evennia.emitter) return false;
         Evennia.emitter.on("siza_room_snapshot", renderRoomState);
         Evennia.emitter.on("siza_room_state", renderRoomState);
-        Evennia.emitter.on("connection_open", requestInitialRoomState);
         Evennia.emitter.on("text", onText);
-        requestInitialRoomState();
         return true;
     }
 
@@ -235,7 +196,6 @@
 
     window.SizaRoomStateRendererV01 = Object.freeze({
         build: BUILD,
-        maxVisiblePerGroup: MAX_VISIBLE_PER_GROUP,
         renderRoomState: renderRoomState,
         requestRoomState: requestRoomState
     });
