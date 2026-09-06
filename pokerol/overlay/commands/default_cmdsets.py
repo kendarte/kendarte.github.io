@@ -31,6 +31,19 @@ from commands.pokemon_battle_commands import (
     CmdPokerolPositionOptions,
 )
 from commands.pokemon_machine_commands import CmdPokerolEquipKnownMove, CmdPokerolMachines, CmdPokerolTeachMachine
+from commands.pokemon_multiplayer_commands import (
+    CmdPokerolMultiAccept,
+    CmdPokerolMultiAddEnemy,
+    CmdPokerolMultiCreate,
+    CmdPokerolMultiInvite,
+    CmdPokerolMultiLeave,
+    CmdPokerolMultiMove,
+    CmdPokerolMultiOrder,
+    CmdPokerolMultiReady,
+    CmdPokerolMultiStart,
+    CmdPokerolMultiState,
+    CmdPokerolMultiSwitch,
+)
 from commands.pokemon_reaction_commands import CmdPokerolBattleReaction, CmdPokerolReactionOptions
 from commands.pokemon_registry_commands import (
     CmdPokerolGivePokemon,
@@ -83,6 +96,9 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolParty(), CmdPokerolActivePokemon(), CmdPokerolBag(), CmdPokerolGiveItem(), CmdPokerolTrainerTest(),
             CmdPokerolMachines(), CmdPokerolTeachMachine(), CmdPokerolEquipKnownMove(),
             CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(),
+            CmdPokerolMultiCreate(), CmdPokerolMultiInvite(), CmdPokerolMultiAccept(), CmdPokerolMultiReady(),
+            CmdPokerolMultiStart(), CmdPokerolMultiLeave(), CmdPokerolMultiState(), CmdPokerolMultiOrder(),
+            CmdPokerolMultiMove(), CmdPokerolMultiSwitch(), CmdPokerolMultiAddEnemy(),
             CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolPositionOptions(),
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
