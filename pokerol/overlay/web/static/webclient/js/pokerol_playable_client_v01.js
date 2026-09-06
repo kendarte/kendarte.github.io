@@ -1,9 +1,10 @@
 (function(){
   'use strict';
-  var BUILD='0.2.0-playable-room-runtime';
+  var BUILD='0.3.0-playable-narrative-feed';
   var emitterBound=false;
   var lastSnapshot=null;
   var lastActions=null;
+  var lastNarratedRoomKey='';
 
   function byId(id){return document.getElementById(id)}
   function clean(value){return String(value==null?'':value).replace(/\s+/g,' ').trim()}
@@ -12,11 +13,34 @@
     if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
     return packet&&typeof packet==='object'?packet:{};
   }
+  function scrollFeed(){
+    var feed=byId('messagewindow');
+    if(feed)feed.scrollTop=feed.scrollHeight;
+  }
+  function appendFeed(value,kind,allowHtml){
+    var feed=byId('messagewindow');
+    if(!feed)return;
+    var raw=String(value==null?'':value);
+    if(!raw.trim())return;
+    var row=document.createElement('div');
+    row.className='pkFeedLine pkFeed-'+(kind||'world');
+    if(allowHtml)row.innerHTML=raw;
+    else row.textContent=raw;
+    feed.appendChild(row);
+    while(feed.children.length>180)feed.removeChild(feed.firstChild);
+    scrollFeed();
+  }
+  function appendSystem(text){appendFeed(text,'system',false)}
+  function appendCommand(text){appendFeed('> '+text,'command',false)}
+
   function send(command){
     var field=byId('inputfield');
     var button=byId('inputsend');
     if(!field||!button)return false;
-    field.value=String(command||'');
+    var outgoing=String(command||'').trim();
+    if(!outgoing)return false;
+    appendCommand(outgoing);
+    field.value=outgoing;
     field.dispatchEvent(new Event('input',{bubbles:true}));
     button.click();
     window.setTimeout(function(){field.focus()},40);
@@ -74,6 +98,22 @@
     });
   }
 
+  function narrateSnapshot(packet){
+    var name=clean(packet.room_name||packet.location||'');
+    var description=clean(packet.room_description||packet.description||'');
+    var roomId=clean(packet.room_id||'');
+    var key=(roomId||name)+'|'+description;
+    if(!name||key===lastNarratedRoomKey)return;
+    lastNarratedRoomKey=key;
+    appendFeed(name.toUpperCase(),'location',false);
+    if(description)appendFeed(description,'narrative',false);
+    var exits=Array.isArray(packet.exits)?packet.exits:[];
+    if(exits.length){
+      var labels=exits.map(function(row){return clean(typeof row==='string'?row:(row&&(row.name||row.label||row.target)))}).filter(Boolean);
+      if(labels.length)appendFeed('Salidas visibles: '+labels.join(', ')+'.','system',false);
+    }
+  }
+
   function renderSnapshot(args){
     var packet=packetFrom(args);
     if(packet.status&&packet.status!=='ROOM_SNAPSHOT')return;
@@ -86,6 +126,7 @@
     var idNode=byId('pk-room-id');if(idNode)idNode.textContent=roomId||'';
     renderMeta(packet);
     renderActions(packet);
+    narrateSnapshot(packet);
   }
 
   function renderContextActions(args){
@@ -99,12 +140,39 @@
     try{Evennia.msg('text',['siza-room-state'],{});return true}catch(e){return false}
   }
 
-  function onText(args){
+  function onText(args,kwargs){
     var value=args&&args.length?String(args[0]||''):'';
+    if(value)appendFeed(value,(kwargs&&kwargs.cls==='err')?'error':'world',true);
     if(/you become/i.test(value)){
       window.setTimeout(requestRoomState,120);
       window.setTimeout(requestRoomState,650);
     }
+    return true;
+  }
+  function onPrompt(args){
+    var value=args&&args.length?String(args[0]||''):'';
+    var node=byId('prompt');
+    if(node)node.innerHTML=value;
+    return true;
+  }
+  function onConnectionOpen(){appendSystem('Conectado a POKEROL.');window.setTimeout(requestRoomState,300)}
+  function onConnectionClose(){appendFeed('La conexión con POKEROL se cerró.','error',false)}
+  function onDefault(cmdname,args){
+    if(/^siza_/i.test(String(cmdname||'')))return true;
+    appendFeed('Evento no manejado: '+String(cmdname||''),'error',false);
+    return true;
+  }
+
+  function bindManualEcho(){
+    var field=byId('inputfield');
+    if(!field||field.dataset.pkEchoBound==='1')return;
+    field.dataset.pkEchoBound='1';
+    field.addEventListener('keydown',function(ev){
+      if(ev.key==='Enter'&&!ev.shiftKey){
+        var line=String(field.value||'').trim();
+        if(line)appendCommand(line);
+      }
+    });
   }
 
   function bindEmitter(){
@@ -114,6 +182,10 @@
     Evennia.emitter.on('siza_room_state',renderSnapshot);
     Evennia.emitter.on('siza_context_actions',renderContextActions);
     Evennia.emitter.on('text',onText);
+    Evennia.emitter.on('prompt',onPrompt);
+    Evennia.emitter.on('connection_open',onConnectionOpen);
+    Evennia.emitter.on('connection_close',onConnectionClose);
+    Evennia.emitter.on('default',onDefault);
     emitterBound=true;
     return true;
   }
@@ -124,11 +196,13 @@
     bind('pk-party','equipo');
     bind('pk-bag','bolsa');
     bind('pk-test','solo-prueba');
+    bindManualEcho();
     var field=byId('inputfield');
     if(field){
       field.setAttribute('placeholder','Escribe una acción o comando…');
       window.setTimeout(function(){field.focus()},250);
     }
+    appendSystem('POKEROL listo. Inicia sesión o crea tu entrenador para comenzar.');
     if(lastSnapshot)renderSnapshot(lastSnapshot);
     else if(lastActions)renderActions(lastActions);
     var tries=0;
@@ -143,6 +217,6 @@
   }
 
   bindEmitter();
-  window.PokerolPlayableClientV01=Object.freeze({BUILD:BUILD,send:send,requestRoomState:requestRoomState,renderSnapshot:renderSnapshot});
+  window.PokerolPlayableClientV01=Object.freeze({BUILD:BUILD,send:send,requestRoomState:requestRoomState,renderSnapshot:renderSnapshot,appendFeed:appendFeed});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
