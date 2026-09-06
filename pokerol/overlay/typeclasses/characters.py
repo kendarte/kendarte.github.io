@@ -3,6 +3,9 @@ from evennia import DefaultCharacter
 from .objects import ObjectParent
 
 
+POKEROL_START_ROOM_ID = "KANTO-PAL-001"
+
+
 class Character(DefaultCharacter, ObjectParent):
     """Player/NPC-compatible Siza character base."""
 
@@ -26,6 +29,42 @@ class Character(DefaultCharacter, ObjectParent):
         self.db.discovered_facts = []
         self.db.current_action = None
         self.db.destination_id = None
+
+    def _ensure_pokerol_start_location(self):
+        """Move real player characters out of Evennia Limbo and into Pallet Town.
+
+        The Kanto seed is materialized during initial setup, but Evennia creates
+        later accounts/characters in Limbo by default. Only repair the default
+        Limbo spawn; never override a valid gameplay location.
+        """
+        location = getattr(self, "location", None)
+        if location is None:
+            return False
+
+        current_room_id = str(getattr(getattr(location, "db", None), "room_id", "") or "")
+        if current_room_id:
+            return False
+
+        if str(getattr(location, "key", "") or "").strip().lower() != "limbo":
+            return False
+
+        try:
+            from evennia.objects.models import ObjectDB
+
+            start_room = None
+            for obj in ObjectDB.objects.all():
+                if str(getattr(obj.db, "room_id", "") or "") == POKEROL_START_ROOM_ID:
+                    start_room = obj
+                    break
+            if start_room is None:
+                return False
+
+            self.location = start_room
+            self.home = start_room
+            self.save()
+            return True
+        except Exception:
+            return False
 
     def _emit_siza_room_snapshot(self):
         """Send the current room state to the Siza book UI without depending on text look parsing."""
@@ -58,11 +97,12 @@ class Character(DefaultCharacter, ObjectParent):
             return super().at_pre_move(destination)
 
     def at_post_puppet(self, **kwargs):
-        """Refresh the book UI immediately after entering a character."""
+        """Place new players in Kanto and refresh the client immediately."""
         try:
             super().at_post_puppet(**kwargs)
         except TypeError:
             super().at_post_puppet()
+        self._ensure_pokerol_start_location()
         self._emit_siza_room_snapshot()
 
     def at_post_move(self, source_location, move_type="move", **kwargs):
