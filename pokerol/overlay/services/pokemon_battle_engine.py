@@ -14,6 +14,8 @@ from copy import deepcopy
 from time import time
 from uuid import uuid4
 
+from services.pokemon_battle_position_engine import position_move_gate
+from services.pokemon_battle_reaction_engine import set_incoming_reaction_context
 from services.pokemon_battle_status_engine import (
     accuracy_multiplier,
     apply_move_effects,
@@ -24,7 +26,7 @@ from services.pokemon_battle_status_engine import (
 )
 
 
-BATTLE_BUILD = "0.3.0-anime-world-orders"
+BATTLE_BUILD = "0.4.0-position-reaction-core"
 PHASES = (
     "INTRO", "COMMAND", "ORDER", "ACTION", "REACTION", "RESOLUTION",
     "END_CHECK", "SWITCH", "COMPLETE",
@@ -380,6 +382,19 @@ def _prepare_move_action(battle, attacker, requested_id, rng):
     return move, synthetic
 
 
+def _position_block_text(attacker, defender, gate):
+    status = _text(_dict(gate).get("status")) or "TARGET_OUT_OF_REACH"
+    if status == "TARGET_OUT_OF_REACH_AIR":
+        return f"{defender.get('name') or 'El objetivo'} está fuera del alcance: se encuentra en el aire."
+    if status == "TARGET_OUT_OF_REACH_ELEVATED":
+        return f"{defender.get('name') or 'El objetivo'} está fuera del alcance desde esa altura."
+    if status == "ATTACKER_NOT_GROUNDED":
+        return f"{attacker.get('name') or 'El Pokémon'} necesita apoyo en el suelo para ejecutar ese movimiento."
+    if status == "WATER_POSITION_REQUIRED":
+        return "Ese movimiento necesita una posición vinculada al agua."
+    return "La posición actual impide que el movimiento alcance el objetivo."
+
+
 def _execute_move(battle, side, command, rng):
     attacker = battle["player"] if side == "PLAYER" else battle["enemy"]
     defender = battle["enemy"] if side == "PLAYER" else battle["player"]
@@ -395,6 +410,21 @@ def _execute_move(battle, side, command, rng):
         return
     battle["phase"] = "ACTION"
     _log(battle, "MOVE", f"{attacker['name']} usa {move['name']}.", actor=attacker["entity_id"], move_id=move["move_id"], pp_current=move.get("pp_current"))
+
+    if _text(move.get("delivery")).upper() != "SELF":
+        position_gate = position_move_gate(attacker, defender, move)
+        if not position_gate.get("allowed"):
+            _log(
+                battle,
+                "POSITION_BLOCKED_MOVE",
+                _position_block_text(attacker, defender, position_gate),
+                actor=attacker.get("entity_id"),
+                target=defender.get("entity_id"),
+                move_id=move.get("move_id"),
+                position_status=position_gate.get("status"),
+            )
+            return
+        set_incoming_reaction_context(defender, move)
 
     hit_accuracy = max(1, min(100, int(_int(move.get("accuracy"), 100) * accuracy_multiplier(attacker, defender))))
     if rng.randint(1, 100) > hit_accuracy:
@@ -432,7 +462,6 @@ def _execute_move(battle, side, command, rng):
 
 
 def _execute_world_move_order(battle, side, command, rng):
-    """Consume/sequence a move aimed at the authored environment, not the opponent."""
     attacker = battle["player"] if side == "PLAYER" else battle["enemy"]
     if _int(attacker.get("hp_current"), 0) <= 0:
         return
