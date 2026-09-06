@@ -18,7 +18,7 @@ from services.pokemon_battle_engine import (
 from services.pokemon_battle_status_engine import end_turn_effects
 
 
-MULTIBATTLE_BUILD = "0.1.0-lockin-move-round"
+MULTIBATTLE_BUILD = "0.1.1-shared-mutation-lockin"
 SUPPORTED_ORDER_TYPES = {"MOVE"}
 
 
@@ -27,6 +27,10 @@ def _dict(value):
         return dict(value or {})
     except Exception:
         return {}
+
+
+def _row_ref(value):
+    return value if isinstance(value, dict) else _dict(value)
 
 
 def _list(value):
@@ -53,10 +57,10 @@ def _clone(value):
 
 def combatant_by_id(combatants, combatant_id):
     wanted = _text(combatant_id)
-    for row in _list(combatants):
-        item = _dict(row)
-        if _text(item.get("combatant_id")) == wanted:
-            return item
+    for raw in combatants if isinstance(combatants, list) else _list(combatants):
+        row = _row_ref(raw)
+        if _text(row.get("combatant_id")) == wanted:
+            return row
     return None
 
 
@@ -64,8 +68,8 @@ def able_combatants(combatants, *, team="", exclude_id=""):
     wanted_team = _text(team).upper()
     excluded = _text(exclude_id)
     output = []
-    for raw in _list(combatants):
-        row = _dict(raw)
+    for raw in combatants if isinstance(combatants, list) else _list(combatants):
+        row = _row_ref(raw)
         pokemon = _dict(row.get("pokemon"))
         if excluded and _text(row.get("combatant_id")) == excluded:
             continue
@@ -84,10 +88,7 @@ def opposing_targets(combatants, attacker_id):
     if not attacker:
         return []
     team = _text(attacker.get("team")).upper()
-    return [
-        row for row in able_combatants(combatants)
-        if _text(row.get("team")).upper() != team
-    ]
+    return [row for row in able_combatants(combatants) if _text(row.get("team")).upper() != team]
 
 
 def human_order_requirements(session_state):
@@ -125,7 +126,6 @@ def validate_order(session_state, participant_id, order):
     ), None)
     if not actor_row:
         return {"accepted": False, "status": "NO_CONTROLLABLE_COMBATANT", "build": MULTIBATTLE_BUILD}
-
     command = _dict(order)
     kind = _text(command.get("type")).upper()
     if kind not in SUPPORTED_ORDER_TYPES:
@@ -136,7 +136,6 @@ def validate_order(session_state, participant_id, order):
         return {"accepted": False, "status": "MOVE_NOT_KNOWN", "build": MULTIBATTLE_BUILD}
     if _int(move.get("pp_current"), move.get("pp", 0)) <= 0:
         return {"accepted": False, "status": "NO_PP", "move_id": move.get("move_id"), "build": MULTIBATTLE_BUILD}
-
     targets = opposing_targets(combatants, actor_row.get("combatant_id"))
     if not targets:
         return {"accepted": False, "status": "NO_OPPOSING_TARGET", "build": MULTIBATTLE_BUILD}
@@ -168,10 +167,7 @@ def validate_order(session_state, participant_id, order):
 
 def _choose_ai_order(combatants, actor_row, rng):
     pokemon = _dict(actor_row.get("pokemon"))
-    moves = [
-        _dict(move) for move in _list(pokemon.get("moves"))
-        if _int(_dict(move).get("pp_current"), _dict(move).get("pp", 0)) > 0
-    ]
+    moves = [_dict(move) for move in _list(pokemon.get("moves")) if _int(_dict(move).get("pp_current"), _dict(move).get("pp", 0)) > 0]
     if not moves:
         return None
     targets = opposing_targets(combatants, actor_row.get("combatant_id"))
@@ -198,10 +194,7 @@ def _order_rows(combatants, human_orders, rng):
         if _int(pokemon.get("hp_current"), 0) <= 0 or bool(actor_row.get("needs_switch")):
             continue
         controller = _text(actor_row.get("controller_kind")).upper()
-        if controller == "HUMAN":
-            action = _dict(_dict(human_orders).get(_text(actor_row.get("controller_participant_id"))))
-        else:
-            action = _choose_ai_order(combatants, actor_row, rng) or {}
+        action = _dict(_dict(human_orders).get(_text(actor_row.get("controller_participant_id")))) if controller == "HUMAN" else (_choose_ai_order(combatants, actor_row, rng) or {})
         if not action:
             continue
         rows.append({
@@ -242,7 +235,6 @@ def _resolve_move_row(combatants, action_row, log_rows, turn, rng):
     if _int(attacker.get("hp_current"), 0) <= 0:
         _session_log(log_rows, turn, "ACTION", "SKIPPED_FAINTED", f"{attacker.get('name') or 'Pokémon'} ya está fuera de combate.", actor_combatant_id=actor_row.get("combatant_id"))
         return
-
     action = _dict(action_row.get("action"))
     targets = opposing_targets(combatants, actor_row.get("combatant_id"))
     target_row = combatant_by_id(combatants, action.get("target_entity_id"))
@@ -254,7 +246,6 @@ def _resolve_move_row(combatants, action_row, log_rows, turn, rng):
         else:
             _session_log(log_rows, turn, "ACTION", "TARGET_UNAVAILABLE", f"El objetivo de {attacker.get('name')} ya no está disponible.", actor_combatant_id=actor_row.get("combatant_id"))
             return
-
     defender = _dict(target_row.get("pokemon"))
     duel = {
         "battle_id": "MULTI-DUEL",
@@ -274,7 +265,7 @@ def _resolve_move_row(combatants, action_row, log_rows, turn, rng):
 
 def _apply_multi_round_end(combatants, log_rows, turn):
     for raw in combatants:
-        row = _dict(raw)
+        row = _row_ref(raw)
         pokemon = _dict(row.get("pokemon"))
         if _int(pokemon.get("hp_current"), 0) <= 0:
             continue
@@ -298,8 +289,7 @@ def winning_team(combatants):
     alive_teams = {
         _text(_dict(row).get("team")).upper()
         for row in _list(combatants)
-        if bool(_dict(row).get("active", True))
-        and _int(_dict(_dict(row).get("pokemon")).get("hp_current"), 0) > 0
+        if bool(_dict(row).get("active", True)) and _int(_dict(_dict(row).get("pokemon")).get("hp_current"), 0) > 0
     }
     return next(iter(alive_teams)) if len(alive_teams) == 1 else ""
 
@@ -317,7 +307,6 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
     missing = [pid for pid in required if not _dict(orders.get(pid))]
     if missing:
         return {"accepted": False, "status": "WAITING_FOR_ORDERS", "missing_participant_ids": missing, "state": state, "build": MULTIBATTLE_BUILD}
-
     combatants = _list(state.get("combatants"))
     turn = max(1, _int(state.get("turn"), 1))
     log_rows = _list(state.get("log"))
@@ -328,15 +317,12 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
         "priority": row["priority"],
         "speed": row["speed"],
     } for row in order_rows])
-
     state["phase"] = "ACTION"
     for row in order_rows:
         if winning_team(combatants):
             break
-        action = _dict(row.get("action"))
-        if _text(action.get("type")).upper() == "MOVE":
+        if _text(_dict(row.get("action")).get("type")).upper() == "MOVE":
             _resolve_move_row(combatants, row, log_rows, turn, rng)
-
     state["phase"] = "RESOLUTION"
     _apply_multi_round_end(combatants, log_rows, turn)
     winner = winning_team(combatants)
