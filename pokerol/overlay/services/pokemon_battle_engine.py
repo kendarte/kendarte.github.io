@@ -2,8 +2,8 @@
 
 The browser is presentation/input only. This module owns battle state, command
 validation, ordering, hit checks, PP, damage, status/stages, capture/run and the
-battle log. World/terrain side-effects are exposed as requests for the World
-Engine rather than being silently mutated here.
+battle log. World/terrain side-effects are emitted as ordered requests for the
+World Engine rather than being silently mutated here.
 """
 
 from __future__ import annotations
@@ -24,17 +24,10 @@ from services.pokemon_battle_status_engine import (
 )
 
 
-BATTLE_BUILD = "0.2.0-pp-status-stages"
+BATTLE_BUILD = "0.3.0-anime-world-orders"
 PHASES = (
-    "INTRO",
-    "COMMAND",
-    "ORDER",
-    "ACTION",
-    "REACTION",
-    "RESOLUTION",
-    "END_CHECK",
-    "SWITCH",
-    "COMPLETE",
+    "INTRO", "COMMAND", "ORDER", "ACTION", "REACTION", "RESOLUTION",
+    "END_CHECK", "SWITCH", "COMPLETE",
 )
 ACTIVE_STATUS = "ACTIVE"
 COMPLETE_STATUS = "COMPLETE"
@@ -157,11 +150,13 @@ def normalize_pokemon(profile, *, side="PLAYER"):
     hp_max = max(1, _int(p.get("hp_max"), stats["HP"]))
     hp_current = max(0, min(hp_max, _int(p.get("hp_current"), hp_max)))
     moves = []
+    active_ids = []
     for raw in _list(p.get("moves") or p.get("resolved_moves")):
         move = _dict(raw)
         move_id = _text(move.get("move_id"))
         if not move_id:
             continue
+        active_ids.append(move_id)
         pp_max = max(0, _int(move.get("pp_max"), move.get("pp", 20)))
         pp_current = max(0, min(pp_max, _int(move.get("pp_current"), pp_max)))
         moves.append({
@@ -180,8 +175,15 @@ def normalize_pokemon(profile, *, side="PLAYER"):
             "world_effects": [str(v) for v in _list(move.get("world_effects")) if str(v)],
             "materials": [str(v) for v in _list(move.get("materials")) if str(v)],
             "delivery": _text(move.get("delivery")),
+            "defense_profile": _text(move.get("defense_profile")) or "NONE",
             "requirements": _dict(move.get("requirements")),
+            "world_rules": _clone(_list(move.get("world_rules"))),
         })
+    known = []
+    for move_id in _list(p.get("known_moves")) + active_ids:
+        move_id = _text(move_id)
+        if move_id and move_id not in known:
+            known.append(move_id)
     result = {
         "entity_id": _text(p.get("entity_id")) or f"PKMN:{uuid4().hex[:10].upper()}",
         "species_id": _text(p.get("species_id")),
@@ -197,6 +199,7 @@ def normalize_pokemon(profile, *, side="PLAYER"):
         "battle_stages": _clone(_dict(p.get("battle_stages"))),
         "volatile_status": _clone(_dict(p.get("volatile_status"))),
         "side": str(side or "PLAYER").upper(),
+        "known_moves": known,
         "moves": moves,
         "sprite": _sprite(p),
         "trainer": _dict(p.get("trainer")),
@@ -275,7 +278,7 @@ def _struggle_move():
         "damage_class": "PHYSICAL", "power": 50, "accuracy": 100, "priority": 0,
         "pp": 1, "pp_max": 1, "pp_current": 1, "battle_effects": [],
         "world_enabled": False, "world_effects": [], "materials": ["CREATURE"],
-        "delivery": "CONTACT", "requirements": {},
+        "delivery": "CONTACT", "defense_profile": "NONE", "requirements": {}, "world_rules": [],
     }
 
 
@@ -318,7 +321,7 @@ def _action_priority(action, pokemon):
     kind = _text(_dict(action).get("type")).upper()
     if kind in {"CAPTURE", "SWITCH", "ITEM", "RUN"}:
         return 6
-    if kind == "MOVE":
+    if kind == "MOVE" or (kind == "FREE_ORDER" and _text(_dict(action).get("move_id"))):
         move = move_by_id(pokemon, _dict(action).get("move_id")) or (_struggle_move() if _text(_dict(action).get("move_id")).upper() == "STRUGGLE" else {})
         return _int(_dict(move).get("priority"), 0)
     return 0
@@ -343,19 +346,38 @@ def _order_actions(battle, player_action, enemy_action, rng):
 
 def _queue_world_request(battle, actor, target, move, command):
     move = _dict(move)
-    if not bool(move.get("world_enabled")) or not _list(move.get("world_effects")):
+    world_target = _dict(_dict(command).get("world_target"))
+    if not world_target or not bool(move.get("world_enabled")) or not _list(move.get("world_effects")):
         return
     battle.setdefault("world_requests", []).append({
         "request_id": f"WORLD-{battle['battle_id']}-{battle['turn']}-{len(battle.get('world_requests') or []) + 1}",
-        "battle_id": battle["battle_id"], "turn": battle["turn"],
+        "battle_id": battle["battle_id"],
+        "turn": battle["turn"],
         "actor_entity_id": actor.get("entity_id"),
         "target_entity_id": target.get("entity_id") if target else "",
-        "move_id": move.get("move_id"), "delivery": move.get("delivery"),
+        "move_id": move.get("move_id"),
+        "delivery": move.get("delivery"),
         "world_effects": _clone(_list(move.get("world_effects"))),
         "materials": _clone(_list(move.get("materials"))),
-        "world_target": _clone(_dict(_dict(command).get("world_target"))),
+        "world_target": _clone(world_target),
+        "intensity": max(0.1, min(3.0, _float(_dict(command).get("intensity"), 1.0))),
         "status": "PENDING_WORLD_RESOLUTION",
     })
+
+
+def _prepare_move_action(battle, attacker, requested_id, rng):
+    synthetic = _text(requested_id).upper() == "STRUGGLE"
+    move = _struggle_move() if synthetic else move_by_id(attacker, requested_id)
+    if not move:
+        _log(battle, "INVALID_MOVE", f"{attacker['name']} no conoce ese movimiento.", actor=attacker["entity_id"])
+        return None, synthetic
+    if not synthetic:
+        current_pp = _int(move.get("pp_current"), move.get("pp", 0))
+        if current_pp <= 0:
+            _log(battle, "NO_PP", f"{move['name']} no tiene PP.", actor=attacker["entity_id"], move_id=move["move_id"])
+            return None, synthetic
+        move["pp_current"] = current_pp - 1
+    return move, synthetic
 
 
 def _execute_move(battle, side, command, rng):
@@ -363,25 +385,14 @@ def _execute_move(battle, side, command, rng):
     defender = battle["enemy"] if side == "PLAYER" else battle["player"]
     if _int(attacker.get("hp_current"), 0) <= 0:
         return
-
     can_act, condition_events = before_action(attacker, rng)
     _append_events(battle, condition_events, actor=attacker.get("entity_id"), target=attacker.get("entity_id"))
     if not can_act or _int(attacker.get("hp_current"), 0) <= 0:
         return
 
-    requested_id = _text(command.get("move_id")).upper()
-    synthetic = requested_id == "STRUGGLE"
-    move = _struggle_move() if synthetic else move_by_id(attacker, requested_id)
+    move, synthetic = _prepare_move_action(battle, attacker, command.get("move_id"), rng)
     if not move:
-        _log(battle, "INVALID_MOVE", f"{attacker['name']} no conoce ese movimiento.", actor=attacker["entity_id"])
         return
-    if not synthetic:
-        current_pp = _int(move.get("pp_current"), move.get("pp", 0))
-        if current_pp <= 0:
-            _log(battle, "NO_PP", f"{move['name']} no tiene PP.", actor=attacker["entity_id"], move_id=move["move_id"])
-            return
-        move["pp_current"] = current_pp - 1
-
     battle["phase"] = "ACTION"
     _log(battle, "MOVE", f"{attacker['name']} usa {move['name']}.", actor=attacker["entity_id"], move_id=move["move_id"], pp_current=move.get("pp_current"))
 
@@ -418,6 +429,29 @@ def _execute_move(battle, side, command, rng):
         recoil = max(1, _int(attacker.get("hp_max"), 1) // 8)
         attacker["hp_current"] = max(0, _int(attacker.get("hp_current"), 0) - recoil)
         _log(battle, "RECOIL", f"{attacker['name']} recibe {recoil} de retroceso.", actor=attacker["entity_id"], damage=recoil)
+
+
+def _execute_world_move_order(battle, side, command, rng):
+    """Consume/sequence a move aimed at the authored environment, not the opponent."""
+    attacker = battle["player"] if side == "PLAYER" else battle["enemy"]
+    if _int(attacker.get("hp_current"), 0) <= 0:
+        return
+    can_act, condition_events = before_action(attacker, rng)
+    _append_events(battle, condition_events, actor=attacker.get("entity_id"), target=attacker.get("entity_id"))
+    if not can_act or _int(attacker.get("hp_current"), 0) <= 0:
+        return
+    move, _synthetic = _prepare_move_action(battle, attacker, command.get("move_id"), rng)
+    if not move:
+        return
+    if not bool(move.get("world_enabled")) or not _list(move.get("world_effects")):
+        _log(battle, "WORLD_MOVE_REJECTED", f"{move['name']} no tiene uso ambiental autorizado.", actor=attacker["entity_id"], move_id=move["move_id"])
+        return
+    if rng.randint(1, 100) > max(1, min(100, _int(move.get("accuracy"), 100))):
+        _log(battle, "WORLD_MOVE_MISS", f"{attacker['name']} no logra aplicar {move['name']} al entorno.", actor=attacker["entity_id"], move_id=move["move_id"])
+        return
+    battle["phase"] = "ACTION"
+    _log(battle, "WORLD_MOVE_ORDER", f"{attacker['name']} usa {move['name']} sobre el entorno.", actor=attacker["entity_id"], move_id=move["move_id"], pp_current=move.get("pp_current"))
+    _queue_world_request(battle, attacker, None, move, command)
 
 
 def _capture(battle, command, rng):
@@ -466,6 +500,8 @@ def _execute_action(battle, row, rng):
         return
     if kind == "MOVE":
         _execute_move(battle, side, action, rng)
+    elif kind == "FREE_ORDER" and _text(action.get("move_id")):
+        _execute_world_move_order(battle, side, action, rng)
     elif side == "PLAYER" and kind == "CAPTURE":
         _capture(battle, action, rng)
     elif side == "PLAYER" and kind == "RUN":
@@ -511,12 +547,17 @@ def validate_player_action(battle, action):
     kind = _text(action.get("type")).upper()
     if kind not in ACTION_TYPES:
         return {"accepted": False, "status": "INVALID_ACTION_TYPE"}
-    if kind == "MOVE":
+    if kind == "MOVE" or (kind == "FREE_ORDER" and _text(action.get("move_id"))):
         move = move_by_id(battle.get("player") or {}, action.get("move_id"))
         if not move:
             return {"accepted": False, "status": "MOVE_NOT_KNOWN"}
         if _int(move.get("pp_current"), move.get("pp", 0)) <= 0:
             return {"accepted": False, "status": "NO_PP", "move_id": move.get("move_id")}
+        if kind == "FREE_ORDER":
+            if not _dict(action.get("world_target")):
+                return {"accepted": False, "status": "WORLD_TARGET_REQUIRED"}
+            if not bool(move.get("world_enabled")) or not _list(move.get("world_effects")):
+                return {"accepted": False, "status": "MOVE_NOT_WORLD_ENABLED", "move_id": move.get("move_id")}
     return {"accepted": True, "status": "ACTION_VALID", "type": kind}
 
 
