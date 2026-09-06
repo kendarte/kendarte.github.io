@@ -23,7 +23,7 @@ from services.pokemon_party_engine import (
 )
 
 
-RUNTIME_BUILD = "0.2.0-party-bag-authority"
+RUNTIME_BUILD = "0.2.1-party-bag-guarded"
 
 
 def _dict(value):
@@ -164,6 +164,9 @@ def _capture_into_collection(actor, battle):
             "resolved_moves": _clone(enemy.get("moves") or []),
             "sprite": _clone(enemy.get("sprite") or {}),
         }
+    # Spawn/template identity is not ownership identity. Every capture becomes a unique instance.
+    source.pop("instance_id", None)
+    source.pop("entity_id", None)
     source["level"] = enemy.get("level", source.get("level"))
     source["hp_current"] = enemy.get("hp_current")
     source["hp_max"] = enemy.get("hp_max")
@@ -204,8 +207,15 @@ def _switch_action(actor, battle, action):
         "party_slot": target_slot,
     })
     # FREE_ORDER consumes the player's action for this turn while allowing the enemy response.
-    result = resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
-    return result
+    return resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
+
+
+def _basic_action_gate(battle):
+    if _text(battle.get("status")).upper() != ACTIVE_STATUS:
+        return "BATTLE_NOT_ACTIVE"
+    if _text(battle.get("phase")).upper() != "COMMAND":
+        return "NOT_COMMAND_PHASE"
+    return ""
 
 
 def submit_player_battle_action(actor, action):
@@ -215,11 +225,22 @@ def submit_player_battle_action(actor, action):
     if not battle:
         return {"accepted": False, "status": "NO_BATTLE", "build": RUNTIME_BUILD}
 
+    gate = _basic_action_gate(battle)
+    if gate:
+        actor.msg(pokerol_pokemon_battle_error=(({
+            "status": gate,
+            "battle_id": battle.get("battle_id"),
+            "build": RUNTIME_BUILD,
+        },), {}))
+        return {"accepted": False, "status": gate, "build": RUNTIME_BUILD}
+
     requested = _clone(_dict(action))
     kind = _text(requested.get("type")).upper()
     capture_item_id = ""
 
     if kind == "CAPTURE":
+        if _text(battle.get("battle_kind")).upper() != "WILD" or not bool(_dict(battle.get("enemy")).get("wild")):
+            return {"accepted": False, "status": "CAPTURE_NOT_ALLOWED", "build": RUNTIME_BUILD}
         prepared = _prepare_capture(actor, requested)
         if not prepared.get("accepted"):
             actor.msg(pokerol_pokemon_battle_error=(({
