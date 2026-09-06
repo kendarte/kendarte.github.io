@@ -82,7 +82,7 @@ from commands.pokerol_commands import (
     CmdPokerolWorldCheck,
 )
 from commands.pokerol_dm_commands import CmdPokerolDMAdvance, CmdPokerolDMPlan, CmdPokerolDMSignal, CmdPokerolDMStart, CmdPokerolDMStatus
-from commands.pokerol_local_login_commands import CmdPokerolLocalLogin
+from commands.pokerol_local_login_commands import CmdPokerolAuthState, CmdPokerolLocalLogin
 from commands.pokerol_roll_commands import CmdPokerolRoll
 
 
@@ -117,7 +117,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
-            CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
+            CmdPokerolAuthState(), CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
             CmdPokerolEventEditorList(), CmdPokerolEventEditorSave(), CmdPokerolEventEditorDelete(),
             CmdPokerolTutorialOak(), CmdPokerolTutorialRival(), CmdPokerolTutorialChooseStarter(), CmdPokerolTutorialRivalChallenge(),
             CmdSizaCombatResult(), CmdSizaCombatBridgeTest(), CmdSizaCombatBridgeStatus(), CmdSizaCombatBridgeClear(),
@@ -130,6 +130,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
     key = "DefaultAccount"
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
+        self.add(CmdPokerolAuthState())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
@@ -137,6 +138,7 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
         self.add(CmdPokerolLocalLogin())
+        self.add(CmdPokerolAuthState())
 
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
