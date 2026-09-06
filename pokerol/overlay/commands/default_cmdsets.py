@@ -18,6 +18,7 @@ from commands.siza_ui_runtime_commands import CmdSizaRoomState, CmdSizaUiContext
 from commands.time_commands import CmdSizaTime, CmdSizaTimeAdvance, CmdSizaTimeRate, CmdSizaTimeSet
 from commands.trace_commands import CmdSizaSimTrace
 from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
+from commands.travel_event_commands import CmdPokerolResolveTravelEvent, CmdPokerolTravelEvent
 from commands.world_combat_bridge_commands import CmdSizaCombatBridgeClear, CmdSizaCombatBridgeStatus, CmdSizaCombatBridgeTest, CmdSizaCombatResult
 from commands.pokerol_commands import (
     CmdPokerolNPCState,
@@ -54,6 +55,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdSizaNeeds(), CmdSizaNeedSet(), CmdSizaEvents(), CmdSizaEventSet(), CmdSizaEventRefresh(),
             CmdSizaRelationships(), CmdSizaRelationshipToggle(),
             CmdSizaTime(), CmdSizaTimeSet(), CmdSizaTimeRate(), CmdSizaTimeAdvance(), CmdPokerolRoll(),
+            CmdPokerolTravelEvent(), CmdPokerolResolveTravelEvent(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
             CmdSizaRoomState(), CmdSizaUiContext(), CmdSizaUiStats(),
             CmdSizaCombatResult(), CmdSizaCombatBridgeTest(), CmdSizaCombatBridgeStatus(), CmdSizaCombatBridgeClear(),
