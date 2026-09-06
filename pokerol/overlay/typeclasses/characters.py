@@ -34,9 +34,28 @@ class Character(DefaultCharacter, ObjectParent):
 
             emit_room_snapshot(self)
         except Exception:
-            # Never break puppet/movement because the presentation bridge failed.
             return None
         return None
+
+    def at_pre_move(self, destination, move_type="move", **kwargs):
+        """Keep active multiplayer participants inside the authoritative battle Room."""
+        try:
+            from services.pokemon_multiplayer_session_engine import session_for_actor
+
+            session = session_for_actor(self)
+            if session and str(getattr(session.db, "status", "") or "").upper() == "ACTIVE":
+                room_dbref = getattr(session.db, "room_dbref", None)
+                current = getattr(self, "location", None)
+                if current is not None and getattr(current, "id", None) == room_dbref and destination is not current:
+                    self.msg("La batalla multiplayer sigue activa. No puedes abandonar el área hasta resolverla.")
+                    return False
+        except Exception:
+            # Never hard-lock movement because the multiplayer service itself failed.
+            pass
+        try:
+            return super().at_pre_move(destination, move_type=move_type, **kwargs)
+        except TypeError:
+            return super().at_pre_move(destination)
 
     def at_post_puppet(self, **kwargs):
         """Refresh the book UI immediately after entering a character."""
