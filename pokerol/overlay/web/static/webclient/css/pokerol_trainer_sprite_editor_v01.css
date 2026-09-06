@@ -1,0 +1,27 @@
+/* Trainer sprite repair + desktop loader */
+.pkGenderChoice{position:relative;grid-template-rows:minmax(126px,1fr) auto auto!important;overflow:hidden}
+.pkGenderSpriteSlot{width:100%;height:140px;display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden}
+.pkGenderSpriteSlot .pkGenderSprite{display:block!important;width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center bottom!important;image-rendering:pixelated}
+.pkGenderSpriteSlot .pkGenderSprite[hidden]{display:none!important}
+.pkGenderSpritePlaceholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border:2px dashed #71835f;background:rgba(223,230,191,.7);color:#31402d;font-family:'Silkscreen',ui-monospace,monospace;font-size:7px;line-height:1.4;text-align:center;padding:8px}
+.pkGenderSpritePlaceholder[hidden]{display:none!important}
+.pkGenderUploadBadge{display:block;width:100%;border:2px solid #172016;background:#31402d;color:#f0f4d3;padding:6px 8px;font-family:'Silkscreen',ui-monospace,monospace!important;font-size:6px!important;line-height:1!important;text-align:center;cursor:pointer;box-shadow:1px 1px 0 #172016}
+.pkGenderUploadBadge:hover,.pkGenderUploadBadge:focus{background:#172016;color:#f0f4d3;outline:none}
+.pkTrainerSpriteFile{display:none!important}
+
+/* The edit frame is the actual player frame: image always centers and fits inside it. */
+.pkStage .pkPlayerAvatar{display:flex!important;align-items:flex-end!important;justify-content:center!important}
+.pkStage .pkPlayerAvatar .pkPlayerSprite{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center bottom!important;image-rendering:pixelated!important;transform:none!important;margin:0 auto!important}
+.pkStage.pkPlayerEditing .pkPlayerAvatar{outline-offset:3px!important}
+
+.pkPlayerSpriteEditor{display:grid;grid-template-columns:1fr;gap:5px;margin:6px 0 8px}
+.pkPlayerSpritePreviewFrame{height:112px;border:2px solid var(--pk-ink);background:#dfe6bf;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;position:relative}
+.pkPlayerSpritePreviewFrame::after{content:'';position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:58px;height:8px;border-radius:50%;background:rgba(20,32,22,.18);z-index:0}
+#pk-player-sprite-preview{position:relative;z-index:1;display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;object-position:center bottom;image-rendering:pixelated;filter:drop-shadow(0 3px 1px rgba(0,0,0,.22))}
+#pk-player-sprite-load{width:100%}
+
+@media(max-width:680px){
+  .pkGenderSpriteSlot{height:124px}
+  .pkGenderUploadBadge{padding:5px 6px;font-size:5px!important}
+  .pkPlayerSpritePreviewFrame{height:96px}
+}
