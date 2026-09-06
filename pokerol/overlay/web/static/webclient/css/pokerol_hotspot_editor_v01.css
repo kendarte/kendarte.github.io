@@ -1,0 +1,41 @@
+.pkBackgroundTools{gap:4px}
+#pk-edit-hotspots{min-width:66px}
+#pk-edit-hotspots.pkActive{background:var(--pk-ink);color:var(--pk-paper)}
+
+.pkHotspotPanel{
+  position:absolute;
+  top:39px;
+  right:7px;
+  z-index:40;
+  width:230px;
+  padding:8px;
+  border:3px solid var(--pk-ink);
+  background:rgba(240,244,211,.97);
+  box-shadow:3px 3px 0 rgba(20,32,22,.55);
+  font:7px/1.2 var(--pk-font);
+}
+.pkHotspotPanel[hidden]{display:none!important}
+.pkHotspotPanelHead{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px}
+.pkHotspotPanelHead strong{font:700 8px/1 var(--pk-font)}
+.pkHotspotPanel button{border:2px solid var(--pk-ink);background:var(--pk-paper);color:var(--pk-ink);padding:5px 6px;font:700 6px/1 var(--pk-font);cursor:pointer;box-shadow:1px 1px 0 var(--pk-dark)}
+.pkHotspotPanel button:hover:not(:disabled){background:var(--pk-ink);color:var(--pk-paper)}
+.pkHotspotPanel button:disabled{opacity:.35;cursor:not-allowed}
+.pkHotspotField{display:grid;gap:3px;margin:6px 0}
+.pkHotspotField label{font:700 5px/1 var(--pk-font)}
+.pkHotspotField input{width:100%;height:28px;border:2px solid var(--pk-ink);background:#fff;color:var(--pk-ink);padding:4px 6px;font:11px/1 var(--pk-copy);outline:none}
+.pkHotspotXY{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pkHotspotActions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.pkHotspotActions .pkWide{grid-column:1/-1}
+.pkHotspotHint{margin-top:6px;font:9px/1.25 var(--pk-copy);color:var(--pk-dark)}
+
+.pkStage.pkHotspotEditing .pkActor{outline:2px dashed rgba(255,255,255,.95);outline-offset:4px;cursor:move!important;touch-action:none}
+.pkStage.pkHotspotEditing .pkActorLabel{background:#fff6a8}
+.pkActor.pkSelectedHotspot{outline:3px solid #ffec54!important;outline-offset:5px!important;filter:drop-shadow(0 0 4px rgba(0,0,0,.55))}
+.pkCustomHotspot .pkActorPlaceholder{display:block!important;border-radius:0;width:28px;height:28px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:#ffe76e}
+.pkActor.pkHotspotHidden{display:none!important}
+.pkStage.pkHotspotEditing .pkActor.pkHotspotHidden{display:flex!important;opacity:.28}
+
+@media(max-width:760px){
+  .pkHotspotPanel{top:32px;right:4px;width:min(220px,74vw);padding:6px}
+  #pk-edit-hotspots{min-width:54px}
+}
