@@ -4,14 +4,17 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 set "SIZA_DARKHAVEN_MAP=%CD%\map-creator\presets\darkhaven-academy.siza-map.json"
-set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-room-content-depth&force=19"
+set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-narrative-only-observation&force=20"
 
 echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
 
-echo 1. Git pull
+echo 1. Sincronizando SOLO siza-world-engine desde origin/main
 
-git pull
+git fetch origin main
+if errorlevel 1 goto :fail
+
+git checkout origin/main -- .
 if errorlevel 1 goto :fail
 
 if not exist ".venv\Scripts\python.exe" (
