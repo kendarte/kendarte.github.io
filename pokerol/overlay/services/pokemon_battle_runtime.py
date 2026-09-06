@@ -13,6 +13,7 @@ from services.pokemon_battle_engine import (
     resolve_player_action,
 )
 from services.pokemon_party_engine import (
+    able_party_slots,
     active_pokemon,
     active_slot,
     add_pokemon,
@@ -23,7 +24,7 @@ from services.pokemon_party_engine import (
 )
 
 
-RUNTIME_BUILD = "0.2.2-travel-event-closeout"
+RUNTIME_BUILD = "0.3.0-party-forced-switch"
 
 
 def _dict(value):
@@ -139,12 +140,9 @@ def _capture_into_collection(actor, battle):
     enemy = _dict(battle.get("enemy"))
     if not source:
         source = {
-            "species_id": enemy.get("species_id"),
-            "species_name": enemy.get("species_name") or enemy.get("name"),
-            "level": enemy.get("level"),
-            "types": _clone(enemy.get("types") or []),
-            "moves": _clone(enemy.get("moves") or []),
-            "resolved_moves": _clone(enemy.get("moves") or []),
+            "species_id": enemy.get("species_id"), "species_name": enemy.get("species_name") or enemy.get("name"),
+            "level": enemy.get("level"), "types": _clone(enemy.get("types") or []),
+            "moves": _clone(enemy.get("moves") or []), "resolved_moves": _clone(enemy.get("moves") or []),
             "sprite": _clone(enemy.get("sprite") or {}),
         }
     source.pop("instance_id", None)
@@ -170,27 +168,67 @@ def _switch_action(actor, battle, action):
         return {"accepted": False, "status": "INVALID_PARTY_SLOT", "build": RUNTIME_BUILD}
     if _int(profile.get("hp_current"), 0) <= 0:
         return {"accepted": False, "status": "POKEMON_FAINTED", "build": RUNTIME_BUILD}
+
+    forced = bool(battle.get("forced_switch"))
     update_owned_from_battle(actor, _dict(battle.get("player")))
     switched = set_active_slot(actor, target_slot, require_able=True)
     if not switched.get("accepted"):
         return {"accepted": False, "status": switched.get("status"), "build": RUNTIME_BUILD}
+
     next_state = _clone(battle)
     incoming = normalize_pokemon(profile, side="PLAYER")
     next_state["player"] = incoming
     next_state["_source_player_profile"] = _clone(profile)
+    next_state.pop("forced_switch", None)
+    next_state.pop("available_switch_slots", None)
+    next_state["status"] = ACTIVE_STATUS
+    next_state["phase"] = "COMMAND"
+    next_state["outcome"] = ""
     next_state.setdefault("log", []).append({
         "turn": next_state.get("turn", 1), "phase": "SWITCH", "kind": "SWITCH",
         "text": f"¡Adelante, {incoming.get('name')}!", "actor": incoming.get("entity_id"), "party_slot": target_slot,
     })
-    return resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
+    if forced:
+        return {"accepted": True, "status": "FORCED_SWITCH_RESOLVED", "battle": next_state, "enemy_action": None, "build": BATTLE_BUILD}
+
+    result = resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
+    if result.get("accepted"):
+        resolved = _dict(result.get("battle"))
+        resolved["log"] = [row for row in _list(resolved.get("log")) if not (_text(_dict(row).get("kind")) == "ACTION_RESERVED" and "FREE_ORDER" in _text(_dict(row).get("text")))]
+        result["battle"] = resolved
+    return result
 
 
-def _basic_action_gate(battle):
+def _basic_action_gate(battle, requested_kind=""):
     if _text(battle.get("status")).upper() != ACTIVE_STATUS:
         return "BATTLE_NOT_ACTIVE"
     if _text(battle.get("phase")).upper() != "COMMAND":
         return "NOT_COMMAND_PHASE"
+    if bool(battle.get("forced_switch")) and _text(requested_kind).upper() != "SWITCH":
+        return "FORCED_SWITCH_REQUIRED"
     return ""
+
+
+def _promote_forced_switch_if_possible(actor, battle):
+    if _text(battle.get("status")).upper() != COMPLETE_STATUS or _text(battle.get("outcome")).upper() != "PLAYER_LOSS":
+        return False
+    player = _dict(battle.get("player"))
+    if _int(player.get("hp_current"), 0) > 0:
+        return False
+    slots = able_party_slots(actor, exclude_slot=active_slot(actor))
+    if not slots:
+        return False
+    battle["status"] = ACTIVE_STATUS
+    battle["phase"] = "COMMAND"
+    battle["outcome"] = ""
+    battle["forced_switch"] = True
+    battle["available_switch_slots"] = slots
+    battle["turn"] = _int(battle.get("turn"), 1) + 1
+    battle.setdefault("log", []).append({
+        "turn": battle.get("turn"), "phase": "SWITCH", "kind": "FORCED_SWITCH",
+        "text": f"{player.get('name')} está fuera de combate. Elige otro Pokémon.",
+    })
+    return True
 
 
 def _resolve_source_travel_event(actor, battle):
@@ -202,12 +240,8 @@ def _resolve_source_travel_event(actor, battle):
         return None
     outcome = _text(battle.get("outcome")).upper()
     resolution = {
-        "PLAYER_WIN": "WILD_DEFEATED",
-        "PLAYER_LOSS": "PLAYER_DEFEATED",
-        "CAPTURED": "CAPTURED",
-        "ESCAPED": "ESCAPED",
-        "DRAW": "DRAW",
-        "ABANDONED": "ABANDONED",
+        "PLAYER_WIN": "WILD_DEFEATED", "PLAYER_LOSS": "PLAYER_DEFEATED", "CAPTURED": "CAPTURED",
+        "ESCAPED": "ESCAPED", "DRAW": "DRAW", "ABANDONED": "ABANDONED",
     }.get(outcome, outcome or "BATTLE_RESOLVED")
     try:
         from services.travel_event_engine import resolve_pending_travel_event
@@ -222,15 +256,14 @@ def submit_player_battle_action(actor, action):
     battle = current_battle(actor)
     if not battle:
         return {"accepted": False, "status": "NO_BATTLE", "build": RUNTIME_BUILD}
-    gate = _basic_action_gate(battle)
+    requested = _clone(_dict(action))
+    kind = _text(requested.get("type")).upper()
+    gate = _basic_action_gate(battle, kind)
     if gate:
         actor.msg(pokerol_pokemon_battle_error=(({"status": gate, "battle_id": battle.get("battle_id"), "build": RUNTIME_BUILD},), {}))
         return {"accepted": False, "status": gate, "build": RUNTIME_BUILD}
 
-    requested = _clone(_dict(action))
-    kind = _text(requested.get("type")).upper()
     capture_item_id = ""
-
     if kind == "CAPTURE":
         if _text(battle.get("battle_kind")).upper() != "WILD" or not bool(_dict(battle.get("enemy")).get("wild")):
             return {"accepted": False, "status": "CAPTURE_NOT_ALLOWED", "build": RUNTIME_BUILD}
@@ -253,12 +286,13 @@ def submit_player_battle_action(actor, action):
 
     next_battle = _dict(result.get("battle"))
     update_owned_from_battle(actor, _dict(next_battle.get("player")))
+    _promote_forced_switch_if_possible(actor, next_battle)
+
     collection_result = None
     if next_battle.get("status") == COMPLETE_STATUS and _text(next_battle.get("outcome")) == "CAPTURED":
         collection_result = _capture_into_collection(actor, next_battle)
         next_battle["capture_collection_result"] = _clone(collection_result)
         next_battle["capture_item_id"] = capture_item_id
-
     if next_battle.get("status") == COMPLETE_STATUS:
         next_battle["travel_event_resolution"] = _clone(_resolve_source_travel_event(actor, next_battle))
 
