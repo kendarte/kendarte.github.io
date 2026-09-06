@@ -7,11 +7,11 @@ POKEROL_START_ROOM_ID = "KANTO-PAL-001"
 
 
 class Character(DefaultCharacter, ObjectParent):
-    """Player/NPC-compatible Siza character base."""
+    """Player/NPC-compatible POKEROL character base."""
 
     def at_object_creation(self):
         super().at_object_creation()
-        self.db.siza_narration = True
+        self.db.pokerol_narration = True
         self.db.adventure_stats = {
             "FUE": 2,
             "AGI": 2,
@@ -31,12 +31,7 @@ class Character(DefaultCharacter, ObjectParent):
         self.db.destination_id = None
 
     def _ensure_pokerol_start_location(self):
-        """Move real player characters out of Evennia Limbo and into Pallet Town.
-
-        The Kanto seed is materialized during initial setup, but Evennia creates
-        later accounts/characters in Limbo by default. Only repair the default
-        Limbo spawn; never override a valid gameplay location.
-        """
+        """Move real player characters out of Evennia Limbo and into Pallet Town."""
         location = getattr(self, "location", None)
         if location is None:
             return False
@@ -66,10 +61,10 @@ class Character(DefaultCharacter, ObjectParent):
         except Exception:
             return False
 
-    def _emit_siza_room_snapshot(self):
-        """Send the current room state to the Siza book UI without depending on text look parsing."""
+    def _emit_pokerol_room_snapshot(self):
+        """Send authoritative POKEROL room state to the web client."""
         try:
-            from commands.siza_ui_runtime_commands import emit_room_snapshot
+            from commands.pokerol_ui_runtime_commands import emit_room_snapshot
 
             emit_room_snapshot(self)
         except Exception:
@@ -89,7 +84,6 @@ class Character(DefaultCharacter, ObjectParent):
                     self.msg("La batalla multiplayer sigue activa. No puedes abandonar el área hasta resolverla.")
                     return False
         except Exception:
-            # Never hard-lock movement because the multiplayer service itself failed.
             pass
         try:
             return super().at_pre_move(destination, move_type=move_type, **kwargs)
@@ -97,23 +91,23 @@ class Character(DefaultCharacter, ObjectParent):
             return super().at_pre_move(destination)
 
     def at_post_puppet(self, **kwargs):
-        """Place new players in Kanto and refresh the client immediately."""
+        """Place new players in Kanto and refresh the POKEROL scene immediately."""
         try:
             super().at_post_puppet(**kwargs)
         except TypeError:
             super().at_post_puppet()
         self._ensure_pokerol_start_location()
-        self._emit_siza_room_snapshot()
+        self._emit_pokerol_room_snapshot()
 
     def at_post_move(self, source_location, move_type="move", **kwargs):
         """Publish completed player traversal from Evennia's canonical movement hook."""
         super().at_post_move(source_location, move_type=move_type, **kwargs)
         destination = getattr(self, "location", None)
         if not source_location or not destination:
-            self._emit_siza_room_snapshot()
+            self._emit_pokerol_room_snapshot()
             return
         if source_location is destination:
-            self._emit_siza_room_snapshot()
+            self._emit_pokerol_room_snapshot()
             return
 
         from services.dm_campaign_registry import observe_active_campaign_evidence
@@ -145,4 +139,4 @@ class Character(DefaultCharacter, ObjectParent):
                     },
                 },
             )
-        self._emit_siza_room_snapshot()
+        self._emit_pokerol_room_snapshot()
