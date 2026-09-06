@@ -3,7 +3,7 @@
 
     if (window.SizaRoomStateRendererV01) return;
 
-    var BUILD = "20260905-room-state-renderer-v5-npc-activity";
+    var BUILD = "20260905-room-state-renderer-v6-description-only";
     var requested = false;
     var lastRequestAt = 0;
     var lastSignature = "";
@@ -38,23 +38,6 @@
             if (typeof row === "string") return clean(row);
             return clean(row && (row.name || row.label || row.target));
         }).filter(Boolean).filter(function (item, index, array) {
-            return array.indexOf(item) === index;
-        });
-    }
-
-    function npcLine(row) {
-        if (typeof row === "string") return clean(row);
-        row = row || {};
-        var name = clean(row.name || row.label || row.target);
-        var state = clean(row.visible_state || row.current_activity || row.description);
-        if (!name && !state) return "";
-        if (!state) return name;
-        if (name && state.toLowerCase().indexOf(name.toLowerCase()) === 0) return state;
-        return name ? (name + ": " + state.replace(/[.。]+$/, "") + ".") : state;
-    }
-
-    function npcLines(value) {
-        return rows(value).map(npcLine).filter(Boolean).filter(function (item, index, array) {
             return array.indexOf(item) === index;
         });
     }
@@ -106,15 +89,7 @@
 
     function buildObservation(packet) {
         var description = cleanBlock(packet.room_description || packet.description || "");
-        var visibleObjects = names(packet.visible_objects || packet.objects);
-        var visibleNpcs = npcLines(packet.visible_npcs || packet.people);
-        var exits = names(packet.exits);
-        var blocks = [];
-        if (description) blocks.push(description);
-        if (visibleObjects.length) blocks.push("Ves: " + visibleObjects.join(", ") + ".");
-        if (visibleNpcs.length) blocks.push("Personas presentes:\n" + visibleNpcs.map(function (line) { return "- " + line; }).join("\n"));
-        if (exits.length) blocks.push("Salidas: " + exits.join(", ") + ".");
-        return blocks.join("\n\n") || "Este cuarto no tiene descripción narrativa importada desde el Map Editor.";
+        return description || "Este cuarto no tiene descripción narrativa importada desde el Map Editor.";
     }
 
     function renderRoomState(args) {
