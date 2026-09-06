@@ -1,0 +1,616 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: #080706;
+    color: #211a14;
+    overflow: hidden;
+}
+
+body {
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+#connecting {
+    position: fixed;
+    z-index: 100;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #d5c49f;
+    font: 12px/1.4 system-ui, sans-serif;
+}
+
+#clientwrapper {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+}
+
+.sizaBookClient {
+    --paper: #d9c9a7;
+    --paper-light: #eadfc5;
+    --paper-dark: #b69d74;
+    --ink: #211a14;
+    --frame: #3a291c;
+    --frame-light: #65492e;
+    --gold: #b48a48;
+    --night: #0e1112;
+    --night-soft: #181b1b;
+    width: min(1180px, calc(100vw - 24px));
+    height: min(900px, calc(100dvh - 24px));
+    margin: 12px auto;
+    display: grid;
+    grid-template-rows: 92px minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid #735535;
+    border-radius: 14px;
+    background: #120e0b;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .58), inset 0 0 0 3px rgba(183, 139, 73, .08);
+}
+
+.sizaBookHeader {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(190px, 1fr) minmax(280px, 1.35fr) minmax(190px, 1fr);
+    border-bottom: 1px solid #745637;
+    background: linear-gradient(180deg, #34251a, #1a130f);
+}
+
+.sizaBookIdentity,
+.sizaBookConnection,
+.sizaBookChapter {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+}
+
+.sizaBookIdentity {
+    gap: 11px;
+}
+
+.sizaBookIdentityMark {
+    flex: 0 0 54px;
+    width: 54px;
+    height: 62px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #8c693c;
+    border-radius: 7px;
+    color: #e3c788;
+    background: linear-gradient(145deg, #172332, #0c1117);
+    font: 700 28px/1 Georgia, serif;
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35);
+}
+
+.sizaBookIdentityText,
+.sizaBookConnection {
+    color: #e8dbc0;
+}
+
+.sizaBookIdentityText small,
+.sizaBookConnection small,
+.sizaBookChapter small {
+    display: block;
+    margin-bottom: 3px;
+    font: 700 9px/1.2 system-ui, sans-serif;
+    letter-spacing: .13em;
+    color: #ad946e;
+}
+
+.sizaBookIdentityText strong,
+.sizaBookConnection strong,
+.sizaBookChapter strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sizaBookIdentityText strong {
+    max-width: 210px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.sizaBookIdentityText span,
+.sizaBookConnection span,
+.sizaBookChapter span {
+    display: block;
+    margin-top: 3px;
+    font: 10px/1.25 system-ui, sans-serif;
+}
+
+.sizaBookChapter {
+    justify-content: center;
+    text-align: center;
+    color: var(--ink);
+    border-left: 1px solid #755b3b;
+    border-right: 1px solid #755b3b;
+    background: linear-gradient(180deg, var(--paper-light), var(--paper-dark));
+    box-shadow: inset 0 0 26px rgba(83, 56, 28, .16);
+}
+
+.sizaBookChapter small {
+    color: #6a4c2b;
+}
+
+.sizaBookChapter strong {
+    max-width: 360px;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.sizaBookChapter span {
+    color: #5d4935;
+}
+
+.sizaBookConnection {
+    display: block;
+    align-content: center;
+    text-align: right;
+}
+
+.sizaBookConnection strong {
+    font-size: 15px;
+    color: #cfb982;
+}
+
+.sizaBookClient[data-connection="open"] .sizaBookConnection strong {
+    color: #d9d29c;
+}
+
+.sizaBookClient[data-connection="error"] .sizaBookConnection strong,
+.sizaBookClient[data-connection="closed"] .sizaBookConnection strong {
+    color: #d4988f;
+}
+
+.sizaBookBody {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    background: var(--night);
+}
+
+.sizaBookScene {
+    min-height: 0;
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(79, 100, 103, .2), transparent 44%),
+        linear-gradient(180deg, #171b1c, #0c0e0f 72%);
+}
+
+.sizaBookScene::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 10px solid rgba(62, 43, 28, .65);
+    border-top: 0;
+    box-shadow: inset 0 0 70px rgba(0, 0, 0, .55);
+}
+
+.sizaBookSceneHeader {
+    position: relative;
+    z-index: 2;
+    padding: 13px 20px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px solid rgba(183, 150, 95, .18);
+    color: #cbb895;
+    background: rgba(4, 5, 5, .42);
+}
+
+.sizaBookSceneHeader span {
+    font: 700 9px/1.2 system-ui, sans-serif;
+    letter-spacing: .14em;
+    color: #957d5b;
+}
+
+.sizaBookSceneHeader strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.sizaBookOutput {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 28px 28px;
+    color: #ddd2ba;
+    scrollbar-width: thin;
+    scrollbar-color: #75583a transparent;
+}
+
+.sizaBookLine {
+    max-width: 920px;
+    margin: 0 auto 9px;
+    font: 15px/1.58 Georgia, "Times New Roman", serif;
+    overflow-wrap: anywhere;
+}
+
+.sizaBookLine:last-child {
+    margin-bottom: 0;
+}
+
+.sizaBookLine a {
+    color: #d5bb83;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.sizaBookLine pre,
+.sizaBookLine code {
+    white-space: pre-wrap;
+    color: inherit;
+}
+
+.sizaBookLine.err,
+.sizaBookSystem.error {
+    color: #e2a49a;
+}
+
+.sizaBookSystem {
+    padding: 8px 11px;
+    border-left: 2px solid #987648;
+    color: #bda984;
+    background: rgba(139, 105, 63, .08);
+    font: 11px/1.45 system-ui, sans-serif;
+}
+
+.sizaBookSystem.warning {
+    border-left-color: #a98d55;
+}
+
+.sizaBookNarrative {
+    position: relative;
+    z-index: 4;
+    margin: 0 12px 12px;
+    padding: 13px 16px 11px;
+    border: 1px solid #8b7048;
+    border-radius: 3px;
+    color: var(--ink);
+    background:
+        linear-gradient(rgba(255, 255, 255, .05), rgba(0, 0, 0, .035)),
+        var(--paper);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, .28), inset 0 0 22px rgba(89, 61, 32, .1);
+}
+
+.sizaBookPrompt {
+    min-height: 22px;
+    margin-bottom: 8px;
+    color: #4c3828;
+    font: 700 14px/1.45 Georgia, serif;
+}
+
+.sizaBookInputRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 9px;
+    align-items: stretch;
+}
+
+#siza-inputfield {
+    width: 100%;
+    min-height: 58px;
+    max-height: 140px;
+    resize: vertical;
+    padding: 10px 12px;
+    border: 1px solid #8a704d;
+    border-radius: 3px;
+    outline: none;
+    color: #211a14;
+    background: rgba(255, 255, 255, .22);
+    font: 14px/1.4 Georgia, serif;
+    box-shadow: inset 0 1px 7px rgba(63, 42, 23, .12);
+}
+
+#siza-inputfield:focus {
+    border-color: #5c432d;
+    background: rgba(255, 255, 255, .34);
+}
+
+#siza-inputsend {
+    border: 1px solid #5a4028;
+    border-radius: 3px;
+    color: #e9dcc0;
+    background: linear-gradient(180deg, #4a3525, #251a13);
+    font: 700 10px/1 system-ui, sans-serif;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+#siza-inputsend:hover {
+    background: linear-gradient(180deg, #5b422b, #2e2117);
+}
+
+.sizaBookInputHint {
+    margin-top: 7px;
+    color: #6d5840;
+    font: 9px/1.25 system-ui, sans-serif;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookBody {
+    grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookNarrative {
+    padding-top: 18px;
+}
+
+.sizaBookClient[data-mode="COMBAT"] .sizaBookSceneHeader {
+    color: #d8c39c;
+    background: rgba(31, 18, 13, .72);
+}
+
+.sizaBookClient[data-mode="COMBAT"] .sizaBookScene {
+    background: linear-gradient(180deg, #18110e, #080808 72%);
+}
+
+@media (max-width: 760px) {
+    html,
+    body {
+        overflow: auto;
+    }
+
+    .sizaBookClient {
+        width: 100%;
+        height: 100dvh;
+        min-height: 620px;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        grid-template-rows: 72px minmax(0, 1fr);
+    }
+
+    .sizaBookHeader {
+        grid-template-columns: 1fr 1.3fr .72fr;
+    }
+
+    .sizaBookIdentity,
+    .sizaBookConnection,
+    .sizaBookChapter {
+        padding: 6px 7px;
+    }
+
+    .sizaBookIdentityMark {
+        display: none;
+    }
+
+    .sizaBookIdentityText small,
+    .sizaBookConnection small,
+    .sizaBookChapter small {
+        font-size: 7px;
+    }
+
+    .sizaBookIdentityText strong,
+    .sizaBookConnection strong {
+        font-size: 10px;
+    }
+
+    .sizaBookIdentityText span,
+    .sizaBookConnection span,
+    .sizaBookChapter span {
+        font-size: 7px;
+    }
+
+    .sizaBookChapter strong {
+        font-size: 13px;
+    }
+
+    .sizaBookSceneHeader {
+        padding: 9px 11px 7px;
+    }
+
+    .sizaBookSceneHeader strong {
+        font-size: 11px;
+    }
+
+    .sizaBookOutput {
+        padding: 13px 14px 18px;
+    }
+
+    .sizaBookLine {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .sizaBookNarrative {
+        margin: 0;
+        padding: 10px;
+        border-left: 0;
+        border-right: 0;
+        border-bottom: 0;
+    }
+
+    .sizaBookInputRow {
+        grid-template-columns: minmax(0, 1fr) 72px;
+    }
+
+    #siza-inputfield {
+        min-height: 48px;
+        font-size: 13px;
+    }
+}
+
+/* Structured room presentation: room state replaces terminal-style repetition. */
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookScene {
+    display: flex !important;
+    flex-direction: column;
+}
+
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaBookSceneVisual {
+    flex: 1 1 0;
+    min-height: 235px;
+}
+
+.sizaBookClient:not([data-mode="COMBAT"]) .sizaStoryPage {
+    flex: 0 0 250px;
+    width: 100%;
+    height: 250px !important;
+    min-height: 250px;
+}
+
+.sizaBookSceneState {
+    position: relative;
+    z-index: 2;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid rgba(183, 150, 95, .16);
+    background: rgba(9, 11, 11, .56);
+}
+
+.sizaBookSceneDescription {
+    max-width: 900px;
+    margin: 0 auto 14px;
+    color: #ded3bb;
+    font: 16px/1.58 Georgia, "Times New Roman", serif;
+}
+
+.sizaBookFacts {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.sizaBookFact {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(180, 138, 72, .24);
+    background: rgba(208, 190, 155, .055);
+}
+
+.sizaBookFact small {
+    display: block;
+    margin-bottom: 4px;
+    color: #9e835c;
+    font: 700 8px/1.2 system-ui, sans-serif;
+    letter-spacing: .12em;
+}
+
+.sizaBookFact span {
+    display: block;
+    color: #cabda4;
+    font: 11px/1.4 system-ui, sans-serif;
+}
+
+.sizaKnowledgePanel {
+    max-width: 900px;
+    margin: 10px auto 0;
+    border-top: 1px solid rgba(180, 138, 72, .18);
+    color: #bda984;
+}
+
+.sizaKnowledgePanel summary {
+    padding: 8px 0 2px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font: 9px/1.3 system-ui, sans-serif;
+}
+
+.sizaKnowledgePanel summary::-webkit-details-marker {
+    display: none;
+}
+
+.sizaKnowledgePanel summary span {
+    letter-spacing: .12em;
+    color: #8f7653;
+}
+
+.sizaKnowledgePanel summary strong {
+    color: #bda984;
+    font-weight: 600;
+}
+
+.sizaKnowledgeList {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 7px 0 2px;
+}
+
+.sizaKnowledgeItem {
+    padding: 5px 0 5px 12px;
+    border-left: 1px solid rgba(180, 138, 72, .28);
+    color: #a99d86;
+    font: 11px/1.45 system-ui, sans-serif;
+}
+
+.sizaBookNarrativeFeed {
+    position: relative;
+    z-index: 2;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    background: rgba(0, 0, 0, .14);
+}
+
+.sizaBookNarrativeLabel {
+    padding: 10px 28px 0;
+    color: #8f7653;
+    font: 700 8px/1.2 system-ui, sans-serif;
+    letter-spacing: .13em;
+}
+
+.sizaBookNarrativeFeed .sizaBookOutput {
+    padding-top: 10px;
+    padding-bottom: 18px;
+}
+
+.sizaBookDiscovery {
+    padding-left: 12px;
+    border-left: 2px solid #b48a48;
+    color: #e1cfaa;
+}
+
+.sizaBookClient[data-pending="true"] #siza-inputsend,
+#siza-inputsend:disabled {
+    cursor: wait;
+    opacity: .62;
+}
+
+.sizaBookClient[data-pending="true"] .sizaBookPrompt {
+    color: #765b38;
+}
+
+@media (max-width: 760px) {
+    .sizaBookSceneState {
+        padding: 12px 14px 10px;
+    }
+
+    .sizaBookSceneDescription {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .sizaBookFacts {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+
+    .sizaBookFact {
+        padding: 7px 8px;
+    }
+
+    .sizaKnowledgePanel {
+        margin-top: 7px;
+    }
+
+    .sizaBookNarrativeLabel {
+        padding: 8px 14px 0;
+    }
+}

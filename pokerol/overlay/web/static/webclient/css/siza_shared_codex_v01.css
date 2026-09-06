@@ -1,0 +1,528 @@
+/* SIZA shared codex v0.1: permanent scene, contextual interaction and route foldout. */
+
+.sizaBookClient {
+    position: relative;
+    display: grid !important;
+    width: min(1320px, calc(100vw - 24px)) !important;
+    height: min(860px, calc(100dvh - 24px)) !important;
+    grid-template-rows: minmax(0, 1fr) 76px !important;
+    overflow: hidden;
+    border: 1px solid #55402c;
+    border-radius: 5px;
+    background: #17130f;
+    box-shadow: 0 24px 70px rgba(0,0,0,.62);
+}
+
+.sizaBookBody {
+    order: 1;
+    min-height: 0;
+    background: #17130f;
+}
+
+.sizaBookHeader {
+    order: 2;
+    display: grid;
+    grid-template-columns: minmax(210px, .82fr) minmax(270px, 1.15fr) minmax(210px, .82fr);
+    min-height: 76px !important;
+    height: 76px !important;
+    max-height: 76px !important;
+    border-top: 2px solid #3b2c1e;
+    border-bottom: 0;
+    background: #1b1713;
+}
+
+.sizaHeaderCharacter {
+    min-height: 0;
+    background: #211b15;
+}
+
+.sizaHeaderCharacterPlayer {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    padding: 8px 12px !important;
+}
+
+.sizaHeaderCharacterFocus {
+    grid-template-columns: minmax(0, 1fr) 52px !important;
+    padding: 8px 12px !important;
+}
+
+.sizaPortraitSlot {
+    width: 44px !important;
+    height: 52px !important;
+}
+
+.sizaPortraitInitial {
+    font-size: 21px !important;
+}
+
+.sizaHeaderCharacterCopy {
+    padding: 0 8px !important;
+}
+
+.sizaHeaderCharacterCopy small,
+.sizaBookChapter small {
+    margin-bottom: 3px !important;
+    font-size: 7px !important;
+}
+
+.sizaHeaderCharacterCopy strong {
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+}
+
+.sizaHeaderCharacterCopy > span {
+    margin-top: 3px !important;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+}
+
+.sizaHeaderCharacterMeta {
+    display: none !important;
+}
+
+.sizaBookChapter {
+    padding: 8px 18px !important;
+    border-left: 1px solid #4f3926;
+    border-right: 1px solid #4f3926;
+    color: #382719;
+    background:
+        linear-gradient(90deg, rgba(83,53,27,.08), transparent 16%, transparent 84%, rgba(83,53,27,.08)),
+        #d6c29d;
+}
+
+.sizaBookChapter strong {
+    font-size: 18px !important;
+    line-height: 1.1 !important;
+}
+
+.sizaBookChapter span {
+    margin-top: 3px !important;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+}
+
+.sizaConnectionBadge {
+    top: 8px !important;
+    right: 8px !important;
+    bottom: auto !important;
+    z-index: 30;
+}
+
+.sizaBookScene {
+    display: grid !important;
+    min-height: 0;
+    height: 100%;
+    margin: 0 !important;
+    grid-template-columns: minmax(0, 1.28fr) minmax(360px, .92fr);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+    border: 0 !important;
+    border-radius: 0;
+    background: #15120f;
+    box-shadow: none;
+}
+
+.sizaBookSceneVisual {
+    min-height: 0 !important;
+    height: auto !important;
+    border-right: 5px solid #473523;
+    background: #111718;
+}
+
+.sizaBookSceneVisualMedia::after {
+    background:
+        linear-gradient(90deg, rgba(0,0,0,.34), transparent 22%, transparent 78%, rgba(0,0,0,.22)),
+        linear-gradient(180deg, rgba(0,0,0,.06), transparent 68%, rgba(0,0,0,.46));
+}
+
+.sizaScenePlaceholder {
+    background:
+        linear-gradient(135deg, rgba(181,143,83,.08) 25%, transparent 25%) 0 0 / 28px 28px,
+        linear-gradient(315deg, rgba(181,143,83,.06) 25%, transparent 25%) 0 0 / 28px 28px,
+        radial-gradient(circle at 50% 40%, #284247 0, #17282c 48%, #0b1113 100%);
+}
+
+.sizaSceneCast {
+    left: 16px;
+    right: auto;
+    bottom: 14px;
+    justify-content: flex-start;
+    max-width: calc(100% - 32px);
+}
+
+.sizaSceneCastChip {
+    padding: 6px 9px;
+    border-radius: 2px;
+    color: #eadcc0;
+    background: rgba(23,17,12,.82);
+    font-size: 9px;
+}
+
+.sizaMapFoldoutTab {
+    position: absolute;
+    z-index: 10;
+    right: 0;
+    top: 22%;
+    min-width: 72px;
+    padding: 8px 9px 8px 11px;
+    border: 1px solid #9c7442;
+    border-right: 0;
+    border-radius: 3px 0 0 3px;
+    color: #e7d5ad;
+    background: rgba(31,22,15,.9);
+    font: 700 8px/1 system-ui, sans-serif;
+    letter-spacing: .11em;
+    cursor: pointer;
+}
+
+.sizaMapFoldout {
+    position: absolute;
+    z-index: 20;
+    top: 7%;
+    right: 0;
+    bottom: 7%;
+    width: min(420px, 84%);
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid #7a5934;
+    border-right: 0;
+    color: #382a1c;
+    background:
+        linear-gradient(90deg, rgba(92,59,31,.1), transparent 14%),
+        #e2d2b0;
+    box-shadow: -14px 12px 30px rgba(0,0,0,.45);
+}
+
+.sizaMapFoldout header {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 5px 12px;
+    padding-bottom: 11px;
+    border-bottom: 1px solid #8e6b43;
+}
+
+.sizaMapFoldout header small {
+    grid-column: 1;
+    color: #765b3d;
+    font: 700 8px/1 system-ui, sans-serif;
+    letter-spacing: .12em;
+}
+
+.sizaMapFoldout header strong {
+    grid-column: 1;
+    color: #332419;
+    font: 600 19px/1.12 Georgia, serif;
+}
+
+.sizaMapFoldout header button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 30px;
+    border: 1px solid #725233;
+    color: #382719;
+    background: transparent;
+    font: 700 21px/1 Georgia, serif;
+    cursor: pointer;
+}
+
+.sizaMapFoldoutRoutes {
+    display: grid;
+    gap: 8px;
+    padding-top: 13px;
+}
+
+.sizaMapRoute {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 10px;
+    border: 1px solid #8a6841;
+    color: #302216;
+    background: rgba(255,255,255,.23);
+    font: 600 14px/1.2 Georgia, serif;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sizaMapRoute::before {
+    content: "→";
+    margin-right: 9px;
+    color: #775735;
+    font: 700 18px/1 Georgia, serif;
+}
+
+.sizaStoryPage {
+    min-height: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    padding: 20px 20px 14px !important;
+    border-top: 0 !important;
+    color: #302217;
+    background:
+        linear-gradient(90deg, rgba(92,59,31,.075), transparent 10%, transparent 90%, rgba(92,59,31,.075)),
+        #dfceb0;
+    box-shadow: inset 0 0 28px rgba(89,61,32,.12);
+}
+
+.sizaStoryCopy {
+    min-height: 0 !important;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sizaActiveInteraction {
+    flex: 0 0 auto;
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #423020;
+}
+
+.sizaActiveInteractionHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sizaActiveInteractionHeader small,
+.sizaDialogueCard small {
+    color: #765b3d;
+    font: 700 8px/1 system-ui, sans-serif;
+    letter-spacing: .13em;
+}
+
+.sizaActiveInteractionHeader strong {
+    overflow: hidden;
+    color: #322318;
+    font: 600 21px/1.05 Georgia, serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sizaDialogueCard {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    margin-top: 11px;
+}
+
+.sizaDialogueSpeakerPortrait {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #725235;
+    color: #ead9ae;
+    background: #31443e;
+    font: 600 22px/1 Georgia, serif;
+}
+
+.sizaDialogueCard strong,
+.sizaDialogueCard span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sizaDialogueCard strong {
+    margin-top: 3px;
+    color: #322318;
+    font: 600 17px/1.1 Georgia, serif;
+}
+
+.sizaDialogueCard span {
+    margin-top: 3px;
+    color: #6d553a;
+    font: 11px/1.2 Georgia, serif;
+}
+
+.sizaBookSceneDescription {
+    flex: 0 0 auto;
+    margin: 0 0 11px;
+    color: #342519;
+    font-size: 16px !important;
+    line-height: 1.48 !important;
+}
+
+.sizaContextualActions {
+    margin: 0 0 10px;
+    padding: 0 0 10px;
+    border: 0;
+    border-bottom: 1px solid rgba(92,62,36,.34);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sizaContextualActionsHeader {
+    margin-bottom: 7px;
+}
+
+.sizaContextualActionsHeader strong {
+    color: #5b3d22;
+    font-size: 8px;
+}
+
+.sizaContextualActionsList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+}
+
+.sizaContextAction {
+    min-height: 34px;
+    overflow: hidden;
+    padding: 7px 9px;
+    border: 1px solid #775635;
+    border-radius: 2px;
+    color: #362317;
+    background: rgba(255,255,255,.24);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.36);
+    font-size: 10px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sizaContextAction[data-kind="MOVEMENT"] {
+    border-style: solid;
+    background: rgba(181,143,83,.17);
+}
+
+.sizaBookOutput {
+    min-height: 0 !important;
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0 2px;
+    color: #382a1e;
+}
+
+.sizaBookLine {
+    margin-bottom: 8px;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+}
+
+.sizaDialogueEvent {
+    padding: 8px 10px;
+    border-left: 3px solid #48655c;
+    background: rgba(55,84,74,.07) !important;
+}
+
+.sizaBookNarrative {
+    flex: 0 0 auto;
+    margin: 12px 0 0 !important;
+    padding: 11px 0 0 !important;
+    border-top: 2px solid #423020;
+}
+
+.sizaBookPrompt {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.sizaBookInputRow {
+    grid-template-columns: minmax(0, 1fr) 92px;
+}
+
+#siza-inputfield {
+    min-height: 46px;
+    max-height: 98px;
+    padding: 9px 10px;
+    background: rgba(255,255,255,.24);
+    font-size: 14px;
+}
+
+#siza-inputsend {
+    border-radius: 2px;
+    font-size: 9px;
+}
+
+.sizaBookInputHint {
+    display: none;
+}
+
+.sizaPageTools,
+.sizaInfoPanel {
+    display: none !important;
+}
+
+.sizaTcgTray {
+    margin: 0 !important;
+    border: 0;
+    border-top: 2px solid #3b2c1e;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookSceneDescription {
+    display: none;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaContextualActions {
+    display: none;
+}
+
+.sizaBookClient[data-mode="DIALOGUE"] .sizaBookOutput {
+    padding-top: 2px;
+}
+
+@media (max-width: 860px) {
+    .sizaBookClient {
+        width: 100% !important;
+        height: 100dvh !important;
+        grid-template-rows: minmax(0, 1fr) 64px !important;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .sizaBookHeader {
+        min-height: 64px !important;
+        height: 64px !important;
+        max-height: 64px !important;
+        grid-template-columns: 1fr 1.1fr 1fr;
+    }
+
+    .sizaHeaderCharacterPlayer,
+    .sizaHeaderCharacterFocus {
+        grid-template-columns: 1fr !important;
+    }
+
+    .sizaHeaderCharacterPlayer .sizaPortraitSlot,
+    .sizaHeaderCharacterFocus .sizaPortraitSlot {
+        display: none;
+    }
+
+    .sizaHeaderCharacterCopy {
+        padding: 5px 7px !important;
+    }
+
+    .sizaBookScene {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(260px, .88fr) minmax(0, 1.12fr);
+    }
+
+    .sizaBookSceneVisual {
+        border-right: 0;
+        border-bottom: 4px solid #473523;
+    }
+
+    .sizaStoryPage {
+        padding: 14px !important;
+    }
+
+    .sizaContextualActionsList {
+        grid-template-columns: 1fr;
+    }
+
+    .sizaMapFoldout {
+        top: 0;
+        bottom: 0;
+        width: min(440px, 94%);
+    }
+}

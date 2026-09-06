@@ -1,0 +1,167 @@
+<div id="siza-book-client" class="sizaBookClient" data-mode="EXPLORATION" data-pending="false" data-authenticated="true">
+  <header class="sizaBookHeader">
+    <section class="sizaHeaderCharacter sizaHeaderCharacterPlayer" aria-label="Player character">
+      <aside id="siza-player-portrait" class="sizaPortraitSlot" data-side="left" data-empty="true" aria-label="Player portrait">
+        <div class="sizaPortraitFrame" aria-hidden="true">
+          <span id="siza-player-portrait-initial" class="sizaPortraitInitial">?</span>
+        </div>
+      </aside>
+      <div class="sizaHeaderCharacterCopy">
+        <small>PLAYER</small>
+        <strong id="siza-player-name">Sin personaje</strong>
+        <span id="siza-player-state">Persistent character</span>
+        <div class="sizaHeaderCharacterMeta"><span>WORLD ENGINE</span></div>
+      </div>
+      <span id="siza-player-portrait-name" class="sizaPortraitMirror">Sin personaje</span>
+      <span data-portrait-role class="sizaPortraitRoleMirror">PLAYER</span>
+    </section>
+
+    <section class="sizaBookChapter" aria-label="Adventure context">
+      <small id="siza-mode-label">EXPLORATION</small>
+      <strong id="siza-location-label">SIZA WORLD ENGINE</strong>
+      <span id="siza-context-label">World Engine · persistent scene</span>
+    </section>
+
+    <section class="sizaHeaderCharacter sizaHeaderCharacterFocus" aria-label="Character in focus">
+      <div class="sizaHeaderCharacterCopy sizaHeaderCharacterCopyRight">
+        <small>IN SCENE</small>
+        <strong id="siza-focus-portrait-name">No character</strong>
+        <span>Interlocutor / companion</span>
+        <div class="sizaHeaderCharacterMeta"><span id="siza-prompt-label">World Engine</span></div>
+      </div>
+      <aside id="siza-focus-portrait" class="sizaPortraitSlot" data-side="right" data-empty="true" aria-label="Focused character portrait">
+        <div class="sizaPortraitFrame" aria-hidden="true">
+          <span id="siza-focus-portrait-initial" class="sizaPortraitInitial">?</span>
+        </div>
+        <span data-portrait-role class="sizaPortraitRoleMirror">IN SCENE</span>
+      </aside>
+    </section>
+
+    <div class="sizaConnectionBadge" aria-label="Connection">
+      <span class="sizaConnectionDot" aria-hidden="true"></span>
+      <strong id="siza-connection-label">Connecting…</strong>
+    </div>
+  </header>
+
+  <main class="sizaBookBody">
+    <section class="sizaBookScene" aria-label="Scene">
+      <div id="siza-scene-visual" class="sizaBookSceneVisual" data-has-image="false" aria-label="Scene image">
+        <div id="siza-scene-visual-media" class="sizaBookSceneVisualMedia" aria-hidden="true"></div>
+        <div id="siza-scene-placeholder" class="sizaScenePlaceholder" aria-hidden="true">
+          <span>LOCATION IMAGE</span>
+          <strong id="siza-scene-placeholder-label">Waiting for location</strong>
+        </div>
+        <span id="siza-scene-kicker" hidden>EXPLORATION</span>
+        <strong id="siza-scene-title" hidden>Waiting for world state</strong>
+        <div id="siza-scene-visual-label" class="sizaSceneVisualLabel">SIZA WORLD ENGINE</div>
+        <div id="siza-scene-cast" class="sizaSceneCast" aria-label="Other characters present" hidden></div>
+        <div class="sizaFolioSceneMarkers" aria-hidden="true">
+          <span class="sizaFolioMarker" data-kind="person">Persona visible</span>
+          <span class="sizaFolioMarker" data-kind="object">Objeto visible</span>
+          <span class="sizaFolioMarker" data-kind="exit">Salida visible</span>
+        </div>
+        <nav class="sizaFolioSceneLegend" aria-label="Elementos de la escena">
+          <span>Persona</span>
+          <span>Objeto</span>
+          <span>Salida</span>
+        </nav>
+      </div>
+
+      <section class="sizaStoryPage" aria-label="Narration and actions">
+        <div class="sizaStoryCopy">
+          <div class="sizaFolioObservation">
+            <header class="sizaFolioObservationHeader">
+              <strong>Observación</strong>
+              <span>Lo que percibe el personaje</span>
+            </header>
+            <p id="siza-scene-description" class="sizaBookSceneDescription">The current location will be described here.</p>
+          <div id="siza-messagewindow" class="sizaBookOutput" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <section id="siza-contextual-actions" class="sizaContextualActions" aria-label="Opciones de la escena">
+            <section id="siza-contextual-interactions-group" class="sizaContextActionGroup" data-group="interactions">
+              <header>Interacciones</header>
+              <div id="siza-contextual-interactions" class="sizaContextualActionsList"></div>
+            </section>
+            <section id="siza-contextual-movement-group" class="sizaContextActionGroup" data-group="movement">
+              <header>Desplazamiento</header>
+              <div id="siza-contextual-movement" class="sizaContextualActionsList"></div>
+            </section>
+            <div id="siza-contextual-actions-empty" class="sizaContextualActionsEmpty">Describe una acción libre abajo.</div>
+          </section>
+        <section class="sizaBookNarrative" aria-label="Free action">
+          <div id="siza-current-prompt" class="sizaBookPrompt">What do you do?</div>
+          <div class="sizaBookInputRow">
+            <textarea id="siza-inputfield" rows="1" autocomplete="off" autocapitalize="sentences" spellcheck="true" placeholder="Describe what you do…"></textarea>
+            <button id="siza-inputsend" type="button">SEND</button>
+          </div>
+          <div class="sizaBookInputHint">Enter to send · Shift+Enter for a new line · ↑/↓ history</div>
+        </section>
+          </div>
+        </div>
+
+        <nav class="sizaPageTools" aria-label="Character and scene information">
+          <button id="siza-scene-panel-toggle" class="sizaPageTool" type="button" data-panel="scene" aria-expanded="false">SCENE</button>
+          <button id="siza-stats-panel-toggle" class="sizaPageTool" type="button" data-panel="stats" aria-expanded="false">STATS</button>
+          <button id="siza-memories-panel-toggle" class="sizaPageTool" type="button" data-panel="memories" aria-expanded="false">MEMORIES</button>
+        </nav>
+
+        <aside id="siza-scene-panel" class="sizaInfoPanel" data-panel-name="scene" hidden>
+          <div class="sizaInfoPanelTitle">SCENE</div>
+          <div class="sizaBookFacts" aria-label="Scene elements">
+            <section id="siza-exits-card" class="sizaBookFact" hidden>
+              <small>EXITS</small>
+              <span id="siza-exits" class="sizaRawFact">—</span>
+              <div id="siza-exits-actions" class="sizaActionLinks"></div>
+            </section>
+            <section id="siza-characters-card" class="sizaBookFact" hidden>
+              <small>PEOPLE</small>
+              <span id="siza-characters" class="sizaRawFact">—</span>
+              <div id="siza-characters-actions" class="sizaActionLinks"></div>
+            </section>
+            <section id="siza-visible-card" class="sizaBookFact" hidden>
+              <small>IN VIEW</small>
+              <span id="siza-visible" class="sizaRawFact">—</span>
+              <div id="siza-visible-actions" class="sizaActionLinks"></div>
+            </section>
+          </div>
+        </aside>
+
+        <aside id="siza-stats-panel" class="sizaInfoPanel" data-panel-name="stats" hidden>
+          <div class="sizaInfoPanelTitle">CHARACTER STATS</div>
+          <div id="siza-stats-grid" class="sizaStatsGrid">
+            <div><span>Strength</span><strong id="siza-stat-FUE">—</strong></div>
+            <div><span>Agility</span><strong id="siza-stat-AGI">—</strong></div>
+            <div><span>Coordination</span><strong id="siza-stat-COO">—</strong></div>
+            <div><span>Intelligence</span><strong id="siza-stat-INT">—</strong></div>
+            <div><span>Perception</span><strong id="siza-stat-PER">—</strong></div>
+            <div><span>Psyche</span><strong id="siza-stat-PSI">—</strong></div>
+          </div>
+          <div id="siza-stats-status" class="sizaInfoStatus">Open Stats to read the current World Engine values.</div>
+        </aside>
+
+        <aside id="siza-memories-panel" class="sizaInfoPanel" data-panel-name="memories" hidden>
+          <div class="sizaInfoPanelTitle">MEMORIES</div>
+          <details id="siza-knowledge-panel" class="sizaKnowledgePanel" hidden open>
+            <summary><span>KNOWN FACTS</span><strong id="siza-knowledge-summary">0 memories</strong></summary>
+            <div id="siza-knowledge-list" class="sizaKnowledgeList"></div>
+          </details>
+          <div id="siza-memories-empty" class="sizaInfoStatus">No remembered facts at this location.</div>
+        </aside>
+
+
+      </section>
+    </section>
+
+    <section class="sizaFolioPlayers" aria-label="Jugadores presentes">
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">1</span><div><strong>Jugador 1</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">2</span><div><strong>Jugador 2</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">3</span><div><strong>Jugador 3</strong><span>Presente · última acción</span></div></article>
+      <article class="sizaFolioPlayer"><span class="sizaFolioPlayerNumber">4</span><div><strong>Jugador 4</strong><span>Presente · última acción</span></div></article>
+    </section>
+
+    <section id="siza-tcg-tray" class="sizaTcgTray" data-active="false" aria-label="SIZA TCG mount">
+      <div class="sizaTcgResources"><div id="siza-tcg-resource-mount" class="sizaTcgMount">RESOURCES</div></div>
+      <div class="sizaTcgHand"><div id="siza-tcg-hand-mount" class="sizaTcgMount">HAND / CARDS</div></div>
+      <div class="sizaTcgStatus"><div id="siza-tcg-status" class="sizaTcgMount">READY</div></div>
+    </section>
+  </main>
+</div>

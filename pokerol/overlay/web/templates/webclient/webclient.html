@@ -1,0 +1,33 @@
+{% extends "webclient/base.html" %}
+{% load static %}
+
+{% block guilib_import %}
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_shell_v02.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_book_interaction_v03.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_dialogue_mode_v01.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_tcg_embed_v01.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_combat_choreography_v01.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_combat_animation_v02.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'webclient/css/siza_folio_layout_v01.css' %}">
+<script src="{% static 'webclient/js/siza_book_client.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_book_shell_v02.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_tcg_embed_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_tcg_battlefield_v03.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_combat_choreography_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_combat_animation_v02.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_world_tcg_transport_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_room_identity_guard_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_book_interaction_v04.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_room_state_renderer_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_observation_description_guard_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_action_button_cap_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_dialogue_mode_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/siza_narrative_filter_v01.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'webclient/js/pokerol_brand.js' %}" type="text/javascript" charset="utf-8"></script>
+{% endblock %}
+
+{% block client %}
+{% include "webclient/siza_book_shell_v02.html" %}
+{% endblock %}
+
+{% block scripts %}{% endblock %}

@@ -1,0 +1,746 @@
+/* SIZA Book Combat Battlefield v0.3.4
+   One book page, one location scene, with strict non-overlapping combat presentation.
+   Arena state/rules remain authoritative; this file only composes the existing DOM.
+*/
+
+.matchBoardV5 {
+  overflow: hidden !important;
+}
+
+/* The Book header already owns combatant portraits. */
+.arenaHalf .arenaMag,
+.arenaHalf .arenaMagSlot,
+.arenaHalf .arenaLifeV5,
+.arenaHalf .arenaMagInfo,
+.arenaHalfLabelV610,
+.combatLaneV610,
+.ruleModeBadgeV070,
+.phaseBannerV600,
+.emptyFieldV5 {
+  display: none !important;
+}
+
+/*
+  FIXED COMBAT GEOMETRY (desktop)
+  y 008-052 : phase/status + rival hand + rival piles
+  y 056-168 : rival permanents / creatures
+  y 170-282 : player creatures / permanents
+  y 285-bottom : player hand
+  right 320px : history + command dock + end turn
+  centre y~150 : transient Stack / Manafestation / damage resolution only
+*/
+.arenaHalf {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  height: 112px !important;
+  min-height: 0 !important;
+  display: block !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  transition: opacity .18s ease, filter .18s ease !important;
+}
+
+.arenaHalf.enemyHalf {
+  top: 56px !important;
+  z-index: 7 !important;
+}
+
+.arenaHalf.playerHalf {
+  top: 170px !important;
+  z-index: 9 !important;
+}
+
+.arenaHalf .arenaField,
+.arenaHalf .arenaZones {
+  pointer-events: auto !important;
+}
+
+/* The right column is intentionally reserved for readable combat history / controls. */
+.arenaHalf .arenaZones,
+.arenaHalf .arenaField {
+  left: 100px !important;
+  right: 320px !important;
+}
+
+/* Real Artifact / Equipment backline. */
+.arenaHalf .arenaZones {
+  position: absolute !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 0 6px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  scrollbar-width: none !important;
+  z-index: 6 !important;
+}
+
+.arenaHalf .arenaZones::-webkit-scrollbar,
+.arenaHalf .arenaField::-webkit-scrollbar {
+  display: none !important;
+}
+
+.enemyHalf .arenaZones {
+  top: 0 !important;
+}
+
+.playerHalf .arenaZones {
+  top: 84px !important;
+}
+
+.arenaHalf .arenaZones::before,
+.arenaHalf .arenaZones::after,
+.enemyHalf .arenaField::before,
+.playerHalf .arenaField::before,
+.enemyHalf .arenaField::after,
+.playerHalf .arenaField::after {
+  content: none !important;
+  display: none !important;
+}
+
+.equipmentTrayV600 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.equipmentTokenV600 {
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 40px !important;
+}
+
+/* Creature / battlefield plane. */
+.arenaHalf .arenaField {
+  position: absolute !important;
+  height: 86px !important;
+  min-height: 86px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  padding: 0 6px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  scrollbar-width: none !important;
+  z-index: 10 !important;
+}
+
+.enemyHalf .arenaField {
+  top: 26px !important;
+}
+
+.playerHalf .arenaField {
+  top: 0 !important;
+}
+
+/* Keep real full card art; just make battlefield cards smaller than the hand. */
+.arenaMiniCard {
+  flex: 0 0 64px !important;
+  width: 64px !important;
+  height: 88px !important;
+  transform-origin: center bottom !important;
+}
+
+.arenaMiniCard .finalPrintedImageV59 {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  border-radius: inherit !important;
+}
+
+.arenaMiniCard::after {
+  content: none !important;
+  display: none !important;
+}
+
+.arenaMiniCard .mName,
+.arenaMiniCard .mText,
+.arenaMiniCard .mPt {
+  display: revert !important;
+}
+
+/* Stack and all transient resolution live on the NEUTRAL centre line, never in the player's hand area. */
+.stackAnchorV5 {
+  position: absolute !important;
+  left: calc(50% - 105px) !important;
+  top: 150px !important;
+  z-index: 58 !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: min(48%, 440px) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.stackAnchorV5::before,
+.stackAnchorV5::after {
+  content: none !important;
+  display: none !important;
+}
+
+.stackAnchorV5:empty {
+  display: none !important;
+}
+
+.stackObj {
+  border-radius: 5px !important;
+  box-shadow: 0 7px 18px rgba(0,0,0,.34) !important;
+}
+
+.manifestInlineV5,
+.manifestInlineV5.manifestStageV600 {
+  left: calc(50% - 105px) !important;
+  top: 150px !important;
+  transform: translate(-50%, -50%) scale(.82) !important;
+  transform-origin: 50% 50% !important;
+  z-index: 74 !important;
+}
+
+.damageRibbonV600 {
+  left: calc(50% - 105px) !important;
+  top: 150px !important;
+}
+
+.responseWindowV53 {
+  left: calc(50% - 105px) !important;
+  top: 150px !important;
+}
+
+/* Turn / phase changes also cross the neutral battlefield, not the hand. */
+.sizaCombatTurnCurtainV02 {
+  left: 100px !important;
+  right: 320px !important;
+  top: 150px !important;
+}
+
+.sizaCombatDecisionV02 {
+  left: calc(50% - 105px) !important;
+  top: 214px !important;
+  max-width: 500px !important;
+}
+
+/*
+  COMBAT HISTORY
+  Explicitly defeats the old full-width parchment strip from siza_tcg_embed_v01.js.
+  Nothing in this column is allowed beneath the player's cards.
+*/
+.matchBoardV5 .matchLog {
+  display: block !important;
+  position: absolute !important;
+  z-index: 42 !important;
+  left: auto !important;
+  right: 12px !important;
+  top: 48px !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: 294px !important;
+  height: 146px !important;
+  max-height: 146px !important;
+  overflow: hidden !important;
+  padding: 9px 10px !important;
+  border: 1px solid rgba(114,79,46,.66) !important;
+  border-radius: 6px !important;
+  background: rgba(29,19,13,.88) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.28), inset 0 0 18px rgba(165,120,70,.05) !important;
+  opacity: 1 !important;
+}
+
+.matchLog .logItem {
+  display: block !important;
+  padding: 3px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(160,122,76,.12) !important;
+  color: #e5d5b6 !important;
+  font: 10px/1.22 Georgia,serif !important;
+}
+
+.matchLog .logItem strong {
+  color: #d1a25e !important;
+}
+
+.matchLog .logItem:nth-child(n+5) {
+  display: none !important;
+}
+
+/* Player hand: dedicated bottom lane only. */
+.handAreaV5 {
+  position: absolute !important;
+  z-index: 30 !important;
+  left: 104px !important;
+  right: 320px !important;
+  bottom: 6px !important;
+  height: 114px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+.handV5 {
+  height: 112px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-end !important;
+  pointer-events: auto !important;
+}
+
+.handCardV5 {
+  flex: 0 0 80px !important;
+  width: 80px !important;
+  height: 112px !important;
+  margin-left: -16px !important;
+}
+
+.handCardV5:first-child {
+  margin-left: 0 !important;
+}
+
+.handCardV5 .sizaCard {
+  height: 112px !important;
+  min-height: 0 !important;
+}
+
+.handCardV5:hover,
+.handCardV5.selected {
+  transform: translateY(-18px) scale(1.07) !important;
+}
+
+.handLabelV610 {
+  display: block !important;
+  top: -10px !important;
+}
+
+/* Resources: own left gutter, never under the hand. */
+.resourceRailV610 {
+  position: absolute !important;
+  z-index: 36 !important;
+  left: 10px !important;
+  right: auto !important;
+  bottom: 8px !important;
+  width: 86px !important;
+  height: auto !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 4px !important;
+}
+
+.resourceRailV610 .mfActionsBadgeV600,
+.resourceRailV610 .burnAvailableBadgeV600 {
+  position: static !important;
+  width: 86px !important;
+  min-height: 27px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 4px 5px !important;
+  border-radius: 4px !important;
+  font-size: 6px !important;
+  white-space: normal !important;
+}
+
+/* Command and End Turn own the lower right column. */
+.creatureCommandDockV610 {
+  position: absolute !important;
+  z-index: 35 !important;
+  left: auto !important;
+  right: 92px !important;
+  bottom: 8px !important;
+  transform: none !important;
+  width: 220px !important;
+  min-height: 66px !important;
+  max-height: 100px !important;
+  grid-template-columns: 1fr !important;
+  gap: 4px !important;
+  padding: 6px 8px !important;
+  overflow: hidden !important;
+}
+
+.commandCopyV610 b,
+.commandEffectV610 {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.commandCopyV610 b {
+  font-size: 10px !important;
+  line-height: 1.1 !important;
+}
+
+.commandEffectV610 {
+  font-size: 7px !important;
+  line-height: 1.15 !important;
+}
+
+.commandActionsV610 {
+  justify-content: flex-end !important;
+}
+
+.commandBtnV610 {
+  min-height: 28px !important;
+  padding: 4px 7px !important;
+  font-size: 7px !important;
+}
+
+.endTurnV5 {
+  right: 12px !important;
+  bottom: 8px !important;
+  width: 70px !important;
+  height: 66px !important;
+  border-radius: 6px !important;
+  font-size: 8px !important;
+}
+
+/* Action-owner hierarchy: the side currently acting stays crisp; the waiting side recedes. */
+.matchBoardV5:has(.sizaCombatReadoutV02[data-owner="enemy"]) .playerHalf {
+  filter: brightness(.72) saturate(.72) !important;
+  opacity: .78 !important;
+}
+
+.matchBoardV5:has(.sizaCombatReadoutV02[data-owner="player"]) .enemyHalf {
+  filter: brightness(.72) saturate(.72) !important;
+  opacity: .78 !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .arenaHalf {
+  filter: brightness(.48) saturate(.68) !important;
+  opacity: .60 !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .handAreaV5 {
+  filter: brightness(.62) saturate(.72) !important;
+  opacity: .70 !important;
+}
+
+/* Mobile / narrow iframe: keep the same ownership of regions, simply shrink the right rail. */
+@media (max-width: 850px) {
+  .arenaHalf .arenaZones,
+  .arenaHalf .arenaField {
+    left: 76px !important;
+    right: 238px !important;
+  }
+
+  .arenaMiniCard {
+    flex-basis: 58px !important;
+    width: 58px !important;
+    height: 82px !important;
+  }
+
+  .stackAnchorV5,
+  .manifestInlineV5,
+  .manifestInlineV5.manifestStageV600,
+  .damageRibbonV600,
+  .responseWindowV53,
+  .sizaCombatDecisionV02 {
+    left: calc(50% - 81px) !important;
+  }
+
+  .sizaCombatTurnCurtainV02 {
+    left: 76px !important;
+    right: 238px !important;
+  }
+
+  .matchBoardV5 .matchLog {
+    right: 8px !important;
+    width: 220px !important;
+    height: 136px !important;
+    max-height: 136px !important;
+    font-size: 9px !important;
+  }
+
+  .handAreaV5 {
+    left: 82px !important;
+    right: 238px !important;
+    height: 108px !important;
+  }
+
+  .handV5 {
+    height: 106px !important;
+  }
+
+  .handCardV5 {
+    flex-basis: 73px !important;
+    width: 73px !important;
+    height: 104px !important;
+    margin-left: -19px !important;
+  }
+
+  .handCardV5 .sizaCard {
+    height: 104px !important;
+  }
+
+  .resourceRailV610,
+  .resourceRailV610 .mfActionsBadgeV600,
+  .resourceRailV610 .burnAvailableBadgeV600 {
+    width: 68px !important;
+  }
+
+  .creatureCommandDockV610 {
+    right: 72px !important;
+    width: 158px !important;
+  }
+
+  .endTurnV5 {
+    right: 7px !important;
+    width: 58px !important;
+  }
+}
+
+/* v0.3.5 — Battlefield ownership map.
+   Keep the runtime DOM intact, but give each real zone a stable place in the
+   Arena-like board: rival above the interaction lane, player below it. */
+.matchBoardV5 {
+  --siza-side-gutter: 112px;
+  --siza-command-height: 44px;
+}
+
+.arenaHalf.enemyHalf {
+  top: 17% !important;
+  height: 30% !important;
+}
+
+.arenaHalf.playerHalf {
+  top: 52% !important;
+  height: 25% !important;
+}
+
+.arenaHalf .arenaZones,
+.arenaHalf .arenaField {
+  left: var(--siza-side-gutter) !important;
+  right: var(--siza-side-gutter) !important;
+}
+
+.enemyHalf .arenaZones {
+  top: 0 !important;
+}
+
+.enemyHalf .arenaField {
+  top: 15% !important;
+  height: 85% !important;
+}
+
+.playerHalf .arenaField {
+  top: 0 !important;
+  height: 78% !important;
+}
+
+.playerHalf .arenaZones {
+  top: 78% !important;
+}
+
+/* The middle remains empty unless the runtime puts Stack / resolution there. */
+.stackAnchorV5,
+.manifestInlineV5,
+.manifestInlineV5.manifestStageV600,
+.damageRibbonV600,
+.responseWindowV53 {
+  left: 50% !important;
+  top: 50% !important;
+}
+
+.sizaCombatTurnCurtainV02 {
+  left: var(--siza-side-gutter) !important;
+  right: var(--siza-side-gutter) !important;
+  top: 50% !important;
+}
+
+/* Hands explicitly own the top and bottom edges of the board. */
+.bookEnemyHandV03 {
+  left: 24% !important;
+  right: 24% !important;
+  top: 3px !important;
+}
+
+.handAreaV5 {
+  left: 15% !important;
+  right: 15% !important;
+  bottom: var(--siza-command-height) !important;
+  height: 19% !important;
+}
+
+.handV5,
+.handCardV5,
+.handCardV5 .sizaCard {
+  height: 100% !important;
+}
+
+/* Library, graveyard and exile sit beside their owner, never in a command rail. */
+.bookTcgZoneDock-enemy {
+  top: 12% !important;
+  right: 12px !important;
+  width: 96px !important;
+}
+
+.bookTcgZoneDock-player {
+  top: 69% !important;
+  left: 12px !important;
+  width: 96px !important;
+}
+
+/* History is reference-only; the board carries the primary narration. */
+.matchBoardV5 .matchLog {
+  left: 12px !important;
+  right: auto !important;
+  top: 31% !important;
+  width: 152px !important;
+  height: 86px !important;
+  max-height: 86px !important;
+  opacity: .72 !important;
+}
+
+.matchLog .logItem {
+  font-size: 8px !important;
+}
+
+/* Persistent controls form the bottom bar and leave the battlefield unobstructed. */
+.resourceRailV610 {
+  left: 12px !important;
+  bottom: 7px !important;
+  width: 148px !important;
+  height: 30px !important;
+  display: flex !important;
+  grid-template-columns: none !important;
+}
+
+.resourceRailV610 .mfActionsBadgeV600,
+.resourceRailV610 .burnAvailableBadgeV600 {
+  width: auto !important;
+  min-height: 30px !important;
+}
+
+.creatureCommandDockV610 {
+  right: 98px !important;
+  bottom: 7px !important;
+  width: min(360px, 38%) !important;
+  min-height: 30px !important;
+  max-height: 36px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.endTurnV5 {
+  right: 12px !important;
+  bottom: 7px !important;
+  width: 78px !important;
+  height: 34px !important;
+}
+
+/* Exactly one runtime-backed resource HUD per participant. */
+.participantHudV035 {
+  position: absolute;
+  z-index: 38;
+  width: 104px;
+  padding: 5px 7px;
+  border: 1px solid rgba(169,121,66,.72);
+  border-radius: 5px;
+  background: rgba(25,17,12,.88);
+  box-shadow: 0 7px 18px rgba(0,0,0,.32);
+  color: #ead9b7;
+  pointer-events: none;
+}
+
+.enemyHalf .participantHudV035 { right: 0; top: 0; }
+.playerHalf .participantHudV035 { left: 0; bottom: 0; }
+.participantHudV035 b { display: block; font: 700 11px/1 Georgia,serif; }
+.participantHudV035 span { display: inline-block; margin: 4px 7px 0 0; font: 700 8px/1 system-ui,sans-serif; }
+.participantHudV035 .crystalPoolV070 { margin-top: 4px; }
+
+/* Manafestation is owned spatially: no shared neutral dice table. */
+.manifestInlineV5.manifestStageV600[data-owner="enemy"] {
+  left: 50% !important;
+  top: 32% !important;
+}
+
+.manifestInlineV5.manifestStageV600[data-owner="player"] {
+  left: 50% !important;
+  top: 65% !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .manifestInlineV5[data-owner="enemy"] {
+  filter: drop-shadow(0 -4px 20px rgba(177,105,84,.28)) !important;
+}
+
+.matchBoardV5[data-siza-v02-focus="manifest"] .manifestInlineV5[data-owner="player"] {
+  filter: drop-shadow(0 4px 20px rgba(77,159,216,.32)) !important;
+}
+
+.participantHudV035 .crystalV070.spent {
+  animation: sizaCrystalSpentV035 .46s ease-out both;
+}
+
+@keyframes sizaCrystalSpentV035 {
+  0% { filter: brightness(2.2) saturate(1.35); opacity: 1; transform: scale(1.18); }
+  100% { filter: grayscale(1) brightness(.42); opacity: .62; transform: scale(1); }
+}
+
+/* Runtime combat state becomes an explicit attack line, block and impact. */
+.arenaMiniCard.attackingV035 {
+  z-index: 24 !important;
+  outline: 2px solid rgba(238,192,96,.95);
+  box-shadow: 0 0 0 4px rgba(238,192,96,.18), 0 0 24px rgba(238,192,96,.52) !important;
+  animation: sizaAttackAdvanceV035 .82s cubic-bezier(.18,.82,.24,1) infinite alternate;
+}
+
+.enemyHalf .arenaMiniCard.attackingV035 {
+  --siza-attack-shift: 26px;
+}
+
+.playerHalf .arenaMiniCard.attackingV035 {
+  --siza-attack-shift: -26px;
+}
+
+.arenaMiniCard.blockingV035 {
+  z-index: 25 !important;
+  outline: 2px solid rgba(112,184,223,.92);
+  box-shadow: 0 0 0 4px rgba(112,184,223,.18), 0 0 22px rgba(112,184,223,.48) !important;
+  animation: sizaBlockBraceV035 .48s ease-in-out infinite alternate;
+}
+
+@keyframes sizaAttackAdvanceV035 {
+  from { transform: translateY(0) scale(1.02); }
+  to { transform: translateY(var(--siza-attack-shift)) scale(1.11); }
+}
+
+@keyframes sizaBlockBraceV035 {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+
+@media (max-width: 850px) {
+  .matchBoardV5 { --siza-side-gutter: 76px; }
+  .bookEnemyHandV03 { left: 21% !important; right: 21% !important; }
+  .bookTcgZoneDock-enemy,
+  .bookTcgZoneDock-player { width: 64px !important; }
+  .matchBoardV5 .matchLog { width: 104px !important; }
+  .resourceRailV610 { width: 112px !important; }
+  .creatureCommandDockV610 { right: 74px !important; width: 34% !important; }
+  .endTurnV5 { width: 56px !important; }
+}

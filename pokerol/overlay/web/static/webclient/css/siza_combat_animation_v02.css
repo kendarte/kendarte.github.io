@@ -1,0 +1,285 @@
+/* SIZA combat animation v0.2
+   Presentation only. Animates the real Arena DOM; rules remain authoritative in the Arena runtime.
+*/
+
+/* ===== Book encounter transition ===== */
+.sizaCombatBookTransitionV02{
+  position:absolute;
+  z-index:220;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+}
+.sizaCombatBookTransitionV02[data-state]{opacity:1;visibility:visible}
+.sizaCombatBladeV02{
+  position:absolute;
+  top:-12%;
+  bottom:-12%;
+  width:62%;
+  background:
+    linear-gradient(135deg,rgba(15,8,5,.98),rgba(43,22,12,.98)),
+    repeating-linear-gradient(0deg,transparent 0 8px,rgba(198,151,82,.04) 8px 9px);
+  box-shadow:0 0 45px rgba(0,0,0,.72);
+  transition:transform .34s cubic-bezier(.65,.02,.35,1);
+}
+.sizaCombatBladeV02.bladeA{left:-12%;clip-path:polygon(0 0,100% 0,82% 100%,0 100%);transform:translateX(-108%)}
+.sizaCombatBladeV02.bladeB{right:-12%;clip-path:polygon(18% 0,100% 0,100% 100%,0 100%);transform:translateX(108%)}
+.sizaCombatBookTransitionV02[data-state="closing"] .bladeA,
+.sizaCombatBookTransitionV02[data-state="locked"] .bladeA{transform:translateX(0)}
+.sizaCombatBookTransitionV02[data-state="closing"] .bladeB,
+.sizaCombatBookTransitionV02[data-state="locked"] .bladeB{transform:translateX(0)}
+.sizaCombatBookTransitionV02[data-state="opening"] .bladeA{transform:translateX(-108%);transition-duration:.46s}
+.sizaCombatBookTransitionV02[data-state="opening"] .bladeB{transform:translateX(108%);transition-duration:.46s}
+.sizaCombatBookTitleV02{
+  position:absolute;
+  z-index:3;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%) scale(.72);
+  opacity:0;
+  text-align:center;
+  color:#f2dfb6;
+  text-shadow:0 5px 18px #000;
+  transition:opacity .16s ease,transform .28s cubic-bezier(.16,.88,.26,1.12);
+}
+.sizaCombatBookTitleV02::before,.sizaCombatBookTitleV02::after{
+  content:"";display:block;width:240px;max-width:35vw;height:1px;margin:10px auto;
+  background:linear-gradient(90deg,transparent,#d2a55e,transparent)
+}
+.sizaCombatBookTitleV02 small{display:block;font:800 8px/1 system-ui,sans-serif;letter-spacing:.28em;color:#b7925f}
+.sizaCombatBookTitleV02 strong{display:block;margin-top:7px;font:700 38px/1 Georgia,serif;letter-spacing:.22em}
+.sizaCombatBookTransitionV02[data-state="locked"] .sizaCombatBookTitleV02{
+  opacity:1;transform:translate(-50%,-50%) scale(1)
+}
+.sizaCombatBookTransitionV02[data-state="opening"] .sizaCombatBookTitleV02{
+  opacity:0;transform:translate(-50%,-50%) scale(1.18)
+}
+
+/* v0.1's tiny labels are deliberately superseded by the readable v0.2 choreography. */
+.sizaCombatStateHudV01,
+.sizaCombatPhaseCueV01,
+.sizaCombatDecisionV01,
+.sizaCombatActionV01{display:none!important}
+
+/* ===== Persistent combat readout ===== */
+.sizaCombatReadoutV02{
+  position:absolute;
+  z-index:72;
+  left:50%;top:7px;
+  transform:translateX(-50%);
+  min-width:245px;
+  padding:6px 22px 7px;
+  text-align:center;
+  pointer-events:none;
+  border:1px solid rgba(190,145,76,.7);
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(28,16,10,.94),rgba(16,10,7,.9));
+  box-shadow:0 8px 24px rgba(0,0,0,.38),inset 0 0 0 1px rgba(255,225,165,.06)
+}
+.sizaCombatReadoutV02 .owner{display:block;font:800 7px/1 system-ui,sans-serif;letter-spacing:.18em;color:#b9905c}
+.sizaCombatReadoutV02 .phase{display:block;margin-top:4px;font:700 13px/1 Georgia,serif;letter-spacing:.06em;color:#f1dfbd}
+.sizaCombatReadoutV02[data-owner="enemy"]{border-color:rgba(154,77,69,.82);background:linear-gradient(180deg,rgba(46,20,18,.95),rgba(20,10,9,.92))}
+
+/* ===== Full centre turn / phase transition ===== */
+.sizaCombatTurnCurtainV02{
+  position:absolute;
+  z-index:88;
+  left:0;right:0;top:43%;
+  transform:translateY(-50%) scaleX(.72);
+  opacity:0;
+  padding:16px 8%;
+  pointer-events:none;
+  text-align:center;
+  border-top:1px solid rgba(221,177,102,.56);
+  border-bottom:1px solid rgba(221,177,102,.56);
+  background:linear-gradient(90deg,transparent 2%,rgba(11,7,5,.9) 19%,rgba(24,13,8,.96) 50%,rgba(11,7,5,.9) 81%,transparent 98%);
+  box-shadow:0 0 32px rgba(0,0,0,.34);
+  transition:opacity .13s ease,transform .22s cubic-bezier(.18,.8,.2,1)
+}
+.sizaCombatTurnCurtainV02[data-visible="true"]{opacity:1;transform:translateY(-50%) scaleX(1)}
+.sizaCombatTurnCurtainV02 small{display:block;font:800 8px/1 system-ui,sans-serif;letter-spacing:.2em;color:#b89462}
+.sizaCombatTurnCurtainV02 strong{display:block;margin-top:7px;font:700 27px/1 Georgia,serif;letter-spacing:.13em;color:#f4dfb9;text-shadow:0 3px 12px #000}
+
+/* ===== Player decision ===== */
+.sizaCombatDecisionV02{
+  position:absolute;
+  z-index:82;
+  left:50%;top:47px;
+  transform:translate(-50%,-12px);
+  min-width:330px;
+  max-width:68%;
+  opacity:0;
+  padding:9px 18px;
+  pointer-events:none;
+  text-align:center;
+  border:1px solid rgba(222,177,93,.85);
+  border-radius:7px;
+  background:rgba(33,20,11,.96);
+  box-shadow:0 10px 28px rgba(0,0,0,.42),0 0 24px rgba(207,157,73,.1);
+  transition:opacity .16s ease,transform .2s ease
+}
+.sizaCombatDecisionV02[data-visible="true"]{opacity:1;transform:translate(-50%,0)}
+.sizaCombatDecisionV02 strong{display:block;font:800 10px/1 system-ui,sans-serif;letter-spacing:.16em;color:#f1c96f}
+.sizaCombatDecisionV02 span{display:block;margin-top:4px;font:12px/1.15 Georgia,serif;color:#efe1c8}
+
+/* ===== Attention control during a real Manafestation ===== */
+.matchBoardV5[data-siza-v02-focus="manifest"] .arenaHalf,
+.matchBoardV5[data-siza-v02-focus="manifest"] .handAreaV5,
+.matchBoardV5[data-siza-v02-focus="manifest"] .resourceRailV610,
+.matchBoardV5[data-siza-v02-focus="manifest"] .creatureCommandDockV610,
+.matchBoardV5[data-siza-v02-focus="manifest"] .endTurnV5{
+  filter:brightness(.42) saturate(.72);
+  opacity:.72;
+  transition:filter .2s ease,opacity .2s ease
+}
+.matchBoardV5[data-siza-v02-focus="manifest"] .manifestInlineV5{
+  z-index:95!important;
+  filter:drop-shadow(0 20px 36px rgba(0,0,0,.75))!important
+}
+.matchBoardV5[data-siza-v02-focus="manifest"] .matchLog{opacity:.18!important;transition:opacity .18s ease}
+
+/* The entire manifest sequence now physically enters the field. */
+.manifestInlineV5[data-siza-v02-manifest="enter"] .committedCardV5{
+  animation:sizaV02CommittedCard .58s cubic-bezier(.16,.86,.24,1.08) both
+}
+.manifestInlineV5[data-siza-v02-manifest="enter"] .manifestDieV5{
+  animation:sizaV02DieEnter .7s .08s cubic-bezier(.16,.86,.24,1.08) both
+}
+.manifestInlineV5[data-siza-v02-manifest="enter"] .manifestResultV5{
+  animation:sizaV02ResultEnter .5s .26s cubic-bezier(.18,.82,.24,1) both
+}
+@keyframes sizaV02CommittedCard{
+  0%{opacity:0;transform:translate(-120px,82px) rotate(-17deg) scale(.55)}
+  65%{opacity:1;transform:translate(10px,-7px) rotate(3deg) scale(1.08)}
+  100%{opacity:1;transform:none}
+}
+@keyframes sizaV02DieEnter{
+  0%{opacity:0;transform:translateY(-100px) rotate(-120deg) scale(.35)}
+  60%{opacity:1;transform:translateY(9px) rotate(12deg) scale(1.15)}
+  100%{opacity:1;transform:none}
+}
+@keyframes sizaV02ResultEnter{
+  0%{opacity:0;transform:translateX(90px) scale(.78)}
+  100%{opacity:1;transform:none}
+}
+.manifestResultV5[data-siza-v02-result="good"]{animation:sizaV02GoodResult .68s ease both}
+.manifestResultV5[data-siza-v02-result="bad"]{animation:sizaV02BadResult .68s ease both}
+.manifestResultV5[data-siza-v02-result="neutral"]{animation:sizaV02NeutralResult .55s ease both}
+@keyframes sizaV02GoodResult{0%{transform:scale(.92);box-shadow:0 0 0 rgba(118,210,151,0)}35%{transform:scale(1.08);box-shadow:0 0 38px rgba(118,210,151,.52)}100%{transform:none;box-shadow:none}}
+@keyframes sizaV02BadResult{0%{transform:translateX(0);box-shadow:0 0 0 rgba(239,119,95,0)}20%{transform:translateX(-9px)}38%{transform:translateX(8px);box-shadow:0 0 38px rgba(239,119,95,.48)}55%{transform:translateX(-5px)}100%{transform:none;box-shadow:none}}
+@keyframes sizaV02NeutralResult{0%{transform:scale(.9);opacity:.6}100%{transform:none;opacity:1}}
+
+/* ===== Semantic Arena movement ===== */
+.handCardV5[data-siza-v02-enter="draw"]{animation:sizaV02Draw .72s cubic-bezier(.14,.84,.24,1.08) both}
+@keyframes sizaV02Draw{0%{opacity:0;transform:translate(100px,96px) rotate(15deg) scale(.62)}68%{opacity:1;transform:translate(4px,-12px) rotate(-2deg) scale(1.04)}100%{transform:none}}
+
+.enemyHalf .arenaMiniCard[data-siza-v02-enter="enemy-deploy"]{animation:sizaV02EnemyDeploy .72s cubic-bezier(.14,.84,.24,1.08) both}
+@keyframes sizaV02EnemyDeploy{0%{opacity:0;transform:translateY(-105px) rotate(10deg) scale(.5)}70%{opacity:1;transform:translateY(7px) rotate(-2deg) scale(1.08)}100%{transform:none}}
+
+.playerHalf .arenaMiniCard[data-siza-v02-enter="player-deploy"]{animation:sizaV02PlayerDeploy .72s cubic-bezier(.14,.84,.24,1.08) both}
+@keyframes sizaV02PlayerDeploy{0%{opacity:0;transform:translateY(105px) rotate(-10deg) scale(.5)}70%{opacity:1;transform:translateY(-7px) rotate(2deg) scale(1.08)}100%{transform:none}}
+
+.stackObj[data-siza-v02-enter="stack"]{animation:sizaV02StackEnter .58s cubic-bezier(.12,.88,.24,1.15) both}
+@keyframes sizaV02StackEnter{0%{opacity:0;transform:scale(.28) rotate(-8deg)}58%{opacity:1;transform:scale(1.16) rotate(2deg)}100%{transform:none}}
+
+/* A transient duplicate preserves source → movement → destination while the
+   runtime re-renders its authoritative zones. */
+.sizaCombatCardFlightV02{
+  position:fixed;z-index:110;pointer-events:none;overflow:hidden;
+  transform-origin:center;opacity:1;
+  transition:transform .62s cubic-bezier(.18,.82,.24,1),opacity .62s ease;
+  filter:drop-shadow(0 12px 16px rgba(0,0,0,.48));
+}
+.sizaCombatCardFlightV02 .handCardV5,.sizaCombatCardFlightV02 .arenaMiniCard,
+.sizaCombatCardFlightV02 .stackObj{width:100%!important;height:100%!important;margin:0!important}
+.sizaCombatCardFlightV02-stack{filter:drop-shadow(0 0 12px rgba(213,172,95,.55))}
+.sizaCombatCardFlightV02-leave{filter:drop-shadow(0 0 12px rgba(194,74,58,.46))}
+
+.sizaCombatDamageV035{
+  position:absolute;z-index:108;left:50%;pointer-events:none;
+  color:#ff777d;font:900 30px/1 Georgia,serif;text-shadow:0 3px 0 #381014,0 0 16px rgba(255,80,90,.72);
+  animation:sizaDamageRiseV035 .9s ease-out both;
+}
+.sizaCombatDamageV035[data-owner="enemy"]{top:27%}
+.sizaCombatDamageV035[data-owner="player"]{top:69%}
+@keyframes sizaDamageRiseV035{0%{opacity:0;transform:translate(-50%,12px) scale(.68)}20%{opacity:1;transform:translate(-50%,0) scale(1.2)}72%{opacity:1;transform:translate(-50%,-26px) scale(1)}100%{opacity:0;transform:translate(-50%,-46px) scale(.88)}}
+
+/* The actor and phase are always readable without a modal. */
+.sizaCombatPhaseTrackV035{
+  position:absolute;z-index:73;left:50%;bottom:7px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;padding:5px 9px;
+  border:1px solid rgba(169,121,66,.72);border-radius:999px;
+  background:rgba(24,16,11,.9);box-shadow:0 6px 18px rgba(0,0,0,.3);
+  color:rgba(232,213,175,.48);font:800 7px/1 system-ui,sans-serif;letter-spacing:.08em;
+}
+.sizaCombatPhaseTrackV035 span[data-active="true"]{color:#f1c96f;text-shadow:0 0 12px rgba(224,180,95,.55)}
+.sizaCombatPhaseTrackV035 span[data-active="true"]::after{content:" ●"}
+.sizaCombatPhaseTrackV035 b{margin-left:4px;padding-left:8px;border-left:1px solid rgba(190,145,76,.36);color:#9ccde9;font-size:6px}
+.sizaCombatPhaseTrackV035[data-owner="enemy"] b{color:#e7a294}
+.sizaCombatDecisionV02{display:none!important}
+.sizaCombatTurnCurtainV02{padding:6px 5%!important;max-width:260px;left:50%!important;right:auto!important;transform:translate(-50%,-50%) scaleX(.82)!important}
+.sizaCombatTurnCurtainV02[data-visible="true"]{transform:translate(-50%,-50%) scaleX(1)!important}
+.sizaCombatTurnCurtainV02 strong{margin-top:3px!important;font-size:14px!important}
+.sizaCombatTurnCurtainV02 small{font-size:6px!important}
+
+/* Subtle VFX: the board remains the source of explanation. */
+.stackObj:not([data-siza-v02-enter="stack"]){
+  animation:sizaStackPulseV035 1.35s ease-in-out infinite;
+  box-shadow:0 0 0 1px rgba(219,180,103,.46),0 0 18px rgba(219,180,103,.2)!important;
+}
+@keyframes sizaStackPulseV035{0%,100%{filter:brightness(1);transform:translateY(0)}50%{filter:brightness(1.22);transform:translateY(-3px)}}
+
+.arenaMiniCard[data-siza-v02-enter="player-deploy"],
+.arenaMiniCard[data-siza-v02-enter="enemy-deploy"]{
+  filter:drop-shadow(0 0 18px rgba(120,208,235,.55));
+}
+.arenaMiniCard[data-siza-v02-enter="enemy-deploy"]{filter:drop-shadow(0 0 18px rgba(224,130,101,.52))}
+
+.sizaCombatTargetLineV035{
+  position:absolute;z-index:21;height:2px;transform-origin:0 50%;pointer-events:none;
+  background:linear-gradient(90deg,rgba(238,192,96,.08),rgba(238,192,96,.96) 45%,rgba(255,235,170,.22));
+  box-shadow:0 0 8px rgba(238,192,96,.7);animation:sizaTargetFlowV035 .72s linear infinite;
+}
+.sizaCombatTargetLineV035[data-blocked="true"]{background:linear-gradient(90deg,rgba(112,184,223,.08),rgba(112,184,223,.98) 45%,rgba(208,239,255,.22));box-shadow:0 0 9px rgba(112,184,223,.78)}
+@keyframes sizaTargetFlowV035{0%,100%{opacity:.52}50%{opacity:1}}
+
+.sizaCombatCardFlightV02-manifest{filter:drop-shadow(0 0 16px rgba(89,181,230,.54))}
+.sizaCombatCardFlightV02-resolve{filter:drop-shadow(0 0 16px rgba(219,180,103,.48))}
+
+/* Selecting a card visibly lifts it into focus instead of merely changing z-index. */
+.cardFocusV5{animation:sizaV02CardFocus .22s cubic-bezier(.18,.8,.2,1) both}
+@keyframes sizaV02CardFocus{0%{opacity:0;transform:translateY(34px) scale(.86)}100%{opacity:1;transform:none}}
+
+/* ===== Resolution flash ===== */
+.sizaCombatImpactV02{
+  position:absolute;z-index:91;inset:0;pointer-events:none;opacity:0
+}
+.sizaCombatImpactV02[data-impact="good"]{animation:sizaV02ImpactGood .5s ease both}
+.sizaCombatImpactV02[data-impact="bad"]{animation:sizaV02ImpactBad .5s ease both}
+.sizaCombatImpactV02[data-impact="neutral"]{animation:sizaV02ImpactNeutral .45s ease both}
+@keyframes sizaV02ImpactGood{0%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(129,226,164,.5),transparent 14%)}28%{opacity:1}100%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(129,226,164,0),transparent 54%)}}
+@keyframes sizaV02ImpactBad{0%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(239,100,84,.48),transparent 12%)}28%{opacity:1}100%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(239,100,84,0),transparent 54%)}}
+@keyframes sizaV02ImpactNeutral{0%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(216,180,109,.38),transparent 12%)}30%{opacity:1}100%{opacity:0;background:radial-gradient(circle at 50% 48%,rgba(216,180,109,0),transparent 52%)}}
+
+/* During an explicit player decision, reduce competing visual noise but do not block controls. */
+.matchBoardV5[data-siza-v02-decision] .enemyHalf,
+.matchBoardV5[data-siza-v02-decision] .matchLog{filter:brightness(.66);transition:filter .18s ease}
+.matchBoardV5[data-siza-v02-decision="response"] .handAreaV5,
+.matchBoardV5[data-siza-v02-decision="defense"] .playerHalf .arenaField{
+  filter:drop-shadow(0 0 13px rgba(224,180,95,.38));
+}
+
+@media(max-width:850px){
+  .sizaCombatBookTitleV02 strong{font-size:30px}
+  .sizaCombatReadoutV02{min-width:205px;padding:5px 14px 6px}
+  .sizaCombatReadoutV02 .phase{font-size:11px}
+  .sizaCombatTurnCurtainV02 strong{font-size:21px}
+  .sizaCombatDecisionV02{min-width:250px;max-width:76%;top:43px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .sizaCombatBladeV02,.sizaCombatBookTitleV02,.sizaCombatTurnCurtainV02,.sizaCombatDecisionV02{transition-duration:.01ms!important}
+  .sizaCombatCardFlightV02{transition-duration:.01ms!important}
+  .manifestInlineV5 *,.handCardV5,.arenaMiniCard,.stackObj,.cardFocusV5,.sizaCombatImpactV02,.sizaCombatDamageV035,.sizaCombatTargetLineV035{animation-duration:.01ms!important;animation-delay:0ms!important}
+}

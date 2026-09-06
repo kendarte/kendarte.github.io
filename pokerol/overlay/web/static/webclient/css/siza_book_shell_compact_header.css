@@ -1,0 +1,160 @@
+/* Compact header correction: preserve the approved book composition without consuming scene space. */
+
+.sizaBookClient {
+    grid-template-rows: 70px minmax(0, 1fr);
+}
+
+.sizaBookHeader {
+    border-bottom-width: 2px;
+}
+
+.sizaHeaderCharacterPlayer {
+    grid-template-columns: 58px minmax(0, 1fr);
+    padding: 5px 8px 5px 6px;
+}
+
+.sizaHeaderCharacterFocus {
+    grid-template-columns: minmax(0, 1fr) 58px;
+    padding: 5px 6px 5px 8px;
+}
+
+.sizaHeaderCharacterCopy {
+    padding: 0 7px;
+}
+
+.sizaHeaderCharacterCopy small,
+.sizaBookChapter small {
+    margin-bottom: 2px;
+    font-size: 6px;
+}
+
+.sizaHeaderCharacterCopy strong {
+    font-size: 15px;
+    line-height: 1.05;
+}
+
+.sizaHeaderCharacterCopy > span {
+    margin-top: 2px;
+    font-size: 8px;
+    line-height: 1.1;
+}
+
+.sizaHeaderCharacterMeta {
+    display: none;
+}
+
+.sizaPortraitSlot {
+    width: 50px;
+    height: 56px;
+}
+
+.sizaPortraitFrame {
+    border-width: 1px;
+}
+
+.sizaPortraitInitial {
+    font-size: 24px;
+}
+
+.sizaBookChapter {
+    padding: 4px 10px;
+}
+
+.sizaBookChapter small {
+    margin-bottom: 2px;
+}
+
+.sizaBookChapter strong {
+    font-size: 16px;
+    line-height: 1.05;
+}
+
+.sizaBookChapter span {
+    margin-top: 2px;
+    font-size: 8px;
+    line-height: 1.1;
+}
+
+.sizaConnectionBadge {
+    top: 3px;
+    right: 4px;
+    bottom: auto;
+    padding: 2px 5px;
+    gap: 4px;
+    font-size: 6px;
+}
+
+.sizaConnectionDot {
+    width: 5px;
+    height: 5px;
+}
+
+/* Location/mode already live in the center header. Do not duplicate them over the scene. */
+.sizaSceneTopPlaque {
+    display: none !important;
+}
+
+.sizaBookScene {
+    margin-top: 4px;
+}
+
+@media (max-width: 760px) {
+    .sizaBookClient {
+        grid-template-rows: 58px minmax(0, 1fr);
+    }
+
+    .sizaHeaderCharacterPlayer {
+        grid-template-columns: 43px minmax(0, 1fr);
+        padding: 3px 4px;
+    }
+
+    .sizaHeaderCharacterFocus {
+        grid-template-columns: minmax(0, 1fr) 43px;
+        padding: 3px 4px;
+    }
+
+    .sizaPortraitSlot {
+        width: 38px;
+        height: 44px;
+    }
+
+    .sizaPortraitInitial {
+        font-size: 19px;
+    }
+
+    .sizaHeaderCharacterCopy {
+        padding: 0 3px;
+    }
+
+    .sizaHeaderCharacterCopy small,
+    .sizaBookChapter small {
+        font-size: 5px;
+    }
+
+    .sizaHeaderCharacterCopy strong {
+        font-size: 10px;
+    }
+
+    .sizaHeaderCharacterCopy > span {
+        font-size: 6px;
+    }
+
+    .sizaBookChapter {
+        padding: 3px 5px;
+    }
+
+    .sizaBookChapter strong {
+        font-size: 11px;
+    }
+
+    .sizaBookChapter span {
+        font-size: 6px;
+    }
+
+    .sizaConnectionBadge {
+        top: 2px;
+        right: 2px;
+        padding: 1px 4px;
+        font-size: 5px;
+    }
+}
