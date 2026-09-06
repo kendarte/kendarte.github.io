@@ -9,10 +9,11 @@ from services.pokemon_battle_engine import (
     move_by_id,
 )
 from services.pokemon_battle_position_engine import position_move_gate
+from services.pokemon_battle_reaction_engine import settle_incoming_attack_reaction
 from services.pokemon_battle_status_engine import before_action
 
 
-TACTICAL_ACTION_BUILD = "0.1.0-position-reach"
+TACTICAL_ACTION_BUILD = "0.2.0-position-reach-dodge"
 
 
 def _dict(value):
@@ -54,7 +55,6 @@ def move_reach_gate(state, side, action):
     move = move_by_id(attacker, action.get("move_id"))
     if not move:
         return {"allowed": False, "status": "MOVE_NOT_KNOWN", "build": TACTICAL_ACTION_BUILD}
-    # SELF moves never need to reach the opponent.
     if _text(move.get("delivery")).upper() == "SELF":
         return {"allowed": True, "status": "SELF_MOVE", "build": TACTICAL_ACTION_BUILD}
     return {**position_move_gate(attacker, defender, move), "move_id": move.get("move_id")}
@@ -127,7 +127,7 @@ def _execute_blocked_move(state, side, action, rng, gate):
 
 
 def execute_row_position_aware(state, row, rng):
-    """Execute one ordered row, enforcing position reach on direct moves."""
+    """Execute one ordered row, enforcing position reach and armed dodge reactions."""
     row = _dict(row)
     action = _dict(row.get("action"))
     side = _text(row.get("side")).upper()
@@ -135,5 +135,15 @@ def execute_row_position_aware(state, row, rng):
         gate = move_reach_gate(state, side, action)
         if not gate.get("allowed"):
             return _execute_blocked_move(state, side, action, rng, gate)
+        log_start = len(_list(state.get("log")))
+        _execute_action(state, row, rng)
+        defender_side = "ENEMY" if side == "PLAYER" else "PLAYER"
+        reaction = settle_incoming_attack_reaction(state, defender_side, log_start)
+        return {
+            "executed": True,
+            "status": "CORE_ACTION_EXECUTED",
+            "blocked": False,
+            "reaction": reaction,
+        }
     _execute_action(state, row, rng)
     return {"executed": True, "status": "CORE_ACTION_EXECUTED", "blocked": False}
