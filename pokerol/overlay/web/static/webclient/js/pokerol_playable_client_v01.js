@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='0.4.0-scene-stage-exploration';
+  var BUILD='0.4.1-pokerol-native-ui-protocol';
   var emitterBound=false;
   var lastSnapshot=null;
   var lastActions=null;
@@ -129,7 +129,7 @@
     renderBackground(packet);renderExits(packet);renderActors(packet);renderActions(packet);narrateSnapshot(packet);
   }
   function renderContextActions(args){var packet=packetFrom(args);lastActions=packet;renderActions(packet)}
-  function requestRoomState(){if(!window.Evennia||typeof Evennia.msg!=='function')return false;try{Evennia.msg('text',['siza-room-state'],{});return true}catch(e){return false}}
+  function requestRoomState(){if(!window.Evennia||typeof Evennia.msg!=='function')return false;try{Evennia.msg('text',['pokerol-room-state'],{});return true}catch(e){return false}}
 
   function onText(args,kwargs){
     var value=args&&args.length?String(args[0]||''):'';if(!value)return true;
@@ -141,14 +141,17 @@
   function onPrompt(args){var value=args&&args.length?String(args[0]||''):'';var node=byId('prompt');if(node)node.innerHTML=value;return true}
   function onConnectionOpen(){appendSystem('Conectado a POKEROL.');setDialogue('Conectado. Preparando la escena…','SISTEMA',false);window.setTimeout(requestRoomState,300)}
   function onConnectionClose(){appendFeed('La conexión con POKEROL se cerró.','error',false);setDialogue('La conexión se cerró.','SISTEMA',false)}
-  function onDefault(cmdname,args){if(/^siza_/i.test(String(cmdname||'')))return true;appendFeed('Evento no manejado: '+String(cmdname||''),'error',false);return true}
+  function onDefault(cmdname,args){
+    if(/^siza_/i.test(String(cmdname||''))){if(window.console&&console.warn)console.warn('POKEROL bloqueó evento legacy:',cmdname);return true}
+    appendFeed('Evento no manejado: '+String(cmdname||''),'error',false);return true;
+  }
 
   function bindManualEcho(){var field=byId('inputfield');if(!field||field.dataset.pkEchoBound==='1')return;field.dataset.pkEchoBound='1';field.addEventListener('keydown',function(ev){if(ev.key==='Enter'&&!ev.shiftKey){var line=String(field.value||'').trim();if(line)appendCommand(line)}})}
   function bindHistory(){var open=byId('pk-log-toggle'),close=byId('pk-log-close'),panel=byId('pk-history');if(open&&panel)open.addEventListener('click',function(){panel.classList.add('pkOpen')});if(close&&panel)close.addEventListener('click',function(){panel.classList.remove('pkOpen')})}
 
   function bindEmitter(){
     if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;
-    Evennia.emitter.on('siza_room_snapshot',renderSnapshot);Evennia.emitter.on('siza_room_state',renderSnapshot);Evennia.emitter.on('siza_context_actions',renderContextActions);
+    Evennia.emitter.on('pokerol_room_snapshot',renderSnapshot);Evennia.emitter.on('pokerol_context_actions',renderContextActions);
     Evennia.emitter.on('text',onText);Evennia.emitter.on('prompt',onPrompt);Evennia.emitter.on('connection_open',onConnectionOpen);Evennia.emitter.on('connection_close',onConnectionClose);Evennia.emitter.on('default',onDefault);emitterBound=true;return true;
   }
   function init(){
