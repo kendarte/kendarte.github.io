@@ -1,0 +1,54 @@
+name: POKEROL Online Smoke Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pokerol/**'
+      - '.github/workflows/pokerol-online-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build POKEROL image
+        run: docker build -t pokerol-smoke ./pokerol
+
+      - name: Start POKEROL container
+        run: |
+          docker run -d --name pokerol-smoke-run \
+            -e PORT=4001 \
+            -e POKEROL_SOLO_TEST_MODE=1 \
+            -p 4001:4001 \
+            pokerol-smoke
+
+      - name: Wait for Evennia web server
+        run: |
+          set -e
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:4001/ >/dev/null; then
+              echo "POKEROL web server is responding."
+              exit 0
+            fi
+            if ! docker ps --format '{{.Names}}' | grep -qx pokerol-smoke-run; then
+              echo "Container stopped before web server became ready."
+              docker logs pokerol-smoke-run || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Timed out waiting for POKEROL web server."
+          docker logs pokerol-smoke-run || true
+          exit 1
+
+      - name: Check webclient route
+        run: curl -fsS http://127.0.0.1:4001/webclient/ >/dev/null
+
+      - name: Show server logs
+        if: always()
+        run: docker logs pokerol-smoke-run || true
