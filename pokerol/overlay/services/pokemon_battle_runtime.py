@@ -2,7 +2,14 @@
 
 from copy import deepcopy
 
-from services.pokemon_bag_engine import bag_state, capture_ball_profile, consume_item
+from services.pokemon_bag_engine import (
+    apply_battle_item,
+    bag_state,
+    capture_ball_profile,
+    consume_item,
+    item_count,
+    item_profile,
+)
 from services.pokemon_battle_engine import (
     ACTIVE_STATUS,
     BATTLE_BUILD,
@@ -20,11 +27,12 @@ from services.pokemon_party_engine import (
     battle_profile_for_slot,
     party_state,
     set_active_slot,
+    set_party_slot_profile,
     update_owned_from_battle,
 )
 
 
-RUNTIME_BUILD = "0.3.0-party-forced-switch"
+RUNTIME_BUILD = "0.4.0-battle-items"
 
 
 def _dict(value):
@@ -151,6 +159,7 @@ def _capture_into_collection(actor, battle):
     source["hp_current"] = enemy.get("hp_current")
     source["hp_max"] = enemy.get("hp_max")
     source["status"] = enemy.get("status")
+    source["status_turns"] = enemy.get("status_turns", 0)
     source["moves"] = _clone(enemy.get("moves") or source.get("moves") or [])
     source["resolved_moves"] = _clone(source.get("moves") or [])
     source["sprite"] = _clone(enemy.get("sprite") or source.get("sprite") or {})
@@ -192,10 +201,62 @@ def _switch_action(actor, battle, action):
         return {"accepted": True, "status": "FORCED_SWITCH_RESOLVED", "battle": next_state, "enemy_action": None, "build": BATTLE_BUILD}
 
     result = resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
+    return result
+
+
+def _support_item_action(actor, battle, action):
+    """Validate/apply/consume a support item, then spend the turn and let the enemy answer."""
+    item_id = _text(_dict(action).get("item_id")).upper()
+    if not item_id:
+        return {"accepted": False, "status": "ITEM_ID_REQUIRED", "build": RUNTIME_BUILD}
+    profile = item_profile(item_id)
+    if not profile:
+        return {"accepted": False, "status": "UNKNOWN_ITEM", "item_id": item_id, "build": RUNTIME_BUILD}
+    if profile.get("kind") in {"CAPTURE", "CAPTURE_RESERVED"}:
+        return {"accepted": False, "status": "USE_CAPTURE_ACTION_FOR_BALL", "item_id": item_id, "build": RUNTIME_BUILD}
+    if item_count(actor, item_id) <= 0:
+        return {"accepted": False, "status": "ITEM_NOT_AVAILABLE", "item_id": item_id, "build": RUNTIME_BUILD}
+
+    current_slot = active_slot(actor)
+    target_slot = _int(_dict(action).get("slot"), current_slot)
+    if target_slot < 0:
+        return {"accepted": False, "status": "NO_ITEM_TARGET", "item_id": item_id, "build": RUNTIME_BUILD}
+    active_target = target_slot == current_slot
+    target = _clone(_dict(battle.get("player"))) if active_target else _dict(battle_profile_for_slot(actor, target_slot))
+    if not target:
+        return {"accepted": False, "status": "INVALID_PARTY_SLOT", "item_id": item_id, "build": RUNTIME_BUILD}
+
+    effect = apply_battle_item(item_id, target, move_id=_text(_dict(action).get("move_id")))
+    if not effect.get("accepted"):
+        return {**effect, "build": RUNTIME_BUILD}
+
+    consumed = consume_item(actor, item_id, 1)
+    if not consumed.get("accepted"):
+        return {"accepted": False, "status": consumed.get("status"), "item_id": item_id, "build": RUNTIME_BUILD}
+
+    mutated = _dict(effect.get("pokemon"))
+    next_state = _clone(battle)
+    if active_target:
+        # Preserve current battle stages/volatile state carried by the battle packet.
+        next_state["player"] = mutated
+    else:
+        stored = set_party_slot_profile(actor, target_slot, mutated)
+        if not stored.get("accepted"):
+            return {"accepted": False, "status": stored.get("status"), "item_id": item_id, "build": RUNTIME_BUILD}
+
+    next_state.setdefault("log", []).append({
+        "turn": next_state.get("turn", 1),
+        "phase": "ACTION",
+        "kind": "ITEM",
+        "text": effect.get("text") or f"Usas {item_id}.",
+        "item_id": item_id,
+        "party_slot": target_slot,
+        "move_id": _text(_dict(action).get("move_id")) or None,
+    })
+    result = resolve_player_action(next_state, {"type": "FREE_ORDER", "item_id": item_id, "party_slot": target_slot})
     if result.get("accepted"):
-        resolved = _dict(result.get("battle"))
-        resolved["log"] = [row for row in _list(resolved.get("log")) if not (_text(_dict(row).get("kind")) == "ACTION_RESERVED" and "FREE_ORDER" in _text(_dict(row).get("text")))]
-        result["battle"] = resolved
+        result["item_result"] = _clone(effect)
+        result["item_consumed"] = _clone(consumed)
     return result
 
 
@@ -277,11 +338,14 @@ def submit_player_battle_action(actor, action):
         result = resolve_player_action(battle, requested)
     elif kind == "SWITCH":
         result = _switch_action(actor, battle, requested)
+    elif kind == "ITEM":
+        result = _support_item_action(actor, battle, requested)
     else:
         result = resolve_player_action(battle, requested)
 
     if not result.get("accepted"):
         actor.msg(pokerol_pokemon_battle_error=(({"status": result.get("status"), "battle_id": battle.get("battle_id"), "build": RUNTIME_BUILD},), {}))
+        emit_battle_state(actor, battle, event="STATE")
         return {**result, "build": RUNTIME_BUILD}
 
     next_battle = _dict(result.get("battle"))
