@@ -5,8 +5,14 @@ from commands.siza_ui_runtime_commands import (
     context_action_packet as _legacy_context_action_packet,
     room_snapshot_packet as _legacy_room_snapshot_packet,
 )
+from services.pokerol_tutorial_engine import (
+    OAK_NPC_ID,
+    RIVAL_NPC_ID,
+    ensure_tutorial_world,
+    tutorial_context_actions,
+)
 
-POKEROL_UI_RUNTIME_BUILD = "0.5.0-persistent-world-editor"
+POKEROL_UI_RUNTIME_BUILD = "0.6.0-oak-tutorial"
 
 
 def _stamp(packet):
@@ -97,12 +103,39 @@ def _enrich_world_rows(actor, packet):
     return packet
 
 
+def _tutorial_target_names(actor):
+    room = getattr(actor, "location", None) if actor else None
+    names = set()
+    if not room:
+        return names
+    for obj in list(getattr(room, "contents", []) or []):
+        if str(_db_value(obj, "npc_id", "") or "") in {OAK_NPC_ID, RIVAL_NPC_ID}:
+            names.add(str(obj.key))
+    return names
+
+
 def room_snapshot_packet(actor):
+    ensure_tutorial_world(actor)
     return _enrich_world_rows(actor, _stamp(_legacy_room_snapshot_packet(actor)))
 
 
 def context_action_packet(actor):
-    return _stamp(_legacy_context_action_packet(actor))
+    ensure_tutorial_world(actor)
+    packet = _stamp(_legacy_context_action_packet(actor))
+    actions = [dict(row or {}) for row in list(packet.get("actions") or [])]
+    tutorial_rows = tutorial_context_actions(actor)
+    tutorial_targets = _tutorial_target_names(actor)
+    if tutorial_targets:
+        actions = [
+            row
+            for row in actions
+            if not (
+                str(row.get("kind") or "").upper() == "INTERACTION"
+                and str(row.get("target") or "") in tutorial_targets
+            )
+        ]
+    packet["actions"] = tutorial_rows + actions
+    return packet
 
 
 def emit_room_snapshot(actor, *, visible_text=False):
