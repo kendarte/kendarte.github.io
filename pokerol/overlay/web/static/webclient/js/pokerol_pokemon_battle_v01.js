@@ -1,10 +1,11 @@
 (function(){
 "use strict";
-var BUILD="0.3.0-red-plus-items-status";
+var BUILD="0.4.0-red-plus-anime-targeting";
 var state=null;
 var menuMode="ACTION";
 var pendingItemId="";
 var pendingItemSlot=null;
+var pendingMoveId="";
 function byId(id){return document.getElementById(id)}
 function text(v){return String(v==null?"":v).trim()}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
@@ -13,6 +14,8 @@ function pct(cur,max){max=Math.max(1,Number(max)||1);return Math.max(0,Math.min(
 function battleReady(){return !!state&&text(state.status)==="ACTIVE"&&text(state.phase)==="COMMAND"}
 function forcedSwitch(){return !!(state&&state.forced_switch)}
 function clearPendingItem(){pendingItemId="";pendingItemSlot=null}
+function clearPendingMove(){pendingMoveId=""}
+function clearPending(){clearPendingItem();clearPendingMove()}
 function ensure(){
   var root=byId("pokerol-pokemon-battle");
   if(root)return root;
@@ -58,7 +61,8 @@ function moveButton(m,disabled,selectAttr){
   var ppCur=Number(m.pp_current!=null?m.pp_current:ppMax);
   var noPP=ppMax>0&&ppCur<=0;
   var attr=selectAttr||'data-move';
-  return '<button class="pkbMove" '+attr+'="'+esc(m.move_id)+'" '+(disabled||noPP?'disabled':'')+'><b>'+esc(m.name||m.move_id)+'</b><small>'+esc(m.pokemon_type||"")+' · PP '+esc(ppCur)+'/'+esc(ppMax)+' · POT '+esc(m.power||0)+'</small></button>';
+  var world=m.world_enabled&&Array.isArray(m.world_effects)&&m.world_effects.length?' · MUNDO':'';
+  return '<button class="pkbMove" '+attr+'="'+esc(m.move_id)+'" '+(disabled||noPP?'disabled':'')+'><b>'+esc(m.name||m.move_id)+'</b><small>'+esc(m.pokemon_type||"")+' · PP '+esc(ppCur)+'/'+esc(ppMax)+' · POT '+esc(m.power||0)+world+'</small></button>';
 }
 function outcomeText(v){
   var map={PLAYER_WIN:"VICTORIA",PLAYER_LOSS:"DERROTA",DRAW:"EMPATE",CAPTURED:"¡CAPTURADO!",ESCAPED:"ESCAPASTE",ABANDONED:"BATALLA TERMINADA"};
@@ -66,20 +70,32 @@ function outcomeText(v){
 }
 function menuTitle(value){
   if(forcedSwitch()&&value==="PARTY")return "ELIGE REEMPLAZO";
-  var map={ACTION:"¿QUÉ HARÁ?",MOVE:"ELIGE MOVIMIENTO",PARTY:"POKÉMON",BAG:"BOLSA",ITEM_TARGET:"¿A QUIÉN?",ITEM_MOVE:"¿QUÉ MOVIMIENTO?"};
+  var map={ACTION:"¿QUÉ HARÁ?",MOVE:"ELIGE MOVIMIENTO",MOVE_TARGET:"¿A DÓNDE?",ENV_TARGET:"OBJETIVO DEL ENTORNO",PARTY:"POKÉMON",BAG:"BOLSA",ITEM_TARGET:"¿A QUIÉN?",ITEM_MOVE:"¿QUÉ MOVIMIENTO?"};
   return map[value]||"ORDEN";
 }
 function setMenuMode(next){
   if(forcedSwitch()&&next!=="PARTY")next="PARTY";
-  if(next==="ACTION")clearPendingItem();
+  if(next==="ACTION")clearPending();
   menuMode=next;
   renderMenu();
 }
+function playerMoves(){return state&&state.player&&Array.isArray(state.player.moves)?state.player.moves:[]}
+function moveAt(moveId){var wanted=text(moveId).toUpperCase();return playerMoves().find(function(m){return text(m.move_id).toUpperCase()===wanted})||null}
 function partyRows(){return state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[]}
 function partyAt(slot){return partyRows().find(function(p){return Number(p.party_slot)===Number(slot)})||null}
 function bagItems(){return state&&state.bag_state&&state.bag_state.items&&typeof state.bag_state.items==="object"?state.bag_state.items:{}}
 function bagProfiles(){return state&&state.bag_state&&state.bag_state.profiles&&typeof state.bag_state.profiles==="object"?state.bag_state.profiles:{}}
 function bagProfile(itemId){return bagProfiles()[itemId]||{kind:/_BALL$/i.test(itemId)?"CAPTURE":"UNKNOWN",battle_usable:false,label:itemId.replace(/_/g," ")}}
+function environmentRows(){return state&&Array.isArray(state.environment_targets)?state.environment_targets:[]}
+function compatibleWorldTargets(move){
+  if(!move)return[];
+  var accepted=(move.materials||[]).map(function(v){return text(v).toUpperCase()}).filter(Boolean);
+  return environmentRows().filter(function(row){
+    if(!accepted.length)return true;
+    var tags=(row.materials||[]).concat(row.tags||[]).map(function(v){return text(v).toUpperCase()});
+    return accepted.some(function(v){return tags.indexOf(v)>=0});
+  });
+}
 function partySlotHtml(p,disabled,mode){
   var slot=Number(p.party_slot)||0;
   var name=text(p.nickname||p.species_name||"Pokémon");
@@ -111,10 +127,40 @@ function renderMenu(){
   var disabled=!battleReady();
 
   if(menuMode==="MOVE"){
-    var moves=(state&&state.player&&state.player.moves)||[];
+    var moves=playerMoves();
     body.innerHTML='<div class="pkbMoveGrid">'+(moves.map(function(m){return moveButton(m,disabled)}).join('')||'<div class="pkbStubText">SIN MOVIMIENTOS.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
-    Array.prototype.forEach.call(body.querySelectorAll("[data-move]"),function(btn){btn.onclick=function(){sendAction({type:"MOVE",move_id:btn.getAttribute("data-move")})}});
+    Array.prototype.forEach.call(body.querySelectorAll("[data-move]"),function(btn){btn.onclick=function(){
+      var id=btn.getAttribute("data-move"),move=moveAt(id);
+      if(move&&move.world_enabled&&Array.isArray(move.world_effects)&&move.world_effects.length){pendingMoveId=id;setMenuMode("MOVE_TARGET")}
+      else sendAction({type:"MOVE",move_id:id});
+    }});
     byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
+    return;
+  }
+
+  if(menuMode==="MOVE_TARGET"){
+    var selectedMove=moveAt(pendingMoveId),targets=compatibleWorldTargets(selectedMove);
+    body.innerHTML='<div class="pkbStubText">'+esc(selectedMove&&selectedMove.name||pendingMoveId)+'</div><div class="pkbActionGrid">'
+      +'<button class="pkbAction" id="pkb-target-rival" '+(disabled?'disabled':'')+'>RIVAL</button>'
+      +'<button class="pkbAction" id="pkb-target-world" '+(disabled||!targets.length?'disabled':'')+'>ENTORNO</button>'
+      +'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    byId("pkb-target-rival").onclick=function(){sendAction({type:"MOVE",move_id:pendingMoveId})};
+    if(byId("pkb-target-world"))byId("pkb-target-world").onclick=function(){setMenuMode("ENV_TARGET")};
+    byId("pkb-back").onclick=function(){clearPendingMove();setMenuMode("MOVE")};
+    return;
+  }
+
+  if(menuMode==="ENV_TARGET"){
+    var worldMove=moveAt(pendingMoveId),worldTargets=compatibleWorldTargets(worldMove);
+    body.innerHTML='<div class="pkbStubText">'+esc(worldMove&&worldMove.name||pendingMoveId)+' → ENTORNO</div><div class="pkbBagList">'+(worldTargets.length?worldTargets.map(function(t,index){
+      var mats=(t.materials||[]).concat(t.tags||[]).join(' / ');
+      return '<button class="pkbBagItem" data-env-index="'+index+'"><b>'+esc(t.name||t.object_id||('OBJ '+t.dbref))+'</b><small>'+esc(mats)+(t.water_body_id?' · '+esc(t.water_body_id):'')+'</small></button>';
+    }).join(''):'<div class="pkbStubText">NO HAY OBJETIVOS COMPATIBLES.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-env-index]"),function(btn){btn.onclick=function(){
+      var target=worldTargets[Number(btn.getAttribute("data-env-index"))];if(!target)return;
+      sendAction({type:"FREE_ORDER",move_id:pendingMoveId,world_target:{object_id:target.object_id||"",dbref:target.dbref,name:target.name||""}});
+    }});
+    byId("pkb-back").onclick=function(){setMenuMode("MOVE_TARGET")};
     return;
   }
 
@@ -202,7 +248,7 @@ function render(packet){
   byId("pkb-enemy-info").innerHTML=infoHtml(state.enemy||{});
   byId("pkb-player-sprite").innerHTML=spriteHtml(state.player||{},"PLAYER");
   byId("pkb-enemy-sprite").innerHTML=spriteHtml(state.enemy||{},"ENEMY");
-  var log=(state.log||[]).slice(-7);
+  var log=(state.log||[]).slice(-8);
   byId("pkb-log").innerHTML=log.map(function(row){return '<div class="pkbLogLine">'+esc(row.text||row.kind||"")+'</div>'}).join('')||'<div class="pkbLogLine">¿Qué hará '+esc(state.player&&state.player.name||"tu Pokémon")+'?</div>';
   if(text(state.status)==="COMPLETE"){
     byId("pkb-outcome-title").textContent=outcomeText(state.outcome);
@@ -231,13 +277,13 @@ function disableCommands(){
 function closeBattle(){
   var root=ensure();
   root.removeAttribute("data-open");root.removeAttribute("data-complete");root.removeAttribute("data-forced-switch");
-  state=null;menuMode="ACTION";clearPendingItem();
+  state=null;menuMode="ACTION";clearPending();
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION");
 }
 function onState(args){
   var packet=args&&args[0];
   if(!packet||typeof packet!=="object")return;
-  clearPendingItem();
+  clearPending();
   menuMode=packet.forced_switch?"PARTY":"ACTION";
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("COMBAT");
   render(packet);
@@ -254,6 +300,8 @@ function onKey(event){
     event.preventDefault();
     if(menuMode==="ITEM_MOVE")setMenuMode("ITEM_TARGET");
     else if(menuMode==="ITEM_TARGET")setMenuMode("BAG");
+    else if(menuMode==="ENV_TARGET")setMenuMode("MOVE_TARGET");
+    else if(menuMode==="MOVE_TARGET"){clearPendingMove();setMenuMode("MOVE")}
     else setMenuMode("ACTION");
   }
 }
