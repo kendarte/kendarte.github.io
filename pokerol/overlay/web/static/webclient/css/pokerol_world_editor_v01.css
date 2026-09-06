@@ -1,0 +1,33 @@
+.pkWorldEditorExtra{display:grid;gap:5px;margin-top:6px}
+.pkWorldEditorKind{padding:4px 6px;border:2px solid #3b413c;background:#e9e5c8;color:#26312c;font:700 6px/1 var(--pk-font);letter-spacing:.4px}
+.pkHotspotField textarea,.pkRoomPanel textarea{width:100%;resize:vertical;min-height:52px;border:2px solid #4d514b;background:#fffef0;color:#26312c;padding:6px;font:11px/1.25 var(--pk-copy);outline:none}
+.pkHotspotField textarea:focus,.pkRoomPanel textarea:focus{box-shadow:inset 0 0 0 2px #c9a957}
+.pkWorldSpriteRow{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px;align-items:stretch}
+.pkWorldSpritePreview{min-height:70px;border:2px solid #4d514b;background:#d9ddc8;display:flex;align-items:center;justify-content:center;overflow:hidden;font:700 5px/1 var(--pk-font);color:#505750}
+.pkWorldSpritePreview img{display:block;width:100%;height:70px;object-fit:contain;object-position:center bottom;image-rendering:pixelated}
+.pkWorldSpriteButtons{display:grid;grid-template-rows:1fr 1fr;gap:5px}
+.pkWorldEditorStatus{min-height:14px;padding:3px 4px;color:#4b594e;font:9px/1.2 var(--pk-copy)}
+.pkWorldEditorStatus.pkWorldEditorError{color:#962d31;font-weight:700}
+.pkActor{--pk-world-actor-scale:1;transform:translateX(-50%) scale(var(--pk-world-actor-scale))!important;transform-origin:bottom center!important}
+.pkActor:hover{transform:translateX(-50%) translateY(-3px) scale(var(--pk-world-actor-scale))!important}
+.pkStage.pkHotspotEditing .pkActor.pkSelectedHotspot{transform:translateX(-50%) scale(var(--pk-world-actor-scale))!important}
+
+.pkRoomPanel{position:absolute;top:39px;right:7px;z-index:48;width:300px;max-height:calc(100% - 48px);overflow:auto;padding:8px;border:3px solid #343b38;border-radius:4px;background:#f4f0d7;box-shadow:inset 0 0 0 2px #c9bc8b,4px 4px 0 rgba(20,25,22,.55);font:7px/1.2 var(--pk-font)}
+.pkRoomPanel[hidden]{display:none!important}
+.pkRoomPanelHead{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:-8px -8px 8px;padding:7px 8px;border-bottom:3px solid #343b38;background:#2f5558;color:#fff7d7;text-shadow:1px 1px 0 #182c2e}
+.pkRoomPanelHead strong{font:700 8px/1 var(--pk-font)}
+.pkRoomPanelHead button{width:25px;height:25px;padding:0;border:2px solid #4d2828;background:#b44b4b;color:#fff;font:700 14px/1 var(--pk-copy);cursor:pointer}
+.pkRoomPanel .pkHotspotField{display:grid;gap:3px;margin:6px 0}
+.pkRoomPanel .pkHotspotField label{font:700 5px/1 var(--pk-font)}
+.pkRoomPanel .pkHotspotField input{width:100%;height:29px;border:2px solid #4d514b;background:#fffef0;color:#26312c;padding:4px 6px;font:11px/1 var(--pk-copy);outline:none}
+.pkRoomPanel button.pkRoomWide{width:100%;border:2px solid #343b38;background:#f9f5df;color:#26312c;padding:7px 6px;font:700 6px/1 var(--pk-font);cursor:pointer;box-shadow:1px 1px 0 #6e6b5d}
+.pkRoomPanel button.pkRoomWide:hover{background:#2f5558;color:#fff7d7}
+.pkRoomSectionTitle{margin:7px 0 3px;padding-bottom:3px;border-bottom:1px solid #9e9572;color:#2f5558;font:700 6px/1 var(--pk-font)}
+.pkRoomDivider{height:3px;margin:10px -2px 7px;background:linear-gradient(90deg,#343b38,#c7ae66,#343b38)}
+#pk-edit-room{grid-column:1/-1}
+
+@media(max-width:760px){
+  .pkRoomPanel{top:32px;right:4px;width:min(300px,88vw);max-height:calc(100% - 38px);padding:6px}
+  .pkRoomPanelHead{margin:-6px -6px 7px;padding:6px}
+  .pkWorldSpriteRow{grid-template-columns:62px minmax(0,1fr)}
+}
