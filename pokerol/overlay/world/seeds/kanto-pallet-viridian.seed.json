@@ -1,0 +1,5436 @@
+{
+  "version": 3,
+  "meta": {
+    "name": "POKEROL — Kanto oeste: Pallet a Bosque Verde",
+    "campaign_id": "POKEROL-KANTO-START",
+    "seed_tag": "pokerol_kanto_pallet_viridian_biome_v1"
+  },
+  "rooms": [
+    {
+      "id": "room-pal-001",
+      "key": "Pueblo Paleta — Calle residencial",
+      "room_id": "KANTO-PAL-001",
+      "x": 1450,
+      "y": 2480,
+      "zone_id": "KANTO-PALLET-TOWN",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-PALLET",
+      "district_id": "KANTO-PALLET-TOWN",
+      "desc": "Una calle tranquila de casas bajas, jardines y cercas de madera; el campo comienza casi inmediatamente al norte.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [
+          "casas bajas",
+          "jardines",
+          "cercas"
+        ],
+        "hearing": [
+          "viento entre árboles",
+          "actividad doméstica"
+        ],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "rural settlement",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "El laboratorio queda al este; la salida norte conduce a los prados.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-PALLET-TOWN",
+        "terrain": [
+          "packed_earth",
+          "grass"
+        ],
+        "cover": [
+          "houses",
+          "fences"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una calle tranquila de casas bajas, jardines y cercas de madera; el campo comienza casi inmediatamente al norte.",
+          "spatial_answer": "El laboratorio queda al este; la salida norte conduce a los prados.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-PAL-FENCE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-PAL-FENCE",
+            "name": "Cerca de madera",
+            "aliases": [],
+            "visible_description": "Una cerca seca separa jardines y camino.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.65,
+              "thermal_shock_sensitivity": 0.15,
+              "ignition_point_c": 280
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-PAL-POWER",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-PAL-POWER",
+            "name": "Caja eléctrica vecinal",
+            "aliases": [],
+            "visible_description": "Una caja de distribución montada en un poste.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "METAL",
+              "ELECTRICAL_DEVICE"
+            ],
+            "physical_properties": {
+              "conductivity": 0.95,
+              "heat_resistance": 0.3
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-pal-002",
+      "key": "Laboratorio del Profesor — Sala principal",
+      "room_id": "KANTO-PAL-002",
+      "x": 1840,
+      "y": 2480,
+      "zone_id": "KANTO-PALLET-TOWN",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-PALLET",
+      "district_id": "KANTO-PALLET-TOWN",
+      "desc": "Un laboratorio de investigación Pokémon con bancos de trabajo, estanterías, terminales y vitrinas.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [
+          "mesas de investigación",
+          "vitrinas",
+          "terminales"
+        ],
+        "hearing": [],
+        "smell": [
+          "papel",
+          "metal",
+          "desinfectante"
+        ],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "laboratory interior",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "La puerta oeste vuelve a la calle residencial.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-PALLET-TOWN",
+        "terrain": [
+          "floor"
+        ],
+        "cover": [
+          "benches",
+          "shelves"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "high"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un laboratorio de investigación Pokémon con bancos de trabajo, estanterías, terminales y vitrinas.",
+          "spatial_answer": "La puerta oeste vuelve a la calle residencial.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-OAK-SHELF",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-OAK-SHELF",
+            "name": "Estantería de madera",
+            "aliases": [],
+            "visible_description": "Libros, cajas y material de investigación ocupan la estantería.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "PAPER"
+            ],
+            "physical_properties": {
+              "flammability": 0.75,
+              "ignition_point_c": 230
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-OAK-CASE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-OAK-CASE",
+            "name": "Vitrina de muestras",
+            "aliases": [],
+            "visible_description": "Una vitrina de vidrio grueso protege muestras y equipo delicado.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "GLASS",
+              "FRAGILE_STRUCTURE"
+            ],
+            "physical_properties": {
+              "thermal_shock_sensitivity": 0.95,
+              "heat_resistance": 0.1
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-OAK-PANEL",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-OAK-PANEL",
+            "name": "Panel de laboratorio",
+            "aliases": [],
+            "visible_description": "Un panel eléctrico alimenta terminales y equipo.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "METAL",
+              "ELECTRICAL_DEVICE"
+            ],
+            "physical_properties": {
+              "conductivity": 1,
+              "heat_resistance": 0.4
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-pal-003",
+      "key": "Pueblo Paleta — Plaza y jardines",
+      "room_id": "KANTO-PAL-003",
+      "x": 1450,
+      "y": 2320,
+      "zone_id": "KANTO-PALLET-TOWN",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-PALLET",
+      "district_id": "KANTO-PALLET-TOWN",
+      "desc": "Un espacio abierto con césped, árboles jóvenes y senderos entre las casas y el laboratorio.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "village green",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "La calle residencial queda al sur; los prados comienzan al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-PALLET-TOWN",
+        "terrain": [
+          "grass",
+          "soil"
+        ],
+        "cover": [
+          "trees",
+          "benches"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 1,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "lawns and roofs",
+          "behavior": "forages in small flocks",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.35,
+          "level_range": [
+            2,
+            4
+          ],
+          "habitat": "hedges and sheds",
+          "behavior": "scavenges near dusk",
+          "activity": "DUSK_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un espacio abierto con césped, árboles jóvenes y senderos entre las casas y el laboratorio.",
+          "spatial_answer": "La calle residencial queda al sur; los prados comienzan al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-PAL-GRASS",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-PAL-GRASS",
+            "name": "Parche de hierba seca",
+            "aliases": [],
+            "visible_description": "Hierba alta junto a una cerca recibe sol durante buena parte del día.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.8,
+              "ignition_point_c": 190
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-pal-004",
+      "key": "Prados al norte de Pueblo Paleta",
+      "room_id": "KANTO-PAL-004",
+      "x": 1450,
+      "y": 2150,
+      "zone_id": "KANTO-PALLET-OUTSKIRTS",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-PALLET",
+      "district_id": "KANTO-PALLET-OUTSKIRTS",
+      "desc": "Los jardines se abren en una franja amplia de pasto, flores silvestres y pequeños desniveles antes de la Ruta 1.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "meadow",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Pallet queda al sur; la Ruta 1 comienza al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-PALLET-OUTSKIRTS",
+        "terrain": [
+          "grass",
+          "soil"
+        ],
+        "cover": [
+          "shrubs"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 1,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "open meadow",
+          "behavior": "forages and watches from fence posts",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.5,
+          "level_range": [
+            2,
+            4
+          ],
+          "habitat": "brush",
+          "behavior": "keeps close to cover",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Los jardines se abren en una franja amplia de pasto, flores silvestres y pequeños desniveles antes de la Ruta 1.",
+          "spatial_answer": "Pallet queda al sur; la Ruta 1 comienza al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-PAL-MEADOW-GRASS",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-PAL-MEADOW-GRASS",
+            "name": "Matorral seco",
+            "aliases": [],
+            "visible_description": "Un matorral espeso y seco ofrece escondite a Pokémon pequeños.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.85,
+              "ignition_point_c": 180
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-001",
+      "key": "Ruta 1 — Pradera sur",
+      "room_id": "KANTO-R1-001",
+      "x": 1450,
+      "y": 1980,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "La ruta se ensancha entre praderas, arbustos y viejas cercas; no es un pasillo sino una franja rural transitable.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "country route",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Pallet queda al sur; el terreno sube suavemente al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "grass",
+          "packed_earth"
+        ],
+        "cover": [
+          "hedges",
+          "fences"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 1,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "grassland",
+          "behavior": "feeds in flocks",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.8,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "hedges",
+          "behavior": "runs between cover",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "La ruta se ensancha entre praderas, arbustos y viejas cercas; no es un pasillo sino una franja rural transitable.",
+          "spatial_answer": "Pallet queda al sur; el terreno sube suavemente al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-FENCE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-FENCE",
+            "name": "Cerca envejecida",
+            "aliases": [],
+            "visible_description": "Postes de madera reseca y travesaños viejos.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.7,
+              "thermal_shock_sensitivity": 0.1
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-R1-GRASS",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-GRASS",
+            "name": "Hierba alta",
+            "aliases": [],
+            "visible_description": "Una mancha de hierba suficientemente alta para ocultar Pokémon pequeños.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.72
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-002",
+      "key": "Ruta 1 — Hondonada de hierba alta",
+      "room_id": "KANTO-R1-002",
+      "x": 1250,
+      "y": 1810,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "Una hondonada protegida del viento acumula hierba alta, semillas y madrigueras.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "grass hollow",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "grass",
+          "soil"
+        ],
+        "cover": [
+          "tall_grass",
+          "earth_banks"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "very_low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-019",
+          "abundance": 1,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "burrows and tall grass",
+          "behavior": "forages and defends burrows",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.65,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "grass",
+          "behavior": "lands to feed",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una hondonada protegida del viento acumula hierba alta, semillas y madrigueras.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-BURROW",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-BURROW",
+            "name": "Talud con madrigueras",
+            "aliases": [],
+            "visible_description": "El talud está horadado por pequeñas madrigueras.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "SOIL"
+            ],
+            "physical_properties": {
+              "water_absorption": 0.7
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-R1-DRY",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-DRY",
+            "name": "Maleza seca",
+            "aliases": [],
+            "visible_description": "Maleza quebradiza acumulada en la base del talud.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.9,
+              "ignition_point_c": 170
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-003",
+      "key": "Ruta 1 — Arroyo de ribera baja",
+      "room_id": "KANTO-R1-003",
+      "x": 1650,
+      "y": 1810,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "Un arroyo poco profundo cruza la franja rural entre barro, piedras y juncos.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "shallow stream",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "La senda puede seguirse por ambas riberas.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "water",
+          "mud",
+          "stone"
+        ],
+        "cover": [
+          "reeds"
+        ],
+        "water": "stream",
+        "canopy": 0,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.35,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "banks",
+          "behavior": "drinks and bathes",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.25,
+          "level_range": [
+            2,
+            4
+          ],
+          "habitat": "bank cover",
+          "behavior": "approaches water cautiously",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [
+        {
+          "water_body_id": "WB-R1-CREEK",
+          "kind": "STREAM",
+          "conductive_medium": true
+        }
+      ],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un arroyo poco profundo cruza la franja rural entre barro, piedras y juncos.",
+          "spatial_answer": "La senda puede seguirse por ambas riberas.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-WATER",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-WATER",
+            "name": "Agua del arroyo",
+            "aliases": [],
+            "visible_description": "Agua corriente de poca profundidad.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WATER"
+            ],
+            "physical_properties": {
+              "conductivity": 1,
+              "thermal_shock_sensitivity": 0
+            },
+            "environmental_state": {
+              "temperature_c": 17,
+              "wetness": 1,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "SHARED_CONDUCTIVE_MEDIUM"
+            ],
+            "connected_object_ids": [],
+            "water_body_id": "WB-R1-CREEK"
+          },
+          {
+            "id": "entity-R1-STONE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-STONE",
+            "name": "Roca de ribera",
+            "aliases": [],
+            "visible_description": "Una roca grande sobresale junto al agua.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "STONE"
+            ],
+            "physical_properties": {
+              "thermal_shock_sensitivity": 0.75,
+              "heat_resistance": 0.25
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-004",
+      "key": "Ruta 1 — Loma y desniveles",
+      "room_id": "KANTO-R1-004",
+      "x": 1450,
+      "y": 1640,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "El terreno asciende en lomas bajas y cortes naturales que obligan a elegir por dónde subir o rodear.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "rolling ridge",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Desde la parte alta se distingue el verde de Ciudad Verde al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "soil",
+          "stone",
+          "grass"
+        ],
+        "cover": [
+          "banks"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.9,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "ridges",
+          "behavior": "rides thermals and watches movement",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.55,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "banks",
+          "behavior": "uses earth cuts as cover",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "El terreno asciende en lomas bajas y cortes naturales que obligan a elegir por dónde subir o rodear.",
+          "spatial_answer": "Desde la parte alta se distingue el verde de Ciudad Verde al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-LEDGE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-LEDGE",
+            "name": "Cornisa terrosa",
+            "aliases": [],
+            "visible_description": "Un borde compacto de tierra y piedra cae algo más de un metro.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "SOIL",
+              "STONE"
+            ],
+            "physical_properties": {
+              "thermal_shock_sensitivity": 0.2
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-005",
+      "key": "Ruta 1 — Arboleda cortaviento",
+      "room_id": "KANTO-R1-005",
+      "x": 1700,
+      "y": 1470,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "Una pequeña arboleda rompe el viento de la ruta y crea sombra, hojarasca y escondites.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "small grove",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "soil",
+          "leaf_litter"
+        ],
+        "cover": [
+          "trees",
+          "shrubs"
+        ],
+        "water": "none",
+        "canopy": 0.45,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.7,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "branches",
+          "behavior": "rests above the path",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.5,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "roots and brush",
+          "behavior": "searches fallen seeds",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una pequeña arboleda rompe el viento de la ruta y crea sombra, hojarasca y escondites.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-LOG",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-LOG",
+            "name": "Tronco caído",
+            "aliases": [],
+            "visible_description": "Un tronco seco yace entre hojas.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.8,
+              "ignition_point_c": 230
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          },
+          {
+            "id": "entity-R1-LEAVES",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-LEAVES",
+            "name": "Hojarasca",
+            "aliases": [],
+            "visible_description": "Una capa seca de hojas cubre parte del suelo.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "LEAF_LITTER",
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.95,
+              "ignition_point_c": 160
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-006",
+      "key": "Ruta 1 — Claro de descanso",
+      "room_id": "KANTO-R1-006",
+      "x": 1450,
+      "y": 1300,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "Un claro usado por caminantes ofrece sombra, una señal de ruta y espacio para descansar o entrenar.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "route clearing",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "grass",
+          "packed_earth"
+        ],
+        "cover": [
+          "tree",
+          "sign"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.65,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "open grass",
+          "behavior": "approaches crumbs cautiously",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.35,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "edges",
+          "behavior": "waits until people leave",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un claro usado por caminantes ofrece sombra, una señal de ruta y espacio para descansar o entrenar.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R1-SIGN",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R1-SIGN",
+            "name": "Señal de madera",
+            "aliases": [],
+            "visible_description": "Una señal robusta marca Pueblo Paleta al sur y Ciudad Verde al norte.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.55
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r1-007",
+      "key": "Ruta 1 — Acceso sur a Ciudad Verde",
+      "room_id": "KANTO-R1-007",
+      "x": 1450,
+      "y": 1130,
+      "zone_id": "KANTO-ROUTE-1",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-1",
+      "desc": "Las cercas rurales dan paso a senderos más cuidados, postes y las primeras construcciones de Ciudad Verde.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "urban fringe",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-1",
+        "terrain": [
+          "packed_earth",
+          "grass"
+        ],
+        "cover": [
+          "fences",
+          "posts"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.55,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "roofs and grass",
+          "behavior": "moves between town and fields",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.35,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "drains and hedges",
+          "behavior": "scavenges at night",
+          "activity": "DUSK_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Las cercas rurales dan paso a senderos más cuidados, postes y las primeras construcciones de Ciudad Verde.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-SOUTH-LAMP",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-SOUTH-LAMP",
+            "name": "Farola del acceso",
+            "aliases": [],
+            "visible_description": "Una farola con cableado municipal.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "METAL",
+              "ELECTRICAL_DEVICE"
+            ],
+            "physical_properties": {
+              "conductivity": 0.9
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-001",
+      "key": "Ciudad Verde — Puerta sur",
+      "room_id": "KANTO-VIR-001",
+      "x": 1450,
+      "y": 980,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Una entrada abierta entre árboles, caminos y casas; la ciudad mantiene mucho verde entre sus construcciones.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "city gate",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Ruta 1 queda al sur; la calle principal continúa al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "street",
+          "grass"
+        ],
+        "cover": [
+          "trees",
+          "buildings"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "high"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.5,
+          "level_range": [
+            2,
+            5
+          ],
+          "habitat": "roofs and lawns",
+          "behavior": "urban-adapted flock",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.25,
+          "level_range": [
+            2,
+            4
+          ],
+          "habitat": "alleys",
+          "behavior": "mostly nocturnal",
+          "activity": "NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una entrada abierta entre árboles, caminos y casas; la ciudad mantiene mucho verde entre sus construcciones.",
+          "spatial_answer": "Ruta 1 queda al sur; la calle principal continúa al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-002",
+      "key": "Ciudad Verde — Calle principal",
+      "room_id": "KANTO-VIR-002",
+      "x": 1450,
+      "y": 820,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Una avenida modesta con comercios, jardines y tránsito de entrenadores.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "small city street",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "El Centro Pokémon y el Mart se abren desde esta calle.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "street"
+        ],
+        "cover": [
+          "buildings",
+          "trees"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "high"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una avenida modesta con comercios, jardines y tránsito de entrenadores.",
+          "spatial_answer": "El Centro Pokémon y el Mart se abren desde esta calle.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-HYDRANT",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-HYDRANT",
+            "name": "Toma de agua",
+            "aliases": [],
+            "visible_description": "Una toma de servicio conectada a la red de agua.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "METAL",
+              "WATER"
+            ],
+            "physical_properties": {
+              "conductivity": 0.8
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0.2,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-003",
+      "key": "Centro Pokémon de Ciudad Verde",
+      "room_id": "KANTO-VIR-003",
+      "x": 1100,
+      "y": 820,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Un centro de atención para entrenadores y Pokémon, con mostrador, área de descanso y equipo médico.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "pokemon center interior",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "floor"
+        ],
+        "cover": [
+          "counters"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "high"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un centro de atención para entrenadores y Pokémon, con mostrador, área de descanso y equipo médico.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-CENTER-PANEL",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-CENTER-PANEL",
+            "name": "Panel médico",
+            "aliases": [],
+            "visible_description": "Equipo eléctrico sensible alimenta parte de las estaciones médicas.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "METAL",
+              "ELECTRICAL_DEVICE"
+            ],
+            "physical_properties": {
+              "conductivity": 0.95,
+              "heat_resistance": 0.35
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-004",
+      "key": "Poké Mart de Ciudad Verde",
+      "room_id": "KANTO-VIR-004",
+      "x": 1800,
+      "y": 820,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Una tienda pequeña abastece a entrenadores con provisiones de viaje.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "shop interior",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "floor"
+        ],
+        "cover": [
+          "shelves"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "high"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una tienda pequeña abastece a entrenadores con provisiones de viaje.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-MART-SHELF",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-MART-SHELF",
+            "name": "Estante de suministros",
+            "aliases": [],
+            "visible_description": "Un estante lleno de cajas, papel y suministros.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "PAPER"
+            ],
+            "physical_properties": {
+              "flammability": 0.72,
+              "ignition_point_c": 220
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-005",
+      "key": "Ciudad Verde — Patio de la academia",
+      "room_id": "KANTO-VIR-005",
+      "x": 1100,
+      "y": 650,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Un patio de práctica con pizarras, bancos y espacio para explicaciones y ejercicios de principiantes.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "training yard",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "packed_earth",
+          "grass"
+        ],
+        "cover": [
+          "benches"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un patio de práctica con pizarras, bancos y espacio para explicaciones y ejercicios de principiantes.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-BOARD",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-BOARD",
+            "name": "Pizarra de entrenamiento",
+            "aliases": [],
+            "visible_description": "Una pizarra portátil de marco de madera.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.55
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-006",
+      "key": "Ciudad Verde — Estanque y jardines",
+      "room_id": "KANTO-VIR-006",
+      "x": 1800,
+      "y": 650,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "Un estanque urbano rodeado de césped y flores crea un pequeño ecosistema acuático dentro de la ciudad.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "city pond",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "water",
+          "grass"
+        ],
+        "cover": [
+          "shrubs"
+        ],
+        "water": "pond",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-129",
+          "abundance": 1,
+          "level_range": [
+            4,
+            8
+          ],
+          "habitat": "pond",
+          "behavior": "schools below the surface",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-060",
+          "abundance": 0.65,
+          "level_range": [
+            5,
+            10
+          ],
+          "habitat": "pond edge",
+          "behavior": "rests in shallows",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-118",
+          "abundance": 0.35,
+          "level_range": [
+            5,
+            10
+          ],
+          "habitat": "deeper pond",
+          "behavior": "feeds near vegetation",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [
+        {
+          "water_body_id": "WB-VIRIDIAN-POND",
+          "kind": "POND",
+          "conductive_medium": true
+        }
+      ],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un estanque urbano rodeado de césped y flores crea un pequeño ecosistema acuático dentro de la ciudad.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VIR-POND-WATER",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VIR-POND-WATER",
+            "name": "Agua del estanque",
+            "aliases": [],
+            "visible_description": "El estanque forma un único cuerpo de agua conductor.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WATER",
+              "POND"
+            ],
+            "physical_properties": {
+              "conductivity": 1
+            },
+            "environmental_state": {
+              "temperature_c": 19,
+              "wetness": 1,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "SHARED_CONDUCTIVE_MEDIUM"
+            ],
+            "connected_object_ids": [],
+            "water_body_id": "WB-VIRIDIAN-POND"
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vir-007",
+      "key": "Ciudad Verde — Puerta norte",
+      "room_id": "KANTO-VIR-007",
+      "x": 1450,
+      "y": 500,
+      "zone_id": "KANTO-VIRIDIAN-CITY",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "KANTO-VIRIDIAN",
+      "district_id": "KANTO-VIRIDIAN-CITY",
+      "desc": "La ciudad se adelgaza entre árboles y caminos hasta desembocar en la Ruta 2.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "city gate",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Ruta 2 comienza al norte.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-CITY",
+        "terrain": [
+          "street",
+          "grass"
+        ],
+        "cover": [
+          "trees"
+        ],
+        "water": "none",
+        "canopy": 0,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.45,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "trees and lawns",
+          "behavior": "moves between city and route",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "La ciudad se adelgaza entre árboles y caminos hasta desembocar en la Ruta 2.",
+          "spatial_answer": "Ruta 2 comienza al norte.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r2-001",
+      "key": "Ruta 2 — Camino sur",
+      "room_id": "KANTO-R2-001",
+      "x": 1450,
+      "y": 350,
+      "zone_id": "KANTO-ROUTE-2",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-2",
+      "desc": "Una ruta arbolada continúa hacia el norte con más sombra y vegetación que la Ruta 1.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "wooded route",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-2",
+        "terrain": [
+          "grass",
+          "packed_earth"
+        ],
+        "cover": [
+          "trees",
+          "hedges"
+        ],
+        "water": "none",
+        "canopy": 0.25,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.9,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "roadside grass",
+          "behavior": "feeds in clearings",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.8,
+          "level_range": [
+            2,
+            6
+          ],
+          "habitat": "brush",
+          "behavior": "keeps to cover",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.2,
+          "level_range": [
+            3,
+            5
+          ],
+          "habitat": "low vegetation",
+          "behavior": "feeds on leaves",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.2,
+          "level_range": [
+            3,
+            5
+          ],
+          "habitat": "low vegetation",
+          "behavior": "feeds on leaves",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Una ruta arbolada continúa hacia el norte con más sombra y vegetación que la Ruta 1.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R2-BRUSH",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R2-BRUSH",
+            "name": "Matorral denso",
+            "aliases": [],
+            "visible_description": "Ramas finas y vegetación bloquean un paso lateral.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.55
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "CUTTABLE_VEGETATION"
+            ],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r2-002",
+      "key": "Ruta 2 — Franja de bosque joven",
+      "room_id": "KANTO-R2-002",
+      "x": 1850,
+      "y": 350,
+      "zone_id": "KANTO-ROUTE-2",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-2",
+      "desc": "La carretera bordea un bosque joven donde el suelo se cubre de hojas y las sombras empiezan a cerrarse.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "forest fringe",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-2",
+        "terrain": [
+          "soil",
+          "leaf_litter"
+        ],
+        "cover": [
+          "young_trees",
+          "shrubs"
+        ],
+        "water": "none",
+        "canopy": 0.5,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.45,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "leaves",
+          "behavior": "feeds openly when quiet",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.45,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "shrubs",
+          "behavior": "defensive around feeding spots",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-029",
+          "abundance": 0.12,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "brush edge",
+          "behavior": "territorial but cautious",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-032",
+          "abundance": 0.12,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "brush edge",
+          "behavior": "territorial but curious",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "La carretera bordea un bosque joven donde el suelo se cubre de hojas y las sombras empiezan a cerrarse.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-R2-LEAVES",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-R2-LEAVES",
+            "name": "Hojarasca de la franja",
+            "aliases": [],
+            "visible_description": "Hojas secas se acumulan entre raíces.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "LEAF_LITTER",
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.9,
+              "ignition_point_c": 165
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-r2-003",
+      "key": "Entrada sur del Bosque Verde",
+      "room_id": "KANTO-R2-003",
+      "x": 2200,
+      "y": 350,
+      "zone_id": "KANTO-ROUTE-2",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-ROUTE-2",
+      "desc": "Un acceso vigilado separa el camino abierto de la masa forestal. Más allá, la luz cae rápidamente bajo el dosel.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "forest gate",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "El sendero entra al Bosque Verde hacia el norte y oeste.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-ROUTE-2",
+        "terrain": [
+          "packed_earth",
+          "soil"
+        ],
+        "cover": [
+          "gatehouse",
+          "trees"
+        ],
+        "water": "none",
+        "canopy": 0.65,
+        "human_activity": "medium"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.55,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "forest edge",
+          "behavior": "crosses path slowly",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.55,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "forest edge",
+          "behavior": "hides in low brush",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.55,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un acceso vigilado separa el camino abierto de la masa forestal. Más allá, la luz cae rápidamente bajo el dosel.",
+          "spatial_answer": "El sendero entra al Bosque Verde hacia el norte y oeste.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-FOREST-GATE-WOOD",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-FOREST-GATE-WOOD",
+            "name": "Postes del acceso",
+            "aliases": [],
+            "visible_description": "Postes viejos sostienen la señal de entrada.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD"
+            ],
+            "physical_properties": {
+              "flammability": 0.6
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-001",
+      "key": "Bosque Verde — Vestíbulo soleado",
+      "room_id": "KANTO-VF-001",
+      "x": 2400,
+      "y": 190,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "El primer tramo todavía recibe luz abundante; hierba alta y troncos marcan varias sendas posibles.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "forest entrance",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "Las sendas se internan hacia el norte y el oeste.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "grass"
+        ],
+        "cover": [
+          "trees",
+          "tall_grass"
+        ],
+        "water": "none",
+        "canopy": 0.55,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 1,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "grass and leaves",
+          "behavior": "feeds on foliage",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 1,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "grass and leaves",
+          "behavior": "feeds and defends itself",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.18,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "canopy edge",
+          "behavior": "forages near the entrance",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.65,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "El primer tramo todavía recibe luz abundante; hierba alta y troncos marcan varias sendas posibles.",
+          "spatial_answer": "Las sendas se internan hacia el norte y el oeste.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF1-GRASS",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF1-GRASS",
+            "name": "Hierba alta del acceso",
+            "aliases": [],
+            "visible_description": "Hierba alta mezcla tallos verdes y secos.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.5
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-002",
+      "key": "Bosque Verde — Claro de insectos",
+      "room_id": "KANTO-VF-002",
+      "x": 2750,
+      "y": 190,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Un claro húmedo concentra hojas jóvenes, flores pequeñas y abundante actividad de Pokémon insecto.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "forest clearing",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "grass"
+        ],
+        "cover": [
+          "shrubs"
+        ],
+        "water": "none",
+        "canopy": 0.65,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 1,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "leaf clusters",
+          "behavior": "feeds in groups",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 1,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "low shrubs",
+          "behavior": "competes for feeding leaves",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-012",
+          "abundance": 0.08,
+          "level_range": [
+            7,
+            12
+          ],
+          "habitat": "air above clearing",
+          "behavior": "visits flowers",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-015",
+          "abundance": 0.06,
+          "level_range": [
+            7,
+            12
+          ],
+          "habitat": "canopy edge",
+          "behavior": "patrols territory",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.75,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un claro húmedo concentra hojas jóvenes, flores pequeñas y abundante actividad de Pokémon insecto.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF2-FLOWERS",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF2-FLOWERS",
+            "name": "Flores del claro",
+            "aliases": [],
+            "visible_description": "Flores y brotes atraen insectos.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.25
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-003",
+      "key": "Bosque Verde — Arroyo sombrío",
+      "room_id": "KANTO-VF-003",
+      "x": 2400,
+      "y": 30,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Un arroyo frío pasa bajo raíces expuestas y piedras cubiertas de musgo.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "forest stream",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "water",
+          "mud",
+          "stone"
+        ],
+        "cover": [
+          "roots",
+          "ferns"
+        ],
+        "water": "stream",
+        "canopy": 0.8,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.5,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "wet foliage",
+          "behavior": "feeds near ferns",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-025",
+          "abundance": 0.08,
+          "level_range": [
+            3,
+            7
+          ],
+          "habitat": "old roots near water",
+          "behavior": "appears where old trees and moisture meet",
+          "activity": "DAY_NIGHT",
+          "clues": [
+            "small scorch marks",
+            "gnawed seeds"
+          ]
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.9,
+        "wind": "light"
+      },
+      "water_bodies": [
+        {
+          "water_body_id": "WB-VIRIDIAN-FOREST-CREEK",
+          "kind": "STREAM",
+          "conductive_medium": true
+        }
+      ],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un arroyo frío pasa bajo raíces expuestas y piedras cubiertas de musgo.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF3-WATER",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF3-WATER",
+            "name": "Agua del arroyo forestal",
+            "aliases": [],
+            "visible_description": "Agua fría conecta varias pozas poco profundas.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WATER",
+              "STREAM"
+            ],
+            "physical_properties": {
+              "conductivity": 1
+            },
+            "environmental_state": {
+              "temperature_c": 14,
+              "wetness": 1,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "SHARED_CONDUCTIVE_MEDIUM"
+            ],
+            "connected_object_ids": [],
+            "water_body_id": "WB-VIRIDIAN-FOREST-CREEK"
+          },
+          {
+            "id": "entity-VF3-ROCK",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF3-ROCK",
+            "name": "Piedra musgosa",
+            "aliases": [],
+            "visible_description": "Una piedra grande permanece húmeda casi todo el día.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "STONE"
+            ],
+            "physical_properties": {
+              "thermal_shock_sensitivity": 0.75
+            },
+            "environmental_state": {
+              "temperature_c": 15,
+              "wetness": 0.65,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-004",
+      "key": "Bosque Verde — Arboleda de capullos",
+      "room_id": "KANTO-VF-004",
+      "x": 2050,
+      "y": 30,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Ramas bajas y troncos protegidos forman un refugio ideal para Pokémon en metamorfosis.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "cocoon grove",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "leaf_litter"
+        ],
+        "cover": [
+          "dense_trees"
+        ],
+        "water": "none",
+        "canopy": 0.88,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-011",
+          "abundance": 0.75,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "low branches",
+          "behavior": "remains still and protected",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-014",
+          "abundance": 0.75,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "trunks and branches",
+          "behavior": "remains still and protected",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.45,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "nearby leaves",
+          "behavior": "feeds near cocoons",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.45,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "nearby leaves",
+          "behavior": "feeds near cocoons",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.78,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Ramas bajas y troncos protegidos forman un refugio ideal para Pokémon en metamorfosis.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF4-TREE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF4-TREE",
+            "name": "Árbol de corteza gruesa",
+            "aliases": [],
+            "visible_description": "Un árbol viejo sostiene varias ramas protegidas.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.45,
+              "water_absorption": 0.35
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-005",
+      "key": "Bosque Verde — Laberinto de troncos caídos",
+      "room_id": "KANTO-VF-005",
+      "x": 2050,
+      "y": 190,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Árboles caídos, raíces y maleza rompen la línea de visión y convierten el paso en un pequeño laberinto.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "fallen-log maze",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "No todas las sendas visibles continúan; algunas rodean los troncos.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "wood",
+          "leaf_litter"
+        ],
+        "cover": [
+          "fallen_logs",
+          "roots",
+          "brush"
+        ],
+        "water": "none",
+        "canopy": 0.9,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.18,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "root cavities",
+          "behavior": "scavenges in dry hollows",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.7,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "brush",
+          "behavior": "feeds on new growth",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.7,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "brush",
+          "behavior": "hides behind fallen wood",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.72,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Árboles caídos, raíces y maleza rompen la línea de visión y convierten el paso en un pequeño laberinto.",
+          "spatial_answer": "No todas las sendas visibles continúan; algunas rodean los troncos.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF5-LOG",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF5-LOG",
+            "name": "Gran tronco caído",
+            "aliases": [],
+            "visible_description": "Un tronco seco bloquea parcialmente una senda.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "HEAVY_OBJECT"
+            ],
+            "physical_properties": {
+              "flammability": 0.7,
+              "ignition_point_c": 225,
+              "thermal_shock_sensitivity": 0.1
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "BURNABLE_COVER",
+              "MOVABLE_HEAVY_OBJECT"
+            ],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-006",
+      "key": "Bosque Verde — Claro de árboles viejos",
+      "room_id": "KANTO-VF-006",
+      "x": 1700,
+      "y": 190,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Árboles muy antiguos dejan huecos entre raíces; algunas cortezas muestran pequeñas marcas negras y arañazos.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "old-growth clearing",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "roots"
+        ],
+        "cover": [
+          "old_trees"
+        ],
+        "water": "none",
+        "canopy": 0.82,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-025",
+          "abundance": 0.18,
+          "level_range": [
+            3,
+            8
+          ],
+          "habitat": "old tree roots and hollows",
+          "behavior": "forages, listens and avoids crowds",
+          "activity": "DAY_NIGHT",
+          "clues": [
+            "tiny scorch marks on bark",
+            "cracked acorn shells"
+          ]
+        },
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.08,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "upper canopy",
+          "behavior": "rarely descends",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.7,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Árboles muy antiguos dejan huecos entre raíces; algunas cortezas muestran pequeñas marcas negras y arañazos.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF6-OLDTREE",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF6-OLDTREE",
+            "name": "Árbol viejo marcado",
+            "aliases": [],
+            "visible_description": "La corteza está dañada en pequeños puntos oscuros, pero el árbol sigue vivo.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.35,
+              "water_absorption": 0.45
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-007",
+      "key": "Bosque Verde — Senda de sombra profunda",
+      "room_id": "KANTO-VF-007",
+      "x": 1700,
+      "y": 30,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "El dosel casi cierra el cielo y el sendero se vuelve fresco, húmedo y silencioso.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "deep forest path",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "leaf_litter"
+        ],
+        "cover": [
+          "dense_trees",
+          "ferns"
+        ],
+        "water": "none",
+        "canopy": 0.96,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-010",
+          "abundance": 0.65,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "shade foliage",
+          "behavior": "feeds slowly",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-013",
+          "abundance": 0.65,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "shade foliage",
+          "behavior": "uses brush for cover",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-011",
+          "abundance": 0.35,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "branches",
+          "behavior": "hidden among leaves",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-014",
+          "abundance": 0.35,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "branches",
+          "behavior": "hidden against bark",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.86,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "El dosel casi cierra el cielo y el sendero se vuelve fresco, húmedo y silencioso.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF7-LEAVES",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF7-LEAVES",
+            "name": "Hojarasca húmeda",
+            "aliases": [],
+            "visible_description": "La humedad reduce mucho la facilidad con que ardería.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "LEAF_LITTER",
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.7
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0.7,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-008",
+      "key": "Bosque Verde — Árbol hueco y raíces",
+      "room_id": "KANTO-VF-008",
+      "x": 1350,
+      "y": 30,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "Un tronco enorme tiene una cavidad seca entre raíces, con semillas, fibras y señales de pequeños habitantes.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "tree hollow",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "wood"
+        ],
+        "cover": [
+          "hollow_tree",
+          "roots"
+        ],
+        "water": "none",
+        "canopy": 0.9,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-025",
+          "abundance": 0.12,
+          "level_range": [
+            3,
+            8
+          ],
+          "habitat": "tree hollow",
+          "behavior": "may shelter here during rain",
+          "activity": "DUSK_NIGHT",
+          "clues": [
+            "stored seeds",
+            "faint ozone smell"
+          ]
+        },
+        {
+          "species_id": "PKMN-019",
+          "abundance": 0.12,
+          "level_range": [
+            3,
+            6
+          ],
+          "habitat": "root cavity",
+          "behavior": "uses abandoned hollows",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.7,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "Un tronco enorme tiene una cavidad seca entre raíces, con semillas, fibras y señales de pequeños habitantes.",
+          "spatial_answer": "",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF8-HOLLOW",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF8-HOLLOW",
+            "name": "Interior del árbol hueco",
+            "aliases": [],
+            "visible_description": "La cavidad es más seca que el bosque exterior.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "WOOD",
+              "DRY_GRASS"
+            ],
+            "physical_properties": {
+              "flammability": 0.72,
+              "ignition_point_c": 220
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0.1,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    },
+    {
+      "id": "room-vf-009",
+      "key": "Bosque Verde — Senda norte",
+      "room_id": "KANTO-VF-009",
+      "x": 1350,
+      "y": 190,
+      "zone_id": "KANTO-VIRIDIAN-FOREST",
+      "region_id": "KANTO-WEST",
+      "settlement_id": "",
+      "district_id": "KANTO-VIRIDIAN-FOREST",
+      "desc": "La vegetación empieza a abrirse y el terreno asciende hacia la salida norte del bosque.",
+      "canon_status": "reference-derived",
+      "sensory_facts": {
+        "sight": [],
+        "hearing": [],
+        "smell": [],
+        "touch": [],
+        "taste": []
+      },
+      "space_profile": {
+        "room_type": "north forest trail",
+        "scale": "large",
+        "geometry": "open natural space",
+        "orientation": "La continuación al norte llevaría hacia Ciudad Plateada, fuera del bioma actual.",
+        "focal_points": [],
+        "status": "pokerol-biome-v1"
+      },
+      "perception_facts": [],
+      "job_tasks": [],
+      "conditions": {},
+      "world_state": {
+        "weather": "mild",
+        "surface": "mixed"
+      },
+      "state_presentations": [],
+      "scene_image": {
+        "src": "",
+        "alt": "",
+        "position": "center center",
+        "fit": "cover"
+      },
+      "biome_profile": {
+        "biome_id": "KANTO-VIRIDIAN-FOREST",
+        "terrain": [
+          "soil",
+          "grass"
+        ],
+        "cover": [
+          "trees"
+        ],
+        "water": "none",
+        "canopy": 0.7,
+        "human_activity": "low"
+      },
+      "pokemon_populations": [
+        {
+          "species_id": "PKMN-012",
+          "abundance": 0.12,
+          "level_range": [
+            7,
+            12
+          ],
+          "habitat": "sunlit canopy",
+          "behavior": "crosses between clearings",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-015",
+          "abundance": 0.1,
+          "level_range": [
+            7,
+            12
+          ],
+          "habitat": "forest edge",
+          "behavior": "patrols aerial territory",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        },
+        {
+          "species_id": "PKMN-016",
+          "abundance": 0.15,
+          "level_range": [
+            4,
+            7
+          ],
+          "habitat": "edge canopy",
+          "behavior": "returns to open country",
+          "activity": "DAY_NIGHT",
+          "clues": []
+        }
+      ],
+      "environmental_state": {
+        "temperature_c": 22,
+        "humidity": 0.65,
+        "wind": "light"
+      },
+      "water_bodies": [],
+      "ecology_rules": [],
+      "scene_manifest": {
+        "version": 1,
+        "orientation": {
+          "arrival_summary": "La vegetación empieza a abrirse y el terreno asciende hacia la salida norte del bosque.",
+          "spatial_answer": "La continuación al norte llevaría hacia Ciudad Plateada, fuera del bioma actual.",
+          "time_context": "El bioma responde a hora, clima y actividad Pokémon.",
+          "current_activity": ""
+        },
+        "narrator_answers": [],
+        "entities": [
+          {
+            "id": "entity-VF9-BRUSH",
+            "kind": "FEATURE",
+            "object_id": "OBJ-KANTO-VF9-BRUSH",
+            "name": "Vegetación del borde norte",
+            "aliases": [],
+            "visible_description": "Matorral vivo limita un atajo fuera del sendero.",
+            "placement": "",
+            "portable": false,
+            "state": {},
+            "interaction_facts": [],
+            "object_actions": [],
+            "materials": [
+              "VEGETATION"
+            ],
+            "physical_properties": {
+              "flammability": 0.35
+            },
+            "environmental_state": {
+              "temperature_c": 20,
+              "wetness": 0,
+              "burning": false,
+              "frozen": false,
+              "brittle": false,
+              "cracked": false,
+              "broken": false,
+              "integrity": 1
+            },
+            "pokemon_interaction_tags": [
+              "CUTTABLE_VEGETATION"
+            ],
+            "connected_object_ids": []
+          }
+        ],
+        "hidden_discoveries": [],
+        "free_action_hooks": []
+      }
+    }
+  ],
+  "exits": [
+    {
+      "id": "exit-001a",
+      "exit_id": "KANTO-EXIT-001A",
+      "key": "entrar al laboratorio",
+      "source": "room-pal-001",
+      "target": "room-pal-002",
+      "aliases": [
+        "Laboratorio del Profesor — Sala principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-002b",
+      "exit_id": "KANTO-EXIT-002B",
+      "key": "salir a la calle",
+      "source": "room-pal-002",
+      "target": "room-pal-001",
+      "aliases": [
+        "Pueblo Paleta — Calle residencial"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-003a",
+      "exit_id": "KANTO-EXIT-003A",
+      "key": "ir hacia la plaza",
+      "source": "room-pal-001",
+      "target": "room-pal-003",
+      "aliases": [
+        "Pueblo Paleta — Plaza y jardines"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-004b",
+      "exit_id": "KANTO-EXIT-004B",
+      "key": "volver a la calle",
+      "source": "room-pal-003",
+      "target": "room-pal-001",
+      "aliases": [
+        "Pueblo Paleta — Calle residencial"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-005a",
+      "exit_id": "KANTO-EXIT-005A",
+      "key": "salir hacia los prados",
+      "source": "room-pal-003",
+      "target": "room-pal-004",
+      "aliases": [
+        "Prados al norte de Pueblo Paleta"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-006b",
+      "exit_id": "KANTO-EXIT-006B",
+      "key": "volver a Pueblo Paleta",
+      "source": "room-pal-004",
+      "target": "room-pal-003",
+      "aliases": [
+        "Pueblo Paleta — Plaza y jardines"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-007a",
+      "exit_id": "KANTO-EXIT-007A",
+      "key": "tomar la Ruta 1",
+      "source": "room-pal-004",
+      "target": "room-r1-001",
+      "aliases": [
+        "Ruta 1 — Pradera sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-008b",
+      "exit_id": "KANTO-EXIT-008B",
+      "key": "volver hacia Pallet",
+      "source": "room-r1-001",
+      "target": "room-pal-004",
+      "aliases": [
+        "Prados al norte de Pueblo Paleta"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-009a",
+      "exit_id": "KANTO-EXIT-009A",
+      "key": "bajar a la hondonada",
+      "source": "room-r1-001",
+      "target": "room-r1-002",
+      "aliases": [
+        "Ruta 1 — Hondonada de hierba alta"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-010b",
+      "exit_id": "KANTO-EXIT-010B",
+      "key": "subir a la pradera",
+      "source": "room-r1-002",
+      "target": "room-r1-001",
+      "aliases": [
+        "Ruta 1 — Pradera sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-011a",
+      "exit_id": "KANTO-EXIT-011A",
+      "key": "seguir hacia el arroyo",
+      "source": "room-r1-001",
+      "target": "room-r1-003",
+      "aliases": [
+        "Ruta 1 — Arroyo de ribera baja"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-012b",
+      "exit_id": "KANTO-EXIT-012B",
+      "key": "volver a la pradera",
+      "source": "room-r1-003",
+      "target": "room-r1-001",
+      "aliases": [
+        "Ruta 1 — Pradera sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-013a",
+      "exit_id": "KANTO-EXIT-013A",
+      "key": "subir por el terreno alto",
+      "source": "room-r1-002",
+      "target": "room-r1-004",
+      "aliases": [
+        "Ruta 1 — Loma y desniveles"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-014b",
+      "exit_id": "KANTO-EXIT-014B",
+      "key": "bajar a la hondonada",
+      "source": "room-r1-004",
+      "target": "room-r1-002",
+      "aliases": [
+        "Ruta 1 — Hondonada de hierba alta"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-015a",
+      "exit_id": "KANTO-EXIT-015A",
+      "key": "seguir por la ribera norte",
+      "source": "room-r1-003",
+      "target": "room-r1-004",
+      "aliases": [
+        "Ruta 1 — Loma y desniveles"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-016b",
+      "exit_id": "KANTO-EXIT-016B",
+      "key": "volver al arroyo",
+      "source": "room-r1-004",
+      "target": "room-r1-003",
+      "aliases": [
+        "Ruta 1 — Arroyo de ribera baja"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-017a",
+      "exit_id": "KANTO-EXIT-017A",
+      "key": "entrar a la arboleda",
+      "source": "room-r1-004",
+      "target": "room-r1-005",
+      "aliases": [
+        "Ruta 1 — Arboleda cortaviento"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-018b",
+      "exit_id": "KANTO-EXIT-018B",
+      "key": "volver a la loma",
+      "source": "room-r1-005",
+      "target": "room-r1-004",
+      "aliases": [
+        "Ruta 1 — Loma y desniveles"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-019a",
+      "exit_id": "KANTO-EXIT-019A",
+      "key": "seguir al claro",
+      "source": "room-r1-005",
+      "target": "room-r1-006",
+      "aliases": [
+        "Ruta 1 — Claro de descanso"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-020b",
+      "exit_id": "KANTO-EXIT-020B",
+      "key": "volver a la arboleda",
+      "source": "room-r1-006",
+      "target": "room-r1-005",
+      "aliases": [
+        "Ruta 1 — Arboleda cortaviento"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-021a",
+      "exit_id": "KANTO-EXIT-021A",
+      "key": "seguir hacia Ciudad Verde",
+      "source": "room-r1-006",
+      "target": "room-r1-007",
+      "aliases": [
+        "Ruta 1 — Acceso sur a Ciudad Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-022b",
+      "exit_id": "KANTO-EXIT-022B",
+      "key": "volver al claro",
+      "source": "room-r1-007",
+      "target": "room-r1-006",
+      "aliases": [
+        "Ruta 1 — Claro de descanso"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-023a",
+      "exit_id": "KANTO-EXIT-023A",
+      "key": "entrar a Ciudad Verde",
+      "source": "room-r1-007",
+      "target": "room-vir-001",
+      "aliases": [
+        "Ciudad Verde — Puerta sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-024b",
+      "exit_id": "KANTO-EXIT-024B",
+      "key": "salir hacia Ruta 1",
+      "source": "room-vir-001",
+      "target": "room-r1-007",
+      "aliases": [
+        "Ruta 1 — Acceso sur a Ciudad Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-025a",
+      "exit_id": "KANTO-EXIT-025A",
+      "key": "seguir por la calle principal",
+      "source": "room-vir-001",
+      "target": "room-vir-002",
+      "aliases": [
+        "Ciudad Verde — Calle principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-026b",
+      "exit_id": "KANTO-EXIT-026B",
+      "key": "volver a la puerta sur",
+      "source": "room-vir-002",
+      "target": "room-vir-001",
+      "aliases": [
+        "Ciudad Verde — Puerta sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-027a",
+      "exit_id": "KANTO-EXIT-027A",
+      "key": "entrar al Centro Pokémon",
+      "source": "room-vir-002",
+      "target": "room-vir-003",
+      "aliases": [
+        "Centro Pokémon de Ciudad Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-028b",
+      "exit_id": "KANTO-EXIT-028B",
+      "key": "salir a la calle",
+      "source": "room-vir-003",
+      "target": "room-vir-002",
+      "aliases": [
+        "Ciudad Verde — Calle principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-029a",
+      "exit_id": "KANTO-EXIT-029A",
+      "key": "entrar al Poké Mart",
+      "source": "room-vir-002",
+      "target": "room-vir-004",
+      "aliases": [
+        "Poké Mart de Ciudad Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-030b",
+      "exit_id": "KANTO-EXIT-030B",
+      "key": "salir a la calle",
+      "source": "room-vir-004",
+      "target": "room-vir-002",
+      "aliases": [
+        "Ciudad Verde — Calle principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-031a",
+      "exit_id": "KANTO-EXIT-031A",
+      "key": "ir al patio de la academia",
+      "source": "room-vir-002",
+      "target": "room-vir-005",
+      "aliases": [
+        "Ciudad Verde — Patio de la academia"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-032b",
+      "exit_id": "KANTO-EXIT-032B",
+      "key": "volver a la calle",
+      "source": "room-vir-005",
+      "target": "room-vir-002",
+      "aliases": [
+        "Ciudad Verde — Calle principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-033a",
+      "exit_id": "KANTO-EXIT-033A",
+      "key": "ir al estanque",
+      "source": "room-vir-002",
+      "target": "room-vir-006",
+      "aliases": [
+        "Ciudad Verde — Estanque y jardines"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-034b",
+      "exit_id": "KANTO-EXIT-034B",
+      "key": "volver a la calle",
+      "source": "room-vir-006",
+      "target": "room-vir-002",
+      "aliases": [
+        "Ciudad Verde — Calle principal"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-035a",
+      "exit_id": "KANTO-EXIT-035A",
+      "key": "seguir por los jardines del norte",
+      "source": "room-vir-005",
+      "target": "room-vir-007",
+      "aliases": [
+        "Ciudad Verde — Puerta norte"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-036b",
+      "exit_id": "KANTO-EXIT-036B",
+      "key": "volver hacia la academia",
+      "source": "room-vir-007",
+      "target": "room-vir-005",
+      "aliases": [
+        "Ciudad Verde — Patio de la academia"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-037a",
+      "exit_id": "KANTO-EXIT-037A",
+      "key": "seguir por el sendero del estanque",
+      "source": "room-vir-006",
+      "target": "room-vir-007",
+      "aliases": [
+        "Ciudad Verde — Puerta norte"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-038b",
+      "exit_id": "KANTO-EXIT-038B",
+      "key": "volver al estanque",
+      "source": "room-vir-007",
+      "target": "room-vir-006",
+      "aliases": [
+        "Ciudad Verde — Estanque y jardines"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-039a",
+      "exit_id": "KANTO-EXIT-039A",
+      "key": "tomar la Ruta 2",
+      "source": "room-vir-007",
+      "target": "room-r2-001",
+      "aliases": [
+        "Ruta 2 — Camino sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-040b",
+      "exit_id": "KANTO-EXIT-040B",
+      "key": "volver a Ciudad Verde",
+      "source": "room-r2-001",
+      "target": "room-vir-007",
+      "aliases": [
+        "Ciudad Verde — Puerta norte"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-041a",
+      "exit_id": "KANTO-EXIT-041A",
+      "key": "seguir junto al bosque joven",
+      "source": "room-r2-001",
+      "target": "room-r2-002",
+      "aliases": [
+        "Ruta 2 — Franja de bosque joven"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-042b",
+      "exit_id": "KANTO-EXIT-042B",
+      "key": "volver a la Ruta 2 sur",
+      "source": "room-r2-002",
+      "target": "room-r2-001",
+      "aliases": [
+        "Ruta 2 — Camino sur"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-043a",
+      "exit_id": "KANTO-EXIT-043A",
+      "key": "seguir a la entrada del bosque",
+      "source": "room-r2-002",
+      "target": "room-r2-003",
+      "aliases": [
+        "Entrada sur del Bosque Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-044b",
+      "exit_id": "KANTO-EXIT-044B",
+      "key": "volver a la franja joven",
+      "source": "room-r2-003",
+      "target": "room-r2-002",
+      "aliases": [
+        "Ruta 2 — Franja de bosque joven"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-045a",
+      "exit_id": "KANTO-EXIT-045A",
+      "key": "entrar al Bosque Verde",
+      "source": "room-r2-003",
+      "target": "room-vf-001",
+      "aliases": [
+        "Bosque Verde — Vestíbulo soleado"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-046b",
+      "exit_id": "KANTO-EXIT-046B",
+      "key": "salir a Ruta 2",
+      "source": "room-vf-001",
+      "target": "room-r2-003",
+      "aliases": [
+        "Entrada sur del Bosque Verde"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-047a",
+      "exit_id": "KANTO-EXIT-047A",
+      "key": "seguir hacia el claro de insectos",
+      "source": "room-vf-001",
+      "target": "room-vf-002",
+      "aliases": [
+        "Bosque Verde — Claro de insectos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-048b",
+      "exit_id": "KANTO-EXIT-048B",
+      "key": "volver al vestíbulo",
+      "source": "room-vf-002",
+      "target": "room-vf-001",
+      "aliases": [
+        "Bosque Verde — Vestíbulo soleado"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-049a",
+      "exit_id": "KANTO-EXIT-049A",
+      "key": "tomar la senda de troncos",
+      "source": "room-vf-001",
+      "target": "room-vf-005",
+      "aliases": [
+        "Bosque Verde — Laberinto de troncos caídos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-050b",
+      "exit_id": "KANTO-EXIT-050B",
+      "key": "volver al acceso",
+      "source": "room-vf-005",
+      "target": "room-vf-001",
+      "aliases": [
+        "Bosque Verde — Vestíbulo soleado"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-051a",
+      "exit_id": "KANTO-EXIT-051A",
+      "key": "seguir el sonido del arroyo",
+      "source": "room-vf-002",
+      "target": "room-vf-003",
+      "aliases": [
+        "Bosque Verde — Arroyo sombrío"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-052b",
+      "exit_id": "KANTO-EXIT-052B",
+      "key": "volver al claro",
+      "source": "room-vf-003",
+      "target": "room-vf-002",
+      "aliases": [
+        "Bosque Verde — Claro de insectos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-053a",
+      "exit_id": "KANTO-EXIT-053A",
+      "key": "seguir bajo las raíces",
+      "source": "room-vf-003",
+      "target": "room-vf-004",
+      "aliases": [
+        "Bosque Verde — Arboleda de capullos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-054b",
+      "exit_id": "KANTO-EXIT-054B",
+      "key": "volver al arroyo",
+      "source": "room-vf-004",
+      "target": "room-vf-003",
+      "aliases": [
+        "Bosque Verde — Arroyo sombrío"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-055a",
+      "exit_id": "KANTO-EXIT-055A",
+      "key": "seguir hacia los troncos caídos",
+      "source": "room-vf-004",
+      "target": "room-vf-005",
+      "aliases": [
+        "Bosque Verde — Laberinto de troncos caídos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-056b",
+      "exit_id": "KANTO-EXIT-056B",
+      "key": "volver a la arboleda",
+      "source": "room-vf-005",
+      "target": "room-vf-004",
+      "aliases": [
+        "Bosque Verde — Arboleda de capullos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-057a",
+      "exit_id": "KANTO-EXIT-057A",
+      "key": "abrirse paso hacia los árboles viejos",
+      "source": "room-vf-005",
+      "target": "room-vf-006",
+      "aliases": [
+        "Bosque Verde — Claro de árboles viejos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-058b",
+      "exit_id": "KANTO-EXIT-058B",
+      "key": "volver al laberinto",
+      "source": "room-vf-006",
+      "target": "room-vf-005",
+      "aliases": [
+        "Bosque Verde — Laberinto de troncos caídos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-059a",
+      "exit_id": "KANTO-EXIT-059A",
+      "key": "seguir a la sombra profunda",
+      "source": "room-vf-006",
+      "target": "room-vf-007",
+      "aliases": [
+        "Bosque Verde — Senda de sombra profunda"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-060b",
+      "exit_id": "KANTO-EXIT-060B",
+      "key": "volver al claro viejo",
+      "source": "room-vf-007",
+      "target": "room-vf-006",
+      "aliases": [
+        "Bosque Verde — Claro de árboles viejos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-061a",
+      "exit_id": "KANTO-EXIT-061A",
+      "key": "seguir hacia el árbol hueco",
+      "source": "room-vf-007",
+      "target": "room-vf-008",
+      "aliases": [
+        "Bosque Verde — Árbol hueco y raíces"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-062b",
+      "exit_id": "KANTO-EXIT-062B",
+      "key": "volver a la senda",
+      "source": "room-vf-008",
+      "target": "room-vf-007",
+      "aliases": [
+        "Bosque Verde — Senda de sombra profunda"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-063a",
+      "exit_id": "KANTO-EXIT-063A",
+      "key": "seguir hacia la luz del norte",
+      "source": "room-vf-008",
+      "target": "room-vf-009",
+      "aliases": [
+        "Bosque Verde — Senda norte"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-064b",
+      "exit_id": "KANTO-EXIT-064B",
+      "key": "volver al árbol hueco",
+      "source": "room-vf-009",
+      "target": "room-vf-008",
+      "aliases": [
+        "Bosque Verde — Árbol hueco y raíces"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-065a",
+      "exit_id": "KANTO-EXIT-065A",
+      "key": "tomar la senda alta entre raíces",
+      "source": "room-vf-006",
+      "target": "room-vf-009",
+      "aliases": [
+        "Bosque Verde — Senda norte"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    },
+    {
+      "id": "exit-066b",
+      "exit_id": "KANTO-EXIT-066B",
+      "key": "volver al claro de árboles viejos",
+      "source": "room-vf-009",
+      "target": "room-vf-006",
+      "aliases": [
+        "Bosque Verde — Claro de árboles viejos"
+      ],
+      "door_state": "open",
+      "is_locked": false,
+      "hidden": false,
+      "canon_status": "reference-derived",
+      "state_requirements": [],
+      "state_block_message": "El estado actual del lugar no permite usar ese paso.",
+      "campaign_tags": []
+    }
+  ]
+}
