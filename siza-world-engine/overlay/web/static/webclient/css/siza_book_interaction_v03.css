@@ -171,6 +171,22 @@
 }
 .sizaContextualActions[data-empty="true"] .sizaContextualActionsEmpty { display:block; }
 
+/* Hard UI cap: backend keeps all actions, but the visible quick buttons stay manageable. */
+#siza-contextual-interactions > button:nth-of-type(n+6),
+#siza-contextual-movement > button:nth-of-type(n+6),
+#siza-exits-actions > button:nth-of-type(n+6),
+#siza-characters-actions > button:nth-of-type(n+6),
+#siza-visible-actions > button:nth-of-type(n+6),
+#siza-contextual-interactions > .sizaContextAction:nth-of-type(n+6),
+#siza-contextual-movement > .sizaContextAction:nth-of-type(n+6),
+#siza-exits-actions > .sizaActionLink:nth-of-type(n+6),
+#siza-characters-actions > .sizaActionLink:nth-of-type(n+6),
+#siza-visible-actions > .sizaActionLink:nth-of-type(n+6) {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+}
+
 @media(max-width:760px) {
     .sizaContextualActions { padding:6px 7px; }
     .sizaContextAction { min-height:25px; padding:4px 7px; font-size:8px; }
