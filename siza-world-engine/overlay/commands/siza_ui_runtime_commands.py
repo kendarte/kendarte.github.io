@@ -8,7 +8,7 @@ from services.object_action_engine import find_object_action
 from services.object_visibility_engine import object_visible_in_world_state
 
 
-SIZA_UI_RUNTIME_BUILD = "0.2.0-map-editor-room-state"
+SIZA_UI_RUNTIME_BUILD = "0.2.1-visible-npc-activity"
 PLACEHOLDER_DESCRIPTIONS = {
     "",
     "the current location will be described here.",
@@ -214,6 +214,88 @@ def _is_visible_world_object(actor, obj):
     return bool(object_visible_in_world_state(obj, site=location))
 
 
+def _routine_entry_for_npc(npc):
+    routine = _plain_list(_db_value(npc, "routine", []))
+    if not routine:
+        return {}
+    try:
+        index = int(_db_value(npc, "routine_index", 0) or 0)
+    except (TypeError, ValueError):
+        index = 0
+    if index < 0:
+        index = 0
+    try:
+        return _plain_dict(routine[index % len(routine)])
+    except Exception:
+        return {}
+
+
+def _visible_activity_text(npc):
+    activity = _text_like(_db_value(npc, "current_activity", ""))
+    current_goal = _plain_dict(_db_value(npc, "current_goal", {}))
+    routine_entry = _routine_entry_for_npc(npc)
+
+    if not activity:
+        activity = _text_like(current_goal.get("activity"))
+    if not activity:
+        activity = _text_like(routine_entry.get("activity"))
+    if not activity and bool(_db_value(npc, "simulation_enabled", False)):
+        activity = "siguiendo su rutina activa"
+    if not activity:
+        activity = "presente en la escena"
+    return activity
+
+
+def _visible_goal_text(npc):
+    goal = _plain_dict(_db_value(npc, "current_goal", {}))
+    if not goal:
+        return ""
+    pieces = []
+    goal_type = _clean(goal.get("type") or goal.get("goal_type"))
+    target = _clean(goal.get("target_name") or goal.get("target_room_key"))
+    source = _clean(goal.get("source"))
+    if goal_type:
+        pieces.append(goal_type)
+    if source and source not in pieces:
+        pieces.append(source)
+    if target:
+        pieces.append("hacia " + target)
+    return " · ".join(pieces)
+
+
+def _npc_visible_state(npc):
+    name = str(getattr(npc, "key", "NPC") or "NPC")
+    activity = _visible_activity_text(npc)
+    goal_text = _visible_goal_text(npc)
+    destination = _clean(_db_value(npc, "destination_id", ""))
+
+    line = f"{name}: {activity}."
+    if goal_text:
+        line += f" Objetivo visible: {goal_text}."
+    elif destination:
+        line += f" Se orienta hacia {destination}."
+    return line
+
+
+def _npc_state_packet(npc):
+    current_goal = _plain_dict(_db_value(npc, "current_goal", {}))
+    routine_entry = _routine_entry_for_npc(npc)
+    return {
+        "simulation_enabled": bool(_db_value(npc, "simulation_enabled", False)),
+        "decision_enabled": bool(_db_value(npc, "decision_enabled", False)),
+        "current_activity": _visible_activity_text(npc),
+        "current_goal": current_goal,
+        "routine_entry": routine_entry,
+        "job": _plain_dict(_db_value(npc, "job", {})),
+        "job_schedule": _plain_dict(_db_value(npc, "job_schedule", {})),
+        "destination_id": _clean(_db_value(npc, "destination_id", "")) or None,
+        "home_room_id": _clean(_db_value(npc, "home_room_id", "")) or None,
+        "work_room_id": _clean(_db_value(npc, "work_room_id", "")) or None,
+        "rest_room_id": _clean(_db_value(npc, "rest_room_id", "")) or None,
+        "visible_state": _npc_visible_state(npc),
+    }
+
+
 def _visible_people_and_objects(actor):
     location = getattr(actor, "location", None) if actor else None
     people = []
@@ -231,6 +313,7 @@ def _visible_people_and_objects(actor):
             "description": _object_description(obj),
         }
         if bool(_db_value(obj, "is_npc", False)):
+            row.update(_npc_state_packet(obj))
             people.append(row)
         else:
             objects.append(row)
@@ -349,13 +432,14 @@ def room_snapshot_packet(actor):
     people, objects = _visible_people_and_objects(actor)
     exits = _exit_rows(location)
     context = context_action_packet(actor)
+    description = _room_description(location)
     return {
         "status": "ROOM_SNAPSHOT",
         "room_name": str(location.key),
         "location": str(location.key),
         "room_id": _clean(_db_value(location, "room_id", "")) or None,
-        "room_description": _room_description(location),
-        "description": _room_description(location),
+        "room_description": description,
+        "description": description,
         "exits": exits,
         "visible_npcs": people,
         "people": people,
@@ -378,20 +462,37 @@ def _names(rows):
     return output
 
 
+def _npc_lines(rows):
+    output = []
+    for row in list(rows or []):
+        try:
+            item = dict(row or {})
+        except Exception:
+            continue
+        line = _clean(item.get("visible_state"))
+        if not line:
+            name = _clean(item.get("name"))
+            activity = _clean(item.get("current_activity"))
+            line = f"{name}: {activity}." if name and activity else name
+        if line and line not in output:
+            output.append(line)
+    return output
+
+
 def _room_text_block(packet):
     if not packet or packet.get("status") != "ROOM_SNAPSHOT":
         return ""
     location = _clean(packet.get("room_name") or packet.get("location")) or "Ubicación"
     description = _clean(packet.get("room_description") or packet.get("description")) or "Este lugar todavía no tiene descripción narrativa importada desde el Map Editor."
     exits = _names(packet.get("exits"))
-    people = _names(packet.get("visible_npcs") or packet.get("people"))
+    people = _npc_lines(packet.get("visible_npcs") or packet.get("people"))
     objects = _names(packet.get("visible_objects") or packet.get("objects"))
     return "\n".join(
         [
             location,
             description,
             "Exits: " + (", ".join(exits) if exits else "—"),
-            "Characters: " + (", ".join(people) if people else "—"),
+            "Characters: " + (" | ".join(people) if people else "—"),
             "You see: " + (", ".join(objects) if objects else "—"),
         ]
     )
