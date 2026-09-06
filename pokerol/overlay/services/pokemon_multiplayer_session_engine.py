@@ -5,17 +5,17 @@ from time import time
 
 import evennia
 
+from services.pokemon_battle_engine import normalize_pokemon
 from services.pokemon_party_engine import active_pokemon
 from typeclasses.pokemon_battle_session import (
     MAX_HUMAN_PARTICIPANTS,
-    SESSION_BUILD,
     SESSION_KINDS,
     participant_id,
     participant_packet,
 )
 
 
-MULTI_SESSION_BUILD = "0.1.0-room-lobby-authority"
+MULTI_SESSION_BUILD = "0.2.0-lobby-combatant-start"
 SESSION_TYPECLASS = "typeclasses.pokemon_battle_session.PokemonBattleSession"
 
 
@@ -67,8 +67,6 @@ def session_by_id(session_id):
     for script in rows or []:
         if _text(getattr(script.db, "session_id", "")) == wanted:
             return script
-    # search_script primarily searches keys; session id is stored as an Attribute.
-    # Sessions are few and globally searchable by typeclass key prefix as fallback.
     try:
         rows = evennia.search_script("POKEROL-BATTLE-SESSION", exact=False)
     except Exception:
@@ -90,7 +88,7 @@ def session_for_actor(actor):
         actor.db.pokerol_battle_session_id = None
         return None
     pid = participant_id(actor)
-    if not any(_text(row.get("participant_id")) == pid for row in _list(session.db.participants)):
+    if not any(_text(_dict(row).get("participant_id")) == pid for row in _list(session.db.participants)):
         actor.db.pokerol_battle_session_id = None
         return None
     return session
@@ -167,6 +165,9 @@ def create_session(actor, kind="PVE_COOP"):
     existing = session_for_actor(actor)
     if existing:
         return {"accepted": False, "status": "ALREADY_IN_BATTLE_SESSION", "session": public_session(existing, actor), "build": MULTI_SESSION_BUILD}
+    old_battle = _dict(getattr(actor.db, "pokerol_pokemon_battle", {}))
+    if _text(old_battle.get("status")).upper() == "ACTIVE":
+        return {"accepted": False, "status": "SINGLE_BATTLE_ALREADY_ACTIVE", "build": MULTI_SESSION_BUILD}
     room = getattr(actor, "location", None)
     if not room:
         return {"accepted": False, "status": "NO_ROOM", "build": MULTI_SESSION_BUILD}
@@ -207,7 +208,6 @@ def invite_actor(host, target, *, team=""):
         return {"accepted": False, "status": "SESSION_FULL", "build": MULTI_SESSION_BUILD}
     if not active_pokemon(target):
         return {"accepted": False, "status": "INVITEE_HAS_NO_ACTIVE_POKEMON", "build": MULTI_SESSION_BUILD}
-
     target_team = _text(team).upper()
     if target_team not in {"A", "B"}:
         target_team = "B" if _text(session.db.kind).upper() == "PVP" else "A"
@@ -224,7 +224,6 @@ def invite_actor(host, target, *, team=""):
     session_invites = [row for row in session_invites if _int(row.get("actor_dbref"), -1) != int(target.id)]
     session_invites.append({**_clone(invitation), "actor_dbref": int(target.id), "actor_name": _text(target.key)})
     session.db.invitations = session_invites
-
     actor_invites = _clean_actor_invites(target)
     actor_invites = [row for row in actor_invites if _text(row.get("session_id")) != _text(session.db.session_id)]
     actor_invites.append(_clone(invitation))
@@ -262,10 +261,7 @@ def accept_invitation(actor, session_id=""):
     participants = _list(session.db.participants)
     participants.append(participant_packet(actor, team=team, ready=False))
     session.write_participants(participants)
-    session.db.invitations = [
-        row for row in _list(session.db.invitations)
-        if _int(_dict(row).get("actor_dbref"), -1) != int(actor.id)
-    ]
+    session.db.invitations = [row for row in _list(session.db.invitations) if _int(_dict(row).get("actor_dbref"), -1) != int(actor.id)]
     actor.db.pokerol_battle_session_id = _text(session.db.session_id)
     _write_actor_invites(actor, [row for row in invitations if _text(row.get("session_id")) != _text(session.db.session_id)])
     session.append_log("JOINED", f"{actor.key} entra a la sesión.", actor_dbref=int(actor.id), team=team)
@@ -319,6 +315,64 @@ def leave_session(actor):
     return {"accepted": True, "status": "LEFT_SESSION", "session": public_session(session), "build": MULTI_SESSION_BUILD}
 
 
+def _participant_team(session, actor_dbref):
+    for row in _list(session.db.participants):
+        row = _dict(row)
+        if _int(row.get("actor_dbref"), -1) == _int(actor_dbref, -2):
+            return _text(row.get("team")).upper() or "A"
+    return "A"
+
+
+def _human_combatant(session, participant):
+    row = _dict(participant)
+    actor = actor_from_dbref(row.get("actor_dbref"))
+    if not actor:
+        return None
+    profile = active_pokemon(actor)
+    if not profile:
+        return None
+    pokemon = normalize_pokemon(profile, side=row.get("team") or "A")
+    return {
+        "combatant_id": _text(pokemon.get("entity_id")),
+        "controller_kind": "HUMAN",
+        "controller_participant_id": _text(row.get("participant_id")),
+        "actor_dbref": int(actor.id),
+        "trainer_name": _text(actor.key),
+        "team": _text(row.get("team")).upper() or "A",
+        "pokemon": pokemon,
+        "active": True,
+        "needs_switch": False,
+        "joined_turn": 1,
+    }
+
+
+def add_ai_combatant(session, pokemon_profile, *, team="B", controller_id="AI"):
+    if not session or _text(session.db.status).upper() != "LOBBY":
+        return {"accepted": False, "status": "SESSION_NOT_IN_LOBBY", "build": MULTI_SESSION_BUILD}
+    profile = _dict(pokemon_profile)
+    if not profile:
+        return {"accepted": False, "status": "POKEMON_PROFILE_REQUIRED", "build": MULTI_SESSION_BUILD}
+    wanted_team = _text(team).upper() or "B"
+    pokemon = normalize_pokemon(profile, side=wanted_team)
+    rows = [row for row in _list(session.db.combatants) if _text(_dict(row).get("combatant_id")) != _text(pokemon.get("entity_id"))]
+    rows.append({
+        "combatant_id": _text(pokemon.get("entity_id")),
+        "controller_kind": "AI",
+        "controller_participant_id": _text(controller_id) or "AI",
+        "actor_dbref": None,
+        "trainer_name": "WILD" if bool(pokemon.get("wild")) else "AI TRAINER",
+        "team": wanted_team,
+        "pokemon": pokemon,
+        "active": True,
+        "needs_switch": False,
+        "joined_turn": 1,
+    })
+    session.write_combatants(rows)
+    session.append_log("AI_COMBATANT_ADDED", f"{pokemon.get('name')} entra al equipo {wanted_team}.", combatant_id=pokemon.get("entity_id"), team=wanted_team)
+    emit_session(session, event="ENCOUNTER_ATTACHED")
+    return {"accepted": True, "status": "AI_COMBATANT_ADDED", "combatant": _clone(rows[-1]), "build": MULTI_SESSION_BUILD}
+
+
 def lobby_can_start(session):
     if not session or _text(session.db.status).upper() != "LOBBY":
         return {"allowed": False, "status": "NOT_LOBBY"}
@@ -328,9 +382,56 @@ def lobby_can_start(session):
     if not all(bool(row.get("ready")) for row in rows):
         return {"allowed": False, "status": "PLAYERS_NOT_READY"}
     kind = _text(session.db.kind).upper()
-    teams = {row.get("team") for row in rows}
+    teams = {_text(row.get("team")).upper() for row in rows}
     if kind == "PVP" and not {"A", "B"}.issubset(teams):
         return {"allowed": False, "status": "PVP_NEEDS_BOTH_TEAMS"}
-    if kind in {"PVE_COOP", "RAID"} and not _list(session.db.combatants):
-        return {"allowed": False, "status": "PVE_ENCOUNTER_NOT_ATTACHED"}
+    if kind in {"PVE_COOP", "RAID"}:
+        ai_rows = [row for row in _list(session.db.combatants) if _text(_dict(row).get("controller_kind")).upper() == "AI"]
+        if not ai_rows:
+            return {"allowed": False, "status": "PVE_ENCOUNTER_NOT_ATTACHED"}
     return {"allowed": True, "status": "LOBBY_READY"}
+
+
+def start_session(host):
+    session = session_for_actor(host)
+    if not session:
+        return {"accepted": False, "status": "NO_BATTLE_SESSION", "build": MULTI_SESSION_BUILD}
+    if _int(session.db.host_dbref, -1) != _int(host.id, -2):
+        return {"accepted": False, "status": "HOST_ONLY", "build": MULTI_SESSION_BUILD}
+    gate = lobby_can_start(session)
+    if not gate.get("allowed"):
+        return {"accepted": False, "status": gate.get("status"), "session": public_session(session, host), "build": MULTI_SESSION_BUILD}
+
+    existing_ai = [
+        _dict(row) for row in _list(session.db.combatants)
+        if _text(_dict(row).get("controller_kind")).upper() == "AI"
+    ]
+    humans = []
+    participants = _list(session.db.participants)
+    for index, participant in enumerate(participants):
+        combatant = _human_combatant(session, participant)
+        if not combatant:
+            return {"accepted": False, "status": "PARTICIPANT_HAS_NO_ACTIVE_POKEMON", "participant": _dict(participant).get("name"), "build": MULTI_SESSION_BUILD}
+        humans.append(combatant)
+        updated = _dict(participant)
+        updated["active_entity_id"] = combatant["combatant_id"]
+        updated["submitted_turn"] = 0
+        participants[index] = updated
+
+    combatants = humans + existing_ai
+    teams = {_text(row.get("team")).upper() for row in combatants if _int(_dict(row).get("pokemon", {}).get("hp_current"), 0) > 0}
+    if len(teams) < 2:
+        return {"accepted": False, "status": "BATTLE_NEEDS_OPPOSING_TEAM", "build": MULTI_SESSION_BUILD}
+
+    session.write_participants(participants)
+    session.write_combatants(combatants)
+    session.write_orders({})
+    session.db.status = "ACTIVE"
+    session.db.phase = "COMMAND"
+    session.db.turn = 1
+    session.db.started_at = int(time())
+    session.db.updated_at = int(time())
+    session.db.multi_target_pipeline = True
+    session.append_log("BATTLE_STARTED", "La batalla multiplayer comienza.", teams=sorted(teams), combatants=len(combatants))
+    emit_session(session, event="START")
+    return {"accepted": True, "status": "MULTIPLAYER_BATTLE_STARTED", "session": public_session(session, host), "build": MULTI_SESSION_BUILD}
