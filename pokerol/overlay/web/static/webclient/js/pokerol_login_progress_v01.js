@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var active=false,timer=null,startedAt=0,percent=0,lastMessage='';
+  var active=false,timer=null,startedAt=0,percent=0,lastMessage='',observerBound=false;
 
   function byId(id){return document.getElementById(id)}
   function clean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim()}
@@ -18,10 +18,10 @@
     var form=byId('pk-auth-form');if(!form)return null;
     var box=byId('pk-login-progress');if(box)return box;
     box=document.createElement('section');box.id='pk-login-progress';box.className='pkLoginProgress';box.hidden=true;
-    box.innerHTML='<div class="pkLoginProgressTop"><strong id="pk-login-progress-label">CONECTANDO</strong><span id="pk-login-progress-pct">0%</span></div><div class="pkLoginProgressTrack"><span id="pk-login-progress-bar"></span></div><div id="pk-login-progress-detail" class="pkLoginProgressDetail">Preparando conexión…</div><button id="pk-login-progress-retry" type="button" class="pkLoginRetry" hidden>REINTENTAR CONEXIÓN</button>';
+    box.innerHTML='<div class="pkLoginProgressTop"><strong id="pk-login-progress-label">CONECTANDO</strong><span id="pk-login-progress-pct">0%</span></div><div class="pkLoginProgressTrack"><span id="pk-login-progress-bar"></span></div><div id="pk-login-progress-detail" class="pkLoginProgressDetail">Preparando conexión…</div><button id="pk-login-progress-retry" type="button" class="pkLoginRetry" hidden>REINTENTAR</button>';
     var status=byId('pk-auth-status');
     if(status&&status.parentNode)status.parentNode.insertBefore(box,status.nextSibling);else form.appendChild(box);
-    var retry=byId('pk-login-progress-retry');if(retry)retry.onclick=function(){window.location.reload()};
+    var retry=byId('pk-login-progress-retry');if(retry)retry.onclick=resetProgress;
     return box;
   }
 
@@ -38,9 +38,17 @@
     var form=byId('pk-auth-form');if(!form)return;
     var submit=form.querySelector('button[type="submit"]');
     if(submit){submit.disabled=!!busy;submit.textContent=busy?'CONECTANDO…':(form.closest('.pkOnboardingBody')&&/CONTINUAR AVENTURA/i.test(form.closest('.pkOnboardingBody').textContent||'')?'ENTRAR':'CREAR Y ENTRAR')}
+    var name=byId('pk-auth-name'),pass=byId('pk-auth-pass');if(name)name.disabled=!!busy;if(pass)pass.disabled=!!busy;
   }
 
   function stopTimer(){if(timer){clearInterval(timer);timer=null}}
+
+  function resetProgress(){
+    active=false;stopTimer();percent=0;lastMessage='';setFormBusy(false);
+    var box=byId('pk-login-progress');if(box)box.hidden=true;
+    var retry=byId('pk-login-progress-retry');if(retry)retry.hidden=true;
+    var pass=byId('pk-auth-pass');if(pass){pass.focus();pass.select()}
+  }
 
   function startProgress(){
     if(active)return;active=true;startedAt=Date.now();percent=0;lastMessage='';setFormBusy(true);
@@ -48,37 +56,49 @@
     timer=setInterval(function(){
       if(!active)return;
       var elapsed=(Date.now()-startedAt)/1000;
-      if(elapsed<3)setProgress(Math.min(32,18+elapsed*5),'VALIDANDO CUENTA','El servidor está comprobando tu entrenador…');
-      else if(elapsed<8)setProgress(Math.min(48,32+(elapsed-3)*3),'ABRIENDO SESIÓN','Esperando confirmación de Evennia…');
-      else if(elapsed<15)setProgress(Math.min(62,48+(elapsed-8)*2),'CARGANDO PERSONAJE','La conexión está tardando más de lo normal…','pkLoginSlow');
-      else{
-        setProgress(Math.min(78,62+(elapsed-15)*0.7),'SERVIDOR LENTO','Seguimos esperando respuesta. Puedes reintentar si supera los 20 segundos.','pkLoginSlow');
-        var retry=byId('pk-login-progress-retry');if(retry&&elapsed>=20)retry.hidden=false;
-      }
-    },500);
+      if(elapsed<2)setProgress(Math.min(30,18+elapsed*6),'CONTACTANDO SERVIDOR','Conexión WebSocket activa. Enviando credenciales…');
+      else if(elapsed<5)setProgress(Math.min(48,30+(elapsed-2)*6),'VALIDANDO CUENTA','Esperando respuesta de autenticación…');
+      else if(elapsed<10)setProgress(Math.min(68,48+(elapsed-5)*4),'ABRIENDO SESIÓN','La cuenta respondió; esperando personaje…');
+      else if(elapsed<15)setProgress(Math.min(82,68+(elapsed-10)*2.8),'CARGANDO PERSONAJE','Esperando confirmación del personaje…','pkLoginSlow');
+      else if(elapsed<20)setProgress(Math.min(90,82+(elapsed-15)*1.6),'ESPERANDO RESPUESTA','La conexión sigue viva, pero falta confirmación del servidor…','pkLoginSlow');
+      else failProgress('El servidor no confirmó el login en 20 segundos. Puedes reintentar sin recargar la página.');
+    },400);
   }
 
   function finishProgress(){
     if(!active)return;active=false;stopTimer();setProgress(100,'LISTO','Entrando a Kanto…','pkLoginDone');
-    setTimeout(function(){var box=byId('pk-login-progress');if(box)box.hidden=true},900);
+    setTimeout(function(){var box=byId('pk-login-progress');if(box)box.hidden=true},650);
+  }
+
+  function friendlyFailure(value){
+    var v=clean(value);
+    if(/username.*password.*incorrect|username\/password.*incorrect|password.*incorrect|incorrect.*password|invalid.*password|authentication.*fail|login.*fail|credentials.*invalid/i.test(v))return 'Nombre de entrenador o clave incorrectos.';
+    if(/no account|account.*not found|not found.*account|unknown account|does not exist/i.test(v))return 'Esa cuenta no existe en este servidor. Usa NUEVO JUGADOR para crearla.';
+    if(/too many authentication|throttle|too many.*attempt/i.test(v))return 'Demasiados intentos fallidos. Espera un momento antes de volver a intentar.';
+    if(/already exists|already taken/i.test(v))return 'Ese nombre ya está registrado. Elige otro o entra con esa cuenta.';
+    if(/cannot create/i.test(v))return 'No se pudo crear la cuenta.';
+    return v||'No se pudo iniciar sesión.';
   }
 
   function failProgress(message){
-    active=false;stopTimer();percent=100;setProgress(100,'NO SE PUDO ENTRAR',clean(message).slice(0,180)||'Revisa el nombre y la clave.','pkLoginError');setFormBusy(false);
-    var retry=byId('pk-login-progress-retry');if(retry){retry.hidden=false;retry.textContent='REINTENTAR CONEXIÓN'}
+    active=false;stopTimer();percent=100;setProgress(100,'NO SE PUDO ENTRAR',friendlyFailure(message).slice(0,180),'pkLoginError');setFormBusy(false);
+    var retry=byId('pk-login-progress-retry');if(retry){retry.hidden=false;retry.textContent='REINTENTAR'}
   }
 
   function parseServerText(text){
     var value=clean(text);if(!value||value===lastMessage)return;lastMessage=value;
     if(!active)return;
-    if(/you can now log|account.*created|created.*account/i.test(value))setProgress(55,'CUENTA CREADA','Preparando tu primera sesión…');
-    if(/you become\s+/i.test(value)){setProgress(92,'PERSONAJE CARGADO','Preparando el mundo y la interfaz…');setTimeout(finishProgress,150);return}
-    if(/incorrect password|invalid password|authentication failure|already exists|already taken|no account|not found|too many authentication|throttle|cannot create|error/i.test(value))failProgress(value);
+    if(/you can now log|account.*created|created.*account/i.test(value))setProgress(58,'CUENTA CREADA','Entrando con tu nuevo entrenador…');
+    if(/you become\s+/i.test(value)){setProgress(94,'PERSONAJE CARGADO','Preparando Kanto…');setTimeout(finishProgress,100);return}
+    if(/username.*password.*incorrect|username\/password.*incorrect|password.*incorrect|incorrect.*password|invalid.*password|authentication.*fail|login.*fail|credentials.*invalid|already exists|already taken|no account|account.*not found|not found.*account|unknown account|does not exist|too many authentication|throttle|too many.*attempt|cannot create/i.test(value)){failProgress(value);return}
   }
 
-  function watchFeed(){
-    var feed=byId('messagewindow');if(!feed)return false;
-    new MutationObserver(function(records){records.forEach(function(r){Array.from(r.addedNodes||[]).forEach(function(n){parseServerText(n.textContent||'')})})}).observe(feed,{childList:true,subtree:true});
+  function watchOutput(){
+    if(observerBound)return true;
+    var target=byId('messagewindow')||document.body;if(!target)return false;
+    observerBound=true;
+    parseServerText(target.textContent||'');
+    new MutationObserver(function(records){records.forEach(function(r){Array.from(r.addedNodes||[]).forEach(function(n){parseServerText(n.textContent||'')})})}).observe(target,{childList:true,subtree:true});
     return true;
   }
 
@@ -92,13 +112,12 @@
     new MutationObserver(function(){
       var form=byId('pk-auth-form');if(form)bindForm(form);
       if(active&&byId('pk-onboarding-body')&&byId('pk-onboarding-body').querySelector('.pkOakScene'))finishProgress();
+      watchOutput();
     }).observe(root,{childList:true,subtree:true});
-    var form=byId('pk-auth-form');if(form)bindForm(form);
+    var form=byId('pk-auth-form');if(form)bindForm(form);watchOutput();
   }
 
-  function init(){
-    watchOnboarding();var tries=0;(function waitFeed(){tries++;if(watchFeed())return;if(tries<80)setTimeout(waitFeed,100)})();
-  }
+  function init(){watchOnboarding();var tries=0;(function waitOutput(){tries++;if(watchOutput())return;if(tries<100)setTimeout(waitOutput,100)})()}
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
