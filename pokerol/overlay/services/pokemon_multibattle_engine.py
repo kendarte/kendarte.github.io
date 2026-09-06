@@ -2,23 +2,18 @@
 
 Human commands are locked before resolution. AI commands are generated only
 after every required human order exists. A single initiative list then resolves
-all active combatants, so no client owns a private version of the round.
+all active combatants, including execution-time ally interception.
 """
 
 import random
 from copy import deepcopy
 
-from services.pokemon_battle_engine import (
-    ACTIVE_STATUS,
-    _action_priority,
-    _execute_move,
-    _speed,
-    move_by_id,
-)
+from services.pokemon_battle_engine import ACTIVE_STATUS, _action_priority, _execute_move, _speed, move_by_id
 from services.pokemon_battle_status_engine import end_turn_effects
+from services.pokemon_multiplayer_reaction_engine import expire_unused_intercepts, resolve_interceptor
 
 
-MULTIBATTLE_BUILD = "0.2.0-lockin-terminal-state"
+MULTIBATTLE_BUILD = "0.3.0-lockin-intercept"
 SUPPORTED_ORDER_TYPES = {"MOVE"}
 
 
@@ -183,21 +178,12 @@ def validate_order(session_state, participant_id, order):
         "actor_entity_id": _text(actor_row.get("combatant_id")),
         "participant_id": _text(participant_id),
     })
-    return {
-        "accepted": True,
-        "status": "ORDER_VALID",
-        "order": normalized,
-        "actor_combatant_id": actor_row.get("combatant_id"),
-        "build": MULTIBATTLE_BUILD,
-    }
+    return {"accepted": True, "status": "ORDER_VALID", "order": normalized, "actor_combatant_id": actor_row.get("combatant_id"), "build": MULTIBATTLE_BUILD}
 
 
 def _choose_ai_order(combatants, actor_row, rng):
     pokemon = _dict(actor_row.get("pokemon"))
-    moves = [
-        _dict(move) for move in _list(pokemon.get("moves"))
-        if _int(_dict(move).get("pp_current"), _dict(move).get("pp", 0)) > 0
-    ]
+    moves = [_dict(move) for move in _list(pokemon.get("moves")) if _int(_dict(move).get("pp_current"), _dict(move).get("pp", 0)) > 0]
     targets = opposing_targets(combatants, actor_row.get("combatant_id"))
     if not moves or not targets:
         return None
@@ -278,17 +264,39 @@ def _resolve_move_row(combatants, action_row, log_rows, turn, rng):
         else:
             _session_log(log_rows, turn, "ACTION", "TARGET_UNAVAILABLE", f"El objetivo de {attacker.get('name')} ya no está disponible.", actor_combatant_id=actor_row.get("combatant_id"))
             return
-    defender = _dict(target_row.get("pokemon"))
-    duel = {
-        "battle_id": "MULTI-DUEL",
-        "status": ACTIVE_STATUS,
-        "phase": "ACTION",
-        "turn": turn,
-        "player": attacker,
-        "enemy": defender,
-        "log": [],
-        "world_requests": [],
-    }
+
+    intercept = resolve_interceptor(combatants, actor_row, target_row, rng)
+    if intercept.get("triggered"):
+        if intercept.get("success"):
+            _session_log(
+                log_rows,
+                turn,
+                "REACTION",
+                "INTERCEPT_SUCCESS",
+                f"¡{intercept.get('interceptor_name')} se interpone y protege a {intercept.get('protected_name')}!",
+                actor_combatant_id=actor_row.get("combatant_id"),
+                interceptor_combatant_id=intercept.get("interceptor_combatant_id"),
+                protected_combatant_id=intercept.get("protected_combatant_id"),
+                chance=intercept.get("chance"),
+                roll=intercept.get("roll"),
+            )
+            target_row = intercept.get("target")
+            action["target_entity_id"] = _text(_dict(target_row).get("combatant_id"))
+        else:
+            _session_log(
+                log_rows,
+                turn,
+                "REACTION",
+                "INTERCEPT_FAILED",
+                f"{intercept.get('interceptor_name')} intenta interponerse, pero no llega a tiempo.",
+                interceptor_combatant_id=intercept.get("interceptor_combatant_id"),
+                protected_combatant_id=intercept.get("protected_combatant_id"),
+                chance=intercept.get("chance"),
+                roll=intercept.get("roll"),
+            )
+
+    defender = _dict(_dict(target_row).get("pokemon"))
+    duel = {"battle_id": "MULTI-DUEL", "status": ACTIVE_STATUS, "phase": "ACTION", "turn": turn, "player": attacker, "enemy": defender, "log": [], "world_requests": []}
     _execute_move(duel, "PLAYER", action, rng)
     actor_row["pokemon"] = duel["player"]
     target_row["pokemon"] = duel["enemy"]
@@ -303,21 +311,14 @@ def _apply_multi_round_end(combatants, log_rows, turn):
             continue
         for event in end_turn_effects(pokemon, None):
             event = _dict(event)
-            _session_log(
-                log_rows,
-                turn,
-                "RESOLUTION",
-                _text(event.get("kind")) or "BATTLE_EFFECT",
-                _text(event.get("text")) or "Efecto de fin de turno.",
-                combatant_id=row.get("combatant_id"),
-                team=row.get("team"),
-                damage=event.get("damage"),
-            )
+            _session_log(log_rows, turn, "RESOLUTION", _text(event.get("kind")) or "BATTLE_EFFECT", _text(event.get("text")) or "Efecto de fin de turno.", combatant_id=row.get("combatant_id"), team=row.get("team"), damage=event.get("damage"))
         row["pokemon"] = pokemon
+    expired = expire_unused_intercepts(combatants)
+    if expired:
+        _session_log(log_rows, turn, "RESOLUTION", "INTERCEPT_EXPIRED", "Las coberturas no utilizadas terminan con la ronda.", combatant_ids=expired)
 
 
 def resolve_locked_round(session_state, human_orders, *, rng=None):
-    """Resolve exactly one shared round after every required human has locked in."""
     rng = rng or random.SystemRandom()
     state = _clone(_dict(session_state))
     if _text(state.get("status")).upper() != "ACTIVE":
@@ -329,18 +330,12 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
     missing = [pid for pid in required if not _dict(orders.get(pid))]
     if missing:
         return {"accepted": False, "status": "WAITING_FOR_ORDERS", "missing_participant_ids": missing, "state": state, "build": MULTIBATTLE_BUILD}
-
     combatants = _list(state.get("combatants"))
     turn = max(1, _int(state.get("turn"), 1))
     log_rows = _list(state.get("log"))
     order_rows = _order_rows(combatants, orders, rng)
     state["phase"] = "ORDER"
-    _session_log(log_rows, turn, "ORDER", "INITIATIVE", "Las órdenes multiplayer quedan ordenadas.", order=[{
-        "actor_combatant_id": row["actor_combatant_id"],
-        "priority": row["priority"],
-        "speed": row["speed"],
-    } for row in order_rows])
-
+    _session_log(log_rows, turn, "ORDER", "INITIATIVE", "Las órdenes multiplayer quedan ordenadas.", order=[{"actor_combatant_id": row["actor_combatant_id"], "priority": row["priority"], "speed": row["speed"]} for row in order_rows])
     state["phase"] = "ACTION"
     for row in order_rows:
         terminal = terminal_team_state(combatants)
@@ -348,7 +343,6 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
             break
         if _text(_dict(row.get("action")).get("type")).upper() == "MOVE":
             _resolve_move_row(combatants, row, log_rows, turn, rng)
-
     state["phase"] = "RESOLUTION"
     _apply_multi_round_end(combatants, log_rows, turn)
     terminal = terminal_team_state(combatants)
@@ -357,7 +351,6 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
     state["pending_orders"] = {}
     state["outcome"] = terminal.get("outcome") or ""
     state["winning_team"] = terminal.get("winning_team") or ""
-
     if terminal.get("terminal"):
         state["status"] = "COMPLETE"
         state["phase"] = "COMPLETE"
@@ -368,13 +361,4 @@ def resolve_locked_round(session_state, human_orders, *, rng=None):
     else:
         state["turn"] = turn + 1
         state["phase"] = "COMMAND"
-
-    return {
-        "accepted": True,
-        "status": "MULTIPLAYER_ROUND_RESOLVED",
-        "state": state,
-        "initiative": _clone(order_rows),
-        "outcome": state.get("outcome") or None,
-        "winning_team": state.get("winning_team") or None,
-        "build": MULTIBATTLE_BUILD,
-    }
+    return {"accepted": True, "status": "MULTIPLAYER_ROUND_RESOLVED", "state": state, "initiative": _clone(order_rows), "outcome": state.get("outcome") or None, "winning_team": state.get("winning_team") or None, "build": MULTIBATTLE_BUILD}
