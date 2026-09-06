@@ -1,7 +1,7 @@
 from ipaddress import ip_address
 from evennia import Command
 
-LOCAL_LOGIN_BUILD = "pokerol-0.1-local-autologin-disabled"
+LOCAL_LOGIN_BUILD = "pokerol-0.2-unlogged-room-probe-safe"
 
 
 def _client_host(session):
@@ -23,13 +23,20 @@ def _is_loopback(session):
 
 class CmdPokerolLocalLogin(Command):
     key = "pokerol-local-login"
-    aliases = ["siza-local-login"]
+    aliases = ["siza-local-login", "pokerol-room-state"]
     locks = "cmd:all()"
     arg_regex = r"\s.*?|$"
 
     def func(self):
         session = self.caller
+
+        # The visual client probes room state as soon as the transport opens.
+        # Before authentication there is no Character/Room yet, so this must be
+        # a silent no-op instead of surfacing an Evennia command error.
+        if str(getattr(self, "cmdstring", "") or "").strip().lower() == "pokerol-room-state":
+            return
+
         status = "LOCAL_LOGIN_DISABLED" if _is_loopback(session) else "LOCAL_ACCESS_DENIED"
-        session.msg(siza_local_ready=(({"status": status, "build": LOCAL_LOGIN_BUILD},), {}))
+        session.msg(pokerol_local_ready=(({"status": status, "build": LOCAL_LOGIN_BUILD},), {}))
         if status == "LOCAL_LOGIN_DISABLED":
-            session.msg("Auto-login local desactivado. Use el login normal de Evennia o el selector de personaje.")
+            session.msg("Auto-login local desactivado. Usa la pantalla de acceso de POKEROL.")
