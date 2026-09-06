@@ -60,8 +60,10 @@
       else if(elapsed<5)setProgress(Math.min(48,30+(elapsed-2)*6),'VALIDANDO CUENTA','Esperando respuesta de autenticación…');
       else if(elapsed<10)setProgress(Math.min(68,48+(elapsed-5)*4),'ABRIENDO SESIÓN','La cuenta respondió; esperando personaje…');
       else if(elapsed<15)setProgress(Math.min(82,68+(elapsed-10)*2.8),'CARGANDO PERSONAJE','Esperando confirmación del personaje…','pkLoginSlow');
-      else if(elapsed<20)setProgress(Math.min(90,82+(elapsed-15)*1.6),'ESPERANDO RESPUESTA','La conexión sigue viva, pero falta confirmación del servidor…','pkLoginSlow');
-      else failProgress('El servidor no confirmó el login en 20 segundos. Puedes reintentar sin recargar la página.');
+      else if(elapsed<20)setProgress(Math.min(90,82+(elapsed-15)*1.6),'ESPERANDO RESPUESTA','El servidor sigue procesando la solicitud…','pkLoginSlow');
+      else if(elapsed<45)setProgress(Math.min(96,90+(elapsed-20)*0.24),'CREANDO / VALIDANDO','La primera creación puede tardar más mientras el servidor guarda la cuenta y el personaje…','pkLoginSlow');
+      else if(elapsed<60)setProgress(Math.min(99,96+(elapsed-45)*0.2),'ESPERANDO CONFIRMACIÓN','La conexión sigue activa. Esperando la confirmación final del servidor…','pkLoginSlow');
+      else failProgress('El servidor no confirmó el acceso en 60 segundos. Puedes reintentar sin recargar la página.');
     },400);
   }
 

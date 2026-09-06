@@ -27,3 +27,8 @@ if _pokerol_public_domain:
     WEBSOCKET_CLIENT_URL = f"wss://{_pokerol_public_domain}/ws"
 else:
     WEBSOCKET_CLIENT_URL = None
+
+# Persist the Evennia SQLite database on the Railway volume mounted at /data.
+# Keep the rest of Evennia's default database configuration untouched.
+_pokerol_data_dir = _pokerol_os.environ.get("POKEROL_DATA_DIR", "/data").strip() or "/data"
+DATABASES["default"]["NAME"] = _pokerol_os.path.join(_pokerol_data_dir, "evennia.db3")
