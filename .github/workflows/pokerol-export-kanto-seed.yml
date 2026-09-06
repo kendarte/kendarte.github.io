@@ -1,0 +1,51 @@
+name: POKEROL Export Kanto Seed
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pokerol-export-kanto-seed.yml'
+  workflow_dispatch:
+
+jobs:
+  export-seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract exact Map Creator data
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+          const html = fs.readFileSync('pokerol/map-creator/load-kanto-pallet-viridian.html', 'utf8');
+          const matches = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
+          if (!matches.length) throw new Error('No script found in Kanto loader.');
+          let stored = {};
+          const context = {
+            localStorage: { setItem: (key, value) => { stored[key] = value; } },
+            document: { getElementById: () => ({ textContent: '' }) },
+            location: { replace: () => {} },
+            setTimeout: (fn) => fn(),
+            console
+          };
+          vm.createContext(context);
+          vm.runInContext(matches[matches.length - 1][1], context, { filename: 'load-kanto-pallet-viridian.html' });
+          const raw = stored['siza_map_creator_v1'];
+          if (!raw) throw new Error('Kanto loader did not write siza_map_creator_v1.');
+          const data = JSON.parse(raw);
+          if (data.rooms?.length !== 30) throw new Error(`Expected 30 rooms, got ${data.rooms?.length}`);
+          if (data.exits?.length !== 66) throw new Error(`Expected 66 exits, got ${data.exits?.length}`);
+          fs.writeFileSync('/tmp/kanto-pallet-viridian.seed.json', JSON.stringify(data, null, 2) + '\n');
+          console.log(`Exported ${data.rooms.length} rooms and ${data.exits.length} exits.`);
+          NODE
+
+      - name: Upload seed JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokerol-kanto-seed
+          path: /tmp/kanto-pallet-viridian.seed.json
+          if-no-files-found: error
+          retention-days: 1
