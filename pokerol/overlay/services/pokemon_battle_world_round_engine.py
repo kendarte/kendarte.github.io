@@ -15,17 +15,21 @@ from services.pokemon_battle_engine import (
     _apply_round_end,
     _end_check,
     _enemy_action,
-    _execute_action,
     _log,
     _order_actions,
     move_by_id,
     validate_player_action,
 )
 from services.pokemon_battle_environment_engine import execute_battle_environment_request
+from services.pokemon_battle_move_position_bridge import apply_world_move_position_followthrough
 from services.pokemon_battle_physics_impact_engine import apply_world_physics_to_battle
+from services.pokemon_battle_tactical_action_engine import (
+    enemy_action_position_aware,
+    execute_row_position_aware,
+)
 
 
-WORLD_ROUND_BUILD = "0.1.0-initiative-world-resolution"
+WORLD_ROUND_BUILD = "0.2.0-position-aware-world-resolution"
 
 
 def _dict(value):
@@ -99,6 +103,13 @@ def _resolve_new_world_requests(actor, state, previous_count):
         world_result = execute_battle_environment_request(actor, player, move, request)
         executed = bool(world_result.get("executed"))
         impact = apply_world_physics_to_battle(state, move, world_result)
+        position_result = apply_world_move_position_followthrough(
+            state,
+            "PLAYER",
+            move,
+            world_result,
+            request=request,
+        )
         request["status"] = "WORLD_EXECUTED" if executed else "WORLD_REJECTED"
         request["resolution"] = {
             "executed": executed,
@@ -113,6 +124,7 @@ def _resolve_new_world_requests(actor, state, previous_count):
             "area_impacts": _clone(_list(world_result.get("area_impacts"))),
             "persisted_area_impacts": _clone(_list(world_result.get("persisted_area_impacts"))),
             "battle_impact": _clone(impact),
+            "position_followthrough": _clone(position_result),
         }
         target_name = _text(world_result.get("target_name")) or _text(_dict(request.get("world_target")).get("name")) or "el entorno"
         if executed:
@@ -125,6 +137,15 @@ def _resolve_new_world_requests(actor, state, previous_count):
                 medium_id=world_result.get("target_water_body_id"),
             )
             _append_impact_events(state, impact)
+            if position_result.get("applied"):
+                _log(
+                    state,
+                    "POSITION_CHANGED",
+                    position_result.get("text") or "El movimiento cambia la posición.",
+                    actor=player.get("entity_id"),
+                    move_id=move.get("move_id"),
+                    position=position_result.get("position"),
+                )
         else:
             _log(
                 state,
@@ -167,12 +188,12 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
 
     state["pending_player_action"] = _clone(action)
     state["phase"] = "ORDER"
-    enemy_action = _enemy_action(state, rng)
+    enemy_action = enemy_action_position_aware(state, rng)
     order = _order_actions(state, action, enemy_action, rng)
     _log(
         state,
         "ORDER",
-        "Las acciones quedan ordenadas.",
+        "Las acciones quedan ordenadas según prioridad, velocidad y posición.",
         order=[{"side": row["side"], "priority": row["priority"], "speed": row["speed"]} for row in order],
     )
 
@@ -180,13 +201,13 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
         if state.get("status") != ACTIVE_STATUS:
             break
         previous_count = len(_list(state.get("world_requests")))
-        _execute_action(state, row, rng)
+        execute_row_position_aware(state, row, rng)
         if row.get("side") == "PLAYER":
             _resolve_new_world_requests(actor, state, previous_count)
         if state.get("status") != ACTIVE_STATUS:
             break
         state["phase"] = "REACTION"
-        _log(state, "REACTION_WINDOW", "Se comprueba reacción y efectos inmediatos.", actor=row["side"])
+        _log(state, "REACTION_WINDOW", "Se comprueba alcance, cobertura y efectos inmediatos.", actor=row["side"])
         _end_check(state)
 
     _apply_round_end(state)
