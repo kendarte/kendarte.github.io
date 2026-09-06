@@ -3,12 +3,24 @@
 
     if (window.SizaRoomStateRendererV01) return;
 
-    var BUILD = "20260905-room-state-renderer-v6-description-only";
+    var BUILD = "20260905-room-state-renderer-v7-narrative-only";
     var requested = false;
     var lastRequestAt = 0;
     var lastSignature = "";
     var hasRoomState = false;
     var outOfCharacter = false;
+
+    var SECTION_MARKERS = [
+        "Personas presentes:",
+        "Personas:",
+        "A la vista:",
+        "Ves:",
+        "Salidas:",
+        "Exits:",
+        "Characters:",
+        "You see:",
+        "SIZA Scene Image:"
+    ];
 
     function byId(id) {
         return document.getElementById(id);
@@ -25,6 +37,17 @@
             .replace(/\n[ \t]+/g, "\n")
             .replace(/\n{3,}/g, "\n\n")
             .trim();
+    }
+
+    function descriptionOnly(value) {
+        var text = cleanBlock(value).replace(/^\s*the current location will be described here\.??\s*(?:[-–—_]{3,}\s*)?/i, "").trim();
+        var lower = text.toLowerCase();
+        var cutAt = text.length;
+        SECTION_MARKERS.forEach(function (marker) {
+            var index = lower.indexOf(marker.toLowerCase());
+            if (index >= 0 && index < cutAt) cutAt = index;
+        });
+        return cleanBlock(text.slice(0, cutAt));
     }
 
     function rows(value) {
@@ -45,11 +68,12 @@
     function setText(id, value) {
         var node = byId(id);
         if (!node) return;
-        var text = cleanBlock(value);
+        var text = id === "siza-scene-description" ? descriptionOnly(value) : cleanBlock(value);
         node.textContent = text || "—";
         node.style.whiteSpace = "pre-line";
         if (id === "siza-scene-description") {
             node.setAttribute("data-raw-description", text || "");
+            node.setAttribute("data-siza-narrative-only", BUILD);
         }
     }
 
@@ -88,7 +112,7 @@
     }
 
     function buildObservation(packet) {
-        var description = cleanBlock(packet.room_description || packet.description || "");
+        var description = descriptionOnly(packet.room_description || packet.description || "");
         return description || "Este cuarto no tiene descripción narrativa importada desde el Map Editor.";
     }
 
@@ -189,7 +213,8 @@
     window.SizaRoomStateRendererV01 = Object.freeze({
         build: BUILD,
         renderRoomState: renderRoomState,
-        requestRoomState: requestRoomState
+        requestRoomState: requestRoomState,
+        descriptionOnly: descriptionOnly
     });
 
     if (document.readyState === "loading") {
