@@ -13,15 +13,21 @@ if [ ! -d "$RUNTIME/server" ]; then
   python -m evennia --init runtime
 fi
 
-# Always refresh the game overlay from the repository.
-echo "[POKEROL] Aplicando overlay..."
-cp -R "$ROOT/overlay/." "$RUNTIME/"
+# Railpack runs from repository contents and has overlay/. Docker already
+# copied overlay/ into runtime at image-build time.
+if [ -d "$ROOT/overlay" ]; then
+  echo "[POKEROL] Aplicando overlay desde repo..."
+  cp -R "$ROOT/overlay/." "$RUNTIME/"
+else
+  echo "[POKEROL] Overlay ya incluido en runtime Docker."
+fi
 
-# Railway-specific ports/settings are appended only once per fresh runtime.
 SETTINGS="$RUNTIME/server/conf/settings.py"
 if ! grep -q "POKEROL_RAILWAY_SETTINGS" "$SETTINGS" 2>/dev/null; then
   printf '\n# POKEROL_RAILWAY_SETTINGS\n' >> "$SETTINGS"
-  cat "$ROOT/railway_settings.py" >> "$SETTINGS"
+  if [ -f "$ROOT/railway_settings.py" ]; then
+    cat "$ROOT/railway_settings.py" >> "$SETTINGS"
+  fi
 fi
 
 cd "$RUNTIME"
