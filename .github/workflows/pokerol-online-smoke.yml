@@ -40,8 +40,6 @@ jobs:
             docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' || true
             echo '=== POKEROL logs ==='
             docker logs pokerol-smoke-run || true
-            echo '=== Evennia process list ==='
-            timeout 5s docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
             echo '=== Evennia status ==='
             timeout 5s docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
           } > /tmp/pokerol-diagnostics.txt 2>&1
@@ -80,14 +78,25 @@ jobs:
       - name: Check webclient route
         run: curl -fsS http://127.0.0.1:4001/webclient/ >/dev/null
 
+      - name: Verify Kanto first-start materialization
+        run: |
+          set -e
+          docker exec pokerol-smoke-run sh -lc "grep -F 'POKEROL initial Kanto seed materialized' /app/runtime/server/logs/server.log"
+          docker exec pokerol-smoke-run sh -lc "grep -F \"'rooms_created': 30\" /app/runtime/server/logs/server.log"
+          docker exec pokerol-smoke-run sh -lc "grep -F \"'exits_created': 66\" /app/runtime/server/logs/server.log"
+
       - name: Capture final diagnostics
         if: always()
         run: |
           {
             echo '=== final container state ==='
             docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
-            echo '=== final POKEROL logs ==='
+            echo '=== launcher logs ==='
             docker logs pokerol-smoke-run || true
+            echo '=== server.log ==='
+            docker exec pokerol-smoke-run sh -lc 'tail -n 120 /app/runtime/server/logs/server.log' || true
+            echo '=== portal.log ==='
+            docker exec pokerol-smoke-run sh -lc 'tail -n 120 /app/runtime/server/logs/portal.log' || true
           } > /tmp/pokerol-final-diagnostics.txt 2>&1
           cat /tmp/pokerol-final-diagnostics.txt
 
