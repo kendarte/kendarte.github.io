@@ -1,32 +1,40 @@
 .pkBackgroundTools{gap:4px}
-#pk-edit-hotspots{min-width:66px}
-#pk-edit-hotspots.pkActive{background:var(--pk-ink);color:var(--pk-paper)}
+.pkBackgroundTools .pkEditorInternalControl{display:none!important}
+#pk-edit-menu-toggle{min-width:48px!important;font-size:6px!important}
 
-.pkHotspotPanel{
+.pkEditMenu,.pkHotspotPanel,.pkPlayerPanel{
   position:absolute;
   top:39px;
   right:7px;
-  z-index:40;
+  z-index:45;
   width:230px;
   padding:8px;
   border:3px solid var(--pk-ink);
-  background:rgba(240,244,211,.97);
+  background:rgba(240,244,211,.98);
   box-shadow:3px 3px 0 rgba(20,32,22,.55);
   font:7px/1.2 var(--pk-font);
 }
-.pkHotspotPanel[hidden]{display:none!important}
-.pkHotspotPanelHead{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px}
-.pkHotspotPanelHead strong{font:700 8px/1 var(--pk-font)}
-.pkHotspotPanel button{border:2px solid var(--pk-ink);background:var(--pk-paper);color:var(--pk-ink);padding:5px 6px;font:700 6px/1 var(--pk-font);cursor:pointer;box-shadow:1px 1px 0 var(--pk-dark)}
-.pkHotspotPanel button:hover:not(:disabled){background:var(--pk-ink);color:var(--pk-paper)}
+.pkEditMenu[hidden],.pkHotspotPanel[hidden],.pkPlayerPanel[hidden]{display:none!important}
+.pkEditMenuHead,.pkHotspotPanelHead,.pkPlayerPanelHead{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px}
+.pkEditMenuHead strong,.pkHotspotPanelHead strong,.pkPlayerPanelHead strong{font:700 8px/1 var(--pk-font)}
+.pkEditMenu button,.pkHotspotPanel button,.pkPlayerPanel button{border:2px solid var(--pk-ink);background:var(--pk-paper);color:var(--pk-ink);padding:5px 6px;font:700 6px/1 var(--pk-font);cursor:pointer;box-shadow:1px 1px 0 var(--pk-dark)}
+.pkEditMenu button:hover:not(:disabled),.pkHotspotPanel button:hover:not(:disabled),.pkPlayerPanel button:hover:not(:disabled){background:var(--pk-ink);color:var(--pk-paper)}
 .pkHotspotPanel button:disabled{opacity:.35;cursor:not-allowed}
+#pk-edit-menu-close,#pk-hotspot-close,#pk-player-close{width:25px;height:25px;padding:0!important;font:700 14px/1 var(--pk-copy)!important}
+
+.pkEditMenu{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pkEditMenuHead{grid-column:1/-1;margin-bottom:2px}
+#pk-edit-player{grid-column:1/-1}
+#pk-edit-hotspots.pkActive,#pk-edit-player.pkActive{background:var(--pk-ink);color:var(--pk-paper)}
+
+.pkHotspotPanelHead>div{display:flex;gap:4px;align-items:center}
 .pkHotspotField{display:grid;gap:3px;margin:6px 0}
 .pkHotspotField label{font:700 5px/1 var(--pk-font)}
 .pkHotspotField input{width:100%;height:28px;border:2px solid var(--pk-ink);background:#fff;color:var(--pk-ink);padding:4px 6px;font:11px/1 var(--pk-copy);outline:none}
 .pkHotspotXY{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .pkHotspotActions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
 .pkHotspotActions .pkWide{grid-column:1/-1}
-.pkHotspotHint{margin-top:6px;font:9px/1.25 var(--pk-copy);color:var(--pk-dark)}
+.pkHotspotHint,.pkPlayerHint{margin-top:6px;font:9px/1.25 var(--pk-copy);color:var(--pk-dark)}
 
 .pkStage.pkHotspotEditing .pkActor{outline:2px dashed rgba(255,255,255,.95);outline-offset:4px;cursor:move!important;touch-action:none}
 .pkStage.pkHotspotEditing .pkActorLabel{background:#fff6a8}
@@ -35,7 +43,18 @@
 .pkActor.pkHotspotHidden{display:none!important}
 .pkStage.pkHotspotEditing .pkActor.pkHotspotHidden{display:flex!important;opacity:.28}
 
+/* Player direct editor */
+.pkPlayerFields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:8px}
+.pkPlayerFields label{display:grid;gap:3px;font:700 5px/1 var(--pk-font)}
+.pkPlayerFields input{width:100%;height:28px;border:2px solid var(--pk-ink);background:#fff;color:var(--pk-ink);padding:4px;font:10px/1 var(--pk-copy);outline:none}
+.pkPlayerActions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.pkStage.pkPlayerEditing .pkPlayerAvatar{pointer-events:auto!important;cursor:move!important;outline:2px dashed #fff36a;outline-offset:5px;touch-action:none;z-index:30!important}
+.pkStage.pkPlayerEditing .pkPlayerAvatar::after{content:'PLAYER';position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);padding:3px 5px;background:#fff6a8;border:2px solid var(--pk-ink);color:var(--pk-ink);font:700 5px/1 var(--pk-font);white-space:nowrap}
+.pkPlayerResizeHandle{display:none;position:absolute;right:-12px;top:-12px;width:24px;height:24px;background:#ffe75e;border:3px solid var(--pk-ink);box-shadow:2px 2px 0 var(--pk-dark);cursor:nwse-resize;pointer-events:auto;z-index:5}
+.pkStage.pkPlayerEditing .pkPlayerResizeHandle{display:block}
+.pkStage.pkPlayerEditing .pkPlayerSprite{pointer-events:none}
+
 @media(max-width:760px){
-  .pkHotspotPanel{top:32px;right:4px;width:min(220px,74vw);padding:6px}
-  #pk-edit-hotspots{min-width:54px}
+  .pkEditMenu,.pkHotspotPanel,.pkPlayerPanel{top:32px;right:4px;width:min(230px,78vw);padding:6px}
+  .pkPlayerFields{grid-template-columns:1fr 1fr}.pkPlayerFields label:last-child{grid-column:1/-1}
 }
