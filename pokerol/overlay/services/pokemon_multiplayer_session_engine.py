@@ -6,7 +6,7 @@ from time import time
 import evennia
 
 from services.pokemon_battle_engine import normalize_pokemon
-from services.pokemon_party_engine import active_pokemon
+from services.pokemon_party_engine import active_pokemon, party_state
 from typeclasses.pokemon_battle_session import (
     MAX_HUMAN_PARTICIPANTS,
     SESSION_KINDS,
@@ -15,7 +15,7 @@ from typeclasses.pokemon_battle_session import (
 )
 
 
-MULTI_SESSION_BUILD = "0.2.0-lobby-combatant-start"
+MULTI_SESSION_BUILD = "0.3.0-safe-client-view"
 SESSION_TYPECLASS = "typeclasses.pokemon_battle_session.PokemonBattleSession"
 
 
@@ -133,13 +133,38 @@ def _clean_actor_invites(actor):
     return rows
 
 
+def _redact_combatants_for_viewer(combatants, viewer_pid):
+    rows = []
+    for raw in _list(combatants):
+        row = _clone(_dict(raw))
+        own = _text(row.get("controller_participant_id")) == _text(viewer_pid)
+        pokemon = _dict(row.get("pokemon"))
+        if pokemon and not own:
+            pokemon.pop("moves", None)
+            pokemon.pop("known_moves", None)
+            pokemon.pop("battle_reaction", None)
+            pokemon.pop("battle_stages", None)
+            pokemon.pop("volatile_status", None)
+            row["pokemon"] = pokemon
+        rows.append(row)
+    return rows
+
+
 def public_session(session, viewer=None):
     if not session:
         return {}
     packet = session.snapshot()
-    packet["viewer_participant_id"] = participant_id(viewer) if viewer else ""
+    viewer_pid = participant_id(viewer) if viewer else ""
+    pending = _dict(packet.get("pending_orders"))
+    locked = sorted(pid for pid, order in pending.items() if _dict(order))
+    packet["locked_participant_ids"] = locked
+    packet["viewer_order_locked"] = bool(viewer_pid and viewer_pid in locked)
+    packet["pending_orders"] = {}
+    packet["combatants"] = _redact_combatants_for_viewer(packet.get("combatants"), viewer_pid)
+    packet["viewer_participant_id"] = viewer_pid
     packet["viewer_dbref"] = int(viewer.id) if viewer and getattr(viewer, "id", None) is not None else None
     packet["viewer_is_host"] = bool(viewer and _int(session.db.host_dbref, -1) == _int(viewer.id, -2))
+    packet["viewer_party_state"] = party_state(viewer) if viewer else {}
     packet["build"] = MULTI_SESSION_BUILD
     return packet
 
@@ -315,14 +340,6 @@ def leave_session(actor):
     return {"accepted": True, "status": "LEFT_SESSION", "session": public_session(session), "build": MULTI_SESSION_BUILD}
 
 
-def _participant_team(session, actor_dbref):
-    for row in _list(session.db.participants):
-        row = _dict(row)
-        if _int(row.get("actor_dbref"), -1) == _int(actor_dbref, -2):
-            return _text(row.get("team")).upper() or "A"
-    return "A"
-
-
 def _human_combatant(session, participant):
     row = _dict(participant)
     actor = actor_from_dbref(row.get("actor_dbref"))
@@ -401,11 +418,7 @@ def start_session(host):
     gate = lobby_can_start(session)
     if not gate.get("allowed"):
         return {"accepted": False, "status": gate.get("status"), "session": public_session(session, host), "build": MULTI_SESSION_BUILD}
-
-    existing_ai = [
-        _dict(row) for row in _list(session.db.combatants)
-        if _text(_dict(row).get("controller_kind")).upper() == "AI"
-    ]
+    existing_ai = [_dict(row) for row in _list(session.db.combatants) if _text(_dict(row).get("controller_kind")).upper() == "AI"]
     humans = []
     participants = _list(session.db.participants)
     for index, participant in enumerate(participants):
@@ -417,12 +430,10 @@ def start_session(host):
         updated["active_entity_id"] = combatant["combatant_id"]
         updated["submitted_turn"] = 0
         participants[index] = updated
-
     combatants = humans + existing_ai
     teams = {_text(row.get("team")).upper() for row in combatants if _int(_dict(row).get("pokemon", {}).get("hp_current"), 0) > 0}
     if len(teams) < 2:
         return {"accepted": False, "status": "BATTLE_NEEDS_OPPOSING_TEAM", "build": MULTI_SESSION_BUILD}
-
     session.write_participants(participants)
     session.write_combatants(combatants)
     session.write_orders({})
