@@ -2,7 +2,7 @@ from evennia import Command
 
 from services.pokemon_bag_engine import bag_state
 from services.pokemon_battle_runtime import current_battle
-from services.pokemon_machine_engine import machine_state, teach_party_machine
+from services.pokemon_machine_engine import equip_known_move, machine_state, teach_party_machine
 
 
 def _in_active_battle(actor):
@@ -53,12 +53,7 @@ class CmdPokerolTeachMachine(Command):
             self.caller.msg("El slot debe ser 1-6.")
             return
         replace_move_id = parts[2] if len(parts) > 2 else ""
-        result = teach_party_machine(
-            self.caller,
-            slot,
-            machine_id,
-            replace_move_id=replace_move_id,
-        )
+        result = teach_party_machine(self.caller, slot, machine_id, replace_move_id=replace_move_id)
         status = result.get("status")
         if not result.get("accepted"):
             self.caller.msg(f"{status}")
@@ -67,12 +62,49 @@ class CmdPokerolTeachMachine(Command):
             active = ", ".join(result.get("active_move_ids") or [])
             self.caller.msg(
                 f"{result.get('move_name')} fue aprendido, pero el loadout está lleno. "
-                f"Activos: {active}. Para equiparlo: ensenar {machine_id} {slot + 1} <MOVE_ID_A_REEMPLAZAR>"
+                f"Activos: {active}. Para equiparlo después: "
+                f"equipar-movimiento {slot + 1} {result.get('move_id')} <MOVE_ID_A_REEMPLAZAR>"
             )
             return
-        if result.get("already_known") and not result.get("replaced_move_id"):
-            self.caller.msg(f"{result.get('move_name')} ya estaba aprendido.")
+        if result.get("already_known") and not result.get("equipped"):
+            self.caller.msg(
+                f"{result.get('move_name')} ya está aprendido. Usa equipar-movimiento {slot + 1} "
+                f"{result.get('move_id')} <MOVE_ID_A_REEMPLAZAR>."
+            )
+            return
+        if result.get("already_known") and result.get("equipped") and not result.get("replaced_move_id"):
+            self.caller.msg(f"{result.get('move_name')} ya estaba aprendido y equipado.")
             return
         replaced = f" | reemplaza {result.get('replaced_move_id')}" if result.get("replaced_move_id") else ""
-        reusable = " | HM/reutilizable" if result.get("reusable") else " | TM consumida"
+        reusable = " | HM/reutilizable" if result.get("reusable") else (" | TM consumida" if result.get("consumed") else "")
         self.caller.msg(f"{status} | {result.get('move_name')} equipado{replaced}{reusable}")
+
+
+class CmdPokerolEquipKnownMove(Command):
+    key = "equipar-movimiento"
+    aliases = ["equip-move", "move-loadout"]
+    locks = "cmd:all()"
+
+    def func(self):
+        if _in_active_battle(self.caller):
+            self.caller.msg("No puedes cambiar el loadout durante una batalla activa.")
+            return
+        parts = str(self.args or "").strip().split()
+        if len(parts) < 2:
+            self.caller.msg("Uso: equipar-movimiento <slot 1-6> <MOVE_ID> [MOVE_ID_A_REEMPLAZAR]")
+            return
+        try:
+            slot = int(parts[0]) - 1
+        except ValueError:
+            self.caller.msg("El slot debe ser 1-6.")
+            return
+        move_id = parts[1]
+        replace_move_id = parts[2] if len(parts) > 2 else ""
+        result = equip_known_move(self.caller, slot, move_id, replace_move_id=replace_move_id)
+        if not result.get("accepted"):
+            active = ", ".join(result.get("active_move_ids") or [])
+            suffix = f" | activos: {active}" if active else ""
+            self.caller.msg(f"{result.get('status')}{suffix}")
+            return
+        replaced = f" | reemplaza {result.get('replaced_move_id')}" if result.get("replaced_move_id") else ""
+        self.caller.msg(f"{result.get('status')} | {result.get('move_name') or result.get('move_id')}{replaced}")
