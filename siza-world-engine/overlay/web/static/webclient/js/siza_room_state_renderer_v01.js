@@ -3,7 +3,8 @@
 
     if (window.SizaRoomStateRendererV01) return;
 
-    var BUILD = "20260905-room-state-renderer-v2";
+    var BUILD = "20260905-room-state-renderer-v3-action-cap";
+    var MAX_VISIBLE_PER_GROUP = 5;
     var requested = false;
     var lastRequestAt = 0;
     var lastSignature = "";
@@ -60,13 +61,70 @@
         if (wrap) wrap.hidden = !text;
     }
 
+    function actionKind(action) {
+        return clean(action && action.kind).toUpperCase();
+    }
+
+    function actionCommand(action) {
+        return clean(action && action.command).toLowerCase();
+    }
+
+    function isMovementAction(action) {
+        var kind = actionKind(action);
+        var command = actionCommand(action);
+        return ["MOVE", "MOVEMENT", "EXIT", "TRAVEL", "ROUTE"].indexOf(kind) !== -1 ||
+            /^(ir|volver|subir|bajar|entrar|salir|tomar|cruzar|seguir|regresar)\b/.test(command);
+    }
+
+    function interactionPriority(action) {
+        var kind = actionKind(action);
+        if (kind === "ROLL") return 0;
+        if (kind === "INTERACTION" || kind === "TALK") return 10;
+        if (kind === "OBJECT_ACTION" && !!(action && (action.requires_roll || action.check))) return 20;
+        if (kind === "OBJECT_ACTION") return 30;
+        if (kind === "PERCEPTION" || kind === "OBJECT") return 40;
+        return 90;
+    }
+
+    function movementPriority(action) {
+        var command = actionCommand(action);
+        if (/^(ir|entrar|seguir|cruzar|tomar)\b/.test(command)) return 10;
+        if (/^(volver|regresar|salir)\b/.test(command)) return 20;
+        return 30;
+    }
+
+    function sortActions(actions, priorityFn) {
+        return actions.slice().sort(function (a, b) {
+            var pa = priorityFn(a);
+            var pb = priorityFn(b);
+            if (pa !== pb) return pa - pb;
+            return clean(a && a.label).localeCompare(clean(b && b.label));
+        });
+    }
+
+    function cappedActions(actions) {
+        var all = Array.isArray(actions) ? actions.slice() : [];
+        var movement = [];
+        var interactions = [];
+        all.forEach(function (action) {
+            if (isMovementAction(action)) movement.push(action);
+            else interactions.push(action);
+        });
+        return sortActions(interactions, interactionPriority).slice(0, MAX_VISIBLE_PER_GROUP)
+            .concat(sortActions(movement, movementPriority).slice(0, MAX_VISIBLE_PER_GROUP));
+    }
+
     function actionPacket(packet) {
         var actions = packet.available_actions || packet.actions || [];
         if (!Array.isArray(actions)) actions = [];
+        var visible = cappedActions(actions);
         return {
             location: packet.room_name || packet.location || "",
             room_id: packet.room_id || null,
-            actions: actions,
+            actions: visible,
+            full_action_count: actions.length,
+            hidden_action_count: Math.max(0, actions.length - visible.length),
+            max_visible_per_group: MAX_VISIBLE_PER_GROUP,
             pending_roll: !!packet.pending_roll,
             build: packet.build || BUILD
         };
@@ -177,6 +235,7 @@
 
     window.SizaRoomStateRendererV01 = Object.freeze({
         build: BUILD,
+        maxVisiblePerGroup: MAX_VISIBLE_PER_GROUP,
         renderRoomState: renderRoomState,
         requestRoomState: requestRoomState
     });
