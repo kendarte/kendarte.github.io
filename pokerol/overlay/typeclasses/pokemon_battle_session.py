@@ -11,7 +11,7 @@ from uuid import uuid4
 from evennia import DefaultScript
 
 
-SESSION_BUILD = "0.1.0-shared-session-lobby"
+SESSION_BUILD = "0.2.0-shared-session-outcome"
 SESSION_KINDS = {"PVE_COOP", "PVP", "RAID"}
 SESSION_STATUSES = {"LOBBY", "ACTIVE", "COMPLETE", "ABANDONED"}
 MAX_HUMAN_PARTICIPANTS = 8
@@ -94,6 +94,7 @@ class PokemonBattleSession(DefaultScript):
         self.db.updated_at = now
         self.db.started_at = None
         self.db.completed_at = None
+        self.db.outcome = ""
         self.db.winning_team = ""
         self.db.multi_target_pipeline = False
         self.db.build = SESSION_BUILD
@@ -118,6 +119,7 @@ class PokemonBattleSession(DefaultScript):
             "updated_at": self.db.updated_at,
             "started_at": self.db.started_at,
             "completed_at": self.db.completed_at,
+            "outcome": _text(self.db.outcome).upper(),
             "winning_team": _text(self.db.winning_team).upper(),
             "multi_target_pipeline": bool(self.db.multi_target_pipeline),
         }
