@@ -1,0 +1,290 @@
+/* POKEROL · GBA-inspired visual pass */
+:root{
+  --pk-ink:#1c2d52;
+  --pk-dark:#31599f;
+  --pk-mid:#76a9d9;
+  --pk-light:#d9ecfa;
+  --pk-paper:#fffdf0;
+  --pk-screen:#101a32;
+  --pk-dialogue:#3d88c7;
+  --pk-dialogue-border:#f7efc7;
+  --pk-gba-blue:#3e86c6;
+  --pk-gba-blue-dark:#23477f;
+  --pk-gba-blue-light:#a8d9f3;
+  --pk-gba-red:#d74b50;
+  --pk-gba-cream:#fff8dc;
+}
+
+html,body{
+  background:linear-gradient(#15213d,#0b1224)!important;
+}
+
+.pkGameShell{
+  background:#0f1930;
+  gap:6px;
+}
+
+.pkStage{
+  border:4px solid #1a2b50;
+  border-radius:7px;
+  box-shadow:
+    inset 0 0 0 2px #9fd2ee,
+    inset 0 0 0 4px rgba(255,255,255,.28),
+    4px 4px 0 #081022;
+}
+
+.pkStageShade{
+  background:
+    linear-gradient(to bottom,rgba(255,255,255,.08),rgba(255,255,255,0) 28%,rgba(12,25,50,.08) 72%,rgba(9,17,34,.28));
+}
+
+.pkBrandPlate,
+.pkLocationPlate{
+  border:3px solid #1d315a;
+  border-radius:5px;
+  background:linear-gradient(#fffef5 0 48%,#dbeefa 49% 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(122,188,225,.7),
+    2px 2px 0 rgba(8,16,34,.55);
+}
+.pkBrandPlate strong{color:#203864;text-shadow:1px 1px 0 #fff}
+.pkBrandPlate span,#pk-room-name{color:#273a61}
+
+.pkBackgroundTools button,
+.pkEditMenu button,.pkHotspotPanel button,.pkPlayerPanel button{
+  border:2px solid #203a69!important;
+  border-radius:4px!important;
+  background:linear-gradient(#fffef4,#d9eefb)!important;
+  color:#20345e!important;
+  box-shadow:
+    inset 0 0 0 1px #fff,
+    1px 2px 0 #152746!important;
+}
+.pkBackgroundTools button:hover,
+.pkEditMenu button:hover:not(:disabled),
+.pkHotspotPanel button:hover:not(:disabled),
+.pkPlayerPanel button:hover:not(:disabled){
+  background:linear-gradient(#73b9e6,#3f82c4)!important;
+  color:#fff!important;
+}
+
+.pkEditMenu,.pkHotspotPanel,.pkPlayerPanel{
+  border:3px solid #20345e!important;
+  border-radius:7px!important;
+  background:linear-gradient(#fefdf4,#d8edf9)!important;
+  box-shadow:
+    inset 0 0 0 2px #9bd0ec,
+    4px 4px 0 rgba(7,16,35,.56)!important;
+}
+.pkEditMenuHead,.pkHotspotPanelHead,.pkPlayerPanelHead{
+  margin:-3px -3px 7px!important;
+  padding:6px 7px;
+  border-radius:4px 4px 0 0;
+  background:linear-gradient(#5ba6dc,#3479b9);
+  border-bottom:2px solid #20345e;
+  color:#fff;
+  text-shadow:1px 1px 0 #1a3864;
+}
+#pk-edit-menu-close,#pk-hotspot-close,#pk-player-close{
+  background:linear-gradient(#f06a70,#bd3943)!important;
+  border-color:#66232b!important;
+  color:#fff!important;
+}
+
+.pkHotspotField input,.pkPlayerFields input{
+  border:2px solid #315991!important;
+  border-radius:3px!important;
+  background:#fffef4!important;
+  box-shadow:inset 1px 1px 0 #badcf0;
+}
+
+.pkActorLabel{
+  border:2px solid #20345e;
+  border-radius:4px;
+  background:linear-gradient(#fffef4,#dceef8);
+  color:#20345e;
+  box-shadow:inset 0 0 0 1px #fff,1px 2px 0 rgba(8,16,34,.55);
+}
+
+.pkDialogueBox{
+  border:4px solid #f8f0c8;
+  outline:3px solid #1c315a;
+  border-radius:8px;
+  background:linear-gradient(#63b7e5 0%,#3f8bc8 48%,#2e6eae 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(171,225,250,.9),
+    inset 0 -5px 0 rgba(31,75,127,.24),
+    3px 3px 0 rgba(8,16,34,.55);
+  color:#fff;
+  text-shadow:1px 1px 0 #214977;
+}
+.pkDialogueHeader{
+  padding-bottom:3px;
+  border-bottom:1px solid rgba(255,255,255,.35);
+}
+.pkDialogueHeader strong{
+  color:#fff8d5;
+  letter-spacing:.5px;
+}
+.pkDialogueHeader button{
+  border:2px solid #f9f2d1!important;
+  border-radius:4px;
+  background:linear-gradient(#5aa7d9,#2d6aa7)!important;
+  box-shadow:1px 1px 0 #1a355c;
+}
+.pkDialogueText{font-weight:600}
+
+.pkQuickbar{
+  border:3px solid #20345e;
+  border-radius:6px;
+  background:linear-gradient(#e9f5fd,#bcdff2);
+  box-shadow:inset 0 0 0 2px #fff,3px 3px 0 #081022;
+}
+.pkQuickbar button{
+  position:relative;
+  border:2px solid #284c7e;
+  border-radius:5px;
+  background:linear-gradient(#fffef4,#d5ecf8);
+  color:#20345e;
+  box-shadow:inset 0 0 0 1px #fff,1px 2px 0 #173055;
+  text-shadow:none;
+}
+.pkQuickbar button::before{
+  content:'';
+  width:5px;height:5px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:5px;
+  vertical-align:1px;
+  background:#d84b50;
+  box-shadow:0 0 0 1px #76292d;
+}
+.pkQuickbar button:nth-child(2)::before{background:#e6b842;box-shadow:0 0 0 1px #80631b}
+.pkQuickbar button:nth-child(3)::before{background:#54a66c;box-shadow:0 0 0 1px #2c633d}
+.pkQuickbar button:nth-child(4)::before{background:#6e78c9;box-shadow:0 0 0 1px #3f447f}
+.pkQuickbar button:hover,.pkQuickbar .pkPrimary{
+  background:linear-gradient(#579fda,#326fad);
+  color:#fff;
+}
+
+.pkFreeActionBar{
+  border:3px solid #20345e;
+  border-radius:6px;
+  background:linear-gradient(#dceefa,#b6d9ee);
+  box-shadow:inset 0 0 0 2px #fff,3px 3px 0 #081022;
+}
+.pkFreeActionBar #inputfield{
+  border:2px solid #315991!important;
+  border-radius:4px!important;
+  background:#fffef4!important;
+  box-shadow:inset 2px 2px 0 #d6e8f1!important;
+}
+.pkFreeActionBar #inputsend{
+  border:2px solid #1e3763!important;
+  border-radius:4px!important;
+  background:linear-gradient(#e85d63,#bd3842)!important;
+  color:#fff!important;
+  box-shadow:inset 0 0 0 1px #f9a0a4,1px 2px 0 #51222a!important;
+}
+
+.pkHistory{
+  background:linear-gradient(#fefdf4,#d8edf9);
+  border-left:4px solid #20345e;
+}
+.pkHistoryHead{background:linear-gradient(#5aa5db,#3478b8);color:#fff;border-bottom-color:#20345e}
+#messagewindow{background:#fffef4;color:#24365c}
+
+/* Onboarding/login: more GBA, less monochrome GB. */
+.pkOnboardingRoot{background:linear-gradient(#17315b,#0d1930)!important}
+.pkOnboardingCard{
+  border:4px solid #1d315a!important;
+  border-radius:9px;
+  background:linear-gradient(#fffef3,#d9edf8)!important;
+  box-shadow:inset 0 0 0 2px #8fc9e8,7px 7px 0 #071126!important;
+}
+.pkOnboardingTop{
+  border-bottom:3px solid #1d315a!important;
+  background:linear-gradient(#6eb8e2,#3c83c0)!important;
+  color:#fff!important;
+  text-shadow:1px 1px 0 #234b7b;
+}
+.pkWelcomeCopy,.pkAuthHint{color:#37557b!important}
+.pkOnboardingButton,
+.pkAuthField input,
+.pkGenderChoice{
+  border-color:#25456f!important;
+  border-radius:6px!important;
+  background:linear-gradient(#fffef4,#dceef9)!important;
+  box-shadow:inset 0 0 0 1px #fff,3px 3px 0 #183251!important;
+}
+.pkOnboardingButton:hover,.pkOnboardingButton:focus,.pkOnboardingButton.pkPrimary{
+  background:linear-gradient(#61aee0,#3479b7)!important;
+  color:#fff!important;
+}
+.pkOakDialogue{
+  border:4px solid #fff0bd!important;
+  outline:3px solid #20345e!important;
+  border-radius:8px;
+  background:linear-gradient(#65b8e3,#397fbf)!important;
+  box-shadow:inset 0 0 0 2px #a7ddf3,3px 3px 0 rgba(7,17,38,.55);
+}
+.pkGenderChoice:hover,.pkGenderChoice.pkSelected{
+  background:linear-gradient(#fff8d6,#cfeafd)!important;
+  box-shadow:inset 0 0 0 4px #69aeda,3px 3px 0 #183251!important;
+}
+
+/* Room transition overlay is injected by pokerol_room_transition_v01.js. */
+.pkRoomTransition{
+  position:absolute;
+  inset:0;
+  z-index:39;
+  pointer-events:none;
+  opacity:0;
+  transform:translateX(-110%);
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 2px,rgba(255,255,255,0) 2px 5px),
+    linear-gradient(90deg,#183765 0%,#4c96cf 45%,#a7dcf2 50%,#4c96cf 55%,#183765 100%);
+  border-left:4px solid #fff7c9;
+  border-right:4px solid #fff7c9;
+}
+.pkStage.pkRoomTransitioning .pkRoomTransition{
+  animation:pkGbaRoomWipe .52s steps(8,end) both;
+}
+.pkStage.pkRoomTransitioning .pkStageBackground,
+.pkStage.pkRoomTransitioning .pkActorLayer{
+  animation:pkGbaSceneShift .52s ease-out both;
+}
+.pkStage.pkRoomTransitioning .pkPlayerAvatar{
+  animation:pkGbaPlayerHop .38s steps(5,end) both;
+}
+@keyframes pkGbaRoomWipe{
+  0%{opacity:0;transform:translateX(-110%)}
+  24%{opacity:.98;transform:translateX(0)}
+  58%{opacity:.98;transform:translateX(0)}
+  100%{opacity:0;transform:translateX(110%)}
+}
+@keyframes pkGbaSceneShift{
+  0%{filter:saturate(.8) brightness(.8);transform:scale(1.025)}
+  45%{filter:saturate(.65) brightness(.65);transform:scale(1.012)}
+  100%{filter:none;transform:scale(1)}
+}
+@keyframes pkGbaPlayerHop{
+  0%{margin-bottom:0}
+  35%{margin-bottom:7px}
+  70%{margin-bottom:2px}
+  100%{margin-bottom:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .pkStage.pkRoomTransitioning .pkRoomTransition{animation:pkGbaRoomFade .18s linear both}
+  .pkStage.pkRoomTransitioning .pkStageBackground,
+  .pkStage.pkRoomTransitioning .pkActorLayer,
+  .pkStage.pkRoomTransitioning .pkPlayerAvatar{animation:none!important}
+  @keyframes pkGbaRoomFade{0%{opacity:0;transform:none}45%{opacity:.72;transform:none}100%{opacity:0;transform:none}}
+}
+
+@media(max-width:760px){
+  .pkStage{border-radius:5px}
+  .pkDialogueBox,.pkQuickbar,.pkFreeActionBar{border-radius:5px}
+  .pkQuickbar button{border-radius:4px}
+}
