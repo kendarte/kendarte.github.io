@@ -1,0 +1,10 @@
+.git
+.venv
+runtime
+*.bat
+docs
+map-creator
+npc-creator
+pokemon-creator
+__pycache__
+*.pyc
