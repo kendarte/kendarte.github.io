@@ -20,6 +20,15 @@ from commands.trace_commands import CmdSizaSimTrace
 from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
 from commands.travel_event_commands import CmdPokerolResolveTravelEvent, CmdPokerolTravelEvent
 from commands.world_combat_bridge_commands import CmdSizaCombatBridgeClear, CmdSizaCombatBridgeStatus, CmdSizaCombatBridgeTest, CmdSizaCombatResult
+from commands.pokemon_battle_commands import (
+    CmdPokerolBattleAbandon,
+    CmdPokerolBattleAction,
+    CmdPokerolBattleCapture,
+    CmdPokerolBattleMove,
+    CmdPokerolBattleRun,
+    CmdPokerolBattleState,
+    CmdPokerolBattleTest,
+)
 from commands.pokerol_commands import (
     CmdPokerolNPCState,
     CmdPokerolNoMatch,
@@ -56,6 +65,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdSizaRelationships(), CmdSizaRelationshipToggle(),
             CmdSizaTime(), CmdSizaTimeSet(), CmdSizaTimeRate(), CmdSizaTimeAdvance(), CmdPokerolRoll(),
             CmdPokerolTravelEvent(), CmdPokerolResolveTravelEvent(),
+            CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolBattleMove(),
+            CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
             CmdSizaRoomState(), CmdSizaUiContext(), CmdSizaUiStats(),
             CmdSizaCombatResult(), CmdSizaCombatBridgeTest(), CmdSizaCombatBridgeStatus(), CmdSizaCombatBridgeClear(),
