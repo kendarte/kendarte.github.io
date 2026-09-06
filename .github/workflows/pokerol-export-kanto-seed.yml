@@ -7,6 +7,9 @@ on:
       - '.github/workflows/pokerol-export-kanto-seed.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   export-seed:
     runs-on: ubuntu-latest
@@ -49,3 +52,17 @@ jobs:
           path: /tmp/kanto-pallet-viridian.seed.json
           if-no-files-found: error
           retention-days: 1
+
+      - name: Commit exact seed to repository
+        run: |
+          mkdir -p pokerol/overlay/world/seeds
+          cp /tmp/kanto-pallet-viridian.seed.json pokerol/overlay/world/seeds/kanto-pallet-viridian.seed.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pokerol/overlay/world/seeds/kanto-pallet-viridian.seed.json
+          if git diff --cached --quiet; then
+            echo 'Seed already matches loader.'
+          else
+            git commit -m 'Add exact Kanto Pallet-Viridian runtime seed'
+            git push origin HEAD:main
+          fi
