@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var BUILD="0.4.0-red-plus-anime-targeting";
+var BUILD="0.5.0-authoritative-anime-targeting";
 var state=null;
 var menuMode="ACTION";
 var pendingItemId="";
@@ -87,8 +87,18 @@ function bagItems(){return state&&state.bag_state&&state.bag_state.items&&typeof
 function bagProfiles(){return state&&state.bag_state&&state.bag_state.profiles&&typeof state.bag_state.profiles==="object"?state.bag_state.profiles:{}}
 function bagProfile(itemId){return bagProfiles()[itemId]||{kind:/_BALL$/i.test(itemId)?"CAPTURE":"UNKNOWN",battle_usable:false,label:itemId.replace(/_/g," ")}}
 function environmentRows(){return state&&Array.isArray(state.environment_targets)?state.environment_targets:[]}
+function authoritativeWorldTargets(moveId){
+  var map=state&&state.world_move_targets&&typeof state.world_move_targets==="object"?state.world_move_targets:null;
+  if(!map)return null;
+  var direct=map[moveId];
+  if(Array.isArray(direct))return direct;
+  var wanted=text(moveId).toUpperCase(),key=Object.keys(map).find(function(k){return text(k).toUpperCase()===wanted});
+  return key&&Array.isArray(map[key])?map[key]:[];
+}
 function compatibleWorldTargets(move){
   if(!move)return[];
+  var authoritative=authoritativeWorldTargets(move.move_id);
+  if(authoritative!==null)return authoritative;
   var accepted=(move.materials||[]).map(function(v){return text(v).toUpperCase()}).filter(Boolean);
   return environmentRows().filter(function(row){
     if(!accepted.length)return true;
@@ -154,7 +164,8 @@ function renderMenu(){
     var worldMove=moveAt(pendingMoveId),worldTargets=compatibleWorldTargets(worldMove);
     body.innerHTML='<div class="pkbStubText">'+esc(worldMove&&worldMove.name||pendingMoveId)+' → ENTORNO</div><div class="pkbBagList">'+(worldTargets.length?worldTargets.map(function(t,index){
       var mats=(t.materials||[]).concat(t.tags||[]).join(' / ');
-      return '<button class="pkbBagItem" data-env-index="'+index+'"><b>'+esc(t.name||t.object_id||('OBJ '+t.dbref))+'</b><small>'+esc(mats)+(t.water_body_id?' · '+esc(t.water_body_id):'')+'</small></button>';
+      var effects=Array.isArray(t.effects)&&t.effects.length?' · '+t.effects.join(' + '):'';
+      return '<button class="pkbBagItem" data-env-index="'+index+'"><b>'+esc(t.name||t.object_id||('OBJ '+t.dbref))+'</b><small>'+esc(mats)+esc(effects)+(t.water_body_id?' · '+esc(t.water_body_id):'')+'</small></button>';
     }).join(''):'<div class="pkbStubText">NO HAY OBJETIVOS COMPATIBLES.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
     Array.prototype.forEach.call(body.querySelectorAll("[data-env-index]"),function(btn){btn.onclick=function(){
       var target=worldTargets[Number(btn.getAttribute("data-env-index"))];if(!target)return;
