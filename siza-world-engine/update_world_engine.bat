@@ -4,7 +4,7 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 set "SIZA_DARKHAVEN_MAP=%CD%\map-creator\presets\darkhaven-academy.siza-map.json"
-set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-observation-description-guard&force=18"
+set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-room-content-depth&force=19"
 
 echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
@@ -108,7 +108,7 @@ if errorlevel 1 (
 
 echo.
 echo 4c. Aplicando contenido profundo del Map Creator a Darkhaven...
-python -m evennia shell -c "import os; from world.editor_content_importer import apply_map_file, apply_scene_entities_file; p=os.environ.get('SIZA_DARKHAVEN_MAP'); m=apply_map_file(p); s=apply_scene_entities_file(p); print('DARKHAVEN_EDITOR_CONTENT=', {'map_updated': m.get('updated_count'), 'map_missing': m.get('missing_count'), 'scene_created': s.get('created_count'), 'scene_updated': s.get('updated_count'), 'scene_conflicts': s.get('conflicts_count'), 'scene_invalid': s.get('invalid_count')})"
+python -m evennia shell -c "import os; from world.editor_content_importer import apply_map_file, apply_scene_entities_file; from world.darkhaven_room_content_patch import apply as apply_depth; p=os.environ.get('SIZA_DARKHAVEN_MAP'); m=apply_map_file(p); s=apply_scene_entities_file(p); d=apply_depth(); print('DARKHAVEN_EDITOR_CONTENT=', {'map_updated': m.get('updated_count'), 'map_missing': m.get('missing_count'), 'scene_created': s.get('created_count'), 'scene_updated': s.get('updated_count'), 'scene_conflicts': s.get('conflicts_count'), 'scene_invalid': s.get('invalid_count'), 'depth_rooms': d.get('rooms_source'), 'depth_updated': d.get('rooms_updated'), 'depth_missing': d.get('rooms_missing_count'), 'depth_props_created': d.get('props_created'), 'depth_props_updated': d.get('props_updated'), 'depth_conflicts': d.get('conflicts_count')})"
 if errorlevel 1 (
   popd
   goto :fail
@@ -142,6 +142,7 @@ echo Academia Darkhaven Zona 7 fue instalada/actualizada de forma idempotente.
 echo Tutorial Darkhaven fue endurecido para evitar rutas duplicadas o beats adelantados.
 echo Autonomia controlada de Darkhaven fue activada para el grupo seguro de prueba.
 echo Contenido profundo del Map Creator fue aplicado a Darkhaven.
+echo Room Content Depth fue aplicado a los 25 cuartos de Darkhaven.
 echo World Tick Siza fue garantizado como script unico.
 echo Faro Ahogado permanece instalado como contenido disponible, pero ya no es el arranque local por defecto.
 echo Siza Arena fue sincronizado al webclient local.
