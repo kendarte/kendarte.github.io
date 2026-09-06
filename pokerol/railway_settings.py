@@ -6,12 +6,6 @@ import os as _pokerol_os
 SERVERNAME = "POKEROL"
 ALLOWED_HOSTS = ["*"]
 
-# Persist the Evennia SQLite DB on the Railway volume mounted at /data.
-# This keeps accounts, characters and world state across code deploys.
-_pokerol_db_path = _pokerol_os.environ.get("POKEROL_DB_PATH", "/data/evennia.db3").strip()
-if _pokerol_db_path:
-    DATABASES["default"]["NAME"] = _pokerol_db_path
-
 # Railway exposes nginx on 4001. Evennia's own HTTP proxy and websocket
 # listeners stay internal to the container and nginx multiplexes both over
 # the single public domain.
