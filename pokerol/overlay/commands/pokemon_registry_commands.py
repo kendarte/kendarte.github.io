@@ -9,6 +9,31 @@ from services.pokemon_species_registry import (
 )
 
 
+def _dict(value):
+    try:
+        return dict(value or {})
+    except Exception:
+        return {}
+
+
+def _list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
+
+
+def _room_water_bodies(actor):
+    room = getattr(actor, "location", None) if actor else None
+    rows = []
+    for raw in _list(getattr(getattr(room, "db", None), "water_bodies", [])):
+        row = _dict(raw)
+        body_id = str(row.get("id") or "").strip()
+        if body_id:
+            rows.append(row)
+    return rows
+
+
 class CmdPokerolPokemonRegistry(Command):
     key = "pokemon-registry"
     aliases = ["pokedex-registry", "species-registry"]
@@ -64,7 +89,7 @@ class CmdPokerolWildEncounter(Command):
     def func(self):
         parts = str(self.args or "").strip().split()
         if not parts:
-            self.caller.msg("Uso: encuentro-salvaje <SPECIES_ID> [nivel]")
+            self.caller.msg("Uso: encuentro-salvaje <SPECIES_ID> [nivel] [WATER_BODY_ID]")
             return
         species_id = parts[0]
         try:
@@ -72,17 +97,35 @@ class CmdPokerolWildEncounter(Command):
         except ValueError:
             self.caller.msg("Nivel inválido.")
             return
+        medium_id = str(parts[2] if len(parts) > 2 else "").strip()
         profile = spawn_species_profile(species_id, level=level, wild=True)
         if not profile:
             self.caller.msg(f"Species no registrada: {species_id}")
             return
+
+        if medium_id:
+            bodies = _room_water_bodies(self.caller)
+            body = next((row for row in bodies if str(row.get("id") or "").strip() == medium_id), None)
+            if not body:
+                available = ", ".join(str(row.get("id")) for row in bodies) or "ninguno"
+                self.caller.msg(f"Water body inexistente en este Room: {medium_id}. Disponibles: {available}")
+                return
+            profile["contact_medium_id"] = medium_id
+            profile["contact_medium_kind"] = str(body.get("kind") or "water")
+            profile["battle_position"] = {
+                "medium_id": medium_id,
+                "medium_kind": profile["contact_medium_kind"],
+                "source": "DEBUG_EXPLICIT",
+            }
+
         result = start_pokemon_battle_from_party(
             self.caller,
             profile,
             battle_kind="WILD",
             source_event_id="DEBUG-WILD-ENCOUNTER",
         )
+        medium_text = f" | medium={medium_id}" if medium_id else ""
         self.caller.msg(
             f"{result.get('status')} | {profile.get('species_name')} Lv{profile.get('level')} | "
-            f"spawn={profile.get('entity_id')}"
+            f"spawn={profile.get('entity_id')}{medium_text}"
         )
