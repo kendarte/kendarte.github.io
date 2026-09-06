@@ -6,7 +6,7 @@ from services.pokemon_move_capability_engine import compatible_world_effects
 from services.pokemon_world_move_execution_engine import execute_pokemon_world_move, object_world_packet
 
 
-ENV_BATTLE_BUILD = "0.2.0-verified-target-medium"
+ENV_BATTLE_BUILD = "0.3.0-effect-aware-targets"
 
 
 def _dict(value):
@@ -57,6 +57,7 @@ def environment_targets(actor):
             "materials": _list(packet.get("materials")),
             "tags": _list(packet.get("tags")),
             "water_body_id": _text(packet.get("water_body_id")),
+            "physical_properties": deepcopy(_dict(packet.get("physical_properties"))),
             "environmental_state": deepcopy(_dict(packet.get("environmental_state"))),
         })
     rows.sort(key=lambda row: (row.get("name") or "", row.get("dbref") or 0))
@@ -69,6 +70,8 @@ def compatible_environment_targets(actor, move):
         effects = compatible_world_effects(move, {
             "materials": row.get("materials") or [],
             "tags": row.get("tags") or [],
+            "physical_properties": row.get("physical_properties") or {},
+            "environmental_state": row.get("environmental_state") or {},
         })
         if effects:
             item = deepcopy(row)
@@ -134,5 +137,6 @@ def execute_battle_environment_request(actor, pokemon_profile, move, request):
         "target_name": _text(getattr(target_obj, "key", "")),
         "target_water_body_id": _text(target_packet.get("water_body_id")) or None,
         "target_materials": _list(target_packet.get("materials")),
+        "target_physical_properties": deepcopy(_dict(target_packet.get("physical_properties"))),
         "build": ENV_BATTLE_BUILD,
     }
