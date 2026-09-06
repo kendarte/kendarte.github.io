@@ -29,6 +29,11 @@ from commands.pokemon_battle_commands import (
     CmdPokerolBattleState,
     CmdPokerolBattleTest,
 )
+from commands.pokemon_registry_commands import (
+    CmdPokerolGivePokemon,
+    CmdPokerolPokemonRegistry,
+    CmdPokerolWildEncounter,
+)
 from commands.pokemon_trainer_commands import (
     CmdPokerolActivePokemon,
     CmdPokerolBag,
@@ -73,6 +78,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdSizaTime(), CmdSizaTimeSet(), CmdSizaTimeRate(), CmdSizaTimeAdvance(), CmdPokerolRoll(),
             CmdPokerolTravelEvent(), CmdPokerolResolveTravelEvent(),
             CmdPokerolParty(), CmdPokerolActivePokemon(), CmdPokerolBag(), CmdPokerolGiveItem(), CmdPokerolTrainerTest(),
+            CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(),
             CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
