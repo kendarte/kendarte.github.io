@@ -24,7 +24,7 @@ from services.pokemon_battle_tactical_round_engine import resolve_tactical_playe
 from services.pokemon_party_engine import update_owned_from_battle
 
 
-TACTICAL_RUNTIME_BUILD = "0.3.0-position-defensive-reaction-runtime"
+TACTICAL_RUNTIME_BUILD = "0.3.1-position-defensive-reaction-runtime"
 
 
 def _dict(value):
@@ -82,12 +82,15 @@ def reaction_options_packet(actor):
     if _text(battle.get("status")).upper() != ACTIVE_STATUS:
         return {"accepted": False, "status": "BATTLE_NOT_ACTIVE", "options": [], "build": TACTICAL_RUNTIME_BUILD}
     player = _dict(battle.get("player"))
+    options = reaction_options(battle, "PLAYER")
+    if not bool(battle.get("protected_target_pipeline_active")):
+        options = [row for row in options if _text(_dict(row).get("policy")).upper() != "INTERCEPT"]
     return {
         "accepted": True,
         "status": "REACTION_OPTIONS",
         "battle_id": battle.get("battle_id"),
         "current": reaction_state(player),
-        "options": reaction_options(battle, "PLAYER"),
+        "options": options,
         "build": TACTICAL_RUNTIME_BUILD,
     }
 
@@ -111,7 +114,10 @@ def set_player_reaction(actor, policy="DODGE", method_move_id=""):
         return {"accepted": False, "status": "NOT_COMMAND_PHASE", "build": TACTICAL_RUNTIME_BUILD}
     if bool(battle.get("forced_switch")):
         return {"accepted": False, "status": "FORCED_SWITCH_REQUIRED", "build": TACTICAL_RUNTIME_BUILD}
-    result = arm_reaction(battle, "PLAYER", policy, method_move_id=method_move_id)
+    wanted_policy = _text(policy).upper() or "DODGE"
+    if wanted_policy == "INTERCEPT" and not bool(battle.get("protected_target_pipeline_active")):
+        return {"accepted": False, "status": "INTERCEPT_PIPELINE_NOT_ACTIVE", "build": TACTICAL_RUNTIME_BUILD}
+    result = arm_reaction(battle, "PLAYER", wanted_policy, method_move_id=method_move_id)
     if result.get("accepted"):
         actor.db.pokerol_pokemon_battle = battle
         emit_battle_state(actor, battle, event="STATE")
