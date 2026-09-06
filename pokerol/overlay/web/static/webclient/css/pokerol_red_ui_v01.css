@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+
+:root{
+  --pk-ink:#172016;
+  --pk-dark:#33412d;
+  --pk-mid:#71835f;
+  --pk-light:#d7e0bd;
+  --pk-paper:#eef3d5;
+  --pk-select:#263521;
+  --pk-select-text:#f2f6dc;
+  --pk-danger:#7f342f;
+  --pk-warning:#7a6430;
+  --pk-screen:#11180f;
+  --pk-ui-font:'Silkscreen',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --pk-copy-font:ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --pk-pixel-shadow:4px 4px 0 #0b100a;
+}
+
+html,body{background:#0d120b!important;color:var(--pk-ink)!important}
+body{font-family:var(--pk-copy-font)!important}
+button,input,textarea,select{font-family:var(--pk-ui-font)!important}
+
+/* Main shell: turn the inherited book into a Game Boy-like game screen without changing its DOM contract. */
+.sizaBookClient{
+  width:min(1152px,calc(100vw - 16px))!important;
+  height:min(864px,calc(100dvh - 16px))!important;
+  margin:8px auto!important;
+  border:4px solid var(--pk-ink)!important;
+  border-radius:0!important;
+  background:var(--pk-screen)!important;
+  box-shadow:8px 8px 0 #050805!important;
+  grid-template-rows:88px minmax(0,1fr)!important;
+}
+
+.sizaBookHeader{
+  grid-template-columns:minmax(220px,.9fr) minmax(320px,1.25fr) minmax(220px,.9fr)!important;
+  border-bottom:4px solid var(--pk-ink)!important;
+  background:var(--pk-light)!important;
+  box-shadow:inset 0 -3px 0 var(--pk-mid)!important;
+}
+.sizaHeaderCharacter,.sizaBookChapter{
+  color:var(--pk-ink)!important;
+  background:var(--pk-paper)!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.sizaHeaderCharacter{box-shadow:inset 0 0 0 2px var(--pk-mid)!important}
+.sizaBookChapter{border-left:4px solid var(--pk-ink)!important;border-right:4px solid var(--pk-ink)!important}
+.sizaHeaderCharacterCopy small,.sizaBookChapter small,.sizaHeaderCharacterMeta span{
+  color:var(--pk-dark)!important;
+  font:700 9px/1 var(--pk-ui-font)!important;
+  letter-spacing:0!important;
+  text-transform:uppercase;
+}
+.sizaHeaderCharacterCopy strong,.sizaBookChapter strong{
+  color:var(--pk-ink)!important;
+  font:700 15px/1.15 var(--pk-ui-font)!important;
+  text-transform:uppercase;
+}
+.sizaHeaderCharacterCopy>span,.sizaBookChapter span{
+  color:var(--pk-dark)!important;
+  font:11px/1.3 var(--pk-copy-font)!important;
+}
+.sizaPortraitFrame{
+  border:3px solid var(--pk-ink)!important;
+  border-radius:0!important;
+  background:var(--pk-light)!important;
+  box-shadow:inset 0 0 0 3px var(--pk-paper)!important;
+  image-rendering:pixelated;
+}
+.sizaPortraitInitial{color:var(--pk-ink)!important;font:700 26px/1 var(--pk-ui-font)!important}
+.sizaConnectionBadge{
+  right:7px!important;bottom:-20px!important;
+  border:2px solid var(--pk-ink)!important;border-radius:0!important;
+  color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  font:700 8px/1 var(--pk-ui-font)!important;
+}
+.sizaConnectionDot{border-radius:0!important;background:var(--pk-dark)!important}
+
+.sizaBookBody{background:var(--pk-screen)!important}
+.sizaBookScene{
+  margin:8px!important;
+  border:4px solid var(--pk-ink)!important;
+  border-radius:0!important;
+  background:var(--pk-paper)!important;
+  box-shadow:var(--pk-pixel-shadow)!important;
+  grid-template-rows:minmax(260px,1fr) minmax(230px,42%)!important;
+}
+.sizaBookSceneVisual{background:#87996f!important;border-bottom:4px solid var(--pk-ink)!important}
+.sizaBookSceneVisualMedia{image-rendering:auto}
+.sizaBookSceneVisualMedia::after{background:linear-gradient(180deg,rgba(23,32,22,.04),rgba(23,32,22,.22))!important}
+.sizaBookSceneVisual[data-has-image="false"] .sizaBookSceneVisualMedia{
+  background:linear-gradient(180deg,#bac7a0 0 52%,#80936b 52% 58%,#667957 58% 100%)!important;
+}
+.sizaSceneTopPlaque{
+  top:8px!important;left:8px!important;transform:none!important;
+  min-width:0!important;max-width:58%!important;
+  padding:7px 9px!important;text-align:left!important;
+  border:3px solid var(--pk-ink)!important;border-radius:0!important;
+  color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  box-shadow:3px 3px 0 rgba(11,16,10,.8)!important;
+}
+.sizaSceneTopPlaque span{color:var(--pk-dark)!important;font:700 8px/1 var(--pk-ui-font)!important;letter-spacing:0!important}
+.sizaSceneTopPlaque strong{color:var(--pk-ink)!important;font:700 11px/1.15 var(--pk-ui-font)!important}
+.sizaSceneCast{gap:4px!important}
+.sizaSceneCastChip{
+  border:2px solid var(--pk-ink)!important;border-radius:0!important;
+  color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  font:8px/1 var(--pk-ui-font)!important;
+}
+
+.sizaStoryPage{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  padding:14px 62px 12px 18px!important;
+  color:var(--pk-ink)!important;
+  border-top:0!important;
+  background:var(--pk-paper)!important;
+  box-shadow:inset 0 0 0 3px var(--pk-mid)!important;
+}
+.sizaBookSceneDescription{
+  margin-bottom:8px!important;color:var(--pk-ink)!important;
+  font:700 14px/1.45 var(--pk-copy-font)!important;
+}
+.sizaBookOutput{color:var(--pk-ink)!important;scrollbar-color:var(--pk-dark) transparent!important}
+.sizaBookLine,.sizaBookLine.sizaNarrativeEvent,.sizaBookOutput .sizaBookLine{
+  color:var(--pk-ink)!important;background:transparent!important;
+  font:13px/1.5 var(--pk-copy-font)!important;
+}
+.sizaBookSystem{
+  border-left:4px solid var(--pk-dark)!important;
+  color:var(--pk-dark)!important;background:rgba(113,131,95,.12)!important;
+  font:10px/1.4 var(--pk-copy-font)!important;
+}
+.sizaContextDrawer>summary{
+  width:42px!important;height:42px!important;
+  border:3px solid var(--pk-ink)!important;border-radius:0!important;
+  color:var(--pk-ink)!important;background:var(--pk-light)!important;
+  box-shadow:3px 3px 0 var(--pk-ink)!important;
+  font:700 18px/1 var(--pk-ui-font)!important;
+}
+.sizaBookSceneState{
+  border:3px solid var(--pk-ink)!important;border-radius:0!important;
+  color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  box-shadow:4px 4px 0 var(--pk-ink)!important;
+}
+.sizaBookFact{border:2px solid var(--pk-mid)!important;background:var(--pk-light)!important}
+.sizaBookFact small{color:var(--pk-dark)!important;font:700 8px/1 var(--pk-ui-font)!important;letter-spacing:0!important}
+.sizaBookFact span{color:var(--pk-ink)!important;font:10px/1.35 var(--pk-copy-font)!important}
+
+/* Generic inherited action controls. */
+.sizaBookClient button,.sizaBookClient .btn,.sizaBookClient input,.sizaBookClient textarea,.sizaBookClient select{
+  border-radius:0!important;
+}
+.sizaBookClient button,.sizaBookClient .btn{
+  border:3px solid var(--pk-ink)!important;
+  color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  box-shadow:2px 2px 0 var(--pk-dark)!important;
+  font-family:var(--pk-ui-font)!important;
+  text-transform:uppercase;
+}
+.sizaBookClient button:hover:not(:disabled),.sizaBookClient button:focus-visible:not(:disabled),.sizaBookClient .btn:hover{
+  color:var(--pk-select-text)!important;background:var(--pk-select)!important;
+  outline:none!important;
+}
+.sizaBookClient button:disabled{opacity:.45!important;box-shadow:none!important}
+.sizaBookClient input,.sizaBookClient textarea,.sizaBookClient select{
+  border:3px solid var(--pk-ink)!important;color:var(--pk-ink)!important;background:var(--pk-paper)!important;
+  font-family:var(--pk-copy-font)!important;
+}
+
+/* Standard menu language reusable by battle/party/bag. */
+.pkMenuCursor::before,[data-pk-selected="true"]::before{content:'▶';display:inline-block;margin-right:7px}
+.pkWindow{
+  border:4px solid var(--pk-ink);background:var(--pk-paper);color:var(--pk-ink);
+  box-shadow:4px 4px 0 var(--pk-dark);font-family:var(--pk-ui-font);
+}
+.pkWindowTitle{font:700 10px/1 var(--pk-ui-font);text-transform:uppercase;color:var(--pk-dark)}
+.pkMenuButton{position:relative;border:0;background:transparent;color:var(--pk-ink);font:700 12px/1.2 var(--pk-ui-font);text-align:left;padding:9px 10px;cursor:pointer}
+.pkMenuButton:hover,.pkMenuButton:focus-visible,.pkMenuButton[data-pk-selected="true"]{background:var(--pk-select);color:var(--pk-select-text);outline:none}
+
+@media(max-width:800px){
+  .sizaBookClient{width:100vw!important;height:100dvh!important;margin:0!important;border-width:3px!important;box-shadow:none!important}
+  .sizaBookHeader{grid-template-columns:1fr!important;grid-template-rows:auto!important}
+  .sizaHeaderCharacterFocus,.sizaBookChapter{display:none!important}
+  .sizaBookScene{margin:5px!important;grid-template-rows:minmax(220px,42%) minmax(0,1fr)!important}
+  .sizaStoryPage{padding-right:54px!important}
+}
