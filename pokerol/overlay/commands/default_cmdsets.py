@@ -15,6 +15,7 @@ from commands.personality_commands import CmdSizaPersonality, CmdSizaPersonality
 from commands.relationship_commands import CmdSizaRelationships, CmdSizaRelationshipToggle
 from commands.skill_commands import CmdSizaSkills, CmdSizaSkillSet
 from commands.pokerol_ui_runtime_commands import CmdPokerolRoomState, CmdPokerolUiContext
+from commands.pokerol_editor_commands import CmdPokerolEditorCreateRoom, CmdPokerolEditorUpdateEntity
 from commands.time_commands import CmdSizaTime, CmdSizaTimeAdvance, CmdSizaTimeRate, CmdSizaTimeSet
 from commands.trace_commands import CmdSizaSimTrace
 from commands.trait_commands import CmdSizaTraits, CmdSizaTraitToggle
@@ -105,7 +106,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
-            CmdPokerolRoomState(), CmdPokerolUiContext(),
+            CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
             CmdSizaCombatResult(), CmdSizaCombatBridgeTest(), CmdSizaCombatBridgeStatus(), CmdSizaCombatBridgeClear(),
             CmdPokerolNoMatch(),
         ):
