@@ -24,6 +24,8 @@ from services.pokemon_battle_environment_engine import (
     environment_targets,
     execute_battle_environment_request,
 )
+from services.pokemon_battle_physics_impact_engine import apply_world_physics_to_battle
+from services.pokemon_battle_world_round_engine import resolve_environment_player_action
 from services.pokemon_party_engine import (
     able_party_slots,
     active_pokemon,
@@ -37,7 +39,7 @@ from services.pokemon_party_engine import (
 )
 
 
-RUNTIME_BUILD = "0.5.0-anime-environment-bridge"
+RUNTIME_BUILD = "0.6.0-initiative-medium-physics"
 
 
 def _dict(value):
@@ -85,6 +87,20 @@ def _site_from_actor(actor):
     }
 
 
+def _apply_contact_medium(battle_pokemon, source_profile):
+    if not isinstance(battle_pokemon, dict):
+        return
+    source = _dict(source_profile)
+    medium_id = _text(source.get("contact_medium_id") or _dict(source.get("battle_position")).get("medium_id"))
+    medium_kind = _text(source.get("contact_medium_kind") or _dict(source.get("battle_position")).get("medium_kind"))
+    if medium_id:
+        battle_pokemon["contact_medium_id"] = medium_id
+        battle_pokemon["contact_medium_kind"] = medium_kind or None
+    else:
+        battle_pokemon.pop("contact_medium_id", None)
+        battle_pokemon.pop("contact_medium_kind", None)
+
+
 def _public_state(actor, battle):
     packet = public_battle_state(battle)
     for key in list(packet.keys()):
@@ -117,10 +133,13 @@ def start_pokemon_battle(actor, player_pokemon, enemy_pokemon, *, battle_kind="W
     if existing and _text(existing.get("status")) == ACTIVE_STATUS:
         return {"accepted": False, "status": "BATTLE_ALREADY_ACTIVE", "battle": _public_state(actor, existing), "build": RUNTIME_BUILD}
     chosen = _dict(player_pokemon) or _dict(active_pokemon(actor))
+    enemy_source = _dict(enemy_pokemon)
     if not chosen:
         return {"accepted": False, "status": "NO_ACTIVE_POKEMON", "build": RUNTIME_BUILD}
-    battle = create_battle(chosen, enemy_pokemon, site=_site_from_actor(actor), battle_kind=battle_kind, source_event_id=source_event_id)
-    battle["_source_enemy_profile"] = _clone(_dict(enemy_pokemon))
+    battle = create_battle(chosen, enemy_source, site=_site_from_actor(actor), battle_kind=battle_kind, source_event_id=source_event_id)
+    _apply_contact_medium(battle.get("player"), chosen)
+    _apply_contact_medium(battle.get("enemy"), enemy_source)
+    battle["_source_enemy_profile"] = _clone(enemy_source)
     battle["_source_player_profile"] = _clone(chosen)
     actor.db.pokerol_pokemon_battle = battle
     emit_battle_state(actor, battle, event="START")
@@ -159,8 +178,8 @@ def _capture_into_collection(actor, battle):
             "moves": _clone(enemy.get("moves") or []), "resolved_moves": _clone(enemy.get("moves") or []),
             "sprite": _clone(enemy.get("sprite") or {}),
         }
-    source.pop("instance_id", None)
-    source.pop("entity_id", None)
+    for key in ("instance_id", "entity_id", "contact_medium_id", "contact_medium_kind", "battle_position"):
+        source.pop(key, None)
     source["level"] = enemy.get("level", source.get("level"))
     source["hp_current"] = enemy.get("hp_current")
     source["hp_max"] = enemy.get("hp_max")
@@ -192,6 +211,7 @@ def _switch_action(actor, battle, action):
 
     next_state = _clone(battle)
     incoming = normalize_pokemon(profile, side="PLAYER")
+    _apply_contact_medium(incoming, profile)
     next_state["player"] = incoming
     next_state["_source_player_profile"] = _clone(profile)
     next_state.pop("forced_switch", None)
@@ -257,7 +277,22 @@ def _support_item_action(actor, battle, action):
     return result
 
 
+def _append_fallback_impact_log(battle, impact):
+    for hit in _list(_dict(impact).get("impacts")):
+        hit = _dict(hit)
+        for event in _list(hit.get("events")):
+            event = _dict(event)
+            battle.setdefault("log", []).append({
+                "turn": battle.get("turn"), "phase": "RESOLUTION",
+                "kind": _text(event.get("kind")) or "WORLD_BATTLE_IMPACT",
+                "text": _text(event.get("text")) or "El entorno afecta al combate.",
+                "target": hit.get("entity_id"), "medium_id": hit.get("medium_id"),
+                "damage": event.get("damage"), "effectiveness": event.get("effectiveness"),
+            })
+
+
 def _resolve_pending_world_requests(actor, battle):
+    """Fallback resolver for requests created without the initiative-aware orchestrator."""
     requests = _list(battle.get("world_requests"))
     if not requests:
         return []
@@ -282,24 +317,29 @@ def _resolve_pending_world_requests(actor, battle):
 
         result = execute_battle_environment_request(actor, player, move, request)
         executed = bool(result.get("executed"))
+        impact = apply_world_physics_to_battle(battle, move, result)
         request["status"] = "WORLD_EXECUTED" if executed else "WORLD_REJECTED"
         request["resolution"] = {
             "executed": executed,
             "status": result.get("status"),
             "target_dbref": result.get("target_dbref"),
+            "target_object_id": result.get("target_object_id"),
+            "target_name": result.get("target_name"),
+            "target_water_body_id": result.get("target_water_body_id"),
             "persisted_target_state": _clone(_dict(result.get("persisted_target_state"))),
             "events": _clone(_list(result.get("events"))),
             "area_impacts": _clone(_list(result.get("area_impacts"))),
             "persisted_area_impacts": _clone(_list(result.get("persisted_area_impacts"))),
+            "battle_impact": _clone(impact),
         }
-        target_spec = _dict(request.get("world_target"))
-        target_name = _text(target_spec.get("name") or target_spec.get("object_id")) or "el entorno"
+        target_name = _text(result.get("target_name")) or _text(_dict(request.get("world_target")).get("name")) or "el entorno"
         if executed:
             battle.setdefault("log", []).append({
                 "turn": request.get("turn"), "phase": "RESOLUTION", "kind": "WORLD_EFFECT",
                 "text": f"El efecto físico alcanza {target_name}.", "request_id": request.get("request_id"),
-                "world_status": result.get("status"),
+                "world_status": result.get("status"), "medium_id": result.get("target_water_body_id"),
             })
+            _append_fallback_impact_log(battle, impact)
         else:
             battle.setdefault("log", []).append({
                 "turn": request.get("turn"), "phase": "RESOLUTION", "kind": "WORLD_EFFECT_REJECTED",
@@ -392,6 +432,8 @@ def submit_player_battle_action(actor, action):
         result = _switch_action(actor, battle, requested)
     elif kind == "ITEM":
         result = _support_item_action(actor, battle, requested)
+    elif kind == "FREE_ORDER" and _text(requested.get("move_id")):
+        result = resolve_environment_player_action(actor, battle, requested)
     else:
         result = resolve_player_action(battle, requested)
 
