@@ -27,19 +27,31 @@ jobs:
             -p 4001:4001 \
             pokerol-smoke
 
-      - name: Initial container diagnostics
+      - name: Capture initial container diagnostics
         run: |
           sleep 8
-          echo '=== docker ps -a ==='
-          docker ps -a
-          echo '=== container state ==='
-          docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' || true
-          echo '=== POKEROL logs ==='
-          docker logs pokerol-smoke-run || true
-          echo '=== Evennia process list ==='
-          docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
-          echo '=== Evennia status ==='
-          docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
+          {
+            echo '=== docker ps -a ==='
+            docker ps -a || true
+            echo '=== container state ==='
+            docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' || true
+            echo '=== POKEROL logs ==='
+            docker logs pokerol-smoke-run || true
+            echo '=== Evennia process list ==='
+            docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
+            echo '=== Evennia status ==='
+            docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
+          } > /tmp/pokerol-diagnostics.txt 2>&1
+          cat /tmp/pokerol-diagnostics.txt
+
+      - name: Upload initial diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokerol-container-diagnostics
+          path: /tmp/pokerol-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Wait for Evennia web server
         run: |
@@ -51,28 +63,36 @@ jobs:
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx pokerol-smoke-run; then
               echo "Container stopped before web server became ready."
-              echo '=== container state ==='
               docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
-              echo '=== POKEROL logs ==='
               docker logs pokerol-smoke-run || true
               exit 1
             fi
             sleep 2
           done
           echo "Timed out waiting for POKEROL web server."
-          echo '=== container state ==='
           docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
-          echo '=== POKEROL logs ==='
           docker logs pokerol-smoke-run || true
           exit 1
 
       - name: Check webclient route
         run: curl -fsS http://127.0.0.1:4001/webclient/ >/dev/null
 
-      - name: Show server logs
+      - name: Capture final diagnostics
         if: always()
         run: |
-          echo '=== final container state ==='
-          docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
-          echo '=== final POKEROL logs ==='
-          docker logs pokerol-smoke-run || true
+          {
+            echo '=== final container state ==='
+            docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
+            echo '=== final POKEROL logs ==='
+            docker logs pokerol-smoke-run || true
+          } > /tmp/pokerol-final-diagnostics.txt 2>&1
+          cat /tmp/pokerol-final-diagnostics.txt
+
+      - name: Upload final diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokerol-final-diagnostics
+          path: /tmp/pokerol-final-diagnostics.txt
+          if-no-files-found: warn
+          retention-days: 1
