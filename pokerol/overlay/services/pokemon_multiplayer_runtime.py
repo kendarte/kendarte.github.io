@@ -4,18 +4,8 @@ from copy import deepcopy
 from time import time
 
 from services.pokemon_battle_engine import normalize_pokemon
-from services.pokemon_multibattle_engine import (
-    human_order_requirements,
-    resolve_locked_round,
-    validate_order,
-)
-from services.pokemon_multiplayer_session_engine import (
-    MULTI_SESSION_BUILD,
-    actor_from_dbref,
-    emit_session,
-    public_session,
-    session_for_actor,
-)
+from services.pokemon_multibattle_engine import human_order_requirements, resolve_locked_round, validate_order
+from services.pokemon_multiplayer_session_engine import actor_from_dbref, emit_session, public_session, session_for_actor
 from services.pokemon_party_engine import (
     able_party_slots,
     active_slot,
@@ -26,7 +16,7 @@ from services.pokemon_party_engine import (
 from typeclasses.pokemon_battle_session import participant_id
 
 
-MULTI_RUNTIME_BUILD = "0.1.0-lockin-switch-runtime"
+MULTI_RUNTIME_BUILD = "0.1.1-switch-turn-runtime"
 
 
 def _dict(value):
@@ -104,6 +94,7 @@ def _mark_forced_switches(session):
     """Mark fainted human actives that still have able reserves."""
     combatants = _list(session.db.combatants)
     required = []
+    was_complete = _text(session.db.status).upper() == "COMPLETE"
     for index, raw in enumerate(combatants):
         row = _dict(raw)
         if _text(row.get("controller_kind")).upper() != "HUMAN":
@@ -129,8 +120,10 @@ def _mark_forced_switches(session):
             required.append(pid)
     session.db.combatants = combatants
     if required:
-        # A temporary apparent winner caused only by fainted active Pokémon is
-        # not final while a trainer can legally replace it.
+        # If resolve_locked_round stopped on an apparent winner, it did not yet
+        # advance the turn. Do it here once before the replacement phase.
+        if was_complete:
+            session.db.turn = max(1, _int(session.db.turn, 1)) + 1
         session.db.status = "ACTIVE"
         session.db.phase = "SWITCH"
         session.db.winning_team = ""
@@ -159,14 +152,12 @@ def submit_multiplayer_order(actor, order):
     if _text(session.db.phase).upper() != "COMMAND":
         return {"accepted": False, "status": "NOT_COMMAND_PHASE", "phase": session.db.phase, "build": MULTI_RUNTIME_BUILD}
     pid = participant_id(actor)
-    state = session.snapshot()
-    validation = validate_order(state, pid, order)
+    validation = validate_order(session.snapshot(), pid, order)
     if not validation.get("accepted"):
         return {**validation, "build": MULTI_RUNTIME_BUILD}
     pending = _dict(session.db.pending_orders)
     pending[pid] = _clone(validation.get("order"))
     session.write_orders(pending)
-
     participants = _list(session.db.participants)
     for index, raw in enumerate(participants):
         row = _dict(raw)
@@ -176,7 +167,6 @@ def submit_multiplayer_order(actor, order):
             break
     session.write_participants(participants)
     session.append_log("ORDER_LOCKED", f"{actor.key} fija su orden.", participant_id=pid, turn=session.db.turn)
-
     required = human_order_requirements(session.snapshot())
     missing = [required_pid for required_pid in required if not _dict(pending.get(required_pid))]
     if missing:
@@ -188,7 +178,6 @@ def submit_multiplayer_order(actor, order):
             "session": public_session(session, actor),
             "build": MULTI_RUNTIME_BUILD,
         }
-
     result = resolve_locked_round(session.snapshot(), pending)
     if not result.get("accepted"):
         emit_session(session, event="STATE")
@@ -229,7 +218,6 @@ def submit_multiplayer_switch(actor, slot):
     switched = set_active_slot(actor, target_slot, require_able=True)
     if not switched.get("accepted"):
         return {"accepted": False, "status": switched.get("status"), "build": MULTI_RUNTIME_BUILD}
-
     incoming = normalize_pokemon(profile, side=row.get("team") or "A")
     old_name = _text(_dict(row.get("pokemon")).get("name"))
     row["combatant_id"] = _text(incoming.get("entity_id"))
@@ -239,7 +227,6 @@ def submit_multiplayer_switch(actor, slot):
     row.pop("available_switch_slots", None)
     combatants[index] = row
     session.write_combatants(combatants)
-
     participants = _list(session.db.participants)
     for pindex, raw in enumerate(participants):
         participant = _dict(raw)
@@ -249,7 +236,6 @@ def submit_multiplayer_switch(actor, slot):
             break
     session.write_participants(participants)
     session.append_log("SWITCH", f"{actor.key} reemplaza a {old_name} por {incoming.get('name')}.", participant_id=pid, combatant_id=row["combatant_id"])
-
     remaining = [
         _text(_dict(raw).get("controller_participant_id"))
         for raw in _list(session.db.combatants)
@@ -259,9 +245,8 @@ def submit_multiplayer_switch(actor, slot):
         session.db.phase = "COMMAND"
         session.db.status = "ACTIVE"
         session.db.pending_orders = {}
-        session.db.turn = max(1, _int(session.db.turn, 1)) + 1
         session.db.updated_at = int(time())
-        session.append_log("COMMAND", "Todos los reemplazos están listos. Comienza el siguiente turno.")
+        session.append_log("COMMAND", "Todos los reemplazos están listos. Continúa el turno compartido.")
         emit_session(session, event="ROUND")
         return {"accepted": True, "status": "ALL_SWITCHES_RESOLVED", "session": public_session(session, actor), "build": MULTI_RUNTIME_BUILD}
     emit_session(session, event="SWITCH_REQUIRED")
