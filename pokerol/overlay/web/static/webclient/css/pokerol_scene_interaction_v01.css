@@ -1,0 +1,25 @@
+/* Scene-first interaction: dialogue is text only; world actions live on the scene. */
+.pkContextActions{display:none!important}
+.pkDialogueBox{grid-template-rows:auto minmax(0,1fr)!important;min-height:76px!important;max-height:108px!important}
+.pkDialogueText{min-height:42px!important}
+
+.pkActionHotspot{z-index:8!important;min-width:0!important;filter:drop-shadow(0 3px 1px rgba(0,0,0,.28))!important}
+.pkActionHotspotMarker{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:2px solid var(--pk-ink);background:rgba(240,244,211,.94);color:var(--pk-ink);font:700 10px/1 var(--pk-copy);box-shadow:1px 1px 0 var(--pk-dark)}
+.pkActionHotspot[data-kind="EXIT"] .pkActionHotspotMarker{border-radius:50%;background:#fff6a8}
+.pkActionHotspot .pkActorLabel{max-width:150px;background:rgba(240,244,211,.92);padding:3px 5px;font-size:5px}
+.pkActionHotspot:hover .pkActionHotspotMarker{background:var(--pk-ink);color:var(--pk-paper)}
+
+/* Editor windows are movable by their headers. */
+.pkEditorDragHandle{cursor:move!important;touch-action:none;user-select:none}
+.pkEditorDragHandle strong::after{content:'  · ARRASTRAR';font:400 5px/1 var(--pk-font);opacity:.55}
+.pkEditMenu,.pkHotspotPanel,.pkPlayerPanel{max-height:calc(100% - 12px);overflow:auto}
+
+/* Keep hotspot edit mode readable even for action hotspots. */
+.pkStage.pkHotspotEditing .pkActionHotspot{outline-color:#fff36a!important}
+.pkStage.pkHotspotEditing .pkActionHotspotMarker{background:#fff6a8}
+
+@media(max-width:760px){
+  .pkDialogueBox{min-height:70px!important;max-height:96px!important}
+  .pkActionHotspotMarker{width:20px;height:20px;font-size:8px}
+  .pkActionHotspot .pkActorLabel{max-width:110px;font-size:4px}
+}
