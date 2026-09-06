@@ -11,14 +11,13 @@ from services.pokemon_battle_position_engine import (
     position_accuracy_multiplier,
     position_speed_multiplier,
 )
+from services.pokemon_battle_reaction_engine import reaction_accuracy_multiplier
 
 
-STATUS_BUILD = "0.2.0-status-position-runtime"
+STATUS_BUILD = "0.3.0-status-position-reaction-runtime"
 MAJOR_STATUSES = {"OK", "BURN", "POISON", "PARALYSIS", "SLEEP", "FREEZE"}
 STAGE_KEYS = ("ATK", "DEF", "SPA", "SPD", "SPE", "ACC", "EVA")
 
-# Backward-compatible effects for the first Kanto catalog. New authored moves can
-# provide battle_effects directly and bypass this table.
 DEFAULT_MOVE_EFFECTS = {
     "EMBER": [{"kind": "STATUS", "target": "ENEMY", "status": "BURN", "chance": 0.10}],
     "POISON-STING": [{"kind": "STATUS", "target": "ENEMY", "status": "POISON", "chance": 0.30}],
@@ -68,7 +67,6 @@ def _float(value, default=0.0):
 
 
 def normalize_battle_conditions(pokemon):
-    """Return a mutable battle-ready Pokémon condition packet."""
     p = pokemon
     status = _text(p.get("status")).upper() or "OK"
     if status not in MAJOR_STATUSES:
@@ -91,13 +89,15 @@ def accuracy_multiplier(attacker, defender):
     a = _dict(_dict(attacker).get("battle_stages")).get("ACC", 0)
     e = _dict(_dict(defender).get("battle_stages")).get("EVA", 0)
     stage = stage_multiplier(_int(a, 0) - _int(e, 0))
-    return max(0.20, min(3.0, stage * position_accuracy_multiplier(attacker, defender)))
+    value = stage * position_accuracy_multiplier(attacker, defender)
+    value *= reaction_accuracy_multiplier(attacker, defender)
+    return max(0.20, min(3.0, value))
 
 
 def effective_stat(pokemon, stat):
     key = _text(stat).upper()
     base = max(1, _int(_dict(_dict(pokemon).get("stats")).get(key), 1))
-    stage = _int(_dict(_dict(pokemon).get("battle_stages")).get(key), 0)
+    stage = _int(_dict(_dict(pokemon).get("battle_stages")).get(key, 0))
     value = base * stage_multiplier(stage)
     status = _text(_dict(pokemon).get("status")).upper()
     if key == "ATK" and status == "BURN":
@@ -126,7 +126,6 @@ def _effect_chance(effect):
 
 
 def apply_move_effects(attacker, defender, move, rng):
-    """Apply battle-only effects after a successful move and return log packets."""
     events = []
     for effect in authored_effects(move):
         if rng.random() > _effect_chance(effect):
@@ -176,7 +175,6 @@ def apply_move_effects(attacker, defender, move, rng):
 
 
 def before_action(pokemon, rng):
-    """Return whether the Pokémon may act this turn and mutate transient counters."""
     normalize_battle_conditions(pokemon)
     name = _text(pokemon.get("name") or pokemon.get("species_name")) or "Pokémon"
     status = _text(pokemon.get("status")).upper()
@@ -223,7 +221,6 @@ def before_action(pokemon, rng):
 
 
 def end_turn_effects(pokemon, opponent=None):
-    """Apply residual major/volatile effects. Returns events and optional drain amount."""
     normalize_battle_conditions(pokemon)
     name = _text(pokemon.get("name") or pokemon.get("species_name")) or "Pokémon"
     events = []
