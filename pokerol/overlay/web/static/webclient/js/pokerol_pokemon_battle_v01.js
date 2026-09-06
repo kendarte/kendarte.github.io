@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var BUILD="0.2.1-red-plus-party-bag";
+var BUILD="0.2.2-red-plus-forced-switch";
 var state=null;
 var menuMode="ACTION";
 function byId(id){return document.getElementById(id)}
@@ -9,6 +9,7 @@ function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
 function esc(v){return text(v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]})}
 function pct(cur,max){max=Math.max(1,Number(max)||1);return Math.max(0,Math.min(100,(Number(cur)||0)/max*100))}
 function battleReady(){return !!state&&text(state.status)==="ACTIVE"&&text(state.phase)==="COMMAND"}
+function forcedSwitch(){return !!(state&&state.forced_switch)}
 function ensure(){
   var root=byId("pokerol-pokemon-battle");
   if(root)return root;
@@ -56,10 +57,15 @@ function outcomeText(v){
   return map[text(v).toUpperCase()]||text(v)||"BATALLA TERMINADA";
 }
 function menuTitle(value){
+  if(forcedSwitch()&&value==="PARTY")return "ELIGE REEMPLAZO";
   var map={ACTION:"¿QUÉ HARÁ?",MOVE:"ELIGE MOVIMIENTO",PARTY:"POKÉMON",BAG:"BOLSA"};
   return map[value]||"ORDEN";
 }
-function setMenuMode(next){menuMode=next;renderMenu()}
+function setMenuMode(next){
+  if(forcedSwitch()&&next!=="PARTY")next="PARTY";
+  menuMode=next;
+  renderMenu();
+}
 function partyRows(){return state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[]}
 function bagItems(){return state&&state.bag_state&&state.bag_state.items&&typeof state.bag_state.items==="object"?state.bag_state.items:{}}
 function partySlotHtml(p,disabled){
@@ -75,6 +81,7 @@ function itemLabel(itemId){return text(itemId).replace(/_/g,' ')}
 function isBall(itemId){return /_BALL$/i.test(text(itemId))}
 function renderMenu(){
   ensure();
+  if(forcedSwitch())menuMode="PARTY";
   var body=byId("pkb-menu-body");
   if(!body)return;
   byId("pkb-menu-title").textContent=menuTitle(menuMode);
@@ -88,9 +95,11 @@ function renderMenu(){
   }
   if(menuMode==="PARTY"){
     var party=partyRows();
-    body.innerHTML='<div class="pkbPartyList">'+(party.length?party.map(function(p){return partySlotHtml(p,disabled)}).join(''):'<div class="pkbStubText">NO HAY PARTY PERSISTENTE. Usa entrenador-prueba para validar el runtime.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    var intro=forcedSwitch()?'<div class="pkbStubText">TU POKÉMON ESTÁ FUERA DE COMBATE. ELIGE OTRO POKÉMON CAPAZ DE CONTINUAR.</div>':'';
+    var back=forcedSwitch()?'':'<button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    body.innerHTML=intro+'<div class="pkbPartyList">'+(party.length?party.map(function(p){return partySlotHtml(p,disabled)}).join(''):'<div class="pkbStubText">NO HAY PARTY PERSISTENTE.</div>')+'</div>'+back;
     Array.prototype.forEach.call(body.querySelectorAll("[data-slot]"),function(btn){btn.onclick=function(){sendAction({type:"SWITCH",slot:Number(btn.getAttribute("data-slot"))})}});
-    byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
+    var partyBack=byId("pkb-back");if(partyBack)partyBack.onclick=function(){setMenuMode("ACTION")};
     return;
   }
   if(menuMode==="BAG"){
@@ -115,9 +124,11 @@ function renderMenu(){
 }
 function render(packet){
   state=clone(packet||{});
+  if(forcedSwitch())menuMode="PARTY";
   var root=ensure();
   root.setAttribute("data-open","true");
   root.setAttribute("data-complete",text(state.status)==="COMPLETE"?"true":"false");
+  root.setAttribute("data-forced-switch",forcedSwitch()?"true":"false");
   var site=state.site||{};
   var scene=root.querySelector(".pkbScene");
   if(scene){
@@ -125,7 +136,7 @@ function render(packet){
     scene.style.backgroundImage=bg?'linear-gradient(180deg,rgba(23,32,22,.03),rgba(23,32,22,.3)),url("'+bg.replace(/"/g,'%22')+'")':'';
   }
   byId("pkb-site").textContent=text(site.name)||"POKEROL";
-  byId("pkb-phase").textContent=text(state.phase)||"COMMAND";
+  byId("pkb-phase").textContent=forcedSwitch()?"SWITCH":(text(state.phase)||"COMMAND");
   byId("pkb-turn").textContent="TURNO "+(state.turn||1);
   byId("pkb-player-info").innerHTML=infoHtml(state.player||{});
   byId("pkb-enemy-info").innerHTML=infoHtml(state.enemy||{});
@@ -148,6 +159,7 @@ function encode(value){
 }
 function sendAction(action){
   if(!battleReady())return;
+  if(forcedSwitch()&&text(action&&action.type)!=="SWITCH")return;
   if(!window.Evennia||!Evennia.isConnected())return;
   disableCommands();
   Evennia.msg("text",["pokerol-battle-action "+encode(action)],{});
@@ -158,14 +170,14 @@ function disableCommands(){
 }
 function closeBattle(){
   var root=ensure();
-  root.removeAttribute("data-open");root.removeAttribute("data-complete");
+  root.removeAttribute("data-open");root.removeAttribute("data-complete");root.removeAttribute("data-forced-switch");
   state=null;menuMode="ACTION";
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION");
 }
 function onState(args){
   var packet=args&&args[0];
   if(!packet||typeof packet!=="object")return;
-  if(text(packet.event)==="START"||text(packet.event)==="ROUND")menuMode="ACTION";
+  menuMode=packet.forced_switch?"PARTY":"ACTION";
   if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("COMBAT");
   render(packet);
 }
@@ -177,7 +189,7 @@ function onError(args){
 }
 function onKey(event){
   if(!state||!byId("pokerol-pokemon-battle")||byId("pokerol-pokemon-battle").getAttribute("data-open")!=="true")return;
-  if(event.key==="Escape"&&menuMode!=="ACTION"){event.preventDefault();setMenuMode("ACTION")}
+  if(event.key==="Escape"&&menuMode!=="ACTION"&&!forcedSwitch()){event.preventDefault();setMenuMode("ACTION")}
 }
 function init(){
   ensure();document.addEventListener("keydown",onKey);
