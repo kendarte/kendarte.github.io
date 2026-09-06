@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.0-room-event-editor';
+  var BUILD='0.1.1-room-event-editor';
   var state={events:[],room_id:'',room_name:''};
   var selectedId='';
   var emitterBound=false;
@@ -72,7 +72,7 @@
               +'<label>DESCRIPCIÓN<textarea id="pk-event-description" rows="3" maxlength="6000"></textarea></label>'
               +'<div id="pk-event-stages-wrap" class="pkEventSection"><strong>FLUJO / ESTADOS</strong><div id="pk-event-stages" class="pkEventStages"></div></div>'
               +'<div id="pk-event-oak-settings" class="pkEventSection" hidden><strong>CONFIGURACIÓN DEL INICIO</strong><div class="pkEventTwo"><label>NIVEL DE LOS STARTERS<input id="pk-event-starter-level" type="number" min="1" max="100" step="1"></label><div><span class="pkEventMiniLabel">STARTERS DISPONIBLES</span><label class="pkEventCheck"><input class="pk-event-starter-choice" value="bulbasaur" type="checkbox"> Bulbasaur</label><label class="pkEventCheck"><input class="pk-event-starter-choice" value="charmander" type="checkbox"> Charmander</label><label class="pkEventCheck"><input class="pk-event-starter-choice" value="squirtle" type="checkbox"> Squirtle</label></div></div><div class="pkEventHint">El rival conserva la regla COUNTER. Cambiar estos valores modifica el evento real, no una copia del navegador.</div></div>'
-              +'<div id="pk-event-world-settings" class="pkEventSection" hidden><strong>CONDICIÓN WORLD EVENT</strong><div class="pkEventThree"><label>CAMPO<input id="pk-event-world-field" type="text"></label><label>OPERADOR<select id="pk-event-world-op"><option value="eq">=</option><option value="ne">!=</option><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option></select></label><label>VALOR<input id="pk-event-world-value" type="text"></label></div><label>ACTIVIDAD / RESPUESTA<input id="pk-event-world-activity" type="text" maxlength="1000"></label><div class="pkEventTwo"><label>AWARENESS<select id="pk-event-world-awareness"><option>AUDIENCE</option><option>ROOM</option><option>VISIBLE</option><option>DIRECT</option></select></label><label class="pkEventCheck pkEventInlineCheck"><input id="pk-event-world-blocks" type="checkbox"> BLOQUEA JOBS</label></div><div id="pk-event-world-state" class="pkEventHint"></div></div>'
+              +'<div id="pk-event-world-settings" class="pkEventSection" hidden><strong>CONDICIÓN WORLD EVENT</strong><div class="pkEventThree"><label>CAMPO<input id="pk-event-world-field" type="text"></label><label>OPERADOR<select id="pk-event-world-op"><option value="eq">=</option><option value="ne">!=</option><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option></select></label><label>VALOR<input id="pk-event-world-value" type="text"></label></div><label>ACTIVIDAD / RESPUESTA<input id="pk-event-world-activity" type="text" maxlength="1000"></label><div class="pkEventTwo"><label>AWARENESS<select id="pk-event-world-awareness"><option>AUDIENCE</option><option>LOCAL</option></select></label><label class="pkEventCheck pkEventInlineCheck"><input id="pk-event-world-blocks" type="checkbox"> BLOQUEA JOBS</label></div><div id="pk-event-world-state" class="pkEventHint"></div></div>'
               +'<div id="pk-event-texts-wrap" class="pkEventSection"><strong>DIÁLOGOS / TEXTO DEL EVENTO</strong><div id="pk-event-texts"></div></div>'
               +'<div class="pkEventActions"><button id="pk-event-save" type="button" class="pkEventPrimary">GUARDAR EVENTO</button><button id="pk-event-reset" type="button">RESTABLECER</button></div>'
             +'</div>'
@@ -118,7 +118,16 @@
 
   function selectEvent(id){selectedId=clean(id);Array.from(document.querySelectorAll('.pkEventListItem')).forEach(function(n){n.classList.toggle('pkSelected',n.dataset.eventId===selectedId)});renderCurrent()}
 
-  function setSelect(id,value){var n=byId(id);if(!n)return;var wanted=clean(value).toUpperCase();var found=Array.from(n.options).some(function(o){return clean(o.value||o.textContent).toUpperCase()===wanted});if(!found&&wanted){var opt=document.createElement('option');opt.value=wanted;opt.textContent=wanted;n.appendChild(opt)}n.value=wanted}
+  function setSelect(id,value){
+    var n=byId(id);if(!n)return;
+    var wanted=clean(value).toUpperCase(),match=null;
+    Array.from(n.options).some(function(o){
+      if(clean(o.value||o.textContent).toUpperCase()===wanted){match=o;return true}
+      return false;
+    });
+    if(!match&&wanted){match=document.createElement('option');match.value=clean(value)||wanted;match.textContent=clean(value)||wanted;n.appendChild(match)}
+    if(match)n.value=match.value;
+  }
   function setValue(id,value){var n=byId(id);if(n)n.value=value==null?'':String(value)}
   function setChecked(id,value){var n=byId(id);if(n)n.checked=!!value}
 
