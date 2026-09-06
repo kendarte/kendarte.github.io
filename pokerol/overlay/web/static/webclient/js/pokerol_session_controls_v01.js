@@ -1,14 +1,30 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.0-logout-control';
+  var BUILD='0.1.1-real-logout';
   var leaving=false;
 
   function byId(id){return document.getElementById(id)}
 
+  function markManualLogout(){
+    try{
+      sessionStorage.setItem('pokerol.manual_logout','1');
+      localStorage.removeItem('pokerol.last_user');
+    }catch(e){}
+  }
+
+  function goToLogin(){
+    var path=(window.location&&window.location.pathname)||'/webclient/';
+    if(!/\/webclient\/?$/i.test(path))path='/webclient/';
+    var target=path+'?pokerol_logout='+Date.now();
+    try{window.location.replace(target)}catch(e){window.location.href=target}
+  }
+
   function doLogout(){
     if(leaving)return;
     leaving=true;
+    markManualLogout();
+
     var button=byId('pk-logout');
     if(button){button.disabled=true;button.textContent='SALIENDO…'}
 
@@ -18,9 +34,12 @@
       }
     }catch(e){}
 
-    setTimeout(function(){
-      try{window.location.reload()}catch(e){window.location.href=window.location.href}
-    },900);
+    /*
+     * Do not reload immediately. The old 900 ms reload could reconnect the
+     * browser before Evennia had fully torn down the authenticated session,
+     * which made the last trainer appear to auto-login again.
+     */
+    setTimeout(goToLogin,2600);
   }
 
   function inject(){
