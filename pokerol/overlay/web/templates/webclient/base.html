@@ -18,7 +18,7 @@
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_event_editor_v01.css' %}?v=20260906-eventedit1">
 
   {% block jquery_import %}
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDXv5cMvDHcMakNTNrHIW2I5f" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
   {% endblock %}
 
   <script>
@@ -67,10 +67,15 @@
   <div id="clientwrapper" class="d-none">{% block client %}{% endblock %}</div>
 
   <script>
-    $(document).ready(function(){
-      $('#noscript').remove();
-      $('#clientwrapper').removeClass('d-none');
-    });
+    (function(){
+      function revealClient(){
+        var noScript=document.getElementById('noscript');
+        if(noScript&&noScript.parentNode)noScript.parentNode.removeChild(noScript);
+        var wrapper=document.getElementById('clientwrapper');
+        if(wrapper)wrapper.classList.remove('d-none');
+      }
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',revealClient);else revealClient();
+    })();
   </script>
 </body>
 </html>
