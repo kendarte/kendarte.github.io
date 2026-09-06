@@ -15,7 +15,6 @@ SECTION_MARKERS = (
     "SIZA Scene Image:",
 )
 
-
 PLACEHOLDER_PREFIXES = (
     "the current location will be described here.",
     "the current location will be described here",
@@ -94,16 +93,49 @@ class Room(DefaultRoom):
         self.db.world_state = {}
         self.db.state_presentations = []
 
+    def _scene_image_metadata(self):
+        raw = getattr(self.db, "scene_image", {})
+        try:
+            image = dict(raw or {})
+        except (TypeError, ValueError):
+            return ""
+
+        def plain(value):
+            return str(value or "").replace("\r", "").replace("\n", "").strip()
+
+        src = plain(image.get("src"))
+        if not src:
+            return ""
+        position = plain(image.get("position")) or "center center"
+        fit = plain(image.get("fit")) or "cover"
+        alt = plain(image.get("alt"))
+        return "\n".join(
+            (
+                f"SIZA Scene Image: {src}",
+                f"SIZA Scene Position: {position}",
+                f"SIZA Scene Fit: {fit}",
+                f"SIZA Scene Alt: {alt}",
+            )
+        )
+
     def filter_visible(self, obj_list, looker, **kwargs):
         """Preserve Evennia visibility locks, then apply optional Siza world_state visibility gates."""
         visible = super().filter_visible(obj_list, looker, **kwargs)
         return [obj for obj in visible if object_visible_in_world_state(obj, site=self)]
 
     def return_appearance(self, looker, **kwargs):
-        """Return only narrative prose.
+        """Keep Evennia room metadata for buttons, but clean prose.
 
-        NPCs, objects and exits stay available through Room State packets and
-        action buttons. They are not printed inside the observation text.
+        The webclient still needs Exits/Characters/You see metadata to build
+        buttons. Only the room's authored prose is stripped of entity lists.
         """
-        text = _description_only(getattr(self.db, "desc", ""))
-        return text or "Este lugar todavía no tiene descripción narrativa importada desde el Map Editor."
+        base = super().return_appearance(looker, **kwargs)
+        raw_desc = str(getattr(self.db, "desc", "") or "")
+        clean_desc = _description_only(raw_desc)
+        if raw_desc and clean_desc and clean_desc != raw_desc and raw_desc in base:
+            base = base.replace(raw_desc, clean_desc, 1)
+        elif raw_desc and not clean_desc and raw_desc in base:
+            base = base.replace(raw_desc, "", 1)
+
+        metadata = self._scene_image_metadata()
+        return f"{base}\n{metadata}" if metadata else base
