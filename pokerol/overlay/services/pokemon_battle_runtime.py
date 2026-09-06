@@ -15,9 +15,14 @@ from services.pokemon_battle_engine import (
     BATTLE_BUILD,
     COMPLETE_STATUS,
     create_battle,
+    move_by_id,
     normalize_pokemon,
     public_battle_state,
     resolve_player_action,
+)
+from services.pokemon_battle_environment_engine import (
+    environment_targets,
+    execute_battle_environment_request,
 )
 from services.pokemon_party_engine import (
     able_party_slots,
@@ -32,7 +37,7 @@ from services.pokemon_party_engine import (
 )
 
 
-RUNTIME_BUILD = "0.4.0-battle-items"
+RUNTIME_BUILD = "0.5.0-anime-environment-bridge"
 
 
 def _dict(value):
@@ -87,6 +92,7 @@ def _public_state(actor, battle):
             packet.pop(key, None)
     packet["party_state"] = party_state(actor)
     packet["bag_state"] = bag_state(actor)
+    packet["environment_targets"] = environment_targets(actor)
     return packet
 
 
@@ -199,13 +205,10 @@ def _switch_action(actor, battle, action):
     })
     if forced:
         return {"accepted": True, "status": "FORCED_SWITCH_RESOLVED", "battle": next_state, "enemy_action": None, "build": BATTLE_BUILD}
-
-    result = resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
-    return result
+    return resolve_player_action(next_state, {"type": "FREE_ORDER", "switch_slot": target_slot})
 
 
 def _support_item_action(actor, battle, action):
-    """Validate/apply/consume a support item, then spend the turn and let the enemy answer."""
     item_id = _text(_dict(action).get("item_id")).upper()
     if not item_id:
         return {"accepted": False, "status": "ITEM_ID_REQUIRED", "build": RUNTIME_BUILD}
@@ -229,7 +232,6 @@ def _support_item_action(actor, battle, action):
     effect = apply_battle_item(item_id, target, move_id=_text(_dict(action).get("move_id")))
     if not effect.get("accepted"):
         return {**effect, "build": RUNTIME_BUILD}
-
     consumed = consume_item(actor, item_id, 1)
     if not consumed.get("accepted"):
         return {"accepted": False, "status": consumed.get("status"), "item_id": item_id, "build": RUNTIME_BUILD}
@@ -237,7 +239,6 @@ def _support_item_action(actor, battle, action):
     mutated = _dict(effect.get("pokemon"))
     next_state = _clone(battle)
     if active_target:
-        # Preserve current battle stages/volatile state carried by the battle packet.
         next_state["player"] = mutated
     else:
         stored = set_party_slot_profile(actor, target_slot, mutated)
@@ -245,19 +246,70 @@ def _support_item_action(actor, battle, action):
             return {"accepted": False, "status": stored.get("status"), "item_id": item_id, "build": RUNTIME_BUILD}
 
     next_state.setdefault("log", []).append({
-        "turn": next_state.get("turn", 1),
-        "phase": "ACTION",
-        "kind": "ITEM",
-        "text": effect.get("text") or f"Usas {item_id}.",
-        "item_id": item_id,
-        "party_slot": target_slot,
-        "move_id": _text(_dict(action).get("move_id")) or None,
+        "turn": next_state.get("turn", 1), "phase": "ACTION", "kind": "ITEM",
+        "text": effect.get("text") or f"Usas {item_id}.", "item_id": item_id,
+        "party_slot": target_slot, "move_id": _text(_dict(action).get("move_id")) or None,
     })
     result = resolve_player_action(next_state, {"type": "FREE_ORDER", "item_id": item_id, "party_slot": target_slot})
     if result.get("accepted"):
         result["item_result"] = _clone(effect)
         result["item_consumed"] = _clone(consumed)
     return result
+
+
+def _resolve_pending_world_requests(actor, battle):
+    requests = _list(battle.get("world_requests"))
+    if not requests:
+        return []
+    player = _dict(battle.get("player"))
+    resolved_rows = []
+    for raw in requests:
+        request = _dict(raw)
+        if _text(request.get("status")) != "PENDING_WORLD_RESOLUTION":
+            resolved_rows.append(request)
+            continue
+        if _text(request.get("actor_entity_id")) != _text(player.get("entity_id")):
+            request["status"] = "WORLD_ACTOR_NOT_SUPPORTED"
+            request["resolution"] = {"executed": False, "status": "WORLD_ACTOR_NOT_SUPPORTED"}
+            resolved_rows.append(request)
+            continue
+        move = move_by_id(player, request.get("move_id"))
+        if not move:
+            request["status"] = "WORLD_MOVE_MISSING"
+            request["resolution"] = {"executed": False, "status": "WORLD_MOVE_MISSING"}
+            resolved_rows.append(request)
+            continue
+
+        result = execute_battle_environment_request(actor, player, move, request)
+        executed = bool(result.get("executed"))
+        request["status"] = "WORLD_EXECUTED" if executed else "WORLD_REJECTED"
+        request["resolution"] = {
+            "executed": executed,
+            "status": result.get("status"),
+            "target_dbref": result.get("target_dbref"),
+            "persisted_target_state": _clone(_dict(result.get("persisted_target_state"))),
+            "events": _clone(_list(result.get("events"))),
+            "area_impacts": _clone(_list(result.get("area_impacts"))),
+            "persisted_area_impacts": _clone(_list(result.get("persisted_area_impacts"))),
+        }
+        target_spec = _dict(request.get("world_target"))
+        target_name = _text(target_spec.get("name") or target_spec.get("object_id")) or "el entorno"
+        if executed:
+            battle.setdefault("log", []).append({
+                "turn": request.get("turn"), "phase": "RESOLUTION", "kind": "WORLD_EFFECT",
+                "text": f"El efecto físico alcanza {target_name}.", "request_id": request.get("request_id"),
+                "world_status": result.get("status"),
+            })
+        else:
+            battle.setdefault("log", []).append({
+                "turn": request.get("turn"), "phase": "RESOLUTION", "kind": "WORLD_EFFECT_REJECTED",
+                "text": f"La interacción con {target_name} no produce un efecto físico válido.",
+                "request_id": request.get("request_id"), "world_status": result.get("status"),
+            })
+        resolved_rows.append(request)
+    battle["world_requests"] = resolved_rows[-80:]
+    battle["last_world_resolution"] = _clone(resolved_rows[-1].get("resolution")) if resolved_rows else None
+    return resolved_rows
 
 
 def _basic_action_gate(battle, requested_kind=""):
@@ -349,6 +401,7 @@ def submit_player_battle_action(actor, action):
         return {**result, "build": RUNTIME_BUILD}
 
     next_battle = _dict(result.get("battle"))
+    _resolve_pending_world_requests(actor, next_battle)
     update_owned_from_battle(actor, _dict(next_battle.get("player")))
     _promote_forced_switch_if_possible(actor, next_battle)
 
