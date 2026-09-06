@@ -3,7 +3,7 @@
 
     if (window.SizaObservationNarrativeOnlyV01) return;
 
-    var BUILD = "20260905-observation-narrative-only-v1";
+    var BUILD = "20260905-observation-narrative-only-v2-buttons-safe";
     var MARKERS = [
         "Personas presentes:",
         "Personas:",
@@ -29,9 +29,9 @@
     }
 
     function removePlaceholder(text) {
-        var value = cleanBlock(text);
-        value = value.replace(/^\s*the current location will be described here\.??\s*(?:[-–—_]{3,}\s*)?/i, "").trim();
-        return value;
+        return cleanBlock(text)
+            .replace(/^\s*the current location will be described here\.??\s*(?:[-–—_]{3,}\s*)?/i, "")
+            .trim();
     }
 
     function narrativeOnly(value) {
@@ -58,6 +58,7 @@
 
     function apply() {
         setNodeNarrativeOnly(document.getElementById("siza-scene-description"));
+
         Array.prototype.forEach.call(document.querySelectorAll(".sizaBookLine"), function (node) {
             var text = cleanBlock(node.textContent || node.innerText || "");
             if (/\b(Personas presentes|Personas|A la vista|Ves|Salidas|Exits|Characters|You see)\s*:/i.test(text) || /the current location will be described here/i.test(text)) {
@@ -66,27 +67,7 @@
         });
     }
 
-    function hookSetText() {
-        var descriptor = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
-        if (!descriptor || !descriptor.set || !descriptor.get) return;
-        try {
-            Object.defineProperty(Node.prototype, "textContent", {
-                get: descriptor.get,
-                set: function (value) {
-                    if (this && (this.id === "siza-scene-description" || (this.classList && this.classList.contains("sizaBookLine")))) {
-                        descriptor.set.call(this, narrativeOnly(value));
-                    } else {
-                        descriptor.set.call(this, value);
-                    }
-                }
-            });
-        } catch (err) {
-            // Some browsers lock Node.prototype; interval fallback still cleans.
-        }
-    }
-
     function init() {
-        hookSetText();
         apply();
         window.setTimeout(apply, 50);
         window.setTimeout(apply, 250);
