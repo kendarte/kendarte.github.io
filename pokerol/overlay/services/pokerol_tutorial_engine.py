@@ -5,6 +5,11 @@ from copy import deepcopy
 from evennia import create_object
 from evennia.objects.models import ObjectDB
 
+from services.pokerol_event_editor_service import (
+    OAK_TUTORIAL_DEFAULT,
+    OAK_TUTORIAL_EVENT_ID,
+    get_room_event,
+)
 from services.pokemon_battle_runtime import current_battle, start_pokemon_battle
 from services.pokemon_party_engine import (
     add_pokemon,
@@ -16,7 +21,7 @@ from services.pokemon_party_engine import (
 from services.pokemon_species_registry import spawn_species_profile
 
 
-TUTORIAL_BUILD = "0.1.0-oak-starter-rival"
+TUTORIAL_BUILD = "0.2.0-event-editor-driven"
 LAB_ROOM_ID = "KANTO-PAL-002"
 OAK_NPC_ID = "NPC-KANTO-PAL-OAK"
 RIVAL_NPC_ID = "NPC-KANTO-PAL-RIVAL"
@@ -34,6 +39,11 @@ RIVAL_PICK = {
     "PKMN-007": "PKMN-001",
 }
 SPECIES_NAMES = {row["species_id"]: row["name"] for row in STARTERS.values()}
+
+
+class _SafeFormat(dict):
+    def __missing__(self, key):
+        return "{" + str(key) + "}"
 
 
 def _dict(value):
@@ -59,9 +69,54 @@ def _room_id(actor):
     return _text(getattr(getattr(room, "db", None), "room_id", ""))
 
 
+def _event_config(actor):
+    room = getattr(actor, "location", None) if actor else None
+    if room:
+        event = get_room_event(room, OAK_TUTORIAL_EVENT_ID)
+        if event:
+            return event
+    return deepcopy(OAK_TUTORIAL_DEFAULT)
+
+
+def _event_enabled(actor):
+    return bool(_event_config(actor).get("enabled", True))
+
+
+def _starter_slugs(actor):
+    settings = _dict(_event_config(actor).get("settings"))
+    configured = [_text(value).lower() for value in _list(settings.get("starter_choices"))]
+    valid = [slug for slug in configured if slug in STARTERS]
+    return valid or ["bulbasaur", "charmander", "squirtle"]
+
+
+def _starter_level(actor):
+    settings = _dict(_event_config(actor).get("settings"))
+    try:
+        return max(1, min(100, int(settings.get("starter_level", 5))))
+    except (TypeError, ValueError):
+        return 5
+
+
+def _starter_names_text(actor):
+    return ", ".join(STARTERS[slug]["name"] for slug in _starter_slugs(actor))
+
+
+def _event_line(actor, key, fallback, **values):
+    event = _event_config(actor)
+    texts = _dict(event.get("texts"))
+    raw = _text(texts.get(key)) or fallback
+    context = _SafeFormat(values)
+    context.setdefault("starters", _starter_names_text(actor))
+    try:
+        return raw.format_map(context)
+    except Exception:
+        return raw
+
+
 def _tutorial_defaults():
     return {
         "build": TUTORIAL_BUILD,
+        "event_id": OAK_TUTORIAL_EVENT_ID,
         "stage": "MEET_OAK",
         "starter_id": "",
         "starter_slot": None,
@@ -75,6 +130,7 @@ def _tutorial_defaults():
 def _write_state(actor, state):
     state = dict(state or {})
     state["build"] = TUTORIAL_BUILD
+    state["event_id"] = OAK_TUTORIAL_EVENT_ID
     actor.db.pokerol_tutorial = deepcopy(state)
     return state
 
@@ -130,11 +186,12 @@ def _ensure_one_npc(room, *, npc_id, key, desc, greeting, activity, scene_x, sce
 
 
 def ensure_tutorial_world(actor):
-    """Materialize Oak and Rival only when the player is actually in Oak's lab.
+    """Materialize Oak and Rival only when the event is enabled in Oak's lab.
 
-    Existing sprite, position, scale, name and authored text are preserved.
+    Existing sprite, position, scale, name and authored NPC text are preserved.
+    Event-specific dialogue is owned by the room event definition.
     """
-    if _room_id(actor) != LAB_ROOM_ID:
+    if _room_id(actor) != LAB_ROOM_ID or not _event_enabled(actor):
         return {}
     room = getattr(actor, "location", None)
     if not room:
@@ -181,6 +238,7 @@ def tutorial_state(actor, *, reconcile=True):
     state = _tutorial_defaults()
     state.update(_dict(getattr(actor.db, "pokerol_tutorial", {})) if actor else {})
     state["build"] = TUTORIAL_BUILD
+    state["event_id"] = OAK_TUTORIAL_EVENT_ID
 
     if reconcile and state.get("stage") == "BATTLE":
         battle = current_battle(actor)
@@ -206,6 +264,7 @@ def _emit_dialogue(actor, speaker, text):
     actor.msg(
         pokerol_tutorial_dialogue=(({
             "build": TUTORIAL_BUILD,
+            "event_id": OAK_TUTORIAL_EVENT_ID,
             "speaker": _text(speaker) or "NARRADOR",
             "text": _text(text),
         },), {})
@@ -218,7 +277,7 @@ def _npc_label(actor, npc_id, fallback):
 
 
 def tutorial_context_actions(actor):
-    if _room_id(actor) != LAB_ROOM_ID:
+    if _room_id(actor) != LAB_ROOM_ID or not _event_enabled(actor):
         return []
     ensure_tutorial_world(actor)
     state = tutorial_state(actor)
@@ -230,7 +289,7 @@ def tutorial_context_actions(actor):
         {"id": "TUTORIAL:RIVAL", "kind": "INTERACTION", "label": f"Hablar con {rival_name}", "command": "tutorial-rival", "target": rival_name},
     ]
     if state.get("stage") == "CHOOSE_STARTER":
-        for slug in ("bulbasaur", "charmander", "squirtle"):
+        for slug in _starter_slugs(actor):
             rows.append({
                 "id": "TUTORIAL:STARTER:" + slug.upper(),
                 "kind": "TUTORIAL",
@@ -252,6 +311,8 @@ def tutorial_context_actions(actor):
 def talk_oak(actor):
     if _room_id(actor) != LAB_ROOM_ID:
         return {"accepted": False, "status": "OAK_NOT_HERE", "build": TUTORIAL_BUILD}
+    if not _event_enabled(actor):
+        return {"accepted": False, "status": "TUTORIAL_DISABLED", "build": TUTORIAL_BUILD}
     npcs = ensure_tutorial_world(actor)
     state = tutorial_state(actor)
     oak = npcs.get("oak")
@@ -261,44 +322,71 @@ def talk_oak(actor):
     if stage == "MEET_OAK":
         state["stage"] = "CHOOSE_STARTER"
         _write_state(actor, state)
-        greeting = _text(getattr(getattr(oak, "db", None), "dialogue_greeting", "")) if oak else ""
-        intro = greeting or "Llegaste justo a tiempo. Antes de partir necesitas escoger a tu primer Pokémon."
-        _emit_dialogue(actor, oak_name, intro + " Sobre la mesa tienes a Bulbasaur, Charmander y Squirtle. Elige uno.")
+        line = _event_line(
+            actor,
+            "oak_intro",
+            "Llegaste justo a tiempo. Antes de partir necesitas escoger a tu primer Pokémon. Sobre la mesa tienes a {starters}. Elige uno.",
+        )
+        _emit_dialogue(actor, oak_name, line)
     elif stage == "CHOOSE_STARTER":
-        _emit_dialogue(actor, oak_name, "Los tres están listos. Bulbasaur, Charmander o Squirtle: la decisión es tuya.")
+        _emit_dialogue(
+            actor,
+            oak_name,
+            _event_line(actor, "oak_choose_again", "Los tres están listos. {starters}: la decisión es tuya."),
+        )
     elif stage == "RIVAL_CHALLENGE":
-        _emit_dialogue(actor, oak_name, "Ya tienes compañero. Ahora aprende a darle órdenes: tu rival quiere probarte aquí mismo.")
+        _emit_dialogue(
+            actor,
+            oak_name,
+            _event_line(actor, "oak_after_choice", "Ya tienes compañero. Ahora aprende a darle órdenes: tu rival quiere probarte aquí mismo."),
+        )
     elif stage == "BATTLE":
-        _emit_dialogue(actor, oak_name, "Concéntrate en tu Pokémon y observa lo que hace el rival. Esta es tu primera batalla como entrenador.")
+        _emit_dialogue(
+            actor,
+            oak_name,
+            _event_line(actor, "oak_battle", "Concéntrate en tu Pokémon y observa lo que hace el rival. Esta es tu primera batalla como entrenador."),
+        )
     else:
-        _emit_dialogue(actor, oak_name, "Bien hecho. Ganar o perder era secundario: ya diste el primer paso como entrenador Pokémon.")
+        _emit_dialogue(
+            actor,
+            oak_name,
+            _event_line(actor, "oak_complete", "Bien hecho. Ganar o perder era secundario: ya diste el primer paso como entrenador Pokémon."),
+        )
     return {"accepted": True, "status": "OAK_TALKED", "state": state, "build": TUTORIAL_BUILD}
 
 
 def talk_rival(actor):
     if _room_id(actor) != LAB_ROOM_ID:
         return {"accepted": False, "status": "RIVAL_NOT_HERE", "build": TUTORIAL_BUILD}
+    if not _event_enabled(actor):
+        return {"accepted": False, "status": "TUTORIAL_DISABLED", "build": TUTORIAL_BUILD}
     ensure_tutorial_world(actor)
     state = tutorial_state(actor)
     rival_name = _npc_label(actor, RIVAL_NPC_ID, "Rival")
     stage = _text(state.get("stage")).upper()
 
     if stage in {"MEET_OAK", "CHOOSE_STARTER"}:
-        _emit_dialogue(actor, rival_name, "Apúrate. Tú eliges primero; yo sabré cuál tomar después.")
+        line = _event_line(actor, "rival_wait", "Apúrate. Tú eliges primero; yo sabré cuál tomar después.")
     elif stage == "RIVAL_CHALLENGE":
         chosen = SPECIES_NAMES.get(_text(state.get("rival_starter_id")), "mi Pokémon")
-        _emit_dialogue(actor, rival_name, f"Yo me quedo con {chosen}. Ya que ambos tenemos Pokémon, ¡vamos a ver quién sabe usarlos mejor!")
+        line = _event_line(
+            actor,
+            "rival_challenge",
+            "Yo me quedo con {rival}. Ya que ambos tenemos Pokémon, ¡vamos a ver quién sabe usarlos mejor!",
+            rival=chosen,
+        )
     elif stage == "BATTLE":
-        _emit_dialogue(actor, rival_name, "¡Nada de echarte atrás ahora! La batalla ya empezó.")
+        line = _event_line(actor, "rival_battle", "¡Nada de echarte atrás ahora! La batalla ya empezó.")
     else:
         outcome = _text(state.get("outcome")).upper()
         if outcome == "PLAYER_WIN":
-            line = "Tch... esta vez ganaste. La próxima no te lo voy a dejar tan fácil."
+            line = _event_line(actor, "rival_player_win", "Tch... esta vez ganaste. La próxima no te lo voy a dejar tan fácil.")
         elif outcome == "PLAYER_LOSS":
-            line = "¿Ves? Tener un Pokémon no basta. Tendrás que entrenar si quieres alcanzarme."
+            line = _event_line(actor, "rival_player_loss", "¿Ves? Tener un Pokémon no basta. Tendrás que entrenar si quieres alcanzarme.")
         else:
-            line = "Eso estuvo más parejo de lo que esperaba. La próxima lo resolvemos de verdad."
-        _emit_dialogue(actor, rival_name, line)
+            line = _event_line(actor, "rival_draw", "Eso estuvo más parejo de lo que esperaba. La próxima lo resolvemos de verdad.")
+        
+    _emit_dialogue(actor, rival_name, line)
     return {"accepted": True, "status": "RIVAL_TALKED", "state": state, "build": TUTORIAL_BUILD}
 
 
@@ -363,6 +451,8 @@ def _starter_profile(species_id, *, level=5):
 def choose_starter(actor, choice):
     if _room_id(actor) != LAB_ROOM_ID:
         return {"accepted": False, "status": "NOT_IN_OAK_LAB", "build": TUTORIAL_BUILD}
+    if not _event_enabled(actor):
+        return {"accepted": False, "status": "TUTORIAL_DISABLED", "build": TUTORIAL_BUILD}
     ensure_tutorial_world(actor)
     state = tutorial_state(actor)
     if state.get("stage") != "CHOOSE_STARTER":
@@ -375,7 +465,7 @@ def choose_starter(actor, choice):
         "pkmn-007": "squirtle", "007": "squirtle", "7": "squirtle",
     }
     slug = raw if raw in STARTERS else aliases.get(raw, "")
-    if not slug:
+    if not slug or slug not in _starter_slugs(actor):
         return {"accepted": False, "status": "INVALID_STARTER", "build": TUTORIAL_BUILD}
 
     party = party_state(actor).get("party") or []
@@ -384,7 +474,8 @@ def choose_starter(actor, choice):
         return {"accepted": False, "status": "PARTY_FULL", "build": TUTORIAL_BUILD}
 
     starter_id = STARTERS[slug]["species_id"]
-    profile = _starter_profile(starter_id, level=5)
+    level = _starter_level(actor)
+    profile = _starter_profile(starter_id, level=level)
     if not profile:
         return {"accepted": False, "status": "STARTER_PROFILE_MISSING", "species_id": starter_id, "build": TUTORIAL_BUILD}
     added = add_pokemon(actor, profile, prefer_party=True)
@@ -407,14 +498,24 @@ def choose_starter(actor, choice):
 
     starter_name = SPECIES_NAMES.get(starter_id, starter_id)
     rival_name = SPECIES_NAMES.get(rival_id, rival_id)
-    _emit_dialogue(actor, _npc_label(actor, OAK_NPC_ID, "Profesor Oak"), f"Entonces {starter_name} será tu compañero. Trátalo bien y aprende a trabajar con él.")
-    _emit_dialogue(actor, _npc_label(actor, RIVAL_NPC_ID, "Rival"), f"Perfecto. Entonces yo elijo a {rival_name}. ¡Ahora que ambos tenemos Pokémon, te reto a una batalla!")
+    _emit_dialogue(
+        actor,
+        _npc_label(actor, OAK_NPC_ID, "Profesor Oak"),
+        _event_line(actor, "oak_starter_chosen", "Entonces {starter} será tu compañero. Trátalo bien y aprende a trabajar con él.", starter=starter_name),
+    )
+    _emit_dialogue(
+        actor,
+        _npc_label(actor, RIVAL_NPC_ID, "Rival"),
+        _event_line(actor, "rival_starter_chosen", "Perfecto. Entonces yo elijo a {rival}. ¡Ahora que ambos tenemos Pokémon, te reto a una batalla!", rival=rival_name),
+    )
     return {"accepted": True, "status": "STARTER_CHOSEN", "state": state, "pokemon": added.get("pokemon"), "build": TUTORIAL_BUILD}
 
 
 def start_rival_battle(actor):
     if _room_id(actor) != LAB_ROOM_ID:
         return {"accepted": False, "status": "NOT_IN_OAK_LAB", "build": TUTORIAL_BUILD}
+    if not _event_enabled(actor):
+        return {"accepted": False, "status": "TUTORIAL_DISABLED", "build": TUTORIAL_BUILD}
     ensure_tutorial_world(actor)
     state = tutorial_state(actor)
     if state.get("stage") != "RIVAL_CHALLENGE":
@@ -428,14 +529,20 @@ def start_rival_battle(actor):
         return {"accepted": False, "status": active.get("status"), "build": TUTORIAL_BUILD}
     player = battle_profile_for_slot(actor, slot)
     rival_id = _text(state.get("rival_starter_id"))
-    enemy = _starter_profile(rival_id, level=5)
+    level = _starter_level(actor)
+    enemy = _starter_profile(rival_id, level=level)
     if not player or not enemy:
         return {"accepted": False, "status": "BATTLE_PROFILE_MISSING", "build": TUTORIAL_BUILD}
 
     enemy = deepcopy(enemy)
     enemy["wild"] = False
     enemy["owner_id"] = RIVAL_NPC_ID
-    _emit_dialogue(actor, _npc_label(actor, RIVAL_NPC_ID, "Rival"), f"¡Vamos, {SPECIES_NAMES.get(rival_id, 'Pokémon')}! ¡Muéstrale lo que podemos hacer!")
+    rival_name = SPECIES_NAMES.get(rival_id, "Pokémon")
+    _emit_dialogue(
+        actor,
+        _npc_label(actor, RIVAL_NPC_ID, "Rival"),
+        _event_line(actor, "rival_battle_start", "¡Vamos, {rival}! ¡Muéstrale lo que podemos hacer!", rival=rival_name),
+    )
     result = start_pokemon_battle(
         actor,
         player,
