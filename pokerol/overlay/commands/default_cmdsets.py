@@ -39,6 +39,7 @@ from commands.pokemon_multiplayer_commands import (
     CmdPokerolMultiLeave,
     CmdPokerolMultiMove,
     CmdPokerolMultiOrder,
+    CmdPokerolMultiProtect,
     CmdPokerolMultiReady,
     CmdPokerolMultiStart,
     CmdPokerolMultiState,
@@ -98,7 +99,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(),
             CmdPokerolMultiCreate(), CmdPokerolMultiInvite(), CmdPokerolMultiAccept(), CmdPokerolMultiReady(),
             CmdPokerolMultiStart(), CmdPokerolMultiLeave(), CmdPokerolMultiState(), CmdPokerolMultiOrder(),
-            CmdPokerolMultiMove(), CmdPokerolMultiSwitch(), CmdPokerolMultiAddEnemy(),
+            CmdPokerolMultiMove(), CmdPokerolMultiProtect(), CmdPokerolMultiSwitch(), CmdPokerolMultiAddEnemy(),
             CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolPositionOptions(),
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
@@ -112,14 +113,12 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
     key = "DefaultAccount"
-
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
     key = "DefaultUnloggedin"
-
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
         self.add(CmdPokerolLocalLogin())
@@ -127,6 +126,5 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
     key = "DefaultSession"
-
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
