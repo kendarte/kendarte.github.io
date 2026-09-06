@@ -24,7 +24,7 @@ from services.pokemon_battle_tactical_round_engine import resolve_tactical_playe
 from services.pokemon_party_engine import update_owned_from_battle
 
 
-TACTICAL_RUNTIME_BUILD = "0.3.1-position-defensive-reaction-runtime"
+TACTICAL_RUNTIME_BUILD = "0.3.2-position-defensive-reaction-runtime"
 
 
 def _dict(value):
@@ -170,7 +170,7 @@ def _finalize_tactical_result(actor, result):
 
 
 def _settle_delegated_reaction(actor, log_start, result):
-    """Settle an armed reaction after legacy ITEM/CAPTURE/RUN paths."""
+    """Settle and persist an armed reaction after ITEM/CAPTURE/RUN paths."""
     if not result.get("accepted"):
         return result
     battle = current_battle(actor)
@@ -179,6 +179,9 @@ def _settle_delegated_reaction(actor, log_start, result):
     settlement = settle_incoming_attack_reaction(battle, "PLAYER", log_start)
     if not settlement.get("consumed"):
         return result
+    # The legacy runtime already persisted the main round before this settlement.
+    # Persist again so reaction-move PP (Gust/Harden/etc.) cannot be lost.
+    update_owned_from_battle(actor, _dict(battle.get("player")))
     actor.db.pokerol_pokemon_battle = battle
     is_complete = _text(battle.get("status")).upper() == COMPLETE_STATUS
     emit_battle_state(actor, battle, event="END" if is_complete else "ROUND")
