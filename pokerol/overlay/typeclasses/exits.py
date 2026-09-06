@@ -1,8 +1,9 @@
-from evennia import DefaultExit
+from evennia import DefaultExit, logger
 
 from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.exit_state_gate_engine import inspect_exit_state
 from services.ollama_narrator import narrate_move_async
+from services.travel_event_engine import roll_travel_event
 
 
 def _plain_string_list(value):
@@ -29,7 +30,7 @@ def _emit_room_after_traverse(actor):
 
 
 class Exit(DefaultExit):
-    """Persistent Siza Exit. Geometry and door state are authoritative here."""
+    """Persistent POKEROL Exit. Geometry and door state are authoritative here."""
 
     def at_object_creation(self):
         super().at_object_creation()
@@ -97,3 +98,13 @@ class Exit(DefaultExit):
                 destination,
                 self,
             )
+        try:
+            packet = roll_travel_event(
+                traversing_object,
+                source_location,
+                destination,
+                self,
+            )
+            traversing_object.db.last_travel_event_roll = packet
+        except Exception as exc:
+            logger.log_err(f"POKEROL travel event roll failed: {exc}")
