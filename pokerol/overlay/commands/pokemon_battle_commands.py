@@ -7,7 +7,10 @@ from services.pokemon_battle_runtime import (
     abandon_battle,
     current_battle,
     start_pokemon_battle,
-    submit_player_battle_action,
+)
+from services.pokemon_battle_tactical_runtime import (
+    emit_position_options,
+    submit_tactical_battle_action,
 )
 from services.pokemon_party_engine import active_pokemon
 
@@ -50,6 +53,8 @@ def _demo_pikachu():
         "level": 8,
         "types": ["Electric"],
         "base_stats": {"HP": 35, "ATK": 55, "DEF": 40, "SPA": 50, "SPD": 50, "SPE": 90},
+        "locomotion": ["WALK", "CLIMB"],
+        "body_tags": ["SMALL", "CLIMBER"],
         "moves": [
             _demo_move("THUNDER-SHOCK", "Thunder Shock", "Electric", 40, 100),
             _demo_move("QUICK-ATTACK", "Quick Attack", "Normal", 40, 100, "PHYSICAL", 1),
@@ -132,9 +137,20 @@ class CmdPokerolBattleAction(Command):
         except Exception as exc:
             self.caller.msg(f"Acción de batalla inválida: {exc}")
             return
-        result = submit_player_battle_action(self.caller, action)
+        result = submit_tactical_battle_action(self.caller, action)
         if not result.get("accepted"):
             self.caller.msg(f"Acción rechazada: {result.get('status')}")
+
+
+class CmdPokerolPositionOptions(Command):
+    key = "pokerol-position-options"
+    aliases = ["posiciones-batalla"]
+    locks = "cmd:all()"
+
+    def func(self):
+        result = emit_position_options(self.caller)
+        if not result.get("accepted"):
+            self.caller.msg(f"Posición no disponible: {result.get('status')}")
 
 
 class CmdPokerolBattleMove(Command):
@@ -147,7 +163,7 @@ class CmdPokerolBattleMove(Command):
         if not move_id:
             self.caller.msg("Uso: movimiento <MOVE_ID>")
             return
-        result = submit_player_battle_action(self.caller, {"type": "MOVE", "move_id": move_id})
+        result = submit_tactical_battle_action(self.caller, {"type": "MOVE", "move_id": move_id})
         self.caller.msg(str(result.get("status")))
 
 
@@ -158,7 +174,7 @@ class CmdPokerolBattleCapture(Command):
 
     def func(self):
         item_id = str(self.args or "").strip().upper() or "POKE_BALL"
-        result = submit_player_battle_action(self.caller, {"type": "CAPTURE", "item_id": item_id})
+        result = submit_tactical_battle_action(self.caller, {"type": "CAPTURE", "item_id": item_id})
         self.caller.msg(str(result.get("status")))
 
 
@@ -168,7 +184,7 @@ class CmdPokerolBattleRun(Command):
     locks = "cmd:all()"
 
     def func(self):
-        result = submit_player_battle_action(self.caller, {"type": "RUN"})
+        result = submit_tactical_battle_action(self.caller, {"type": "RUN"})
         self.caller.msg(str(result.get("status")))
 
 
