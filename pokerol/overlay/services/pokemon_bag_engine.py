@@ -3,13 +3,13 @@
 from copy import deepcopy
 
 
-BAG_BUILD = "0.1.0-persistent-bag"
+BAG_BUILD = "0.1.1-capture-items-guarded"
 BALL_MULTIPLIERS = {
     "POKE_BALL": 1.0,
     "GREAT_BALL": 1.5,
     "ULTRA_BALL": 2.0,
-    "MASTER_BALL": 99.0,
 }
+RESERVED_CAPTURE_ITEMS = {"MASTER_BALL"}
 
 
 def _dict(value):
@@ -91,6 +91,13 @@ def consume_item(actor, item_id, amount=1):
 
 def capture_ball_profile(actor, item_id):
     key = _text(item_id) or "POKE_BALL"
+    if key in RESERVED_CAPTURE_ITEMS:
+        return {
+            "accepted": False,
+            "status": "SPECIAL_CAPTURE_RULE_NOT_IMPLEMENTED",
+            "item_id": key,
+            "build": BAG_BUILD,
+        }
     if key not in BALL_MULTIPLIERS:
         return {"accepted": False, "status": "NOT_A_CAPTURE_BALL", "item_id": key, "build": BAG_BUILD}
     count = item_count(actor, key)
@@ -102,6 +109,6 @@ def capture_ball_profile(actor, item_id):
         "item_id": key,
         "count": count,
         "ball_multiplier": BALL_MULTIPLIERS[key],
-        "guaranteed": key == "MASTER_BALL",
+        "guaranteed": False,
         "build": BAG_BUILD,
     }
