@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var BUILD="0.2.0-red-plus-battle-menu";
+var BUILD="0.2.1-red-plus-party-bag";
 var state=null;
 var menuMode="ACTION";
 function byId(id){return document.getElementById(id)}
@@ -60,6 +60,19 @@ function menuTitle(value){
   return map[value]||"ORDEN";
 }
 function setMenuMode(next){menuMode=next;renderMenu()}
+function partyRows(){return state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[]}
+function bagItems(){return state&&state.bag_state&&state.bag_state.items&&typeof state.bag_state.items==="object"?state.bag_state.items:{}}
+function partySlotHtml(p,disabled){
+  var slot=Number(p.party_slot)||0;
+  var name=text(p.nickname||p.species_name||"Pokémon");
+  var sprite=p.sprite&&text(p.sprite.icon||p.sprite.front);
+  var icon=sprite?'<img class="pkbPartyIcon" src="'+esc(sprite)+'" alt="">':'<span class="pkbPartyInitial">'+esc(name.slice(0,1))+'</span>';
+  var hp=esc(p.hp_current)+'/'+esc(p.hp_max);
+  var flags=(p.active?' ACTIVO':'')+(Number(p.hp_current)<=0?' K.O.':'');
+  return '<button class="pkbPartySlot" data-slot="'+slot+'" '+(disabled||p.active||Number(p.hp_current)<=0?'disabled':'')+'>'+icon+'<span><b>'+esc(name)+'</b><small>Lv '+esc(p.level)+' · HP '+hp+' · '+esc(p.status||'OK')+flags+'</small></span></button>';
+}
+function itemLabel(itemId){return text(itemId).replace(/_/g,' ')}
+function isBall(itemId){return /_BALL$/i.test(text(itemId))}
 function renderMenu(){
   ensure();
   var body=byId("pkb-menu-body");
@@ -74,15 +87,18 @@ function renderMenu(){
     return;
   }
   if(menuMode==="PARTY"){
-    var active=state&&state.player?text(state.player.name||state.player.species_name):"POKÉMON ACTIVO";
-    body.innerHTML='<div class="pkbSubMenu"><button class="pkbPartyStub" type="button">▶ '+esc(active)+'</button><div class="pkbStubText">El Party System persistente entra en el siguiente sprint. Esta vista ya reserva el flujo de cambio de Pokémon.</div><button class="pkbBack" id="pkb-back">ATRÁS</button></div>';
+    var party=partyRows();
+    body.innerHTML='<div class="pkbPartyList">'+(party.length?party.map(function(p){return partySlotHtml(p,disabled)}).join(''):'<div class="pkbStubText">NO HAY PARTY PERSISTENTE. Usa entrenador-prueba para validar el runtime.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-slot]"),function(btn){btn.onclick=function(){sendAction({type:"SWITCH",slot:Number(btn.getAttribute("data-slot"))})}});
     byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
     return;
   }
   if(menuMode==="BAG"){
+    var items=bagItems();
+    var keys=Object.keys(items).filter(function(k){return Number(items[k])>0});
     var wild=state&&text(state.battle_kind)==="WILD";
-    body.innerHTML='<div class="pkbSubMenu"><button class="pkbBagItem" id="pkb-ball" '+(!wild||disabled?'disabled':'')+'>POKÉ BALL</button><div class="pkbStubText">Objetos adicionales llegarán con el Bag System. La Poké Ball ya usa la captura autoritativa actual.</div><button class="pkbBack" id="pkb-back">ATRÁS</button></div>';
-    var ball=byId("pkb-ball");if(ball)ball.onclick=function(){sendAction({type:"CAPTURE",ball_multiplier:1.0})};
+    body.innerHTML='<div class="pkbBagList">'+(keys.length?keys.map(function(k){var usable=isBall(k)&&wild&&!disabled;return '<button class="pkbBagItem" data-item="'+esc(k)+'" '+(!usable?'disabled':'')+'><b>'+esc(itemLabel(k))+'</b><small>x'+esc(items[k])+(isBall(k)?' · CAPTURA':' · FUERA DE BATALLA')+'</small></button>'}).join(''):'<div class="pkbStubText">BOLSA VACÍA.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    Array.prototype.forEach.call(body.querySelectorAll("[data-item]"),function(btn){btn.onclick=function(){var item=btn.getAttribute("data-item");if(isBall(item))sendAction({type:"CAPTURE",item_id:item})}});
     byId("pkb-back").onclick=function(){setMenuMode("ACTION")};
     return;
   }
@@ -119,7 +135,9 @@ function render(packet){
   byId("pkb-log").innerHTML=log.map(function(row){return '<div class="pkbLogLine">'+esc(row.text||row.kind||"")+'</div>'}).join('')||'<div class="pkbLogLine">¿Qué hará '+esc(state.player&&state.player.name||"tu Pokémon")+'?</div>';
   if(text(state.status)==="COMPLETE"){
     byId("pkb-outcome-title").textContent=outcomeText(state.outcome);
-    byId("pkb-outcome-text").textContent=(state.player&&state.player.name?state.player.name+" · ":"")+(state.enemy&&state.enemy.name?state.enemy.name:"");
+    var collection=state.capture_collection_result||{};
+    var collectionText=text(collection.status)==="ADDED_TO_PARTY"?' · ENTRÓ AL EQUIPO':text(collection.status)==="SENT_TO_STORAGE"?' · ENVIADO AL STORAGE':'';
+    byId("pkb-outcome-text").textContent=(state.player&&state.player.name?state.player.name+" · ":"")+(state.enemy&&state.enemy.name?state.enemy.name:"")+collectionText;
   }
   renderMenu();
 }
@@ -136,7 +154,7 @@ function sendAction(action){
 }
 function disableCommands(){
   var root=ensure();
-  Array.prototype.forEach.call(root.querySelectorAll(".pkbAction,.pkbMove,.pkbBagItem,.pkbBack"),function(btn){btn.disabled=true});
+  Array.prototype.forEach.call(root.querySelectorAll(".pkbAction,.pkbMove,.pkbBagItem,.pkbPartySlot,.pkbBack"),function(btn){btn.disabled=true});
 }
 function closeBattle(){
   var root=ensure();
