@@ -51,6 +51,7 @@ from commands.pokemon_registry_commands import (
     CmdPokerolPokemonRegistry,
     CmdPokerolWildEncounter,
 )
+from commands.pokemon_solo_test_commands import CmdPokerolSoloTest
 from commands.pokemon_trainer_commands import (
     CmdPokerolActivePokemon,
     CmdPokerolBag,
@@ -96,7 +97,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolTravelEvent(), CmdPokerolResolveTravelEvent(),
             CmdPokerolParty(), CmdPokerolActivePokemon(), CmdPokerolBag(), CmdPokerolGiveItem(), CmdPokerolTrainerTest(),
             CmdPokerolMachines(), CmdPokerolTeachMachine(), CmdPokerolEquipKnownMove(),
-            CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(),
+            CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(), CmdPokerolSoloTest(),
             CmdPokerolMultiCreate(), CmdPokerolMultiInvite(), CmdPokerolMultiAccept(), CmdPokerolMultiReady(),
             CmdPokerolMultiStart(), CmdPokerolMultiLeave(), CmdPokerolMultiState(), CmdPokerolMultiOrder(),
             CmdPokerolMultiMove(), CmdPokerolMultiProtect(), CmdPokerolMultiSwitch(), CmdPokerolMultiAddEnemy(),
