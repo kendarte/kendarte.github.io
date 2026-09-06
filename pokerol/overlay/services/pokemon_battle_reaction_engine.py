@@ -10,7 +10,7 @@ from copy import deepcopy
 from services.pokemon_battle_position_engine import normalized_position
 
 
-REACTION_BUILD = "0.1.0-dodge-reaction"
+REACTION_BUILD = "0.2.0-dodge-reaction-self-safe"
 SUPPORTED_REACTIONS = {"NONE", "DODGE"}
 
 
@@ -19,6 +19,13 @@ def _dict(value):
         return dict(value or {})
     except Exception:
         return {}
+
+
+def _list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
 
 
 def _text(value):
@@ -113,12 +120,21 @@ def reaction_accuracy_multiplier(attacker, defender):
     return max(0.38, min(1.0, 1.0 - chance)) if chance > 0 else 1.0
 
 
-def settle_incoming_attack_reaction(battle, defender_side, log_start_index):
-    """Consume an armed reaction if a real incoming MOVE was attempted.
+def _move_for_actor(state, actor_id, move_id):
+    for side in ("player", "enemy"):
+        pokemon = _dict(state.get(side))
+        if _text(pokemon.get("entity_id")) != _text(actor_id):
+            continue
+        wanted = _text(move_id).upper()
+        for raw in _list(pokemon.get("moves")):
+            move = _dict(raw)
+            if _text(move.get("move_id")).upper() == wanted:
+                return move
+    return {}
 
-    If the new log contains MISS, the miss is promoted to an explicit dodge event.
-    Otherwise DODGE_FAILED is appended. Returns a settlement packet.
-    """
+
+def settle_incoming_attack_reaction(battle, defender_side, log_start_index):
+    """Consume DODGE only when an opponent-directed move was really attempted."""
     state = battle if isinstance(battle, dict) else {}
     side = _text(defender_side).upper()
     defender = state.get("player" if side == "PLAYER" else "enemy")
@@ -132,12 +148,18 @@ def settle_incoming_attack_reaction(battle, defender_side, log_start_index):
     start = max(0, _int(log_start_index, 0))
     new_logs = logs[start:]
     defender_id = _text(defender.get("entity_id"))
-    move_attempted = any(
-        _text(row.get("kind")).upper() == "MOVE" and _text(row.get("actor")) != defender_id
-        for row in new_logs if isinstance(row, dict)
-    )
-    if not move_attempted:
+    move_row = next((
+        row for row in new_logs
+        if isinstance(row, dict)
+        and _text(row.get("kind")).upper() == "MOVE"
+        and _text(row.get("actor")) != defender_id
+    ), None)
+    if not move_row:
         return {"consumed": False, "status": "NO_INCOMING_MOVE_ATTEMPT", "build": REACTION_BUILD}
+
+    move = _move_for_actor(state, move_row.get("actor"), move_row.get("move_id"))
+    if _text(move.get("delivery")).upper() == "SELF":
+        return {"consumed": False, "status": "INCOMING_MOVE_IS_SELF", "build": REACTION_BUILD}
 
     success_row = None
     for row in reversed(new_logs):
