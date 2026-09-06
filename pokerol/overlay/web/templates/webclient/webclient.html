@@ -16,54 +16,66 @@
 {% endblock %}
 
 {% block client %}
-<div id="pokerol-client">
+<div id="pokerol-client" class="pkGameShell">
   <header class="pkTopbar">
     <div class="pkBrand">
       <strong>POKEROL</strong>
-      <span>AVENTURA POKÉMON · KANTO</span>
+      <span id="pk-mode-label">AVENTURA · KANTO</span>
     </div>
-    <nav class="pkQuickbar" aria-label="Acciones rápidas">
-      <button id="pk-look" type="button">MIRAR</button>
-      <button id="pk-party" type="button">EQUIPO</button>
+    <nav class="pkQuickbar" aria-label="Menú">
+      <button id="pk-party" type="button">POKÉMON</button>
       <button id="pk-bag" type="button">BOLSA</button>
-      <button id="pk-test" class="pkPrimary" type="button">INICIAR PRUEBA</button>
+      <button id="pk-look" type="button">MIRAR</button>
+      <button id="pk-test" class="pkPrimary" type="button">PRUEBA</button>
     </nav>
   </header>
 
-  <div id="toolbar"></div>
+  <main id="pk-stage" class="pkStage" aria-live="polite">
+    <div id="pk-stage-bg" class="pkStageBackground"></div>
+    <div class="pkStageShade"></div>
 
-  <div id="main" class="split split-vertical" data-role-default>
-    <div id="main-sub" class="split-sub">
-      <section id="pk-room-panel" class="pkRoomPanel" aria-live="polite">
-        <div class="pkRoomHeading">
-          <div>
-            <span class="pkEyebrow">UBICACIÓN</span>
-            <h1 id="pk-room-name">Conectando con Kanto…</h1>
-          </div>
-          <span id="pk-room-id" class="pkRoomId"></span>
-        </div>
-        <p id="pk-room-description" class="pkRoomDescription">El World Engine enviará aquí el estado autoritativo del lugar actual.</p>
-        <div id="pk-room-meta" class="pkRoomMeta"></div>
-        <div id="pk-context-actions" class="pkContextActions"></div>
-      </section>
-      <div class="pkHint">MENSAJES / MUNDO</div>
-      <div id="messagewindow"></div>
-    </div>
-  </div>
-
-  <div id="input" class="split split-vertical" data-role-input data-update-append>
-    <div id="inputform" class="wrapper">
-      <div id="prompt" class="prompt"></div>
-      <div id="inputcontrol" class="input-group">
-        <textarea id="inputfield" type="text" class="form-control" aria-label="Acción"></textarea>
-        <span class="input-group-btn">
-          <button class="btn btn-large btn-outline-primary" id="inputsend" type="button" value="">▶</button>
-        </span>
+    <div class="pkStageHud">
+      <div class="pkLocationPlate">
+        <span class="pkEyebrow">UBICACIÓN</span>
+        <strong id="pk-room-name">Conectando con Kanto…</strong>
+        <span id="pk-room-id"></span>
       </div>
+      <div id="pk-exit-strip" class="pkExitStrip" aria-label="Destinos"></div>
+    </div>
+
+    <div id="pk-actor-layer" class="pkActorLayer" aria-label="Personajes y objetos interactuables"></div>
+
+    <div id="pk-player-avatar" class="pkPlayerAvatar" aria-label="Tu entrenador">
+      <div class="pkPlayerHead"></div>
+      <div class="pkPlayerBody"></div>
+      <span>ENTRENADOR</span>
+    </div>
+
+    <section id="pk-dialogue" class="pkDialogueBox">
+      <div class="pkDialogueHeader">
+        <strong id="pk-speaker">NARRADOR</strong>
+        <button id="pk-log-toggle" type="button">HISTORIAL</button>
+      </div>
+      <div id="pk-dialogue-text" class="pkDialogueText">Conectando con el mundo…</div>
+      <div id="pk-context-actions" class="pkContextActions"></div>
+    </section>
+
+    <aside id="pk-history" class="pkHistory" aria-label="Historial">
+      <div class="pkHistoryHead"><strong>HISTORIAL</strong><button id="pk-log-close" type="button">×</button></div>
+      <div id="messagewindow"></div>
+    </aside>
+  </main>
+
+  <div id="input" class="pkFreeActionBar" data-role-input data-update-append>
+    <div id="prompt" class="prompt"></div>
+    <div id="inputcontrol">
+      <textarea id="inputfield" class="form-control" aria-label="Acción libre" placeholder="¿Qué haces?"></textarea>
+      <button id="inputsend" type="button" aria-label="Enviar acción">▶</button>
     </div>
   </div>
+
+  <div id="toolbar"></div>
 </div>
 {% endblock %}
 
-{% block scripts %}
-{% endblock %}
+{% block scripts %}{% endblock %}
