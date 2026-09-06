@@ -1,7 +1,7 @@
 """Server-authoritative Pokémon battle core for POKEROL.
 
 The browser is presentation/input only. This module owns battle state, command
-validation, ordering, hit checks, damage, basic capture/run resolution and the
+validation, ordering, hit checks, PP, damage, status/stages, capture/run and the
 battle log. World/terrain side-effects are exposed as requests for the World
 Engine rather than being silently mutated here.
 """
@@ -14,8 +14,17 @@ from copy import deepcopy
 from time import time
 from uuid import uuid4
 
+from services.pokemon_battle_status_engine import (
+    accuracy_multiplier,
+    apply_move_effects,
+    before_action,
+    effective_stat,
+    end_turn_effects,
+    normalize_battle_conditions,
+)
 
-BATTLE_BUILD = "0.1.0-pokemon-authoritative-1v1"
+
+BATTLE_BUILD = "0.2.0-pp-status-stages"
 PHASES = (
     "INTRO",
     "COMMAND",
@@ -31,7 +40,6 @@ ACTIVE_STATUS = "ACTIVE"
 COMPLETE_STATUS = "COMPLETE"
 ACTION_TYPES = {"MOVE", "CAPTURE", "RUN", "SWITCH", "ITEM", "FREE_ORDER"}
 
-# Compact modern type chart. Missing pair = neutral.
 TYPE_EFFECT = {
     ("NORMAL", "ROCK"): 0.5, ("NORMAL", "GHOST"): 0.0, ("NORMAL", "STEEL"): 0.5,
     ("FIRE", "FIRE"): 0.5, ("FIRE", "WATER"): 0.5, ("FIRE", "GRASS"): 2.0,
@@ -136,7 +144,6 @@ def _sprite(profile):
 def _derived_stats(profile):
     level = max(1, _int(profile.get("level"), 1))
     base = _dict(profile.get("base_stats"))
-    # Intentionally simple anime-RPG scaling: stable and readable, no hidden IV/EV layer.
     hp = max(1, math.floor((2 * _int(base.get("HP"), 40) * level) / 100) + level + 10)
     out = {"HP": hp}
     for key in ("ATK", "DEF", "SPA", "SPD", "SPE"):
@@ -155,6 +162,8 @@ def normalize_pokemon(profile, *, side="PLAYER"):
         move_id = _text(move.get("move_id"))
         if not move_id:
             continue
+        pp_max = max(0, _int(move.get("pp_max"), move.get("pp", 20)))
+        pp_current = max(0, min(pp_max, _int(move.get("pp_current"), pp_max)))
         moves.append({
             "move_id": move_id,
             "name": _text(move.get("name")) or move_id,
@@ -163,14 +172,17 @@ def normalize_pokemon(profile, *, side="PLAYER"):
             "power": max(0, _int(move.get("power"), 0)),
             "accuracy": max(1, min(100, _int(move.get("accuracy"), 100))),
             "priority": _int(move.get("priority"), 0),
-            "pp": max(0, _int(move.get("pp"), 20)),
+            "pp": pp_max,
+            "pp_max": pp_max,
+            "pp_current": pp_current,
+            "battle_effects": _clone(_list(move.get("battle_effects"))),
             "world_enabled": bool(move.get("world_enabled", False)),
             "world_effects": [str(v) for v in _list(move.get("world_effects")) if str(v)],
             "materials": [str(v) for v in _list(move.get("materials")) if str(v)],
             "delivery": _text(move.get("delivery")),
             "requirements": _dict(move.get("requirements")),
         })
-    return {
+    result = {
         "entity_id": _text(p.get("entity_id")) or f"PKMN:{uuid4().hex[:10].upper()}",
         "species_id": _text(p.get("species_id")),
         "name": _text(p.get("nickname") or p.get("species_name") or p.get("name")) or "Pokémon",
@@ -181,6 +193,9 @@ def normalize_pokemon(profile, *, side="PLAYER"):
         "hp_max": hp_max,
         "hp_current": hp_current,
         "status": _text(p.get("status")).upper() or "OK",
+        "status_turns": max(0, _int(p.get("status_turns"), 0)),
+        "battle_stages": _clone(_dict(p.get("battle_stages"))),
+        "volatile_status": _clone(_dict(p.get("volatile_status"))),
         "side": str(side or "PLAYER").upper(),
         "moves": moves,
         "sprite": _sprite(p),
@@ -188,6 +203,7 @@ def normalize_pokemon(profile, *, side="PLAYER"):
         "wild": bool(p.get("wild", str(side).upper() == "ENEMY")),
         "battle_tags": [str(v) for v in _list(p.get("battle_tags")) if str(v)],
     }
+    return normalize_battle_conditions(result)
 
 
 def _site_packet(site):
@@ -233,18 +249,34 @@ def _log(battle, kind, text, **extra):
     row = {"turn": int(battle.get("turn", 1)), "phase": str(battle.get("phase") or ""), "kind": kind, "text": text}
     row.update({k: v for k, v in extra.items() if v is not None})
     battle.setdefault("log", []).append(row)
-    if len(battle["log"]) > 80:
-        battle["log"] = battle["log"][-80:]
+    if len(battle["log"]) > 100:
+        battle["log"] = battle["log"][-100:]
     return row
+
+
+def _append_events(battle, events, actor=None, target=None):
+    for event in events or []:
+        row = _dict(event)
+        _log(battle, _text(row.get("kind")) or "BATTLE_EFFECT", _text(row.get("text")) or "Efecto de batalla.", actor=actor, target=target, **{k: v for k, v in row.items() if k not in {"kind", "text"}})
 
 
 def move_by_id(pokemon, move_id):
     wanted = _text(move_id).upper()
-    for move in _list(_dict(pokemon).get("moves")):
-        row = _dict(move)
-        if _text(row.get("move_id")).upper() == wanted:
-            return row
+    moves = pokemon.get("moves") if isinstance(pokemon, dict) else None
+    for move in moves if isinstance(moves, list) else []:
+        if isinstance(move, dict) and _text(move.get("move_id")).upper() == wanted:
+            return move
     return None
+
+
+def _struggle_move():
+    return {
+        "move_id": "STRUGGLE", "name": "Struggle", "pokemon_type": "NORMAL",
+        "damage_class": "PHYSICAL", "power": 50, "accuracy": 100, "priority": 0,
+        "pp": 1, "pp_max": 1, "pp_current": 1, "battle_effects": [],
+        "world_enabled": False, "world_effects": [], "materials": ["CREATURE"],
+        "delivery": "CONTACT", "requirements": {},
+    }
 
 
 def type_multiplier(move_type, defender_types):
@@ -260,11 +292,10 @@ def _damage(attacker, defender, move, rng):
     damage_class = _text(move.get("damage_class")).upper()
     if power <= 0 or damage_class == "STATUS":
         return 0, 1.0, False
-    a_stats = _dict(attacker.get("stats")); d_stats = _dict(defender.get("stats"))
-    attack = max(1, _int(a_stats.get("ATK" if damage_class == "PHYSICAL" else "SPA"), 1))
-    defense = max(1, _int(d_stats.get("DEF" if damage_class == "PHYSICAL" else "SPD"), 1))
+    attack = effective_stat(attacker, "ATK" if damage_class == "PHYSICAL" else "SPA")
+    defense = effective_stat(defender, "DEF" if damage_class == "PHYSICAL" else "SPD")
     level = max(1, _int(attacker.get("level"), 1))
-    base = math.floor((math.floor((2 * level) / 5) + 2) * power * attack / defense / 50) + 2
+    base = math.floor((math.floor((2 * level) / 5) + 2) * power * attack / max(1, defense) / 50) + 2
     stab = 1.5 if _text(move.get("pokemon_type")).upper() in _types(attacker.get("types")) else 1.0
     effectiveness = type_multiplier(move.get("pokemon_type"), defender.get("types"))
     critical = rng.random() < (1.0 / 16.0)
@@ -273,13 +304,13 @@ def _damage(attacker, defender, move, rng):
 
 
 def _enemy_action(battle, rng):
-    enemy = _dict(battle.get("enemy"))
-    moves = [m for m in _list(enemy.get("moves")) if _dict(m)]
+    enemy = battle.get("enemy") if isinstance(battle.get("enemy"), dict) else {}
+    moves = [m for m in enemy.get("moves", []) if isinstance(m, dict) and _int(m.get("pp_current"), m.get("pp", 0)) > 0]
     if not moves:
         return {"type": "MOVE", "move_id": "STRUGGLE"}
-    damaging = [m for m in moves if _int(_dict(m).get("power"), 0) > 0]
+    damaging = [m for m in moves if _int(m.get("power"), 0) > 0]
     pool = damaging or moves
-    move = _dict(rng.choice(pool))
+    move = rng.choice(pool)
     return {"type": "MOVE", "move_id": _text(move.get("move_id"))}
 
 
@@ -288,19 +319,19 @@ def _action_priority(action, pokemon):
     if kind in {"CAPTURE", "SWITCH", "ITEM", "RUN"}:
         return 6
     if kind == "MOVE":
-        move = move_by_id(pokemon, _dict(action).get("move_id")) or {}
+        move = move_by_id(pokemon, _dict(action).get("move_id")) or (_struggle_move() if _text(_dict(action).get("move_id")).upper() == "STRUGGLE" else {})
         return _int(_dict(move).get("priority"), 0)
     return 0
 
 
 def _speed(pokemon):
-    return max(1, _int(_dict(_dict(pokemon).get("stats")).get("SPE"), 1))
+    return effective_stat(pokemon, "SPE")
 
 
 def _order_actions(battle, player_action, enemy_action, rng):
     rows = [
-        {"side": "PLAYER", "action": _dict(player_action), "pokemon": _dict(battle.get("player"))},
-        {"side": "ENEMY", "action": _dict(enemy_action), "pokemon": _dict(battle.get("enemy"))},
+        {"side": "PLAYER", "action": _dict(player_action), "pokemon": battle.get("player") or {}},
+        {"side": "ENEMY", "action": _dict(enemy_action), "pokemon": battle.get("enemy") or {}},
     ]
     for row in rows:
         row["priority"] = _action_priority(row["action"], row["pokemon"])
@@ -316,12 +347,10 @@ def _queue_world_request(battle, actor, target, move, command):
         return
     battle.setdefault("world_requests", []).append({
         "request_id": f"WORLD-{battle['battle_id']}-{battle['turn']}-{len(battle.get('world_requests') or []) + 1}",
-        "battle_id": battle["battle_id"],
-        "turn": battle["turn"],
+        "battle_id": battle["battle_id"], "turn": battle["turn"],
         "actor_entity_id": actor.get("entity_id"),
         "target_entity_id": target.get("entity_id") if target else "",
-        "move_id": move.get("move_id"),
-        "delivery": move.get("delivery"),
+        "move_id": move.get("move_id"), "delivery": move.get("delivery"),
         "world_effects": _clone(_list(move.get("world_effects"))),
         "materials": _clone(_list(move.get("materials"))),
         "world_target": _clone(_dict(_dict(command).get("world_target"))),
@@ -334,20 +363,42 @@ def _execute_move(battle, side, command, rng):
     defender = battle["enemy"] if side == "PLAYER" else battle["player"]
     if _int(attacker.get("hp_current"), 0) <= 0:
         return
-    move = move_by_id(attacker, command.get("move_id"))
+
+    can_act, condition_events = before_action(attacker, rng)
+    _append_events(battle, condition_events, actor=attacker.get("entity_id"), target=attacker.get("entity_id"))
+    if not can_act or _int(attacker.get("hp_current"), 0) <= 0:
+        return
+
+    requested_id = _text(command.get("move_id")).upper()
+    synthetic = requested_id == "STRUGGLE"
+    move = _struggle_move() if synthetic else move_by_id(attacker, requested_id)
     if not move:
         _log(battle, "INVALID_MOVE", f"{attacker['name']} no conoce ese movimiento.", actor=attacker["entity_id"])
         return
+    if not synthetic:
+        current_pp = _int(move.get("pp_current"), move.get("pp", 0))
+        if current_pp <= 0:
+            _log(battle, "NO_PP", f"{move['name']} no tiene PP.", actor=attacker["entity_id"], move_id=move["move_id"])
+            return
+        move["pp_current"] = current_pp - 1
+
     battle["phase"] = "ACTION"
-    _log(battle, "MOVE", f"{attacker['name']} usa {move['name']}.", actor=attacker["entity_id"], move_id=move["move_id"])
-    if rng.randint(1, 100) > max(1, _int(move.get("accuracy"), 100)):
-        _log(battle, "MISS", "El ataque falla.", actor=attacker["entity_id"], target=defender["entity_id"])
+    _log(battle, "MOVE", f"{attacker['name']} usa {move['name']}.", actor=attacker["entity_id"], move_id=move["move_id"], pp_current=move.get("pp_current"))
+
+    hit_accuracy = max(1, min(100, int(_int(move.get("accuracy"), 100) * accuracy_multiplier(attacker, defender))))
+    if rng.randint(1, 100) > hit_accuracy:
+        _log(battle, "MISS", "El ataque falla.", actor=attacker["entity_id"], target=defender["entity_id"], accuracy=hit_accuracy)
         return
+
+    effectiveness_for_status = type_multiplier(move.get("pokemon_type"), defender.get("types"))
+    if _text(move.get("damage_class")).upper() == "STATUS" and effectiveness_for_status == 0:
+        _log(battle, "EFFECTIVENESS", "No tiene efecto.", target=defender["entity_id"], effectiveness=0)
+        return
+
     damage, effectiveness, critical = _damage(attacker, defender, move, rng)
     if damage > 0:
         defender["hp_current"] = max(0, _int(defender.get("hp_current"), 0) - damage)
-        text = f"{defender['name']} recibe {damage} de daño."
-        _log(battle, "DAMAGE", text, actor=attacker["entity_id"], target=defender["entity_id"], damage=damage, effectiveness=effectiveness, critical=critical)
+        _log(battle, "DAMAGE", f"{defender['name']} recibe {damage} de daño.", actor=attacker["entity_id"], target=defender["entity_id"], damage=damage, effectiveness=effectiveness, critical=critical)
         if effectiveness == 0:
             _log(battle, "EFFECTIVENESS", "No tiene efecto.", target=defender["entity_id"], effectiveness=0)
         elif effectiveness > 1:
@@ -358,7 +409,15 @@ def _execute_move(battle, side, command, rng):
             _log(battle, "CRITICAL", "Golpe crítico.", target=defender["entity_id"])
     else:
         _log(battle, "STATUS_MOVE", f"{move['name']} altera la situación sin daño directo.", actor=attacker["entity_id"], target=defender["entity_id"])
+
+    if effectiveness_for_status != 0 and _int(defender.get("hp_current"), 0) > 0:
+        _append_events(battle, apply_move_effects(attacker, defender, move, rng), actor=attacker.get("entity_id"), target=defender.get("entity_id"))
     _queue_world_request(battle, attacker, defender, move, command)
+
+    if synthetic and _int(attacker.get("hp_current"), 0) > 0:
+        recoil = max(1, _int(attacker.get("hp_max"), 1) // 8)
+        attacker["hp_current"] = max(0, _int(attacker.get("hp_current"), 0) - recoil)
+        _log(battle, "RECOIL", f"{attacker['name']} recibe {recoil} de retroceso.", actor=attacker["entity_id"], damage=recoil)
 
 
 def _capture(battle, command, rng):
@@ -386,7 +445,8 @@ def _run(battle, rng):
     if str(battle.get("battle_kind") or "").upper() != "WILD":
         _log(battle, "RUN_BLOCKED", "No puedes abandonar así una batalla de entrenador.")
         return False
-    p_speed = _speed(battle["player"]); e_speed = _speed(battle["enemy"])
+    p_speed = _speed(battle["player"])
+    e_speed = _speed(battle["enemy"])
     chance = max(0.25, min(0.95, 0.55 + (p_speed - e_speed) / max(20.0, e_speed * 2.0)))
     if rng.random() <= chance:
         battle["status"] = COMPLETE_STATUS
@@ -411,7 +471,8 @@ def _execute_action(battle, row, rng):
     elif side == "PLAYER" and kind == "RUN":
         _run(battle, rng)
     elif kind in {"SWITCH", "ITEM", "FREE_ORDER"}:
-        _log(battle, "ACTION_RESERVED", f"{kind} está en el contrato de batalla pero requiere party/inventory/free-order runtime.", actor=side)
+        if kind != "FREE_ORDER":
+            _log(battle, "ACTION_RESERVED", f"{kind} se resuelve en el runtime autoritativo externo.", actor=side)
     else:
         _log(battle, "INVALID_ACTION", "Acción de batalla inválida.", actor=side)
 
@@ -431,8 +492,18 @@ def _end_check(battle):
         _log(battle, "BATTLE_END", f"{battle['player']['name']} queda fuera de combate.")
 
 
+def _apply_round_end(battle):
+    if battle.get("status") != ACTIVE_STATUS:
+        return
+    battle["phase"] = "RESOLUTION"
+    _append_events(battle, end_turn_effects(battle["player"], battle["enemy"]), actor=battle["player"].get("entity_id"))
+    _append_events(battle, end_turn_effects(battle["enemy"], battle["player"]), actor=battle["enemy"].get("entity_id"))
+    _end_check(battle)
+
+
 def validate_player_action(battle, action):
-    battle = _dict(battle); action = _dict(action)
+    battle = _dict(battle)
+    action = _dict(action)
     if _text(battle.get("status")) != ACTIVE_STATUS:
         return {"accepted": False, "status": "BATTLE_NOT_ACTIVE"}
     if _text(battle.get("phase")) != "COMMAND":
@@ -440,8 +511,12 @@ def validate_player_action(battle, action):
     kind = _text(action.get("type")).upper()
     if kind not in ACTION_TYPES:
         return {"accepted": False, "status": "INVALID_ACTION_TYPE"}
-    if kind == "MOVE" and not move_by_id(_dict(battle.get("player")), action.get("move_id")):
-        return {"accepted": False, "status": "MOVE_NOT_KNOWN"}
+    if kind == "MOVE":
+        move = move_by_id(battle.get("player") or {}, action.get("move_id"))
+        if not move:
+            return {"accepted": False, "status": "MOVE_NOT_KNOWN"}
+        if _int(move.get("pp_current"), move.get("pp", 0)) <= 0:
+            return {"accepted": False, "status": "NO_PP", "move_id": move.get("move_id")}
     return {"accepted": True, "status": "ACTION_VALID", "type": kind}
 
 
@@ -464,10 +539,10 @@ def resolve_player_action(battle, action, *, rng=None):
             break
         _execute_action(state, row, rng)
         state["phase"] = "REACTION"
-        _log(state, "REACTION_WINDOW", "Se comprueba si la acción provoca una reacción o efecto inmediato.", actor=row["side"])
-        state["phase"] = "RESOLUTION"
+        _log(state, "REACTION_WINDOW", "Se comprueba reacción y efectos inmediatos.", actor=row["side"])
         _end_check(state)
 
+    _apply_round_end(state)
     if state.get("status") == ACTIVE_STATUS:
         state["turn"] = _int(state.get("turn"), 1) + 1
         state["phase"] = "COMMAND"
@@ -477,7 +552,6 @@ def resolve_player_action(battle, action, *, rng=None):
 
 
 def public_battle_state(battle):
-    """Packet safe for the webclient. Keeps authoritative internals server-side."""
     state = _clone(_dict(battle))
     state.pop("pending_player_action", None)
     return state
