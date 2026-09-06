@@ -27,6 +27,20 @@ jobs:
             -p 4001:4001 \
             pokerol-smoke
 
+      - name: Initial container diagnostics
+        run: |
+          sleep 8
+          echo '=== docker ps -a ==='
+          docker ps -a
+          echo '=== container state ==='
+          docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' || true
+          echo '=== POKEROL logs ==='
+          docker logs pokerol-smoke-run || true
+          echo '=== Evennia process list ==='
+          docker exec pokerol-smoke-run sh -lc 'ps aux || true' || true
+          echo '=== Evennia status ==='
+          docker exec pokerol-smoke-run sh -lc 'cd /app/runtime && python -m evennia status || true' || true
+
       - name: Wait for Evennia web server
         run: |
           set -e
@@ -37,12 +51,18 @@ jobs:
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx pokerol-smoke-run; then
               echo "Container stopped before web server became ready."
+              echo '=== container state ==='
+              docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
+              echo '=== POKEROL logs ==='
               docker logs pokerol-smoke-run || true
               exit 1
             fi
             sleep 2
           done
           echo "Timed out waiting for POKEROL web server."
+          echo '=== container state ==='
+          docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
+          echo '=== POKEROL logs ==='
           docker logs pokerol-smoke-run || true
           exit 1
 
@@ -51,4 +71,8 @@ jobs:
 
       - name: Show server logs
         if: always()
-        run: docker logs pokerol-smoke-run || true
+        run: |
+          echo '=== final container state ==='
+          docker inspect pokerol-smoke-run --format 'status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}' || true
+          echo '=== final POKEROL logs ==='
+          docker logs pokerol-smoke-run || true
