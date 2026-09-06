@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from services.pokemon_battle_engine import ACTIVE_STATUS, COMPLETE_STATUS, BATTLE_BUILD
 from services.pokemon_battle_position_engine import position_label, position_targets
+from services.pokemon_battle_reaction_engine import arm_reaction, reaction_state, settle_incoming_attack_reaction
 from services.pokemon_battle_runtime import (
     RUNTIME_BUILD,
     _basic_action_gate,
@@ -18,7 +19,7 @@ from services.pokemon_battle_tactical_round_engine import resolve_tactical_playe
 from services.pokemon_party_engine import update_owned_from_battle
 
 
-TACTICAL_RUNTIME_BUILD = "0.1.0-persistent-position-runtime"
+TACTICAL_RUNTIME_BUILD = "0.2.0-position-dodge-runtime"
 
 
 def _dict(value):
@@ -26,6 +27,13 @@ def _dict(value):
         return dict(value or {})
     except Exception:
         return {}
+
+
+def _list(value):
+    try:
+        return list(value or [])
+    except Exception:
+        return []
 
 
 def _clone(value):
@@ -60,6 +68,7 @@ def position_options_packet(actor):
         "position": _clone(player.get("battle_position") or {}),
         "position_label": position_label(player),
         "targets": position_targets(actor, battle, side="PLAYER"),
+        "reaction": reaction_state(player),
         "build": TACTICAL_RUNTIME_BUILD,
     }
 
@@ -69,6 +78,25 @@ def emit_position_options(actor):
     if actor:
         actor.msg(pokerol_pokemon_position_options=((packet,), {"build": TACTICAL_RUNTIME_BUILD}))
     return packet
+
+
+def set_player_reaction(actor, policy="DODGE"):
+    if not actor:
+        return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
+    battle = current_battle(actor)
+    if not battle:
+        return {"accepted": False, "status": "NO_BATTLE", "build": TACTICAL_RUNTIME_BUILD}
+    if _text(battle.get("status")).upper() != ACTIVE_STATUS:
+        return {"accepted": False, "status": "BATTLE_NOT_ACTIVE", "build": TACTICAL_RUNTIME_BUILD}
+    if _text(battle.get("phase")).upper() != "COMMAND":
+        return {"accepted": False, "status": "NOT_COMMAND_PHASE", "build": TACTICAL_RUNTIME_BUILD}
+    if bool(battle.get("forced_switch")):
+        return {"accepted": False, "status": "FORCED_SWITCH_REQUIRED", "build": TACTICAL_RUNTIME_BUILD}
+    result = arm_reaction(battle, "PLAYER", policy)
+    if result.get("accepted"):
+        actor.db.pokerol_pokemon_battle = battle
+        emit_battle_state(actor, battle, event="STATE")
+    return {**result, "build": TACTICAL_RUNTIME_BUILD}
 
 
 def _finalize_tactical_result(actor, result):
@@ -116,20 +144,42 @@ def _finalize_tactical_result(actor, result):
     }
 
 
+def _settle_delegated_reaction(actor, log_start, result):
+    """Consume DODGE after old-runtime branches such as ITEM/CAPTURE/RUN."""
+    if not result.get("accepted"):
+        return result
+    battle = current_battle(actor)
+    if not battle:
+        return result
+    settlement = settle_incoming_attack_reaction(battle, "PLAYER", log_start)
+    if not settlement.get("consumed"):
+        return result
+    actor.db.pokerol_pokemon_battle = battle
+    is_complete = _text(battle.get("status")).upper() == COMPLETE_STATUS
+    emit_battle_state(actor, battle, event="END" if is_complete else "ROUND")
+    output = dict(result)
+    output["battle"] = _public_state(actor, battle)
+    output["reaction_settlement"] = _clone(settlement)
+    return output
+
+
 def submit_tactical_battle_action(actor, action):
-    """Route tactical actions while preserving the existing item/capture/world runtime."""
+    """Route tactical actions while preserving existing item/capture/world authority."""
     if not actor:
         return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
     action = _dict(action)
     kind = _text(action.get("type")).upper()
     position_action = _text(action.get("position_action")).upper()
 
-    # Existing runtime remains authority for capture, items, switches, run and
-    # move-to-world physics. Direct moves and explicit position changes use the
-    # spatial resolver.
     tactical = kind == "MOVE" or (kind == "FREE_ORDER" and bool(position_action))
     if not tactical:
-        return submit_player_battle_action(actor, action)
+        before = current_battle(actor)
+        log_start = len(_list(before.get("log"))) if before else 0
+        result = submit_player_battle_action(actor, action)
+        # FREE_ORDER+move uses the position-aware world-round engine already.
+        if kind == "FREE_ORDER" and _text(action.get("move_id")):
+            return result
+        return _settle_delegated_reaction(actor, log_start, result)
 
     battle = current_battle(actor)
     if not battle:
