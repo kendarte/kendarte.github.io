@@ -9,11 +9,15 @@ from services.pokemon_battle_engine import (
     move_by_id,
 )
 from services.pokemon_battle_position_engine import position_move_gate
-from services.pokemon_battle_reaction_engine import settle_incoming_attack_reaction
+from services.pokemon_battle_reaction_engine import (
+    clear_incoming_reaction_context,
+    set_incoming_reaction_context,
+    settle_incoming_attack_reaction,
+)
 from services.pokemon_battle_status_engine import before_action
 
 
-TACTICAL_ACTION_BUILD = "0.2.0-position-reach-dodge"
+TACTICAL_ACTION_BUILD = "0.3.0-position-defensive-reactions"
 
 
 def _dict(value):
@@ -127,7 +131,7 @@ def _execute_blocked_move(state, side, action, rng, gate):
 
 
 def execute_row_position_aware(state, row, rng):
-    """Execute one ordered row, enforcing position reach and armed dodge reactions."""
+    """Execute one ordered row with reach and one-shot defensive reactions."""
     row = _dict(row)
     action = _dict(row.get("action"))
     side = _text(row.get("side")).upper()
@@ -135,10 +139,17 @@ def execute_row_position_aware(state, row, rng):
         gate = move_reach_gate(state, side, action)
         if not gate.get("allowed"):
             return _execute_blocked_move(state, side, action, rng, gate)
+        attacker, defender = _combatants(state, side)
+        incoming_move = move_by_id(attacker, action.get("move_id"))
+        if incoming_move and _text(incoming_move.get("delivery")).upper() != "SELF":
+            set_incoming_reaction_context(defender, incoming_move)
         log_start = len(_list(state.get("log")))
         _execute_action(state, row, rng)
         defender_side = "ENEMY" if side == "PLAYER" else "PLAYER"
         reaction = settle_incoming_attack_reaction(state, defender_side, log_start)
+        # Non-triggering reactions remain armed; only transient incoming metadata clears.
+        if not reaction.get("consumed"):
+            clear_incoming_reaction_context(defender)
         return {
             "executed": True,
             "status": "CORE_ACTION_EXECUTED",
