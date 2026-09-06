@@ -3,6 +3,7 @@ from evennia import DefaultExit, logger
 from services.dm_campaign_registry import observe_active_campaign_evidence
 from services.exit_state_gate_engine import inspect_exit_state
 from services.ollama_narrator import narrate_move_async
+from services.travel_encounter_bridge import activate_travel_event_encounter
 from services.travel_event_engine import roll_travel_event
 
 
@@ -106,5 +107,7 @@ class Exit(DefaultExit):
                 self,
             )
             traversing_object.db.last_travel_event_roll = packet
+            activation = activate_travel_event_encounter(traversing_object, packet)
+            traversing_object.db.last_travel_encounter_activation = activation
         except Exception as exc:
             logger.log_err(f"POKEROL travel event roll failed: {exc}")
