@@ -1,4 +1,4 @@
-"""Persistent TM/HM teaching authority for POKEROL.
+"""Persistent TM/HM teaching and known-move loadout authority for POKEROL.
 
 Machines are teaching sources only. The learned move keeps all battle/world
 capabilities from the species registry; HM/TM status never owns world physics.
@@ -9,10 +9,10 @@ from copy import deepcopy
 from services.pokemon_bag_engine import consume_item, item_count
 from services.pokemon_party_engine import battle_profile_for_slot, set_party_slot_profile
 from services.pokemon_progression_engine import can_learn_machine
-from services.pokemon_species_registry import get_species_registry
+from services.pokemon_species_registry import get_species_registry, move_template
 
 
-MACHINE_BUILD = "0.1.0-persistent-machines"
+MACHINE_BUILD = "0.2.0-known-move-loadout"
 
 
 def _dict(value):
@@ -95,7 +95,7 @@ def _active_moves(profile):
     return rows
 
 
-def _hydrated_machine_move(move):
+def _hydrated_move(move):
     row = _clone(_dict(move))
     pp_max = max(0, _int(row.get("pp_max"), row.get("pp", 20)))
     row["pp"] = pp_max
@@ -104,13 +104,77 @@ def _hydrated_machine_move(move):
     return row
 
 
-def teach_party_machine(actor, slot, machine_id, *, replace_move_id=""):
-    """Teach one machine move to an owned Pokémon and persist the result.
+def _known_ids(profile):
+    known = []
+    for value in _list(_dict(profile).get("known_moves")):
+        value = _text(value)
+        if value and value not in known:
+            known.append(value)
+    for move in _active_moves(profile):
+        value = _text(move.get("move_id"))
+        if value and value not in known:
+            known.append(value)
+    return known
 
-    known_moves is the long-term learned library. moves/resolved_moves is the
-    active battle loadout. A full loadout does not erase old knowledge: teaching
-    succeeds into known_moves and reports that a loadout choice is still needed.
-    """
+
+def equip_known_move(actor, slot, move_id, *, replace_move_id=""):
+    """Equip a move already learned by this Pokémon; no TM/HM item is required."""
+    if not actor:
+        return {"accepted": False, "status": "NO_ACTOR", "build": MACHINE_BUILD}
+    target_slot = _int(slot, -1)
+    pokemon = battle_profile_for_slot(actor, target_slot)
+    if not pokemon:
+        return {"accepted": False, "status": "INVALID_PARTY_SLOT", "slot": target_slot, "build": MACHINE_BUILD}
+    wanted = _text(move_id)
+    known = _known_ids(pokemon)
+    if wanted not in known:
+        return {"accepted": False, "status": "MOVE_NOT_LEARNED", "move_id": wanted, "slot": target_slot, "build": MACHINE_BUILD}
+    move = move_template(wanted)
+    if not move:
+        return {"accepted": False, "status": "MOVE_NOT_IN_REGISTRY", "move_id": wanted, "build": MACHINE_BUILD}
+
+    profile = _clone(_dict(pokemon))
+    active = _active_moves(profile)
+    active_ids = [_text(row.get("move_id")) for row in active]
+    if wanted in active_ids:
+        return {"accepted": True, "status": "MOVE_ALREADY_EQUIPPED", "move_id": wanted, "slot": target_slot, "active_move_ids": active_ids, "build": MACHINE_BUILD}
+
+    limit = max(1, _int(profile.get("active_move_limit"), 4))
+    replaced = ""
+    if len(active) < limit:
+        active.append(_hydrated_move(move))
+    else:
+        replace = _text(replace_move_id)
+        if not replace:
+            return {"accepted": False, "status": "LOADOUT_FULL_REPLACE_REQUIRED", "move_id": wanted, "active_move_ids": active_ids, "build": MACHINE_BUILD}
+        for index, current in enumerate(active):
+            if _text(current.get("move_id")) == replace:
+                replaced = replace
+                active[index] = _hydrated_move(move)
+                break
+        if not replaced:
+            return {"accepted": False, "status": "REPLACE_MOVE_NOT_ACTIVE", "move_id": wanted, "replace_move_id": replace, "active_move_ids": active_ids, "build": MACHINE_BUILD}
+
+    profile["known_moves"] = known
+    profile["moves"] = active
+    profile["resolved_moves"] = _clone(active)
+    stored = set_party_slot_profile(actor, target_slot, profile)
+    if not stored.get("accepted"):
+        return {"accepted": False, "status": stored.get("status"), "move_id": wanted, "build": MACHINE_BUILD}
+    return {
+        "accepted": True,
+        "status": "KNOWN_MOVE_EQUIPPED",
+        "move_id": wanted,
+        "move_name": _text(move.get("name")) or wanted,
+        "slot": target_slot,
+        "replaced_move_id": replaced or None,
+        "active_move_ids": [_text(row.get("move_id")) for row in active],
+        "build": MACHINE_BUILD,
+    }
+
+
+def teach_party_machine(actor, slot, machine_id, *, replace_move_id=""):
+    """Teach one machine move and optionally place it in the active battle loadout."""
     if not actor:
         return {"accepted": False, "status": "NO_ACTOR", "build": MACHINE_BUILD}
     target_slot = _int(slot, -1)
@@ -125,52 +189,39 @@ def teach_party_machine(actor, slot, machine_id, *, replace_move_id=""):
     source = _machine_packet(move)
     if source["kind"] not in {"TM", "HM"}:
         return {"accepted": False, "status": "UNSUPPORTED_MACHINE_KIND", **source, "build": MACHINE_BUILD}
-    if item_count(actor, wanted) <= 0:
-        return {"accepted": False, "status": "MACHINE_NOT_OWNED", "machine_id": wanted, "build": MACHINE_BUILD}
-
-    gate = can_learn_machine(pokemon, move)
-    if not gate.get("allowed"):
-        return {"accepted": False, "status": gate.get("status") or "MACHINE_INCOMPATIBLE", **source, "slot": target_slot, "build": MACHINE_BUILD}
 
     profile = _clone(_dict(pokemon))
     move_id = source["move_id"]
-    known = []
-    for value in _list(profile.get("known_moves")):
-        value = _text(value)
-        if value and value not in known:
-            known.append(value)
+    known = _known_ids(profile)
     active = _active_moves(profile)
     active_ids = [_text(row.get("move_id")) for row in active]
-    already_known = move_id in known or move_id in active_ids
+    already_known = move_id in known
 
-    if move_id not in known:
+    if not already_known:
+        if item_count(actor, wanted) <= 0:
+            return {"accepted": False, "status": "MACHINE_NOT_OWNED", "machine_id": wanted, "build": MACHINE_BUILD}
+        gate = can_learn_machine(profile, move)
+        if not gate.get("allowed"):
+            return {"accepted": False, "status": gate.get("status") or "MACHINE_INCOMPATIBLE", **source, "slot": target_slot, "build": MACHINE_BUILD}
         known.append(move_id)
-    profile["known_moves"] = known
+        profile["known_moves"] = known
 
     equipped = move_id in active_ids
     replaced = ""
     limit = max(1, _int(profile.get("active_move_limit"), 4))
     if not equipped and len(active) < limit:
-        active.append(_hydrated_machine_move(move))
+        active.append(_hydrated_move(move))
         equipped = True
     elif not equipped and replace_move_id:
         wanted_replace = _text(replace_move_id)
         for index, current in enumerate(active):
             if _text(current.get("move_id")) == wanted_replace:
                 replaced = wanted_replace
-                active[index] = _hydrated_machine_move(move)
+                active[index] = _hydrated_move(move)
                 equipped = True
                 break
         if not equipped:
-            return {
-                "accepted": False,
-                "status": "REPLACE_MOVE_NOT_ACTIVE",
-                "machine_id": wanted,
-                "move_id": move_id,
-                "replace_move_id": wanted_replace,
-                "active_move_ids": active_ids,
-                "build": MACHINE_BUILD,
-            }
+            return {"accepted": False, "status": "REPLACE_MOVE_NOT_ACTIVE", "machine_id": wanted, "move_id": move_id, "replace_move_id": wanted_replace, "active_move_ids": active_ids, "build": MACHINE_BUILD}
 
     profile["moves"] = active
     profile["resolved_moves"] = _clone(active)
