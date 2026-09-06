@@ -5,7 +5,7 @@ from services.pokemon_battle_runtime import current_battle, submit_player_battle
 from services.pokemon_party_engine import add_pokemon, party_state, set_active_slot
 
 
-def _demo_move(move_id, name, pokemon_type, power, accuracy, damage_class="PHYSICAL", priority=0):
+def _demo_move(move_id, name, pokemon_type, power, accuracy, damage_class="PHYSICAL", priority=0, pp=20):
     return {
         "move_id": move_id,
         "name": name,
@@ -14,7 +14,9 @@ def _demo_move(move_id, name, pokemon_type, power, accuracy, damage_class="PHYSI
         "power": power,
         "accuracy": accuracy,
         "priority": priority,
-        "pp": 20,
+        "pp": pp,
+        "pp_max": pp,
+        "pp_current": pp,
         "world_enabled": False,
         "world_effects": [],
         "materials": ["CREATURE"],
@@ -31,8 +33,9 @@ def _demo_owned_pikachu():
         "types": ["Electric"],
         "base_stats": {"HP": 35, "ATK": 55, "DEF": 40, "SPA": 50, "SPD": 50, "SPE": 90},
         "moves": [
-            _demo_move("THUNDER-SHOCK", "Thunder Shock", "Electric", 40, 100, "SPECIAL"),
-            _demo_move("QUICK-ATTACK", "Quick Attack", "Normal", 40, 100, "PHYSICAL", 1),
+            _demo_move("THUNDER-SHOCK", "Thunder Shock", "Electric", 40, 100, "SPECIAL", pp=30),
+            _demo_move("THUNDER-WAVE", "Thunder Wave", "Electric", 0, 90, "STATUS", pp=20),
+            _demo_move("QUICK-ATTACK", "Quick Attack", "Normal", 40, 100, "PHYSICAL", 1, 30),
         ],
         "sprite": {
             "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
@@ -51,8 +54,10 @@ def _demo_owned_bulbasaur():
         "types": ["Grass", "Poison"],
         "base_stats": {"HP": 45, "ATK": 49, "DEF": 49, "SPA": 65, "SPD": 65, "SPE": 45},
         "moves": [
-            _demo_move("TACKLE", "Tackle", "Normal", 40, 100),
-            _demo_move("VINE-WHIP", "Vine Whip", "Grass", 45, 100),
+            _demo_move("TACKLE", "Tackle", "Normal", 40, 100, pp=35),
+            _demo_move("GROWL", "Growl", "Normal", 0, 100, "STATUS", pp=40),
+            _demo_move("VINE-WHIP", "Vine Whip", "Grass", 45, 100, pp=25),
+            _demo_move("LEECH-SEED", "Leech Seed", "Grass", 0, 90, "STATUS", pp=10),
         ],
         "sprite": {
             "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
@@ -112,12 +117,15 @@ class CmdPokerolBag(Command):
     def func(self):
         state = bag_state(self.caller)
         items = state.get("items") or {}
+        profiles = state.get("profiles") or {}
         self.caller.msg("=== BOLSA ===")
         if not items:
             self.caller.msg("Vacía.")
             return
         for item_id, count in sorted(items.items()):
-            self.caller.msg(f"{item_id}: {count}")
+            profile = profiles.get(item_id) or {}
+            label = profile.get("label") or item_id
+            self.caller.msg(f"{item_id}: {count} | {label} | {profile.get('kind') or 'UNKNOWN'}")
 
 
 class CmdPokerolGiveItem(Command):
@@ -150,5 +158,15 @@ class CmdPokerolTrainerTest(Command):
         if not state.get("party"):
             add_pokemon(self.caller, _demo_owned_pikachu())
             add_pokemon(self.caller, _demo_owned_bulbasaur())
-        add_item(self.caller, "POKE_BALL", 5)
-        self.caller.msg("Entrenador de prueba preparado: Party + 5 POKE_BALL.")
+        for item_id, amount in (
+            ("POKE_BALL", 5),
+            ("GREAT_BALL", 2),
+            ("POTION", 3),
+            ("ANTIDOTE", 1),
+            ("PARALYZE_HEAL", 1),
+            ("FULL_HEAL", 1),
+            ("REVIVE", 1),
+            ("ETHER", 1),
+        ):
+            add_item(self.caller, item_id, amount)
+        self.caller.msg("Entrenador de prueba preparado: Party + Balls + curación + Revive + Ether.")
