@@ -6,7 +6,7 @@ from services.pokemon_move_capability_engine import compatible_world_effects
 from services.pokemon_world_move_execution_engine import execute_pokemon_world_move, object_world_packet
 
 
-ENV_BATTLE_BUILD = "0.1.0-local-world-targets"
+ENV_BATTLE_BUILD = "0.2.0-verified-target-medium"
 
 
 def _dict(value):
@@ -119,6 +119,7 @@ def execute_battle_environment_request(actor, pokemon_profile, move, request):
     target_obj = resolve_local_target(actor, target_spec)
     if not target_obj:
         return {"executed": False, "status": "WORLD_TARGET_NOT_LOCAL", "build": ENV_BATTLE_BUILD}
+    target_packet = object_world_packet(target_obj)
     result = execute_pokemon_world_move(
         pokemon_profile,
         move,
@@ -127,4 +128,11 @@ def execute_battle_environment_request(actor, pokemon_profile, move, request):
         environment=_room_environment(actor, target_obj),
         intensity=float(_dict(request).get("intensity") or 1.0),
     )
-    return {**result, "build": ENV_BATTLE_BUILD}
+    return {
+        **result,
+        "target_object_id": _text(getattr(target_obj.db, "object_id", "")),
+        "target_name": _text(getattr(target_obj, "key", "")),
+        "target_water_body_id": _text(target_packet.get("water_body_id")) or None,
+        "target_materials": _list(target_packet.get("materials")),
+        "build": ENV_BATTLE_BUILD,
+    }
