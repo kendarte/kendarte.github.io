@@ -4,7 +4,7 @@ cd /d "%~dp0"
 set "NO_PAUSE=0"
 if /I "%~1"=="/nopause" set "NO_PAUSE=1"
 set "SIZA_DARKHAVEN_MAP=%CD%\map-creator\presets\darkhaven-academy.siza-map.json"
-set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-action-button-cap-v1&force=14"
+set "SIZA_WEBCLIENT_URL=http://127.0.0.1:4001/webclient/?siza_build=20260905-ooc-safe-hard-cap&force=15"
 
 echo ========================================
 echo SIZA WORLD ENGINE - UPDATE
@@ -155,7 +155,6 @@ exit /b 0
 echo.
 echo ========================================
 echo UPDATE DETENIDO POR ERROR
-
 echo Copie la salida desde la primera linea de ERROR.
 echo ========================================
 if "%NO_PAUSE%"=="0" pause
