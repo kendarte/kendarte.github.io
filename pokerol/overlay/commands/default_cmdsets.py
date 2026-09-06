@@ -31,6 +31,7 @@ from commands.pokemon_battle_commands import (
     CmdPokerolPositionOptions,
 )
 from commands.pokemon_machine_commands import CmdPokerolEquipKnownMove, CmdPokerolMachines, CmdPokerolTeachMachine
+from commands.pokemon_reaction_commands import CmdPokerolBattleReaction
 from commands.pokemon_registry_commands import (
     CmdPokerolGivePokemon,
     CmdPokerolPokemonRegistry,
@@ -82,7 +83,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolParty(), CmdPokerolActivePokemon(), CmdPokerolBag(), CmdPokerolGiveItem(), CmdPokerolTrainerTest(),
             CmdPokerolMachines(), CmdPokerolTeachMachine(), CmdPokerolEquipKnownMove(),
             CmdPokerolPokemonRegistry(), CmdPokerolGivePokemon(), CmdPokerolWildEncounter(),
-            CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolPositionOptions(), CmdPokerolBattleMove(),
+            CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolPositionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
             CmdSizaRoomState(), CmdSizaUiContext(), CmdSizaUiStats(),
