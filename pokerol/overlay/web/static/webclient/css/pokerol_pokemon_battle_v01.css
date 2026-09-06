@@ -1,4 +1,4 @@
-/* POKEROL Pokémon Battle Stage — Red Plus v0.2 */
+/* POKEROL Pokémon Battle Stage — Red Plus v0.3 */
 .pokerolPokemonBattle{
   position:fixed;inset:0;z-index:7000;display:none;
   background:#0a0f09;color:var(--pk-ink,#172016);
@@ -22,7 +22,8 @@
 .pkbInfo{width:300px;padding:9px 11px;border:4px solid var(--pk-ink,#172016);border-radius:0;background:var(--pk-paper,#eef3d5);color:var(--pk-ink,#172016);box-shadow:4px 4px 0 var(--pk-dark,#33412d)}
 .pkbEnemy .pkbInfo{margin-left:0}.pkbPlayer .pkbInfo{margin-left:105px;margin-top:120px}
 .pkbNameRow{display:flex;justify-content:space-between;gap:10px;align-items:center;font:700 12px/1.2 var(--pk-ui-font,monospace);text-transform:uppercase}
-.pkbTypes{display:flex;gap:8px;margin-top:5px;font:8px/1 var(--pk-ui-font,monospace);text-transform:uppercase;color:var(--pk-dark,#33412d)}
+.pkbTypes{display:flex;gap:8px;margin-top:5px;align-items:center;font:8px/1 var(--pk-ui-font,monospace);text-transform:uppercase;color:var(--pk-dark,#33412d)}
+.pkbStatus{display:inline-block;padding:2px 4px;border:1px solid currentColor;background:var(--pk-mid,#71835f);color:var(--pk-paper,#eef3d5);font-weight:700;letter-spacing:.04em}
 .pkbHpRow{display:grid;grid-template-columns:auto 1fr;gap:7px;align-items:center;margin-top:7px}
 .pkbHpLabel{font:700 9px/1 var(--pk-ui-font,monospace)}
 .pkbHpTrack{height:11px;border:2px solid var(--pk-ink,#172016);background:var(--pk-light,#d7e0bd);padding:1px}
