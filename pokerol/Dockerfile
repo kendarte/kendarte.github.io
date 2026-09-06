@@ -18,27 +18,9 @@ RUN python -m evennia --init runtime
 
 COPY overlay/ /app/runtime/
 COPY railway_start.sh /app/railway_start.sh
+COPY railway_settings.py /app/railway_settings.py
 RUN chmod +x /app/railway_start.sh \
-    && cat >> /app/runtime/server/conf/settings.py <<'PYSETTINGS'
-
-# --- POKEROL Railway smoke-test settings ---
-import os as _pokerol_os
-
-SERVERNAME = "POKEROL"
-ALLOWED_HOSTS = ["*"]
-WEBSERVER_INTERFACES = ["0.0.0.0"]
-WEBSERVER_PORTS = [(int(_pokerol_os.environ.get("PORT", "4001")), 4005)]
-TELNET_ENABLED = False
-SSH_ENABLED = False
-WEBSOCKET_CLIENT_ENABLED = False
-WEBCLIENT_ENABLED = True
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-_pokerol_public_domain = _pokerol_os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
-if _pokerol_public_domain:
-    CSRF_TRUSTED_ORIGINS = [f"https://{_pokerol_public_domain}"]
-# --- end POKEROL Railway smoke-test settings ---
-PYSETTINGS
+    && cat /app/railway_settings.py >> /app/runtime/server/conf/settings.py
 
 EXPOSE 4001
 
