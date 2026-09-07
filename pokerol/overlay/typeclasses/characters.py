@@ -97,6 +97,26 @@ class Character(DefaultCharacter, ObjectParent):
             return None
         return None
 
+    def _process_pokerol_room_entry(self):
+        """Give ENTER_ROOM events one persistent token per actual traversal."""
+        try:
+            from services.pokerol_room_event_runtime import note_room_visit, process_room_event_trigger
+
+            serial = note_room_visit(self, getattr(self, "location", None))
+            process_room_event_trigger(self, "ENTER_ROOM", trigger_token=serial)
+            return serial
+        except Exception:
+            return None
+
+    def _reconcile_pokerol_room_events(self):
+        """Refresh completion facts without treating browser reconnect as a new visit."""
+        try:
+            from services.pokerol_room_event_runtime import reconcile_room_events
+
+            return reconcile_room_events(self)
+        except Exception:
+            return []
+
     def at_pre_move(self, destination, move_type="move", **kwargs):
         """Keep active multiplayer participants inside the authoritative battle Room."""
         try:
@@ -122,7 +142,11 @@ class Character(DefaultCharacter, ObjectParent):
             super().at_post_puppet(**kwargs)
         except TypeError:
             super().at_post_puppet()
-        self._ensure_pokerol_start_location()
+        moved_to_start = self._ensure_pokerol_start_location()
+        if moved_to_start:
+            self._process_pokerol_room_entry()
+        else:
+            self._reconcile_pokerol_room_events()
         self._emit_pokerol_room_snapshot()
 
     def at_post_move(self, source_location, move_type="move", **kwargs):
@@ -130,9 +154,11 @@ class Character(DefaultCharacter, ObjectParent):
         super().at_post_move(source_location, move_type=move_type, **kwargs)
         destination = getattr(self, "location", None)
         if not source_location or not destination:
+            self._reconcile_pokerol_room_events()
             self._emit_pokerol_room_snapshot()
             return
         if source_location is destination:
+            self._reconcile_pokerol_room_events()
             self._emit_pokerol_room_snapshot()
             return
 
@@ -165,4 +191,5 @@ class Character(DefaultCharacter, ObjectParent):
                     },
                 },
             )
+        self._process_pokerol_room_entry()
         self._emit_pokerol_room_snapshot()
