@@ -1,15 +1,9 @@
 """Unified room-event registry used by the POKEROL editor.
 
-The editor must answer one concrete question: which events can happen in the
-player's current room?  This module merges three authorities without moving
-world logic into the browser:
-
-* SYSTEM events implemented by code (currently the Oak starter tutorial).
-* WORLD_EVENT producer rules already owned by ``world_event_engine``.
-* Room-local authored definitions stored on the Room for future handlers.
-
-System events are edited through room-local overrides, so code identity and
-handler wiring stay stable while authored text/configuration can change.
+Events are situations, not dialogue rails. The authored definition may expose a
+scene_policy containing Director goals, actor goals, social rules, valid outcomes
+and relocation/completion policy. The AI DM uses those facts to interpret free
+input while the engine remains authoritative over state changes.
 """
 
 from copy import deepcopy
@@ -18,7 +12,7 @@ from uuid import uuid4
 from services.world_event_engine import inspect_event_sites, refresh_world_event_rules
 
 
-EVENT_EDITOR_BUILD = "0.1.0-room-event-registry"
+EVENT_EDITOR_BUILD = "0.2.0-director-situation-events"
 ROOM_EVENTS_ATTR = "pokerol_room_events"
 ROOM_EVENT_OVERRIDES_ATTR = "pokerol_event_overrides"
 OAK_TUTORIAL_EVENT_ID = "PALLET-OAK-START"
@@ -39,29 +33,55 @@ OAK_TUTORIAL_DEFAULT = {
     "trigger_target": "NPC-KANTO-PAL-OAK",
     "repeat_mode": "PER_CHARACTER",
     "description": (
-        "Inicio jugable del laboratorio: hablar con Oak, escoger un starter, "
-        "el rival escoge el counter y comienza la primera batalla."
+        "Situación inicial del laboratorio: Oak entrega un primer Pokémon y el rival quiere probar "
+        "al nuevo entrenador. El jugador decide libremente si pelea, dónde, cuándo o si rechaza."
     ),
     "stages": [
         {"id": "MEET_OAK", "label": "Hablar con Oak"},
         {"id": "CHOOSE_STARTER", "label": "Escoger primer Pokémon"},
-        {"id": "RIVAL_CHALLENGE", "label": "Reto del rival"},
+        {"id": "RIVAL_CHALLENGE", "label": "Negociar el reto del rival"},
         {"id": "BATTLE", "label": "Primera batalla"},
-        {"id": "COMPLETE", "label": "Tutorial completado"},
+        {"id": "COMPLETE", "label": "Situación resuelta"},
     ],
+    "scene_policy": {
+        "free_input_priority": True,
+        "director_goal": "Presentar el comienzo de la relación entrenador-Pokémon sin forzar una ruta única.",
+        "actor_goals": {
+            "NPC-KANTO-PAL-RIVAL": "Conseguir una primera batalla pronto y demostrar que eligió mejor.",
+            "NPC-KANTO-PAL-OAK": "Entregar el Pokémon, observar al entrenador y proteger el laboratorio y su equipo.",
+        },
+        "social_rules": [
+            "Oak tiene autoridad sobre el laboratorio.",
+            "Oak tolera entusiasmo, pero reacciona a daño, fuego o riesgo sobre su equipo.",
+            "El rival puede insistir o burlarse, pero no puede obligar al jugador a combatir.",
+            "NPC y Director nunca salen del papel para contestar solicitudes ajenas al mundo.",
+        ],
+        "allowed_outcomes": [
+            "BATTLE_HERE", "BATTLE_OUTSIDE", "POSTPONED", "DECLINED",
+            "INTERRUPTED_BY_OAK", "COMPLETED",
+        ],
+        "relocation_policy": "ALLOW_PLAYER_NEGOTIATION",
+        "completion_conditions": ["FIRST_RIVAL_BATTLE_FINISHED"],
+        "memory_on_complete": True,
+    },
     "settings": {
         "starter_level": 5,
         "starter_choices": ["bulbasaur", "charmander", "squirtle"],
         "rival_pick_mode": "COUNTER",
+        "challenge_accepts_here": True,
+        "challenge_accepts_outside": True,
+        "challenge_can_postpone": True,
+        "challenge_can_decline": True,
+        "lab_damage_intervention": True,
     },
     "texts": {
         "oak_intro": "Llegaste justo a tiempo. Antes de partir necesitas escoger a tu primer Pokémon. Sobre la mesa tienes a {starters}. Elige uno.",
         "oak_choose_again": "Los tres están listos. {starters}: la decisión es tuya.",
-        "oak_after_choice": "Ya tienes compañero. Ahora aprende a darle órdenes: tu rival quiere probarte aquí mismo.",
-        "oak_battle": "Concéntrate en tu Pokémon y observa lo que hace el rival. Esta es tu primera batalla como entrenador.",
+        "oak_after_choice": "Ya tienes compañero. Tu rival quiere probarte; decide tú cómo responderle.",
+        "oak_battle": "Concéntrate en tu Pokémon y observa lo que hace el rival.",
         "oak_complete": "Bien hecho. Ganar o perder era secundario: ya diste el primer paso como entrenador Pokémon.",
         "rival_wait": "Apúrate. Tú eliges primero; yo sabré cuál tomar después.",
-        "rival_challenge": "Yo me quedo con {rival}. Ya que ambos tenemos Pokémon, ¡vamos a ver quién sabe usarlos mejor!",
+        "rival_challenge": "Yo me quedo con {rival}. Ya que ambos tenemos Pokémon, ¡te reto a una batalla!",
         "rival_battle": "¡Nada de echarte atrás ahora! La batalla ya empezó.",
         "rival_player_win": "Tch... esta vez ganaste. La próxima no te lo voy a dejar tan fácil.",
         "rival_player_loss": "¿Ves? Tener un Pokémon no basta. Tendrás que entrenar si quieres alcanzarme.",
@@ -69,6 +89,11 @@ OAK_TUTORIAL_DEFAULT = {
         "oak_starter_chosen": "Entonces {starter} será tu compañero. Trátalo bien y aprende a trabajar con él.",
         "rival_starter_chosen": "Perfecto. Entonces yo elijo a {rival}. ¡Ahora que ambos tenemos Pokémon, te reto a una batalla!",
         "rival_battle_start": "¡Vamos, {rival}! ¡Muéstrale lo que podemos hacer!",
+        "rival_outside": "Bien. Afuera tendremos espacio de sobra. ¡Vamos!",
+        "rival_postpone": "¿Ahora no? Está bien, pero no creas que te vas a librar para siempre.",
+        "rival_decline": "¿En serio vas a echarte atrás? Tch. Haz lo que quieras.",
+        "oak_lab_warning": "Si van a pelear aquí, mantengan el control. Este laboratorio no es una arena.",
+        "oak_lab_intervention": "¡Se acabó! ¡Los dos afuera antes de que destrocen algo más!",
     },
 }
 
@@ -134,6 +159,21 @@ def _room_events(room):
     return output
 
 
+def _normalize_scene_policy(value):
+    row = _plain_dict(value)
+    actor_goals = {str(k): str(v or "")[:1200] for k, v in _plain_dict(row.get("actor_goals")).items() if str(k).strip()}
+    return {
+        "free_input_priority": bool(row.get("free_input_priority", True)),
+        "director_goal": _clean(row.get("director_goal"), 2400),
+        "actor_goals": actor_goals,
+        "social_rules": [_clean(v, 1200) for v in _plain_list(row.get("social_rules")) if _clean(v)],
+        "allowed_outcomes": [_clean(v, 120).upper() for v in _plain_list(row.get("allowed_outcomes")) if _clean(v)],
+        "relocation_policy": _clean(row.get("relocation_policy"), 120).upper() or "NONE",
+        "completion_conditions": [_clean(v, 160).upper() for v in _plain_list(row.get("completion_conditions")) if _clean(v)],
+        "memory_on_complete": bool(row.get("memory_on_complete", False)),
+    }
+
+
 def _normalize_common(row):
     event = deepcopy(row or {})
     event["id"] = _clean(event.get("id"), 120)
@@ -152,6 +192,7 @@ def _normalize_common(row):
     event["texts"] = {str(k): str(v or "")[:6000] for k, v in _plain_dict(event.get("texts")).items()}
     event["settings"] = _plain_dict(event.get("settings"))
     event["stages"] = [_plain_dict(item) for item in _plain_list(event.get("stages")) if _plain_dict(item)]
+    event["scene_policy"] = _normalize_scene_policy(event.get("scene_policy"))
     return event
 
 
@@ -198,6 +239,11 @@ def _world_event_rows(room):
                     "trigger_target": rule.get("field"),
                     "repeat_mode": rule.get("response_mode") or ("PERSISTENT" if goal_type == "DANGER" else "ACK"),
                     "description": _clean(rule.get("description")) or _clean(rule.get("activity")),
+                    "scene_policy": {
+                        "free_input_priority": True,
+                        "director_goal": _clean(rule.get("activity")),
+                        "allowed_outcomes": [goal_type],
+                    },
                     "settings": {
                         "event_id": event_id,
                         "rule_id": rule_id,
@@ -265,21 +311,11 @@ def get_room_event(room, event_id):
 
 def _editable_system_override(definition, payload):
     allowed = {
-        "name",
-        "enabled",
-        "priority",
-        "trigger",
-        "trigger_target",
-        "repeat_mode",
-        "description",
-        "texts",
-        "settings",
-        "stages",
-        "event_type",
+        "name", "enabled", "priority", "trigger", "trigger_target", "repeat_mode",
+        "description", "texts", "settings", "stages", "event_type", "scene_policy",
     }
     override = {key: deepcopy(value) for key, value in _plain_dict(payload).items() if key in allowed}
     merged = _normalize_common(_deep_merge(definition, override))
-    # Store only editor-owned fields, never identity/handler/room wiring.
     return {key: deepcopy(merged.get(key)) for key in allowed if key in merged}
 
 
