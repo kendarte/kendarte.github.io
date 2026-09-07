@@ -1,4 +1,5 @@
 from evennia import Command
+from evennia.server.models import ServerConfig
 
 from commands.siza_ui_runtime_commands import (
     _room_text_block,
@@ -15,7 +16,8 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.10.0-hotspot-geometry"
+POKEROL_UI_RUNTIME_BUILD = "0.11.0-console-frame"
+GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
 def _stamp(packet):
@@ -112,6 +114,13 @@ def _hotspot_geometry(location):
     return result
 
 
+def _ui_frame_url():
+    try:
+        return str(ServerConfig.objects.conf(GLOBAL_FRAME_CONFIG, default="") or "").strip()
+    except Exception:
+        return ""
+
+
 def _tutorial_packet(actor):
     room = getattr(actor, "location", None) if actor else None
     state = dict(tutorial_state(actor) or {}) if actor else {}
@@ -141,6 +150,7 @@ def _tutorial_packet(actor):
 def _enrich_world_rows(actor, packet):
     location = getattr(actor, "location", None) if actor else None
     if not location:
+        packet["ui_frame"] = _ui_frame_url()
         return packet
 
     packet["room_dbref"] = int(location.id)
@@ -157,6 +167,7 @@ def _enrich_world_rows(actor, packet):
     else:
         packet["scene_image"] = ""
 
+    packet["ui_frame"] = _ui_frame_url()
     packet["player_editor"] = _player_metadata(actor, location)
     packet["custom_hotspots"] = _custom_hotspots(location)
     packet["action_hotspot_layouts"] = _action_hotspot_layouts(location)
