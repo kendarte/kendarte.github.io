@@ -32,16 +32,40 @@
 .pkHotspotField label{font:700 5px/1 var(--pk-font)}
 .pkHotspotField input{width:100%;height:28px;border:2px solid var(--pk-ink);background:#fff;color:var(--pk-ink);padding:4px 6px;font:11px/1 var(--pk-copy);outline:none}
 .pkHotspotXY{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pkHotspotSizeFields{padding-top:2px;border-top:1px dashed rgba(23,32,22,.35)}
 .pkHotspotActions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
 .pkHotspotActions .pkWide{grid-column:1/-1}
+.pkHotspotActions .pkDanger{background:#f3c6b9}
+.pkHotspotActions .pkDanger:hover:not(:disabled){background:#7f281d;color:#fff}
 .pkHotspotHint,.pkPlayerHint{margin-top:6px;font:9px/1.25 var(--pk-copy);color:var(--pk-dark)}
 
 .pkStage.pkHotspotEditing .pkActor{outline:2px dashed rgba(255,255,255,.95);outline-offset:4px;cursor:move!important;touch-action:none}
 .pkStage.pkHotspotEditing .pkActorLabel{background:#fff6a8}
 .pkActor.pkSelectedHotspot{outline:3px solid #ffec54!important;outline-offset:5px!important;filter:drop-shadow(0 0 4px rgba(0,0,0,.55))}
 .pkCustomHotspot .pkActorPlaceholder{display:block!important;border-radius:0;width:28px;height:28px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:#ffe76e}
-.pkActor.pkHotspotHidden{display:none!important}
-.pkStage.pkHotspotEditing .pkActor.pkHotspotHidden{display:flex!important;opacity:.28}
+.pkActor.pkHotspotDeleted{display:none!important}
+
+/* Persistent hotspot hitbox. Visual sprite/label keep their proportions; width/height edit the clickable area. */
+.pkActor.pkHotspotSized::before{
+  content:'';
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:var(--pk-hotspot-width,80px);
+  height:var(--pk-hotspot-height,80px);
+  transform:translateX(-50%);
+  pointer-events:auto;
+  background:transparent;
+}
+.pkStage.pkHotspotEditing .pkActor.pkHotspotSized::before{
+  border:2px dashed #ffec54;
+  background:rgba(255,236,84,.12);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.2);
+}
+.pkStage.pkHotspotEditing .pkActor.pkSelectedHotspot.pkHotspotSized::before{
+  border-style:solid;
+  background:rgba(255,236,84,.2);
+}
 
 /* Player direct editor */
 .pkPlayerFields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:8px}
