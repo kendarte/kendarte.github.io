@@ -1,10 +1,10 @@
 from evennia import Command
 
 from services.pokerol_event_editor_service import OAK_TUTORIAL_EVENT_ID, get_room_event
+from services.pokerol_oak_situation_engine import negotiate_rival_challenge
 from services.pokerol_tutorial_engine import (
     LAB_ROOM_ID,
     choose_starter,
-    start_rival_battle,
     talk_oak,
     talk_rival,
     tutorial_state,
@@ -19,30 +19,14 @@ from services.pokerol_tutorial_progress import (
 OAK_PORTRAIT = "https://play.pokemonshowdown.com/sprites/trainers/oak.png"
 RIVAL_PORTRAIT = "https://play.pokemonshowdown.com/sprites/trainers/blue.png"
 STARTER_MEDIA = {
-    "bulbasaur": {
-        "species_id": "PKMN-001",
-        "name": "Bulbasaur",
-        "types": ["PLANTA", "VENENO"],
-        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
-    },
-    "charmander": {
-        "species_id": "PKMN-004",
-        "name": "Charmander",
-        "types": ["FUEGO"],
-        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
-    },
-    "squirtle": {
-        "species_id": "PKMN-007",
-        "name": "Squirtle",
-        "types": ["AGUA"],
-        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
-    },
+    "bulbasaur": {"species_id": "PKMN-001", "name": "Bulbasaur", "types": ["PLANTA", "VENENO"], "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"},
+    "charmander": {"species_id": "PKMN-004", "name": "Charmander", "types": ["FUEGO"], "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png"},
+    "squirtle": {"species_id": "PKMN-007", "name": "Squirtle", "types": ["AGUA"], "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png"},
 }
 
 
 def _refresh(actor):
     from commands.pokerol_ui_runtime_commands import emit_room_snapshot
-
     emit_room_snapshot(actor, visible_text=False)
 
 
@@ -69,23 +53,14 @@ def _event_settings(actor):
 
 
 def _emit_modal(actor, packet):
-    actor.msg(
-        pokerol_event_modal=(({
-            "event_id": OAK_TUTORIAL_EVENT_ID,
-            "blocking": True,
-            **dict(packet or {}),
-        },), {})
-    )
+    actor.msg(pokerol_event_modal=(({"event_id": OAK_TUTORIAL_EVENT_ID, "blocking": True, **dict(packet or {})},), {}))
 
 
 def _starter_choice_allowed(actor, slug):
     event, settings = _event_settings(actor)
     if not event or not bool(event.get("enabled", True)):
         return False
-    configured = [
-        str(value or "").strip().lower()
-        for value in list(settings.get("starter_choices") or ["bulbasaur", "charmander", "squirtle"])
-    ]
+    configured = [str(value or "").strip().lower() for value in list(settings.get("starter_choices") or ["bulbasaur", "charmander", "squirtle"])]
     return slug in configured
 
 
@@ -97,27 +72,20 @@ def _preview(actor, raw_choice):
     if not slug or not _starter_choice_allowed(actor, slug):
         return False
     row = STARTER_MEDIA[slug]
-    _emit_modal(
-        actor,
-        {
-            "modal_id": "STARTER:" + slug.upper(),
-            "kind": "STARTER_PREVIEW",
-            "title": row["name"],
-            "speaker": "PROF. OAK",
-            "text": "¿Quieres que {} sea tu primer Pokémon?".format(row["name"]),
-            "media_type": "image",
-            "media_src": row["image"],
-            "caption": "TIPO · " + " / ".join(row["types"]),
-            "buttons": [
-                {
-                    "label": "TOMAR A " + row["name"].upper(),
-                    "command": "tutorial-elegir confirm:" + slug,
-                    "primary": True,
-                },
-                {"label": "CANCELAR", "close": True},
-            ],
-        },
-    )
+    _emit_modal(actor, {
+        "modal_id": "STARTER:" + slug.upper(),
+        "kind": "STARTER_PREVIEW",
+        "title": row["name"],
+        "speaker": "PROF. OAK",
+        "text": "¿Quieres que {} sea tu primer Pokémon?".format(row["name"]),
+        "media_type": "image",
+        "media_src": row["image"],
+        "caption": "TIPO · " + " / ".join(row["types"]),
+        "buttons": [
+            {"label": "TOMAR A " + row["name"].upper(), "command": "tutorial-elegir confirm:" + slug, "primary": True},
+            {"label": "CANCELAR", "close": True},
+        ],
+    })
     return True
 
 
@@ -129,24 +97,20 @@ class CmdPokerolTutorialOak(Command):
 
     def func(self):
         mode = str(self.args or "").strip().lower()
-
         if mode in {"sync", "finalize"}:
             reconcile_oak_progress(self.caller)
             _refresh(self.caller)
             return
-
         if mode == "snooze":
             snooze_oak_event(self.caller)
             _refresh(self.caller)
             return
-
         state = reconcile_oak_progress(self.caller)
         if state.get("completed"):
             if mode not in {"enter"}:
                 talk_oak(self.caller)
             _refresh(self.caller)
             return
-
         resume_oak_event(self.caller)
         talk_oak(self.caller)
         _refresh(self.caller)
@@ -177,13 +141,9 @@ class CmdPokerolTutorialChooseStarter(Command):
             choice = raw.split(":", 1)[1]
             state = reconcile_oak_progress(self.caller)
             if state.get("stage") != "CHOOSE_STARTER":
-                if state.get("starter_id"):
-                    self.caller.msg("Ya tienes tu primer Pokémon. El evento continúa desde donde quedó guardado.")
-                else:
-                    self.caller.msg("La elección de starter no está disponible en este momento.")
+                self.caller.msg("Ya tienes tu primer Pokémon. El evento continúa desde donde quedó guardado." if state.get("starter_id") else "La elección de starter no está disponible en este momento.")
                 _refresh(self.caller)
                 return
-
             resume_oak_event(self.caller)
             result = choose_starter(self.caller, choice)
             if result.get("accepted") and result.get("status") == "STARTER_CHOSEN":
@@ -192,13 +152,9 @@ class CmdPokerolTutorialChooseStarter(Command):
                 self.caller.msg("No se pudo elegir ese Pokémon: {}".format(result.get("status")))
             _refresh(self.caller)
             return
-
         if not _preview(self.caller, raw):
             state = reconcile_oak_progress(self.caller)
-            if state.get("starter_id"):
-                self.caller.msg("Ya tienes tu primer Pokémon. Esa Poké Ball ya no forma parte del evento activo.")
-            else:
-                self.caller.msg("No se pudo abrir esa Poké Ball.")
+            self.caller.msg("Ya tienes tu primer Pokémon. Esa Poké Ball ya no forma parte del evento activo." if state.get("starter_id") else "No se pudo abrir esa Poké Ball.")
         _refresh(self.caller)
 
 
@@ -215,11 +171,20 @@ class CmdPokerolTutorialRivalChallenge(Command):
             _refresh(self.caller)
             return
 
-        resume_oak_event(self.caller)
-        result = start_rival_battle(self.caller)
-        if result.get("accepted"):
+        raw = str(self.args or "").strip().lower()
+        aliases = {
+            "": "HERE", "aqui": "HERE", "aquí": "HERE", "here": "HERE",
+            "afuera": "OUTSIDE", "fuera": "OUTSIDE", "outside": "OUTSIDE",
+            "posponer": "POSTPONE", "luego": "POSTPONE", "despues": "POSTPONE", "después": "POSTPONE", "not-now": "POSTPONE",
+            "rechazar": "DECLINE", "no": "DECLINE", "decline": "DECLINE",
+        }
+        choice = aliases.get(raw, raw.upper())
+        if choice in {"HERE", "OUTSIDE"}:
+            resume_oak_event(self.caller)
+        result = negotiate_rival_challenge(self.caller, choice)
+        if result.get("accepted") and str(result.get("status") or "").endswith("STARTED"):
             state = dict(result.get("tutorial_state") or tutorial_state(self.caller, reconcile=False))
             mark_oak_battle_started(self.caller, state)
-        else:
-            self.caller.msg("No se pudo iniciar la batalla: {}".format(result.get("status")))
-            _refresh(self.caller)
+        elif not result.get("accepted"):
+            self.caller.msg("No se pudo resolver el reto: {}".format(result.get("status")))
+        _refresh(self.caller)
