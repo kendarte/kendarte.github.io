@@ -6,7 +6,7 @@ from services.knowledge_context_engine import fact_knowledge_state, knowledge_fa
 from services.pokemon_party_engine import party_state
 
 
-PLAYER_PROGRESS_BUILD = "0.1.0-player-sheet-memory-core"
+PLAYER_PROGRESS_BUILD = "0.2.0-factual-trainer-sheet"
 MEMORY_LIMIT = 200
 EVENT_LIMIT = 200
 BADGE_LIMIT = 32
@@ -160,6 +160,22 @@ def award_badge(actor, *, badge_id, name, region="Kanto", image="", description=
     return row
 
 
+def _pokemon_is_factual(row):
+    """Only expose owned Pokémon whose acquisition has an authoritative trace.
+
+    Older test commands wrote arbitrary Pokémon directly into pokerol_party. They
+    remain in the DB for compatibility, but must not be presented as biography.
+    """
+    row = _dict(row)
+    return bool(
+        row.get("ownership_confirmed")
+        or row.get("starter_pokemon")
+        or _text(row.get("origin_event_id"))
+        or _text(row.get("obtained_via"))
+        or _text(row.get("captured_at"))
+    )
+
+
 def player_sheet_state(actor):
     if not actor:
         return {"status": "NO_PLAYER", "build": PLAYER_PROGRESS_BUILD}
@@ -182,8 +198,10 @@ def player_sheet_state(actor):
         })
 
     party = party_state(actor)
+    raw_party = list(party.get("party") or [])
+    factual_party = [row for row in raw_party if _pokemon_is_factual(row)]
     party_rows = []
-    for row in list(party.get("party") or []):
+    for row in factual_party:
         sprite = _dict(row.get("sprite"))
         party_rows.append({
             "species_id": _text(row.get("species_id"), 96),
@@ -191,6 +209,8 @@ def player_sheet_state(actor):
             "level": int(row.get("level", 1) or 1),
             "active": bool(row.get("active")),
             "icon": _text(sprite.get("icon") or sprite.get("front"), 1000),
+            "origin_event_id": _text(row.get("origin_event_id"), 96),
+            "obtained_via": _text(row.get("obtained_via"), 96),
         })
 
     return {
@@ -212,5 +232,6 @@ def player_sheet_state(actor):
         "memories": list(reversed(memories(actor))),
         "events": list(reversed(event_history(actor))),
         "party": party_rows,
+        "unverified_party_count": max(0, len(raw_party) - len(factual_party)),
         "storage_count": int(party.get("storage_count", 0) or 0),
     }
