@@ -12,7 +12,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_context_actions,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.7.0-persistent-project-assets"
+POKEROL_UI_RUNTIME_BUILD = "0.8.0-project-layouts"
 
 
 def _stamp(packet):
@@ -39,17 +39,23 @@ def _scene_metadata(obj):
     }
 
 
+def _room_key(location):
+    return str(_db_value(location, "room_id", "") or "").strip() or f"DBREF:{int(location.id)}"
+
+
 def _player_metadata(actor, location):
-    room_key = str(_db_value(location, "room_id", "") or f"DBREF:{int(location.id)}")
-    layouts = _db_value(actor, "pokerol_player_layouts", {}) or {}
-    if not isinstance(layouts, dict):
-        layouts = {}
-    layout = layouts.get(room_key) or {}
+    layout = _db_value(location, "pokerol_player_layout", None)
+    if not isinstance(layout, dict):
+        # Read old per-character layouts as a migration fallback only.
+        legacy = _db_value(actor, "pokerol_player_layouts", {})
+        if isinstance(legacy, dict):
+            layout = legacy.get(_room_key(location))
+    if not isinstance(layout, dict):
+        layout = {}
     return {
-        "room_key": room_key,
         "scene_x": layout.get("x", 11),
         "scene_y": layout.get("y", 94),
-        "scene_scale": layout.get("scale", 1),
+        "scene_scale": layout.get("scale", 1.0),
         "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
     }
 
@@ -66,10 +72,26 @@ def _custom_hotspots(location):
             "x": raw.get("x", 50),
             "y": raw.get("y", 20),
             "description": str(raw.get("description") or ""),
-            "scale": raw.get("scale", 1),
+            "scale": raw.get("scale", 1.0),
             "sprite": str(raw.get("sprite") or ""),
         })
     return rows
+
+
+def _action_hotspot_layouts(location):
+    raw = _db_value(location, "pokerol_action_hotspot_layouts", {})
+    if not isinstance(raw, dict):
+        return {}
+    result = {}
+    for key, row in raw.items():
+        if not isinstance(row, dict):
+            continue
+        result[str(key)] = {
+            "x": row.get("x", 50),
+            "y": row.get("y", 20),
+            "scale": row.get("scale", 1.0),
+        }
+    return result
 
 
 def _enrich_world_rows(actor, packet):
@@ -91,8 +113,9 @@ def _enrich_world_rows(actor, packet):
     else:
         packet["scene_image"] = ""
 
-    packet["custom_hotspots"] = _custom_hotspots(location)
     packet["player_editor"] = _player_metadata(actor, location)
+    packet["custom_hotspots"] = _custom_hotspots(location)
+    packet["action_hotspot_layouts"] = _action_hotspot_layouts(location)
 
     local = {}
     for obj in list(getattr(location, "contents", []) or []):
@@ -177,7 +200,6 @@ def context_action_packet(actor):
 
 
 def emit_room_snapshot(actor, *, visible_text=False):
-    """Publish POKEROL-native room state to the web client."""
     packet = room_snapshot_packet(actor)
     actions = context_action_packet(actor)
     actor.msg(pokerol_room_snapshot=((packet,), {}))
