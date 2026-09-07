@@ -35,12 +35,16 @@
         +'<div class="pkHotspotField"><label for="pk-hotspot-x">X %</label><input id="pk-hotspot-x" type="number" min="2" max="98" step="0.1"></div>'
         +'<div class="pkHotspotField"><label for="pk-hotspot-y">Y %</label><input id="pk-hotspot-y" type="number" min="0" max="92" step="0.1"></div>'
       +'</div>'
+      +'<div class="pkHotspotXY pkHotspotSizeFields">'
+        +'<div class="pkHotspotField"><label for="pk-hotspot-width">ANCHO · PX</label><input id="pk-hotspot-width" type="number" min="12" max="600" step="1"></div>'
+        +'<div class="pkHotspotField"><label for="pk-hotspot-height">ALTO · PX</label><input id="pk-hotspot-height" type="number" min="12" max="500" step="1"></div>'
+      +'</div>'
       +'<div class="pkHotspotActions">'
         +'<button id="pk-hotspot-save" type="button" class="pkWide">GUARDAR</button>'
-        +'<button id="pk-hotspot-hide" type="button" disabled>OCULTAR</button>'
-        +'<button id="pk-hotspot-delete" type="button" disabled>BORRAR</button>'
+        +'<button id="pk-hotspot-delete" type="button" class="pkWide pkDanger" disabled>BORRAR HOTSPOT</button>'
+        +'<button id="pk-hotspot-hide" type="button" hidden disabled>OCULTAR</button>'
       +'</div>'
-      +'<div class="pkHotspotHint">Arrastra el hotspot directamente en la escena. × sale del editor.</div>';
+      +'<div class="pkHotspotHint">Arrastra para mover. ANCHO y ALTO cambian el área clickeable. BORRAR elimina el hotspot visual del Room.</div>';
     stage.appendChild(hotspot);
 
     var player=document.createElement('aside');player.id='pk-player-panel';player.className='pkPlayerPanel';player.hidden=true;
