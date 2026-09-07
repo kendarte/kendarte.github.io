@@ -112,6 +112,8 @@ def _asset_slot(caller, kind, dbref=None, hotspot_id=None):
         return target, "scene_sprite", "entities", int(target.id), ""
     if kind == "player_sprite":
         return caller, "scene_sprite", "players", int(caller.id), ""
+    if kind == "player_fullbody":
+        return caller, "profile_fullbody_image", "players", int(caller.id), ""
     if kind == "custom_hotspot_sprite":
         room = getattr(caller, "location", None)
         hid = _safe_hotspot_id(hotspot_id)
