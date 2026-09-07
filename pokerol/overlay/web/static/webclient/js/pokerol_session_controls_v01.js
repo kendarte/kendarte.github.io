@@ -1,10 +1,15 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.2-confirmed-websocket-logout';
-  var leaving=false;
+  var BUILD='0.2.0-hard-browser-logout';
+  var leaving=false,currentToken='',emitterBound=false,timeoutId=null;
 
   function byId(id){return document.getElementById(id)}
+  function packetFrom(args){
+    var packet=args&&args.length?args[0]:args;
+    if(Array.isArray(packet)&&packet.length===1)packet=packet[0];
+    return packet&&typeof packet==='object'?packet:{};
+  }
 
   function markManualLogout(){
     try{
@@ -25,30 +30,37 @@
   }
 
   function restoreButton(message){
-    leaving=false;
+    leaving=false;currentToken='';
+    if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
     var button=byId('pk-logout');
     if(button){button.disabled=false;button.textContent='SALIR';button.title=message||'Cerrar sesión y volver al login'}
   }
 
-  function waitForClosed(){
-    var started=Date.now(),lastRetry=0;
-    (function check(){
-      if(!leaving)return;
-      if(!connected()){
-        /* Evennia clears webclient_authenticated_uid before sending the normal
-         * websocket close. Only navigate after that close is visible here. */
-        setTimeout(goToLogin,300);
-        return;
-      }
+  function closeTransportThenLogin(){
+    try{
+      if(window.Evennia&&Evennia.connection&&typeof Evennia.connection.close==='function')Evennia.connection.close();
+    }catch(e){}
+    setTimeout(goToLogin,700);
+  }
 
-      var elapsed=Date.now()-started;
-      if(elapsed>2500&&elapsed-lastRetry>2500){
-        lastRetry=elapsed;
-        try{Evennia.msg('text',['quit'],{})}catch(e){}
-      }
-      if(elapsed>10000){restoreButton('No se confirmó el cierre. Pulsa SALIR para reintentar.');return}
-      setTimeout(check,120);
-    })();
+  function onLogoutReady(args){
+    var packet=packetFrom(args);
+    try{window.dispatchEvent(new CustomEvent('pokerol-logout-ready',{detail:packet}))}catch(e){}
+    if(!leaving||!currentToken||String(packet.token||'')!==currentToken)return true;
+    if(packet.cleared!==true){restoreButton('El servidor no pudo limpiar la sesión del navegador. Reintenta.');return true}
+    if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
+    var button=byId('pk-logout');
+    if(button)button.textContent='CERRANDO…';
+    closeTransportThenLogin();
+    return true;
+  }
+
+  function bindEmitter(){
+    if(emitterBound)return true;
+    if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;
+    Evennia.emitter.on('pokerol_logout_ready',onLogoutReady);
+    emitterBound=true;
+    return true;
   }
 
   function doLogout(){
@@ -56,16 +68,22 @@
     leaving=true;markManualLogout();
 
     var button=byId('pk-logout');
-    if(button){button.disabled=true;button.textContent='SALIENDO…'}
+    if(button){button.disabled=true;button.textContent='LIMPIANDO SESIÓN…'}
 
-    if(!connected()){goToLogin();return}
+    if(!connected()){
+      goToLogin();
+      return;
+    }
 
+    currentToken='manual-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
     try{
-      if(window.Evennia&&typeof Evennia.msg==='function')Evennia.msg('text',['quit'],{});
-      else{restoreButton('No hay conexión activa.');return}
-    }catch(e){restoreButton('No se pudo enviar el cierre de sesión.');return}
+      if(!window.Evennia||typeof Evennia.msg!=='function')throw new Error('sin Evennia');
+      Evennia.msg('text',['pokerol-hard-logout '+currentToken],{});
+    }catch(e){restoreButton('No se pudo solicitar el cierre de sesión.');return}
 
-    waitForClosed();
+    timeoutId=setTimeout(function(){
+      if(leaving)restoreButton('El servidor no confirmó la limpieza de sesión. Pulsa SALIR para reintentar.');
+    },6000);
   }
 
   function inject(){
@@ -88,8 +106,10 @@
     var tries=0;
     (function wait(){
       tries++;
-      if(inject())return;
-      if(tries<180)setTimeout(wait,50);
+      var ready=bindEmitter();
+      var injected=inject();
+      if(ready&&injected)return;
+      if(tries<240)setTimeout(wait,50);
     })();
   }
 
