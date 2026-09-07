@@ -1,8 +1,9 @@
-"""Build presentation-only shot sequences from authoritative battle facts.
+"""Build presentation-only WEGO shot sequences from authoritative battle facts.
 
-Shots never decide outcomes. They are a camera/editing layer over the map state,
-move profile, engine log and persisted world consequences. Existing sprite/image
-or authored video assets may be used; missing media simply falls back to text.
+The battle engine chooses both sides' intents before resolution. This module turns
+that authoritative round into the Captain-Tsubasa-style presentation contract:
+first reveal the intentions, then show reactions/execution, then consequences.
+Shots never decide outcomes and never mutate battle state.
 """
 
 from copy import deepcopy
@@ -10,7 +11,7 @@ from copy import deepcopy
 from services.pokemon_move_capability_engine import move_combat_profile
 
 
-SHOT_DIRECTOR_BUILD = "0.1.0-authoritative-anime-shots"
+SHOT_DIRECTOR_BUILD = "0.2.0-wego-anime-sequence"
 
 
 def _dict(value):
@@ -64,6 +65,65 @@ def _media(move, fallback=""):
     return {"media_type": kind or None, "media_src": src or None}
 
 
+def _move_name(battle, move_id, side):
+    move = _source_move(battle, move_id, side)
+    return _text(move.get("name")) or _text(move_id)
+
+
+def _action_text(battle, action, side):
+    row = _dict(action)
+    kind = _text(row.get("type")).upper()
+    pokemon = _dict(_dict(battle).get("player" if side == "PLAYER" else "enemy"))
+    name = _text(pokemon.get("name")) or ("TU POKÉMON" if side == "PLAYER" else "RIVAL")
+    move_id = _text(row.get("move_id"))
+    if move_id:
+        move_name = _move_name(battle, move_id, side)
+        target = _text(_dict(row.get("world_target")).get("name"))
+        if target:
+            return "{} → {} SOBRE {}".format(name, move_name, target).upper()
+        return "{} → {}".format(name, move_name).upper()
+    if kind == "SWITCH":
+        return "{} → CAMBIO DE POKÉMON".format(name).upper()
+    if kind == "CAPTURE":
+        return "ENTRENADOR → LANZAR POKÉ BALL"
+    if kind == "RUN":
+        return "ENTRENADOR → HUIR"
+    if kind == "ITEM":
+        return "ENTRENADOR → USAR OBJETO"
+    return "{} → {}".format(name, kind or "ACCIÓN").upper()
+
+
+def _enemy_declared_action(before, logs):
+    enemy = _dict(_dict(before).get("enemy"))
+    enemy_id = _text(enemy.get("entity_id"))
+    for row in logs:
+        kind = _text(row.get("kind")).upper()
+        if kind not in {"MOVE", "WORLD_MOVE_ORDER", "POSITION_MOVE", "POSITION_CHANGED"}:
+            continue
+        if enemy_id and _text(row.get("actor")) != enemy_id:
+            continue
+        move_id = _text(row.get("move_id"))
+        if move_id:
+            return {"type": "MOVE", "move_id": move_id}
+        if kind == "POSITION_CHANGED":
+            return {"type": "FREE_ORDER", "position_action": _text(row.get("position_action"))}
+    return {}
+
+
+def _reaction_lines(logs):
+    output = []
+    for row in logs:
+        kind = _text(row.get("kind")).upper()
+        if kind in {
+            "DODGE", "BLOCK", "REDIRECT", "INTERCEPT", "REACTION", "REACTION_RESULT",
+            "POSITION_BLOCKED_MOVE", "MISS", "REACTION_WINDOW",
+        }:
+            line = _text(row.get("text"))
+            if line and line not in output:
+                output.append(line)
+    return output
+
+
 def build_battle_shots(before_battle, after_battle, action, *, log_start=0, event="ROUND"):
     before = _dict(before_battle)
     after = _dict(after_battle)
@@ -76,25 +136,54 @@ def build_battle_shots(before_battle, after_battle, action, *, log_start=0, even
     logs = [_dict(row) for row in _list(after.get("log"))[max(0, int(log_start or 0)):]]
     move = _source_move(before, move_id, "PLAYER") if move_id else {}
     profile = move_combat_profile(move) if move else {}
+    enemy_action = _enemy_declared_action(before, logs)
     shots = []
 
     scene_image = _dict(site.get("scene_image"))
     scene_src = _text(scene_image.get("src")) if scene_image else ""
-    if scene_src or kind in {"FREE_ORDER", "MOVE"}:
+    shots.append({
+        "shot": "ESTABLISHING",
+        "title": _text(site.get("name")) or "CAMPO DE BATALLA",
+        "text": "TURNO {} · AMBOS BANDOS ELIGEN SU INTENCIÓN ANTES DE RESOLVER.".format(before.get("turn") or 1),
+        "media_type": "image" if scene_src else None,
+        "media_src": scene_src or None,
+        "duration_ms": 650,
+    })
+
+    player_media = _media(move, _sprite(player, "PLAYER")) if move_id else {"media_type": "image" if _sprite(player, "PLAYER") else None, "media_src": _sprite(player, "PLAYER") or None}
+    shots.append({
+        "shot": "DECLARATION_PLAYER",
+        "title": "TU ORDEN",
+        "text": _action_text(before, action, "PLAYER"),
+        **player_media,
+        "duration_ms": 850,
+    })
+
+    if enemy_action:
+        enemy_move = _source_move(before, enemy_action.get("move_id"), "ENEMY") if enemy_action.get("move_id") else {}
+        enemy_media = _media(enemy_move, _sprite(enemy, "ENEMY"))
         shots.append({
-            "shot": "ESTABLISHING",
-            "title": _text(site.get("name")) or "CAMPO DE BATALLA",
-            "text": "La posición, la cobertura y los objetos del escenario forman parte de la acción.",
-            "media_type": "image" if scene_src else None,
-            "media_src": scene_src or None,
-            "duration_ms": 700,
+            "shot": "DECLARATION_ENEMY",
+            "title": "INTENCIÓN RIVAL",
+            "text": _action_text(before, enemy_action, "ENEMY"),
+            **enemy_media,
+            "duration_ms": 850,
+        })
+
+    reaction_lines = _reaction_lines(logs)
+    if reaction_lines:
+        shots.append({
+            "shot": "REACTION",
+            "title": "REACCIÓN / BLOQUEO",
+            "text": " ".join(reaction_lines[-2:]),
+            "duration_ms": 850,
         })
 
     if move_id:
         move_name = _text(move.get("name")) or move_id
         media = _media(move, _sprite(player, "PLAYER"))
         shots.append({
-            "shot": "ATTACKER",
+            "shot": "EXECUTION",
             "title": "{} USA {}".format(_text(player.get("name")) or "POKÉMON", move_name).upper(),
             "text": "POT {} · CONTROL {} · VELOCIDAD {} · {} · {}".format(
                 profile.get("power", 0), profile.get("control", 0), profile.get("speed", 0),
@@ -110,10 +199,10 @@ def build_battle_shots(before_battle, after_battle, action, *, log_start=0, even
         shots.append({
             "shot": "TARGET",
             "title": target_name.upper(),
-            "text": "La trayectoria se resuelve contra la posición y la cobertura reales del objetivo.",
+            "text": "La trayectoria se cruza con la posición, cobertura y estado reales del objetivo.",
             "media_type": "image" if target_src and not world_target else None,
             "media_src": target_src if target_src and not world_target else None,
-            "duration_ms": 750,
+            "duration_ms": 700,
         })
 
     resolution_lines = []
@@ -126,9 +215,9 @@ def build_battle_shots(before_battle, after_battle, action, *, log_start=0, even
     if resolution_lines:
         shots.append({
             "shot": "IMPACT",
-            "title": "RESOLUCIÓN",
-            "text": " ".join(resolution_lines[-3:]),
-            "duration_ms": 1100,
+            "title": "RESOLUCIÓN DEL TURNO",
+            "text": " ".join(resolution_lines[-4:]),
+            "duration_ms": 1200,
         })
 
     world = _dict(after.get("last_world_resolution"))
@@ -155,7 +244,10 @@ def build_battle_shots(before_battle, after_battle, action, *, log_start=0, even
     return {
         "battle_id": after.get("battle_id") or before.get("battle_id"),
         "event": _text(event).upper() or "ROUND",
+        "round_mode": "WEGO",
+        "turn": before.get("turn") or after.get("turn") or 1,
         "action": deepcopy(action),
+        "enemy_action": deepcopy(enemy_action),
         "move_profile": profile,
         "shots": shots,
         "build": SHOT_DIRECTOR_BUILD,
