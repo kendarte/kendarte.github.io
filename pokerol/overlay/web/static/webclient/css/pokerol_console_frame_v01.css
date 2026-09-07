@@ -1,0 +1,102 @@
+/* KENDBOY ADVANCE hardware-frame layout for the POKEROL webclient. */
+html,body{background:#0b1015!important}
+body{display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+#clientwrapper{width:100%!important;height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+
+.pkHardwareFrame{
+  position:relative;
+  width:min(100vw,177.7778dvh);
+  height:min(100dvh,56.25vw);
+  aspect-ratio:16/9;
+  flex:0 0 auto;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(131,83,233,.95),rgba(82,42,176,.98) 60%,#4d2ab2 100%);
+  box-shadow:0 0 36px rgba(0,0,0,.75);
+}
+.pkHardwareFrame::before{
+  content:'';
+  position:absolute;
+  left:3.3%;right:3.3%;top:3.2%;bottom:4.2%;
+  border-radius:8% 8% 10% 10% / 9% 9% 11% 11%;
+  background:linear-gradient(180deg,#263334 0%,#11191b 35%,#152225 74%,#0d1719 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -6px 18px rgba(0,0,0,.72),0 10px 26px rgba(0,0,0,.42);
+  pointer-events:none;
+}
+.pkHardwareFrame::after{
+  content:'';
+  position:absolute;
+  left:7.15%;right:6.25%;top:10.15%;bottom:9.75%;
+  border:2px solid rgba(5,10,12,.95);
+  box-shadow:0 0 0 1px rgba(255,255,255,.03),inset 0 0 12px rgba(0,0,0,.65);
+  pointer-events:none;
+  z-index:40;
+}
+.pkFrameTheme,.pkFrameBrand{position:absolute;left:50%;transform:translateX(-50%);z-index:42;pointer-events:none;white-space:nowrap;text-align:center;text-shadow:0 2px 2px rgba(0,0,0,.9)}
+.pkFrameTheme{top:4.8%;font:500 clamp(11px,1.8vw,31px)/1 Arial,sans-serif;letter-spacing:.12em;color:#f3f3f3}
+.pkFrameBrand{bottom:2.7%;font:900 italic clamp(11px,2vw,33px)/1 Arial Black,Arial,sans-serif;letter-spacing:-.04em;color:#f3f0ff;-webkit-text-stroke:1px rgba(84,49,163,.92);text-shadow:0 0 0 #fff,0 3px 0 #53349f,0 4px 9px rgba(0,0,0,.8)}
+.pkFrameArt{position:absolute;inset:0;z-index:41;pointer-events:none;background-position:center;background-repeat:no-repeat;background-size:100% 100%;display:none}
+.pkHardwareFrame.pkHasCustomFrame::before,.pkHardwareFrame.pkHasCustomFrame::after,.pkHardwareFrame.pkHasCustomFrame .pkFrameTheme,.pkHardwareFrame.pkHasCustomFrame .pkFrameBrand{visibility:hidden}
+.pkHardwareFrame.pkHasCustomFrame .pkFrameArt{display:block}
+
+/* Exact usable screen measured from the supplied 1920x1080 reference frame. */
+.pkHardwareFrame>.pkGameShell{
+  position:absolute!important;
+  left:7.15%!important;
+  top:10.15%!important;
+  width:86.65%!important;
+  height:79.75%!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:3px!important;
+  gap:3px!important;
+  grid-template-rows:minmax(0,1fr) 31px 39px!important;
+  background:#050708!important;
+  z-index:10;
+}
+
+/* Compact the existing interface so stage, menu and free action all stay inside the hardware screen. */
+.pkHardwareFrame .pkStage{border-width:2px!important;box-shadow:1px 1px 0 #050805!important}
+.pkHardwareFrame .pkBrandPlate{top:4px!important;min-width:150px!important;padding:4px 8px 3px!important;border-width:2px!important;box-shadow:1px 1px 0 rgba(20,32,22,.45)!important}
+.pkHardwareFrame .pkBrandPlate strong{font-size:10px!important;letter-spacing:2px!important}
+.pkHardwareFrame .pkBrandPlate span{font-size:4px!important}
+.pkHardwareFrame .pkBackgroundTools{top:4px!important;right:4px!important;gap:2px!important}
+.pkHardwareFrame .pkBackgroundTools button{height:21px!important;border-width:1px!important;padding:3px 5px!important;font-size:5px!important;box-shadow:none!important}
+.pkHardwareFrame #pk-reset-background{width:21px!important}
+.pkHardwareFrame .pkStageHud{left:4px!important;right:4px!important;top:4px!important}
+.pkHardwareFrame .pkLocationPlate{max-width:31%!important;padding:3px 5px!important;border-width:1px!important;box-shadow:1px 1px 0 rgba(20,32,22,.35)!important}
+.pkHardwareFrame #pk-room-name{font-size:5px!important}
+.pkHardwareFrame .pkActorLayer{inset:34px 2% 72px!important}
+.pkHardwareFrame .pkActorSprite{width:78px!important;height:108px!important}
+.pkHardwareFrame .pkActorLabel{padding:2px 4px!important;font-size:4px!important;max-width:100px!important}
+.pkHardwareFrame .pkActorPlaceholder{width:26px!important;height:26px!important}
+.pkHardwareFrame .pkPlayerAvatar{bottom:64px!important;width:70px!important;height:100px!important}
+.pkHardwareFrame .pkPlayerAvatar::before{width:45px!important;height:8px!important}
+.pkHardwareFrame .pkPlayerSprite{width:70px!important;height:100px!important;object-fit:contain!important;object-position:center bottom!important}
+.pkHardwareFrame .pkDialogueBox{left:4px!important;right:4px!important;bottom:4px!important;min-height:64px!important;max-height:82px!important;padding:4px 6px!important;border-width:2px!important;outline-width:1px!important;gap:2px!important;box-shadow:1px 1px 0 rgba(20,32,22,.42)!important}
+.pkHardwareFrame .pkDialogueHeader strong{font-size:5px!important}
+.pkHardwareFrame .pkDialogueHeader button{padding:2px 4px!important;font-size:4px!important}
+.pkHardwareFrame .pkDialogueText{min-height:24px!important;font-size:10px!important;line-height:1.22!important}
+.pkHardwareFrame .pkContextActions{gap:2px!important;padding:0 0 1px!important}
+.pkHardwareFrame .pkContextButton{border-width:1px!important;padding:3px 5px!important;font-size:4px!important;box-shadow:none!important}
+.pkHardwareFrame .pkNoActions{font-size:7px!important}
+.pkHardwareFrame .pkQuickbar{gap:3px!important;padding:3px!important;border-width:2px!important;box-shadow:none!important}
+.pkHardwareFrame .pkQuickbar button{min-height:24px!important;height:24px!important;padding:3px!important;border-width:1px!important;font-size:5px!important;box-shadow:none!important}
+.pkHardwareFrame .pkFreeActionBar{height:39px!important;padding:3px!important;border-width:2px!important;box-shadow:none!important}
+.pkHardwareFrame .pkFreeActionBar #inputcontrol{grid-template-columns:minmax(0,1fr) 36px!important;gap:3px!important;height:100%!important}
+.pkHardwareFrame .pkFreeActionBar #inputfield{min-height:29px!important;height:29px!important;max-height:29px!important;padding:5px 7px!important;border-width:1px!important;font-size:9px!important;line-height:1.15!important}
+.pkHardwareFrame .pkFreeActionBar #inputsend{height:29px!important;border-width:1px!important;font-size:10px!important;box-shadow:none!important}
+
+/* Frame editor panel. */
+.pkFramePanel{position:absolute;z-index:60;top:38px;right:8px;width:min(310px,44vw);padding:8px;border:2px solid var(--pk-ink,#172016);background:rgba(240,244,211,.98);box-shadow:3px 3px 0 rgba(0,0,0,.45);color:var(--pk-ink,#172016)}
+.pkFramePanelHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;font:700 7px/1 var(--pk-font,monospace)}
+.pkFramePanelHead button{border:1px solid currentColor;background:transparent;cursor:pointer}
+.pkFramePreview{aspect-ratio:16/9;background:#111 center/contain no-repeat;border:2px solid currentColor;margin-bottom:7px;overflow:hidden;display:flex;align-items:center;justify-content:center;font:700 6px/1 var(--pk-font,monospace)}
+.pkFrameActions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pkFrameActions button{min-height:28px;border:2px solid currentColor;background:#f0f4d3;font:700 6px/1 var(--pk-font,monospace);cursor:pointer}
+.pkFrameHint{margin-top:6px;font:8px/1.25 var(--pk-copy,monospace)}
+
+@media(max-aspect-ratio:4/3){
+  .pkHardwareFrame{width:100vw;height:56.25vw;max-height:100dvh}
+}
