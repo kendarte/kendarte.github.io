@@ -1,13 +1,14 @@
 (function(){
   'use strict';
 
-  var BUILD='0.3.0-global-player-anchor';
+  var BUILD='0.3.1-player-edit-lock';
   var editing=false;
   var anchored=false;
   var drag=null;
   var resize=null;
   var current={x:11,y:94,scale:1};
   var emitterBound=false;
+  var deferredPacket=null;
 
   function byId(id){return document.getElementById(id)}
   function clamp(v,min,max){var n=Number(v);if(!Number.isFinite(n))n=min;return Math.max(min,Math.min(max,n))}
@@ -45,6 +46,7 @@
     if(x)x.value=current.x.toFixed(1);if(y)y.value=current.y.toFixed(0);if(s)s.value=current.scale.toFixed(2);if(a)a.checked=anchored;
   }
   function applyPacket(packet){
+    if(editing||drag||resize){deferredPacket=packet||{};return false}
     var row=packet&&packet.player_editor||{};
     anchored=!!row.anchored;
     current={
@@ -52,15 +54,27 @@
       y:clamp(row.scene_y==null?94:row.scene_y,0,500),
       scale:clamp(row.scene_scale==null?1:row.scene_scale,.35,3)
     };
+    deferredPacket=null;
     apply();
+    return true;
   }
   function setEditing(on){
-    editing=!!on;var stage=byId('pk-stage'),avatar=byId('pk-player-avatar'),panel=byId('pk-player-panel'),btn=byId('pk-edit-player');
+    var wasEditing=editing;
+    editing=!!on;
+    var stage=byId('pk-stage'),avatar=byId('pk-player-avatar'),panel=byId('pk-player-panel'),btn=byId('pk-edit-player');
     if(stage)stage.classList.toggle('pkPlayerEditing',editing);
     if(avatar)avatar.classList.toggle('pkPlayerEditable',editing);
     if(panel)panel.hidden=!editing;
     if(btn)btn.classList.toggle('pkActive',editing);
-    if(editing){ensureHandle();apply()}else{drag=null;resize=null}
+    document.documentElement.dataset.pkPlayerEditing=editing?'1':'0';
+    if(editing){ensureHandle();apply()}
+    else{
+      if(wasEditing&&(drag||resize))sendLayout(false);
+      drag=null;resize=null;
+      /* Do not apply a deferred snapshot here: it may be older than the edit just sent.
+         The authoritative refresh produced by the save will arrive immediately after. */
+      deferredPacket=null;
+    }
   }
   function ensureHandle(){
     var avatar=byId('pk-player-avatar');if(!avatar||byId('pk-player-resize-handle'))return;
@@ -75,14 +89,17 @@
     },true);
     avatar.addEventListener('pointermove',function(ev){
       if(!editing||!drag||drag.id!==ev.pointerId)return;
+      ev.preventDefault();ev.stopPropagation();
       var r=drag.rect;current.x=clamp(((ev.clientX-r.left)/r.width)*100,1,99);current.y=clamp(r.bottom-ev.clientY,0,Math.max(100,r.height-20));apply()
     },true);
-    avatar.addEventListener('pointerup',function(ev){if(drag&&drag.id===ev.pointerId){drag=null;sendLayout(false)}},true);
+    avatar.addEventListener('pointerup',function(ev){if(drag&&drag.id===ev.pointerId){ev.preventDefault();ev.stopPropagation();drag=null;sendLayout(false)}},true);
+    avatar.addEventListener('pointercancel',function(ev){if(drag&&drag.id===ev.pointerId){drag=null;sendLayout(false)}},true);
     var h=byId('pk-player-resize-handle');if(h&&h.dataset.pkBound!=='1'){
       h.dataset.pkBound='1';
       h.addEventListener('pointerdown',function(ev){if(!editing)return;ev.preventDefault();ev.stopPropagation();resize={id:ev.pointerId,startY:ev.clientY,startScale:current.scale};h.setPointerCapture&&h.setPointerCapture(ev.pointerId)},true);
-      h.addEventListener('pointermove',function(ev){if(!editing||!resize||resize.id!==ev.pointerId)return;ev.preventDefault();current.scale=clamp(resize.startScale+((resize.startY-ev.clientY)/120),.35,3);apply()},true);
-      h.addEventListener('pointerup',function(ev){if(resize&&resize.id===ev.pointerId){resize=null;sendLayout(false)}},true);
+      h.addEventListener('pointermove',function(ev){if(!editing||!resize||resize.id!==ev.pointerId)return;ev.preventDefault();ev.stopPropagation();current.scale=clamp(resize.startScale+((resize.startY-ev.clientY)/120),.35,3);apply()},true);
+      h.addEventListener('pointerup',function(ev){if(resize&&resize.id===ev.pointerId){ev.preventDefault();ev.stopPropagation();resize=null;sendLayout(false)}},true);
+      h.addEventListener('pointercancel',function(ev){if(resize&&resize.id===ev.pointerId){resize=null;sendLayout(false)}},true);
     }
     return true;
   }
@@ -97,12 +114,16 @@
     if(save&&save.dataset.pkBound!=='1'){save.dataset.pkBound='1';save.addEventListener('click',function(){readFields();apply();sendLayout(false)})}
     if(reset&&reset.dataset.pkBound!=='1'){reset.dataset.pkBound='1';reset.addEventListener('click',function(){current={x:11,y:94,scale:1};apply();sendLayout(true)})}
     if(anchor&&anchor.dataset.pkBound!=='1'){anchor.dataset.pkBound='1';anchor.addEventListener('change',function(){readFields();apply();setAnchor(anchor.checked)})}
-    ['pk-player-x','pk-player-y','pk-player-scale'].forEach(function(id){var n=byId(id);if(n&&n.dataset.pkBound!=='1'){n.dataset.pkBound='1';n.addEventListener('change',function(){readFields();apply();sendLayout(false)})}});
+    ['pk-player-x','pk-player-y','pk-player-scale'].forEach(function(id){var n=byId(id);if(n&&n.dataset.pkBound!=='1'){n.dataset.pkBound='1';n.addEventListener('input',function(){readFields();apply()});n.addEventListener('change',function(){readFields();apply();sendLayout(false)})}});
   }
-  function onSnapshot(args){applyPacket(packetFrom(args));return true}
+  function onSnapshot(args){
+    var packet=packetFrom(args);
+    if(editing||drag||resize){deferredPacket=packet;return true}
+    applyPacket(packet);return true
+  }
   function bindEmitter(){if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;Evennia.emitter.on('pokerol_room_snapshot',onSnapshot);emitterBound=true;return true}
   function init(){var tries=0;(function wait(){tries++;bindEmitter();if(byId('pk-player-avatar')&&byId('pk-edit-player')){bindAvatar();bindPanel();apply();return}if(tries<160)setTimeout(wait,50)})()}
 
-  window.PokerolPlayerEditorV01=Object.freeze({BUILD:BUILD,applyPacket:applyPacket});
+  window.PokerolPlayerEditorV01=Object.freeze({BUILD:BUILD,applyPacket:applyPacket,isEditing:function(){return editing}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
