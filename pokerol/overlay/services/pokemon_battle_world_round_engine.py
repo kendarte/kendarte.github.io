@@ -1,8 +1,7 @@
-"""Resolve environment-targeted battle rounds at exact initiative timing.
+"""Resolve environment-targeted battle rounds as authoritative WEGO turns.
 
-World effects are authoritative Room mutations. After physics persists a result,
-scene-reaction authority may react to those hard facts (for example Oak stopping
-a destructive fight in his laboratory) before the round continues.
+Both sides declare before resolution. World effects then execute at the real
+priority/speed/position order and mutate the Room through the World Engine.
 """
 
 import random
@@ -26,7 +25,7 @@ from services.pokemon_battle_tactical_action_engine import enemy_action_position
 from services.pokerol_battle_scene_reaction_engine import apply_battle_scene_reactions
 
 
-WORLD_ROUND_BUILD = "0.3.0-reactive-world-scene-resolution"
+WORLD_ROUND_BUILD = "0.4.0-wego-reactive-world-round"
 
 
 def _dict(value):
@@ -167,8 +166,34 @@ def _resolve_new_world_requests(actor, state, previous_count):
     return changed
 
 
+def _declare_wego_round(state, player_action, rng):
+    enemy_action = enemy_action_position_aware(state, rng)
+    order = _order_actions(state, player_action, enemy_action, rng)
+    declaration = {
+        "mode": "WEGO",
+        "turn": _int(state.get("turn"), 1),
+        "player_action": _clone(player_action),
+        "enemy_action": _clone(enemy_action),
+        "resolution_order": [
+            {"side": row["side"], "priority": row["priority"], "speed": row["speed"]}
+            for row in order
+        ],
+    }
+    state["round_declaration"] = _clone(declaration)
+    state["last_round_declaration"] = _clone(declaration)
+    _log(
+        state,
+        "WEGO_DECLARATION",
+        "Ambos bandos declaran su intención antes de resolver el turno y sus efectos sobre el escenario.",
+        player_action=_clone(player_action),
+        enemy_action=_clone(enemy_action),
+        order=_clone(declaration["resolution_order"]),
+    )
+    return enemy_action, order
+
+
 def resolve_environment_player_action(actor, battle, action, *, rng=None):
-    """Resolve one player environment order with physics at its actual initiative."""
+    """Resolve one WEGO environment order with physics at its actual initiative."""
     rng = rng or random.SystemRandom()
     state = _clone(_dict(battle))
     action = _dict(action)
@@ -187,14 +212,7 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
 
     state["pending_player_action"] = _clone(action)
     state["phase"] = "ORDER"
-    enemy_action = enemy_action_position_aware(state, rng)
-    order = _order_actions(state, action, enemy_action, rng)
-    _log(
-        state,
-        "ORDER",
-        "Las acciones quedan ordenadas según prioridad, velocidad y posición.",
-        order=[{"side": row["side"], "priority": row["priority"], "speed": row["speed"]} for row in order],
-    )
+    enemy_action, order = _declare_wego_round(state, action, rng)
 
     for row in order:
         if state.get("status") != ACTIVE_STATUS:
@@ -206,7 +224,12 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
         if state.get("status") != ACTIVE_STATUS:
             break
         state["phase"] = "REACTION"
-        _log(state, "REACTION_WINDOW", "Se comprueba alcance, cobertura y efectos inmediatos.", actor=row["side"])
+        _log(
+            state,
+            "REACTION_WINDOW",
+            "La intención revelada cruza alcance, cobertura, defensas y efectos inmediatos del escenario.",
+            actor=row["side"],
+        )
         _end_check(state)
 
     if state.get("status") == ACTIVE_STATUS:
@@ -215,12 +238,14 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
         state["turn"] = _int(state.get("turn"), 1) + 1
         state["phase"] = "COMMAND"
     state["pending_player_action"] = None
+    state.pop("round_declaration", None)
     state["updated_at"] = int(time())
     return {
         "accepted": True,
-        "status": "WORLD_ROUND_RESOLVED",
+        "status": "WORLD_WEGO_ROUND_RESOLVED",
         "battle": state,
         "enemy_action": enemy_action,
+        "round_declaration": _clone(state.get("last_round_declaration")),
         "build": WORLD_ROUND_BUILD,
         "engine_build": BATTLE_BUILD,
     }
