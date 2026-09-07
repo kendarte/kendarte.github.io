@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-var BUILD='2.0.0-persistent-fakemon-assets';
+var BUILD='2.1.0-persistent-fakemon-assets';
 var STORE='pokerol_fakemon_skill_generator_v2';
 var BACKEND='https://pokerol-game-production.up.railway.app';
 var API=BACKEND+'/pokerol-api/assets/pokemon';
@@ -109,6 +109,28 @@ function setPreview(box,src,kind,objectUrl){
   if(kind==='video'){el.muted=true;el.loop=true;el.autoplay=true;el.playsInline=true;}
   box.appendChild(el);
 }
+function visualPackFor(p){
+  var cv=p&&p.combat_visuals||{},battle=cv.battle||{},shots=cv.shots||{},pack={};
+  function battleSlot(name,src){pack[name]={src:text(src),scale:Number(battle.scale||1.25),anchor_x:.5,anchor_y:1}}
+  battleSlot('battle_front',battle.front||(p.sprite&&p.sprite.front));
+  battleSlot('battle_back',battle.back||(p.sprite&&p.sprite.back));
+  pack.icon={src:text(battle.icon||(p.sprite&&p.sprite.icon)),scale:1,anchor_x:.5,anchor_y:.5};
+  pack.portrait={src:text(battle.portrait||(p.sprite&&p.sprite.portrait)),scale:1,anchor_x:.5,anchor_y:.5};
+  SHOTS.forEach(function(k){
+    var row=shots[k]||{};
+    pack['shot_'+k]={src:text(row.image),video:text(row.video),scale:Number(row.scale||1),anchor_x:Number(row.anchor_x==null?50:row.anchor_x)/100,anchor_y:Number(row.anchor_y==null?100:row.anchor_y)/100};
+  });
+  return pack;
+}
+function syncVisualPacks(){
+  try{
+    var raw=localStorage.getItem(STORE);if(!raw)return null;
+    var state=JSON.parse(raw);if(!state||!Array.isArray(state.pokemon))return state;
+    state.pokemon.forEach(function(p){p.visual_pack=visualPackFor(p)});
+    localStorage.setItem(STORE,JSON.stringify(state));
+    return state;
+  }catch(_err){return null}
+}
 async function assignFile(targetId,file,rerender,ui){
   var input=q(targetId);if(!input)throw new Error('No encontré el campo '+targetId+'.');
   var meta=SLOT_BY_TARGET[targetId];validateFile(file,meta.kind);
@@ -116,7 +138,7 @@ async function assignFile(targetId,file,rerender,ui){
   if(ui&&ui.preview)setPreview(ui.preview,'local',meta.kind,local);
   try{
     var src=await uploadPersistent(targetId,file,function(value){if(ui)ui.setState(value,false)});
-    input.value=src;input.dataset.uploadName=file.name||'';dispatch(input);
+    input.value=src;input.dataset.uploadName=file.name||'';dispatch(input);syncVisualPacks();
     if(ui){ui.setState('GUARDADO',false);setPreview(ui.preview,src,meta.kind);}
     pageStatus(file.name+' guardado en Railway');
     if(rerender!==false)selectedRerender();
@@ -150,7 +172,7 @@ function makeUploader(input,accept,label){
     var current=input.value;btn.disabled=true;clear.disabled=true;
     try{
       await clearPersistent(input.id,current,setState);
-      input.value='';dispatch(input);setPreview(preview,'',meta.kind);setState('VACÍO',false);pageStatus('Asset eliminado / reseteado');selectedRerender();
+      input.value='';dispatch(input);syncVisualPacks();setPreview(preview,'',meta.kind);setState('VACÍO',false);pageStatus('Asset eliminado / reseteado');selectedRerender();
     }catch(err){setState('ERROR',true);pageStatus(err&&err.message?err.message:String(err),true)}
     finally{btn.disabled=false;clear.disabled=false;}
   };
@@ -178,7 +200,7 @@ function addPackUploader(){
         if(!target||!q(target)){ignored.push(file.name);continue}
         await assignFile(target,file,false,null);loaded++;
       }
-      selectedRerender();pageStatus(loaded+' sprites guardados'+(ignored.length?' · '+ignored.length+' ignorados':''),loaded===0);
+      syncVisualPacks();selectedRerender();pageStatus(loaded+' sprites guardados'+(ignored.length?' · '+ignored.length+' ignorados':''),loaded===0);
     }catch(err){pageStatus(err&&err.message?err.message:String(err),true)}
     finally{button.disabled=false;button.textContent='SELECCIONAR SPRITES';picker.value='';}
   };
@@ -204,26 +226,12 @@ function fixAssetPreviewSources(){
     if(raw.indexOf('/pokerol-assets/')===0)el.src=BACKEND+raw;
   });
 }
-function visualPackFor(p){
-  var cv=p&&p.combat_visuals||{},battle=cv.battle||{},shots=cv.shots||{},pack={};
-  function battleSlot(name,src){pack[name]={src:text(src),scale:Number(battle.scale||1.25),anchor_x:.5,anchor_y:1}}
-  battleSlot('battle_front',battle.front||(p.sprite&&p.sprite.front));
-  battleSlot('battle_back',battle.back||(p.sprite&&p.sprite.back));
-  pack.icon={src:text(battle.icon||(p.sprite&&p.sprite.icon)),scale:1,anchor_x:.5,anchor_y:.5};
-  pack.portrait={src:text(battle.portrait||(p.sprite&&p.sprite.portrait)),scale:1,anchor_x:.5,anchor_y:.5};
-  SHOTS.forEach(function(k){
-    var row=shots[k]||{};
-    pack['shot_'+k]={src:text(row.image),video:text(row.video),scale:Number(row.scale||1),anchor_x:Number(row.anchor_x==null?50:row.anchor_x)/100,anchor_y:Number(row.anchor_y==null?100:row.anchor_y)/100};
-  });
-  return pack;
-}
 function installPersistentExport(){
   var button=q('exportBtn');if(!button||button.dataset.persistentExport==='1')return;
   button.dataset.persistentExport='1';
   button.onclick=function(){
     try{
-      var state=JSON.parse(localStorage.getItem(STORE)||'{}');
-      (state.pokemon||[]).forEach(function(p){p.visual_pack=visualPackFor(p)});
+      var state=syncVisualPacks()||JSON.parse(localStorage.getItem(STORE)||'{}');
       var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');
       a.href=u;a.download='pokerol-fakemon-skill-set-v2.json';a.click();setTimeout(function(){URL.revokeObjectURL(u)},1000);pageStatus('JSON exportado con referencias persistentes');
     }catch(err){pageStatus('No se pudo exportar: '+(err&&err.message?err.message:err),true)}
@@ -238,7 +246,7 @@ function enhanceFakemon(){
     makeUploader(q('pose_'+k+'_image'),'image/png,image/jpeg,image/webp','SUBIR IMAGEN');
     makeUploader(q('pose_'+k+'_video'),'video/mp4,video/webm','SUBIR VIDEO');
   });
-  addPackUploader();addDropZones();fixAssetPreviewSources();installPersistentExport();
+  addPackUploader();addDropZones();fixAssetPreviewSources();installPersistentExport();syncVisualPacks();
 }
 function injectStyle(){
   if(q('asset-upload-style'))return;
@@ -251,6 +259,6 @@ function init(){
   enhance();var editor=q('editor');
   if(editor)new MutationObserver(function(){window.setTimeout(enhance,0)}).observe(editor,{childList:true,subtree:true});
 }
-window.PokerolAssetUploadPatch=Object.freeze({BUILD:BUILD,enhance:enhance,backend:BACKEND});
+window.PokerolAssetUploadPatch=Object.freeze({BUILD:BUILD,enhance:enhance,backend:BACKEND,syncVisualPacks:syncVisualPacks});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
