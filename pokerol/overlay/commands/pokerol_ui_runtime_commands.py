@@ -16,7 +16,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.12.0-player-anchor"
+POKEROL_UI_RUNTIME_BUILD = "0.13.0-versioned-player-layout"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
@@ -68,6 +68,11 @@ def _player_metadata(actor, location):
             layout = {}
             source = "DEFAULT"
 
+    try:
+        revision = int(_db_value(actor, "pokerol_player_state_revision", 0) or 0)
+    except (TypeError, ValueError):
+        revision = 0
+
     return {
         "scene_x": layout.get("x", 11),
         "scene_y": layout.get("y", 94),
@@ -75,6 +80,7 @@ def _player_metadata(actor, location):
         "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
         "anchored": anchored,
         "layout_source": source,
+        "revision": revision,
     }
 
 
