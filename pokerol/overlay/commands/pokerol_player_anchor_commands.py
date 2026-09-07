@@ -5,7 +5,7 @@ from evennia import Command
 from evennia.utils import logger
 
 
-PLAYER_ANCHOR_BUILD = "0.4.0-authoritative-player-visual-state"
+PLAYER_ANCHOR_BUILD = "0.5.0-character-room-player-layouts"
 
 
 def _clean(value):
@@ -62,6 +62,23 @@ def _next_revision(caller):
     return revision
 
 
+def _room_layout_key(room):
+    return str(int(room.id))
+
+
+def _room_layouts(caller):
+    raw = getattr(caller.db, "pokerol_player_room_layouts", None)
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def _save_character_room_layout(caller, room, layout):
+    layouts = _room_layouts(caller)
+    key = _room_layout_key(room)
+    layouts[key] = dict(layout)
+    caller.db.pokerol_player_room_layouts = layouts
+    return key
+
+
 class CmdPokerolEditorPlayerState(Command):
     """Save PLAYER position, scale and anchor state in one authoritative transaction."""
 
@@ -103,6 +120,7 @@ class CmdPokerolEditorPlayerState(Command):
         revision = _next_revision(self.caller)
         room_layout = dict(layout)
         room_layout["revision"] = revision
+        room_key = _save_character_room_layout(self.caller, room, room_layout)
 
         visual_state = {
             "x": layout["x"],
@@ -110,26 +128,29 @@ class CmdPokerolEditorPlayerState(Command):
             "scale": layout["scale"],
             "anchored": anchored,
             "room_dbref": int(room.id),
+            "room_key": room_key,
             "revision": revision,
         }
 
-        # One latest authoritative visual state always lives on the character.
-        # Room-local state is also kept so disabling ANCLAR restores this Room.
+        # PLAYER layout belongs to the character, never to the shared Room.
+        # This prevents Chumeco/Azulith (or any two trainers) from overwriting
+        # each other's position and scale in the same location.
         self.caller.db.pokerol_player_visual_state = dict(visual_state)
-        room.db.pokerol_player_layout = dict(room_layout)
         self.caller.db.pokerol_player_anchor_enabled = anchored
         if anchored:
             self.caller.db.pokerol_player_anchor_layout = dict(room_layout)
 
         logger.log_info(
-            "[POKEROL PLAYER SAVE] caller={} room=#{} x={:.3f} y={:.3f} scale={:.3f} anchored={} rev={}".format(
+            "[POKEROL PLAYER SAVE] caller={} room=#{} key={} x={:.3f} y={:.3f} scale={:.3f} anchored={} rev={} scope={}".format(
                 self.caller.key,
                 int(room.id),
+                room_key,
                 layout["x"],
                 layout["y"],
                 layout["scale"],
                 anchored,
                 revision,
+                "PLAYER_ANCHOR" if anchored else "PLAYER_ROOM",
             )
         )
 
@@ -142,7 +163,8 @@ class CmdPokerolEditorPlayerState(Command):
             "layout": dict(room_layout),
             "visual_state": dict(visual_state),
             "room_dbref": int(room.id),
-            "scope": "PLAYER_ANCHOR" if anchored else "ROOM",
+            "room_key": room_key,
+            "scope": "PLAYER_ANCHOR" if anchored else "PLAYER_ROOM",
         }
         self.caller.msg(pokerol_asset_result=((packet,), {}))
         _refresh(self.caller)
@@ -163,6 +185,7 @@ class CmdPokerolEditorPlayerAnchor(Command):
 
         enabled = bool(data.get("enabled"))
         self.caller.db.pokerol_player_anchor_enabled = enabled
+        room = getattr(self.caller, "location", None)
 
         if enabled:
             revision = _next_revision(self.caller)
@@ -173,13 +196,14 @@ class CmdPokerolEditorPlayerAnchor(Command):
                 "revision": revision,
             }
             self.caller.db.pokerol_player_anchor_layout = dict(layout)
-            room = getattr(self.caller, "location", None)
+            room_key = _save_character_room_layout(self.caller, room, layout) if room else ""
             self.caller.db.pokerol_player_visual_state = {
                 "x": layout["x"],
                 "y": layout["y"],
                 "scale": layout["scale"],
                 "anchored": True,
                 "room_dbref": int(room.id) if room else None,
+                "room_key": room_key,
                 "revision": revision,
             }
         elif bool(data.get("clear")):
