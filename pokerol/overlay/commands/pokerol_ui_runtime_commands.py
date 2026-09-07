@@ -16,7 +16,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.13.0-versioned-player-layout"
+POKEROL_UI_RUNTIME_BUILD = "0.14.0-authoritative-player-visual-state"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
@@ -50,27 +50,46 @@ def _room_key(location):
 
 def _player_metadata(actor, location):
     anchored = bool(_db_value(actor, "pokerol_player_anchor_enabled", False))
+    visual = _db_value(actor, "pokerol_player_visual_state", {})
     anchor_layout = _db_value(actor, "pokerol_player_anchor_layout", {})
+    current_room_id = int(location.id)
 
-    if anchored and isinstance(anchor_layout, dict):
-        layout = anchor_layout
-        source = "PLAYER_ANCHOR"
-    else:
-        layout = _db_value(location, "pokerol_player_layout", None)
-        source = "ROOM"
-        if not isinstance(layout, dict):
-            legacy = _db_value(actor, "pokerol_player_layouts", {})
-            if isinstance(legacy, dict):
-                layout = legacy.get(_room_key(location))
-                if isinstance(layout, dict):
-                    source = "LEGACY_ROOM"
-        if not isinstance(layout, dict):
-            layout = {}
-            source = "DEFAULT"
+    layout = None
+    source = "DEFAULT"
+
+    # Prefer the exact last saved transaction when it belongs to this Room,
+    # or everywhere when ANCLAR was saved on that transaction.
+    if isinstance(visual, dict):
+        visual_anchored = bool(visual.get("anchored", False))
+        try:
+            visual_room_id = int(visual.get("room_dbref"))
+        except (TypeError, ValueError):
+            visual_room_id = None
+        if visual_anchored or visual_room_id == current_room_id:
+            layout = visual
+            anchored = visual_anchored
+            source = "PLAYER_VISUAL_STATE"
+
+    if not isinstance(layout, dict):
+        if anchored and isinstance(anchor_layout, dict):
+            layout = anchor_layout
+            source = "PLAYER_ANCHOR"
+        else:
+            layout = _db_value(location, "pokerol_player_layout", None)
+            source = "ROOM"
+            if not isinstance(layout, dict):
+                legacy = _db_value(actor, "pokerol_player_layouts", {})
+                if isinstance(legacy, dict):
+                    layout = legacy.get(_room_key(location))
+                    if isinstance(layout, dict):
+                        source = "LEGACY_ROOM"
+            if not isinstance(layout, dict):
+                layout = {}
+                source = "DEFAULT"
 
     try:
-        revision = int(_db_value(actor, "pokerol_player_state_revision", 0) or 0)
-    except (TypeError, ValueError):
+        revision = int(layout.get("revision", 0) or 0)
+    except (TypeError, ValueError, AttributeError):
         revision = 0
 
     return {
