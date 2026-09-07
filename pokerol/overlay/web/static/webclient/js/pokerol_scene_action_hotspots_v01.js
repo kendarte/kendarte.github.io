@@ -10,6 +10,7 @@
     return s.replace(/^(examinar|observar|mirar|hablar con|hablar|interactuar con|interactuar|usar|preguntar a|preguntar|entrar al|entrar a la|entrar a|ir hacia|ir a|ir al|salir hacia|salir a|salir|volver a|volver|cruzar hacia|cruzar)\s+/,'').trim();
   }
   function isExitLabel(v){return /^(entrar|ir\b|salir|volver|cruzar|subir|bajar|avanzar|seguir)/i.test(clean(v))}
+  function isStarterBall(v){return /^pok[ée]\s*ball\s+\d+/i.test(clean(v))}
   function representedByActor(core,actors){
     if(!core)return false;
     return actors.some(function(a){
@@ -34,16 +35,26 @@
       var label=clean(button.textContent);if(!label)return;
       var core=coreLabel(label);if(!core)return;
       if(representedByActor(core,actorCores))return;
-      candidates.push({button:button,label:label,core:core,index:index,isExit:isExitLabel(label)});
+      candidates.push({button:button,label:label,core:core,index:index,isExit:isExitLabel(label),starterBall:isStarterBall(label)});
     });
-    var exitRows=candidates.filter(function(r){return r.isExit}), otherRows=candidates.filter(function(r){return !r.isExit});
+    var starterRows=candidates.filter(function(r){return r.starterBall});
+    var exitRows=candidates.filter(function(r){return r.isExit&&!r.starterBall});
+    var otherRows=candidates.filter(function(r){return !r.isExit&&!r.starterBall});
     candidates.forEach(function(row){
       var actor=document.createElement('button');
       actor.type='button';actor.className='pkActor pkActionHotspot';actor.dataset.kind=row.isExit?'EXIT':'ACTION';
       actor.dataset.pkHotspotKey='ACTION:'+row.core;
-      var list=row.isExit?exitRows:otherRows;var pos=list.indexOf(row);var count=list.length;
-      var x=count<=1?78:(22+(56*(pos/(count-1))));
-      var y=row.isExit?8:(24+(pos%3)*12);
+      var list=row.starterBall?starterRows:(row.isExit?exitRows:otherRows);
+      var pos=list.indexOf(row),count=list.length;
+      var x,y;
+      if(row.starterBall){
+        x=count<=1?50:(38+(24*(pos/(count-1))));
+        y=28;
+        actor.classList.add('pkStarterBallHotspot');
+      }else{
+        x=count<=1?78:(22+(56*(pos/(count-1))));
+        y=row.isExit?8:(24+(pos%3)*12);
+      }
       actor.style.left=x.toFixed(2)+'%';actor.style.bottom=y.toFixed(2)+'%';
       var marker=document.createElement('span');marker.className='pkActionHotspotMarker';marker.textContent=row.isExit?'▶':'◆';actor.appendChild(marker);
       var label=document.createElement('span');label.className='pkActorLabel';label.textContent=row.label;actor.appendChild(label);
