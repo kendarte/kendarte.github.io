@@ -2,7 +2,7 @@ from services.action_intent_proposal_engine import build_local_capability_catalo
 from services.object_action_engine import begin_object_action
 
 
-ACTION_BRIDGE_BUILD = "0.70.1-campaign-observed-object-action-execution-bridge"
+ACTION_BRIDGE_BUILD = "0.71.0-room-event-object-trigger"
 MIN_EXECUTION_CONFIDENCE = 0.90
 
 
@@ -82,6 +82,15 @@ def _find_local_object(actor, dbref):
     return None
 
 
+def _trigger_authored_object_events(actor, obj):
+    try:
+        from services.pokerol_event_trigger_bridge import trigger_object_interaction
+
+        return trigger_object_interaction(actor, obj)
+    except Exception:
+        return []
+
+
 def execute_validated_object_action_proposal(
     actor,
     proposal_result,
@@ -89,7 +98,7 @@ def execute_validated_object_action_proposal(
     min_confidence=MIN_EXECUTION_CONFIDENCE,
     attempt_id=None,
 ):
-    """Revalidate one accepted v0.69 OBJECT_ACTION proposal against current world state, then delegate to the real engine."""
+    """Revalidate one accepted OBJECT_ACTION proposal against current world state, then delegate to the real engine."""
     if not actor:
         return {"status": "NO_ACTOR", "executed": False, "build": ACTION_BRIDGE_BUILD}
     if not isinstance(proposal_result, dict):
@@ -176,6 +185,7 @@ def execute_validated_object_action_proposal(
     campaign_observation = _observe_completed_campaign_action(actor, engine_result, action_id)
     if campaign_observation is not None:
         engine_result = {**dict(engine_result), "campaign_observation": campaign_observation}
+    event_triggers = _trigger_authored_object_events(actor, obj) if engine_status in accepted_statuses else []
 
     return {
         "status": "WORLD_ENGINE_ACCEPTED" if engine_status in accepted_statuses else "WORLD_ENGINE_REJECTED",
@@ -187,5 +197,6 @@ def execute_validated_object_action_proposal(
         "world_engine_status": engine_status,
         "world_engine_result": engine_result,
         "campaign_observation": campaign_observation,
+        "room_event_triggers": event_triggers,
         "build": ACTION_BRIDGE_BUILD,
     }
