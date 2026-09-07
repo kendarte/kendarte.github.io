@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.0-player-sheet';
+  var BUILD='0.2.0-compact-factual-sheet';
   var emitterBound=false;
   var lastPacket=null;
 
@@ -9,6 +9,9 @@
   function clean(v){return String(v==null?'':v).trim()}
   function packetFrom(args){var p=args&&args.length?args[0]:args;if(Array.isArray(p)&&p.length===1)p=p[0];return p&&typeof p==='object'?p:{}}
   function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
+  function sheet(){return byId('pk-trainer-sheet-backdrop')}
+  function closeSheet(){var wrap=sheet();if(wrap)wrap.hidden=true}
+  function openSheet(){var wrap=sheet();if(!wrap)return;wrap.hidden=false;request();var close=byId('pk-trainer-sheet-close');if(close)window.setTimeout(function(){close.focus()},0)}
 
   function request(){
     if(!window.Evennia||typeof Evennia.msg!=='function')return false;
@@ -21,13 +24,13 @@
     if(!tools||!stage)return false;
 
     var button=document.createElement('button');
-    button.id='pk-trainer-sheet-button';button.className='pkTrainerSheetButton';button.type='button';button.textContent='FICHA';button.title='Abrir ficha del entrenador';
+    button.id='pk-trainer-sheet-button';button.className='pkTrainerSheetButton';button.type='button';button.textContent='FICHA';button.title='Abrir/cerrar ficha del entrenador';
     var logout=byId('pk-logout');if(logout)tools.insertBefore(button,logout);else tools.appendChild(button);
 
     var wrap=document.createElement('div');wrap.id='pk-trainer-sheet-backdrop';wrap.className='pkTrainerSheetBackdrop';wrap.hidden=true;
     wrap.innerHTML=''
       +'<section class="pkTrainerSheet" role="dialog" aria-modal="true" aria-label="Ficha del entrenador">'
-        +'<div class="pkTrainerSheetHead"><strong>FICHA DE ENTRENADOR</strong><button id="pk-trainer-sheet-close" type="button" aria-label="Cerrar">×</button></div>'
+        +'<div class="pkTrainerSheetHead"><strong>FICHA DE ENTRENADOR</strong><button id="pk-trainer-sheet-close" type="button" aria-label="Cerrar ficha" title="Cerrar">×</button></div>'
         +'<div class="pkTrainerSheetBody">'
           +'<div class="pkTrainerSheetIdentity">'
             +'<div class="pkTrainerSheetName"><small>ENTRENADOR</small><strong id="pk-trainer-sheet-name">—</strong><span id="pk-trainer-sheet-location" class="pkTrainerMeta"></span></div>'
@@ -46,9 +49,10 @@
       +'</section>';
     stage.appendChild(wrap);
 
-    button.addEventListener('click',function(){wrap.hidden=false;request()});
-    byId('pk-trainer-sheet-close').addEventListener('click',function(){wrap.hidden=true});
-    wrap.addEventListener('click',function(ev){if(ev.target===wrap)wrap.hidden=true});
+    button.addEventListener('click',function(){if(wrap.hidden)openSheet();else closeSheet()});
+    byId('pk-trainer-sheet-close').addEventListener('click',closeSheet);
+    wrap.addEventListener('click',function(ev){if(ev.target===wrap)closeSheet()});
+    document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!wrap.hidden){ev.preventDefault();closeSheet()}});
     byId('pk-trainer-sheet-upload').addEventListener('click',function(){var f=byId('pk-trainer-sheet-file');if(f){f.value='';f.click()}});
     byId('pk-trainer-sheet-clear').addEventListener('click',clearPortrait);
     byId('pk-trainer-sheet-file').addEventListener('change',uploadPortrait);
@@ -63,9 +67,7 @@
 
   function renderStats(stats){
     var root=byId('pk-trainer-sheet-stats');if(!root)return;root.innerHTML='';
-    ['FUE','AGI','COO','INT','PER','PSI'].forEach(function(key){
-      var row=document.createElement('div');row.className='pkTrainerStat';row.innerHTML='<span>'+key+'</span><span>'+esc(stats&&stats[key]!=null?stats[key]:'—')+'</span>';root.appendChild(row);
-    });
+    ['FUE','AGI','COO','INT','PER','PSI'].forEach(function(key){var row=document.createElement('div');row.className='pkTrainerStat';row.innerHTML='<span>'+key+'</span><span>'+esc(stats&&stats[key]!=null?stats[key]:'—')+'</span>';root.appendChild(row)});
   }
   function renderBadges(rows){
     var root=byId('pk-trainer-sheet-badges');if(!root)return;root.innerHTML='';rows=Array.isArray(rows)?rows:[];
@@ -74,7 +76,7 @@
   }
   function renderParty(rows,storageCount){
     var root=byId('pk-trainer-sheet-party');if(!root)return;root.innerHTML='';rows=Array.isArray(rows)?rows:[];
-    if(!rows.length){root.innerHTML='<div class="pkTrainerEmpty">No tienes Pokémon en el equipo.</div>';return}
+    if(!rows.length){root.innerHTML='<div class="pkTrainerEmpty">Todavía no tienes Pokémon confirmados en tu historia.</div>';return}
     rows.forEach(function(row){var n=document.createElement('div');n.className='pkTrainerPartyRow'+(row.active?' pkActive':'');n.innerHTML=(row.icon?'<img src="'+esc(row.icon)+'" alt="">':'<span></span>')+'<strong>'+esc(row.name||'Pokémon')+'</strong><span>Lv '+esc(row.level||1)+'</span>';root.appendChild(n)});
     if(storageCount){var meta=document.createElement('div');meta.className='pkTrainerMeta';meta.textContent='PC / almacenamiento: '+storageCount;root.appendChild(meta)}
   }
@@ -117,6 +119,6 @@
   function bindEmitter(){if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;Evennia.emitter.on('pokerol_player_sheet',onSheet);emitterBound=true;return true}
   function init(){var tries=0;(function wait(){tries++;var ok=inject();bindEmitter();if(ok&&emitterBound)return;if(tries<180)setTimeout(wait,50)})()}
 
-  window.PokerolPlayerSheetV01=Object.freeze({BUILD:BUILD,request:request,render:render});
+  window.PokerolPlayerSheetV01=Object.freeze({BUILD:BUILD,request:request,render:render,close:closeSheet});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
