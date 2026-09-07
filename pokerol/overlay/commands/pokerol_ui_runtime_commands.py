@@ -15,7 +15,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.9.0-oak-event-runtime"
+POKEROL_UI_RUNTIME_BUILD = "0.10.0-hotspot-geometry"
 
 
 def _stamp(packet):
@@ -96,6 +96,22 @@ def _action_hotspot_layouts(location):
     return result
 
 
+def _hotspot_geometry(location):
+    raw = _db_value(location, "pokerol_hotspot_geometry", {})
+    if not isinstance(raw, dict):
+        return {}
+    result = {}
+    for key, row in raw.items():
+        if not isinstance(row, dict):
+            continue
+        result[str(key)] = {
+            "width": row.get("width", 80),
+            "height": row.get("height", 80),
+            "hidden": bool(row.get("hidden", False)),
+        }
+    return result
+
+
 def _tutorial_packet(actor):
     room = getattr(actor, "location", None) if actor else None
     state = dict(tutorial_state(actor) or {}) if actor else {}
@@ -144,6 +160,7 @@ def _enrich_world_rows(actor, packet):
     packet["player_editor"] = _player_metadata(actor, location)
     packet["custom_hotspots"] = _custom_hotspots(location)
     packet["action_hotspot_layouts"] = _action_hotspot_layouts(location)
+    packet["hotspot_geometry"] = _hotspot_geometry(location)
     packet["tutorial"] = _tutorial_packet(actor)
 
     local = {}
