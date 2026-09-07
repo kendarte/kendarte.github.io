@@ -3,6 +3,7 @@ import json
 
 from evennia import Command
 
+from services.pokemon_battle_free_order_engine import submit_battle_free_order
 from services.pokemon_battle_runtime import (
     abandon_battle,
     current_battle,
@@ -140,6 +141,27 @@ class CmdPokerolBattleAction(Command):
         result = submit_tactical_battle_action(self.caller, action)
         if not result.get("accepted"):
             self.caller.msg(f"Acción rechazada: {result.get('status')}")
+
+
+class CmdPokerolBattleFreeOrder(Command):
+    key = "pokerol-battle-free"
+    aliases = ["orden-libre-batalla"]
+    locks = "cmd:all()"
+
+    def func(self):
+        raw = str(self.args or "").strip()
+        if not raw:
+            self.caller.msg("¿Qué orden le das a tu Pokémon?")
+            return
+        try:
+            packet = _decode_token(raw)
+            text = str(packet.get("text") or "").strip()
+        except Exception:
+            text = raw
+        if not text:
+            self.caller.msg("¿Qué orden le das a tu Pokémon?")
+            return
+        submit_battle_free_order(self.caller, text)
 
 
 class CmdPokerolPositionOptions(Command):
