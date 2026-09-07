@@ -1,9 +1,18 @@
+from unicodedata import combining, normalize
+
 from evennia import DefaultCharacter
 
 from .objects import ObjectParent
 
 
-POKEROL_START_ROOM_ID = "KANTO-PAL-001"
+POKEROL_START_ROOM_KEY = "Mi cuarto"
+POKEROL_START_ROOM_ALIASES = ("Mi cuarto", "Mi casa")
+POKEROL_FALLBACK_START_ROOM_ID = "KANTO-PAL-001"
+
+
+def _normalized_room_key(value):
+    text = normalize("NFKD", str(value or ""))
+    return "".join(ch for ch in text if not combining(ch)).strip().casefold()
 
 
 class Character(DefaultCharacter, ObjectParent):
@@ -30,8 +39,31 @@ class Character(DefaultCharacter, ObjectParent):
         self.db.current_action = None
         self.db.destination_id = None
 
+    def _find_pokerol_start_room(self):
+        """Resolve the persistent player bedroom, with a safe Pallet fallback."""
+        from evennia.objects.models import ObjectDB
+
+        rooms = []
+        fallback = None
+        for obj in ObjectDB.objects.all():
+            room_id = str(getattr(obj.db, "room_id", "") or "").strip()
+            if room_id == POKEROL_FALLBACK_START_ROOM_ID:
+                fallback = obj
+            if not room_id:
+                continue
+            if getattr(obj, "destination", None) is not None:
+                continue
+            rooms.append(obj)
+
+        wanted = [_normalized_room_key(name) for name in POKEROL_START_ROOM_ALIASES]
+        for wanted_key in wanted:
+            for room in rooms:
+                if _normalized_room_key(getattr(room, "key", "")) == wanted_key:
+                    return room
+        return fallback
+
     def _ensure_pokerol_start_location(self):
-        """Move real player characters out of Evennia Limbo and into Pallet Town."""
+        """Move newly-created player characters from Limbo into Mi cuarto."""
         location = getattr(self, "location", None)
         if location is None:
             return False
@@ -40,17 +72,11 @@ class Character(DefaultCharacter, ObjectParent):
         if current_room_id:
             return False
 
-        if str(getattr(location, "key", "") or "").strip().lower() != "limbo":
+        if _normalized_room_key(getattr(location, "key", "")) != "limbo":
             return False
 
         try:
-            from evennia.objects.models import ObjectDB
-
-            start_room = None
-            for obj in ObjectDB.objects.all():
-                if str(getattr(obj.db, "room_id", "") or "") == POKEROL_START_ROOM_ID:
-                    start_room = obj
-                    break
+            start_room = self._find_pokerol_start_room()
             if start_room is None:
                 return False
 
@@ -91,7 +117,7 @@ class Character(DefaultCharacter, ObjectParent):
             return super().at_pre_move(destination)
 
     def at_post_puppet(self, **kwargs):
-        """Place new players in Kanto and refresh the POKEROL scene immediately."""
+        """Place new players in Mi cuarto and refresh the POKEROL scene immediately."""
         try:
             super().at_post_puppet(**kwargs)
         except TypeError:
