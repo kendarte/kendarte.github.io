@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.5.0-auto-switch-stale-session';
+  var BUILD='0.6.0-server-cleared-account-switch';
   var auth=null,feedObserver=null,emitterBound=false;
 
   function byId(id){return document.getElementById(id)}
@@ -20,7 +20,7 @@
   function isConnected(){
     try{return !!(window.Evennia&&typeof Evennia.isConnected==='function'&&Evennia.isConnected())}catch(e){return false}
   }
-  function forceTransportClose(){
+  function closeTransport(){
     try{
       if(window.Evennia&&Evennia.connection&&typeof Evennia.connection.close==='function'){
         Evennia.connection.close();
@@ -137,10 +137,10 @@
   function startPreflight(afterSwitch){
     if(!auth||!auth.active)return;
     clearTimers();
-    auth.phase='preflight';auth.createSent=false;auth.connectSent=false;
+    auth.phase='preflight';auth.createSent=false;auth.connectSent=false;auth.logoutToken='';
     if(afterSwitch){
-      setStatus('Sesión anterior cerrada. Continuando…',false);
-      progress(34,'SESIÓN LIMPIA','La cuenta anterior fue cerrada. Verificando '+auth.name+'…','');
+      setStatus('Sesión anterior eliminada. Continuando…',false);
+      progress(34,'SESIÓN LIMPIA','La identidad anterior fue eliminada del navegador. Verificando '+auth.name+'…','');
     }else{
       setStatus(auth.mode==='new'?'Comprobando nombre…':'Comprobando cuenta…',false);
       progress(18,'CONTACTANDO SERVIDOR','Enviando una comprobación corta al servidor…','');
@@ -165,7 +165,7 @@
         lastConnect=now;
         try{if(window.Evennia&&typeof Evennia.connect==='function')Evennia.connect()}catch(e){}
       }
-      if(now-started>7000){fail('No se pudo abrir una sesión limpia con el servidor.');return}
+      if(now-started>8000){fail('No se pudo abrir una sesión limpia con el servidor.');return}
       later(waitOpen,120);
     })();
   }
@@ -174,27 +174,29 @@
     if(auth.phase==='switching'||auth.phase==='reconnecting')return;
     auth.switchAttempts=(Number(auth.switchAttempts)||0)+1;
     if(auth.switchAttempts>2){
-      fail('No se pudo cerrar por completo la sesión anterior del navegador.');
+      fail('No se pudo limpiar por completo la sesión anterior del navegador.');
       return;
     }
     clearTimers();auth.phase='switching';
     var previous=clean(oldName)||'la cuenta anterior';
-    setStatus('Cerrando '+previous+'…',false);
-    progress(22,'CAMBIANDO ENTRENADOR','Cerrando automáticamente la sesión de '+previous+' antes de entrar como '+auth.name+'…','pkLoginSlow');
-
-    var started=Date.now(),forced=false;
-    if(!sendRaw('quit'))forceTransportClose();
-    (function waitClosed(){
-      if(!auth||!auth.active||auth.phase!=='switching')return;
-      if(!isConnected()){
-        reconnectAfterSwitch();
-        return;
-      }
-      var elapsed=Date.now()-started;
-      if(elapsed>2200&&!forced){forced=true;forceTransportClose()}
-      if(elapsed>6500){fail('La sesión anterior no se cerró correctamente.');return}
-      later(waitClosed,120);
-    })();
+    auth.logoutToken='switch-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+    setStatus('Eliminando sesión de '+previous+'…',false);
+    progress(22,'CAMBIANDO ENTRENADOR','El servidor está eliminando la identidad compartida de '+previous+' antes de entrar como '+auth.name+'…','pkLoginSlow');
+    if(!sendRaw('pokerol-hard-logout '+auth.logoutToken)){
+      fail('No se pudo solicitar la limpieza de la sesión anterior.');
+      return;
+    }
+    armDeadline(8000);
+  }
+  function onLogoutReadyEvent(ev){
+    if(!auth||!auth.active||auth.phase!=='switching')return;
+    var packet=ev&&ev.detail&&typeof ev.detail==='object'?ev.detail:{};
+    if(!auth.logoutToken||String(packet.token||'')!==auth.logoutToken)return;
+    if(packet.cleared!==true){fail('El servidor no pudo eliminar la sesión anterior del navegador.');return}
+    clearTimers();
+    progress(26,'SESIÓN ANTERIOR ELIMINADA','Cerrando el transporte anterior antes de reconectar…','pkLoginSlow');
+    closeTransport();
+    later(reconnectAfterSwitch,700);
   }
   function onAuthState(args){
     var packet=packetFrom(args);
@@ -234,7 +236,7 @@
     if(!/^[A-Za-z0-9_\-]{3,24}$/.test(name)){setStatus('El nombre debe tener 3–24 caracteres: letras, números, _ o -.',true);return}
     if(password.length<4||/\s/.test(password)){setStatus('La clave debe tener al menos 4 caracteres y no usar espacios.',true);return}
 
-    auth={active:true,mode:mode,name:name,password:password,phase:'preflight',startedAt:Date.now(),createSent:false,connectSent:false,switchAttempts:0,timers:[]};
+    auth={active:true,mode:mode,name:name,password:password,phase:'preflight',startedAt:Date.now(),createSent:false,connectSent:false,switchAttempts:0,logoutToken:'',timers:[]};
     setFormBusy(true);
     startPreflight(false);
   }
@@ -279,6 +281,7 @@
   }
   function init(){
     watchForms();watchFeed();
+    window.addEventListener('pokerol-logout-ready',onLogoutReadyEvent);
     var tries=0;(function waitEmitter(){tries++;if(bindEmitter())return;if(tries<240)setTimeout(waitEmitter,50)})();
   }
 
