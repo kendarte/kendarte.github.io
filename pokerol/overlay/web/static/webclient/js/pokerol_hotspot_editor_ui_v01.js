@@ -56,6 +56,7 @@
         +'<label>Y px<input id="pk-player-y" type="number" min="0" max="500" step="1"></label>'
         +'<label>ESCALA<input id="pk-player-scale" type="number" min="0.35" max="3" step="0.05"></label>'
       +'</div>'
+      +'<label class="pkPlayerAnchor"><input id="pk-player-anchor" type="checkbox"><span><strong>ANCLAR</strong> · mantener esta posición y tamaño al cambiar de Room</span></label>'
       +'<div class="pkPlayerActions"><button id="pk-player-save" type="button">GUARDAR</button><button id="pk-player-reset" type="button">RESET</button></div>';
     stage.appendChild(player);
 
