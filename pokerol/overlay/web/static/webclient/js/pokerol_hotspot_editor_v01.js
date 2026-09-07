@@ -1,12 +1,13 @@
 (function(){
   'use strict';
 
-  var BUILD='0.2.0-server-hotspots';
+  var BUILD='0.2.1-server-hotspots';
   var editing=false;
   var selected=null;
   var drag=null;
   var observer=null;
   var applying=false;
+  var suppressUntil=0;
   var roomCache={};
   var emitterBound=false;
 
@@ -71,7 +72,7 @@
   }
 
   function applyRoomLayout(){
-    if(applying)return;var layer=byId('pk-actor-layer');if(!layer)return;applying=true;
+    if(applying)return;var layer=byId('pk-actor-layer');if(!layer)return;applying=true;suppressUntil=Date.now()+120;
     Array.from(layer.querySelectorAll('.pkActor:not(.pkCustomHotspot)')).forEach(normalizeActor);
     Array.from(layer.querySelectorAll('.pkCustomHotspot')).forEach(function(n){n.remove()});
     (currentData().custom||[]).forEach(makeCustom);
@@ -118,7 +119,7 @@
   }
   function onSnapshot(args){var packet=packetFrom(args);setServerRows(packet);setTimeout(applyRoomLayout,20);return true}
   function bindEmitter(){if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;Evennia.emitter.on('pokerol_room_snapshot',onSnapshot);emitterBound=true;return true}
-  function watchActors(){var layer=byId('pk-actor-layer');if(!layer)return false;observer=new MutationObserver(function(){if(!applying)setTimeout(applyRoomLayout,0)});observer.observe(layer,{childList:true,subtree:true});return true}
+  function watchActors(){var layer=byId('pk-actor-layer');if(!layer)return false;observer=new MutationObserver(function(){if(applying||Date.now()<suppressUntil)return;setTimeout(applyRoomLayout,0)});observer.observe(layer,{childList:true,subtree:true});return true}
   function init(){bindPanel();var tries=0;(function wait(){tries++;bindEmitter();if(watchActors())return;if(tries<120)setTimeout(wait,75)})();}
 
   window.PokerolHotspotEditorV01=Object.freeze({BUILD:BUILD,persistSelected:persistSelected,applyRoomLayout:applyRoomLayout});
