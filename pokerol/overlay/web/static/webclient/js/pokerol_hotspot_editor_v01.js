@@ -1,13 +1,12 @@
 (function(){
   'use strict';
 
-  var BUILD='0.2.1-server-hotspots';
+  var BUILD='0.3.0-project-hotspot-layouts';
   var editing=false;
   var selected=null;
   var drag=null;
   var observer=null;
   var applying=false;
-  var suppressUntil=0;
   var roomCache={};
   var emitterBound=false;
 
@@ -18,12 +17,16 @@
   function clamp(v,min,max){var n=Number(v);if(!Number.isFinite(n))n=min;return Math.max(min,Math.min(max,n))}
   function packetFrom(args){var p=args&&args.length?args[0]:args;if(Array.isArray(p)&&p.length===1)p=p[0];return p&&typeof p==='object'?p:{}}
   function encodePayload(data){var bytes=new TextEncoder().encode(JSON.stringify(data||{})),bin='';for(var i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-  function sendSave(data){if(!window.Evennia||typeof Evennia.msg!=='function')return false;try{Evennia.msg('text',['pokerol-editor-save-hotspots '+encodePayload({custom:data.custom||[]})],{});return true}catch(e){return false}}
+  function sendSave(data){
+    if(!window.Evennia||typeof Evennia.msg!=='function')return false;
+    try{Evennia.msg('text',['pokerol-editor-save-hotspots '+encodePayload({custom:data.custom||[],actions:data.actions||{}})],{});return true}catch(e){return false}
+  }
 
-  function currentData(){var key=roomKey();if(!roomCache[key])roomCache[key]={roomKey:key,custom:[]};return roomCache[key]}
+  function currentData(){var key=roomKey();if(!roomCache[key])roomCache[key]={roomKey:key,custom:[],actions:{}};return roomCache[key]}
   function setServerRows(packet){
     var key=clean(packet.room_id)||clean(packet.room_name||packet.location)||roomKey();
-    roomCache[key]={roomKey:key,custom:(packet.custom_hotspots||[]).map(function(r){return Object.assign({},r)})};
+    var actionLayouts=packet.action_hotspot_layouts&&typeof packet.action_hotspot_layouts==='object'?packet.action_hotspot_layouts:{};
+    roomCache[key]={roomKey:key,custom:(packet.custom_hotspots||[]).map(function(r){return Object.assign({},r)}),actions:Object.assign({},actionLayouts)};
     var current=roomKey();if(current===key||!roomCache[current])roomCache[current]=roomCache[key];
   }
   function saveRoom(data){roomCache[data.roomKey]=data;sendSave(data);return Promise.resolve(true)}
@@ -36,6 +39,7 @@
     actor.dataset.pkHotspotKey='WORLD:'+label.toLowerCase();
     return actor.dataset.pkHotspotKey;
   }
+  function safeActionKey(actor){return String(originalKey(actor)||'').replace(/[^A-Za-z0-9_.:-]+/g,'_').slice(0,96)}
   function normalizeActor(actor){
     if(!actor)return;originalKey(actor);
     if(actor.dataset.pkHotspotBound==='1')return;
@@ -70,19 +74,26 @@
     actor.addEventListener('click',function(){if(editing)return;var cmd=clean(actor.dataset.pkCommand)||('observar '+clean(label.textContent||'hotspot'));var field=byId('inputfield'),send=byId('inputsend');if(field&&send){field.value=cmd;field.dispatchEvent(new Event('input',{bubbles:true}));send.click()}});
     layer.appendChild(actor);normalizeActor(actor);return actor;
   }
+  function applyActionLayout(actor,data){
+    if(!actor||!actor.classList.contains('pkActionHotspot'))return;
+    var row=(data.actions||{})[safeActionKey(actor)];if(!row)return;
+    if(Number.isFinite(Number(row.x)))actor.style.left=clamp(row.x,2,98)+'%';
+    if(Number.isFinite(Number(row.y)))actor.style.bottom=clamp(row.y,0,92)+'%';
+    var scale=clamp(row.scale==null?1:row.scale,.2,4);actor.dataset.pkWorldScale=String(scale);actor.style.setProperty('--pk-world-actor-scale',String(scale));
+  }
 
   function applyRoomLayout(){
-    if(applying)return;var layer=byId('pk-actor-layer');if(!layer)return;applying=true;suppressUntil=Date.now()+120;
-    Array.from(layer.querySelectorAll('.pkActor:not(.pkCustomHotspot)')).forEach(normalizeActor);
+    if(applying)return;var layer=byId('pk-actor-layer');if(!layer)return;applying=true;var data=currentData();
+    Array.from(layer.querySelectorAll('.pkActor:not(.pkCustomHotspot)')).forEach(function(actor){normalizeActor(actor);applyActionLayout(actor,data)});
     Array.from(layer.querySelectorAll('.pkCustomHotspot')).forEach(function(n){n.remove()});
-    (currentData().custom||[]).forEach(makeCustom);
+    (data.custom||[]).forEach(makeCustom);
     if(editing)setEditingVisuals(true);applying=false;
   }
   function panel(){return byId('pk-hotspot-panel')}
   function setEditingVisuals(on){var stage=byId('pk-stage');if(stage)stage.classList.toggle('pkHotspotEditing',on);var btn=byId('pk-edit-hotspots');if(btn){btn.classList.toggle('pkActive',on);btn.textContent=on?'LISTO':'HOTSPOTS'}var p=panel();if(p)p.hidden=!on}
   function toggleEditing(){editing=!editing;selected=null;setEditingVisuals(editing);applyRoomLayout();if(!editing)clearSelection()}
   function clearSelection(){Array.from(document.querySelectorAll('.pkActor.pkSelectedHotspot')).forEach(function(a){a.classList.remove('pkSelectedHotspot')});selected=null;fillForm(null)}
-  function selectActor(actor){clearSelection();selected=actor;actor.classList.add('pkSelectedHotspot');fillForm(actor);setTimeout(function(){if(actor.dataset.pkCustom==='1'){var d=byId('pk-hotspot-description'),s=byId('pk-hotspot-scale');if(d)d.value=actor.dataset.pkCustomDescription||'';if(s)s.value=clamp(actor.dataset.pkWorldScale||1,.2,4).toFixed(2)}},0)}
+  function selectActor(actor){clearSelection();selected=actor;actor.classList.add('pkSelectedHotspot');fillForm(actor);setTimeout(function(){if(actor.dataset.pkCustom==='1'){var d=byId('pk-hotspot-description'),s=byId('pk-hotspot-scale');if(d)d.value=actor.dataset.pkCustomDescription||'';if(s)s.value=clamp(actor.dataset.pkWorldScale||1,.2,4).toFixed(2)}else if(actor.classList.contains('pkActionHotspot')){var sc=byId('pk-hotspot-scale');if(sc)sc.value=clamp(actor.dataset.pkWorldScale||1,.2,4).toFixed(2)}},0)}
   function fillForm(actor){
     var name=byId('pk-hotspot-name'),cmd=byId('pk-hotspot-command'),x=byId('pk-hotspot-x'),y=byId('pk-hotspot-y'),del=byId('pk-hotspot-delete'),hide=byId('pk-hotspot-hide');
     if(!actor){if(name)name.value='';if(cmd)cmd.value='';if(x)x.value='';if(y)y.value='';if(del)del.disabled=true;if(hide)hide.disabled=true;return}
@@ -93,16 +104,26 @@
 
   function persistSelected(){
     if(!selected)return Promise.resolve(false);
-    if(selected.dataset.pkCustom!=='1')return Promise.resolve(true);
-    var data=currentData(),id=originalKey(selected),name=clean(byId('pk-hotspot-name')&&byId('pk-hotspot-name').value)||'Hotspot';
-    var row=(data.custom||[]).find(function(r){return r.id===id});if(!row){row={id:id};data.custom.push(row)}
-    row.name=name;row.command=clean(byId('pk-hotspot-command')&&byId('pk-hotspot-command').value)||('observar '+name);row.x=parseFloat(selected.style.left)||50;row.y=parseFloat(selected.style.bottom)||2;
-    row.description=String((byId('pk-hotspot-description')&&byId('pk-hotspot-description').value)||selected.dataset.pkCustomDescription||'').trim();
-    row.scale=clamp((byId('pk-hotspot-scale')&&byId('pk-hotspot-scale').value)||selected.dataset.pkWorldScale||1,.2,4);
-    row.sprite=String(selected.dataset.pkCustomSprite||selected.dataset.pkProjectSprite||row.sprite||'');
-    selected.dataset.pkCommand=row.command;selected.dataset.pkCustomDescription=row.description;selected.dataset.pkWorldScale=String(row.scale);selected.style.setProperty('--pk-world-actor-scale',String(row.scale));
-    var lbl=labelNode(selected);if(lbl)lbl.textContent=name;
-    return saveRoom(data);
+    var data=currentData();
+    if(selected.dataset.pkCustom==='1'){
+      var id=originalKey(selected),name=clean(byId('pk-hotspot-name')&&byId('pk-hotspot-name').value)||'Hotspot';
+      var row=(data.custom||[]).find(function(r){return r.id===id});if(!row){row={id:id};data.custom.push(row)}
+      row.name=name;row.command=clean(byId('pk-hotspot-command')&&byId('pk-hotspot-command').value)||('observar '+name);row.x=parseFloat(selected.style.left)||50;row.y=parseFloat(selected.style.bottom)||2;
+      row.description=String((byId('pk-hotspot-description')&&byId('pk-hotspot-description').value)||selected.dataset.pkCustomDescription||'').trim();
+      row.scale=clamp((byId('pk-hotspot-scale')&&byId('pk-hotspot-scale').value)||selected.dataset.pkWorldScale||1,.2,4);
+      row.sprite=String(selected.dataset.pkCustomSprite||selected.dataset.pkProjectSprite||row.sprite||'');
+      selected.dataset.pkCommand=row.command;selected.dataset.pkCustomDescription=row.description;selected.dataset.pkWorldScale=String(row.scale);selected.style.setProperty('--pk-world-actor-scale',String(row.scale));
+      var lbl=labelNode(selected);if(lbl)lbl.textContent=name;
+      return saveRoom(data);
+    }
+    if(selected.classList.contains('pkActionHotspot')){
+      var actionKey=safeActionKey(selected);if(!actionKey)return Promise.resolve(false);
+      var scale=clamp((byId('pk-hotspot-scale')&&byId('pk-hotspot-scale').value)||selected.dataset.pkWorldScale||1,.2,4);
+      data.actions=data.actions||{};data.actions[actionKey]={x:parseFloat(selected.style.left)||50,y:parseFloat(selected.style.bottom)||2,scale:scale};
+      selected.dataset.pkWorldScale=String(scale);selected.style.setProperty('--pk-world-actor-scale',String(scale));
+      return saveRoom(data);
+    }
+    return Promise.resolve(true);
   }
   function createNew(){
     var data=currentData(),row={id:uid(),name:'NUEVO HOTSPOT',command:'observar hotspot',x:50,y:24,description:'',scale:1,sprite:''};data.custom.push(row);saveRoom(data).then(function(){var a=makeCustom(row);if(a)selectActor(a)})
@@ -119,7 +140,7 @@
   }
   function onSnapshot(args){var packet=packetFrom(args);setServerRows(packet);setTimeout(applyRoomLayout,20);return true}
   function bindEmitter(){if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;Evennia.emitter.on('pokerol_room_snapshot',onSnapshot);emitterBound=true;return true}
-  function watchActors(){var layer=byId('pk-actor-layer');if(!layer)return false;observer=new MutationObserver(function(){if(applying||Date.now()<suppressUntil)return;setTimeout(applyRoomLayout,0)});observer.observe(layer,{childList:true,subtree:true});return true}
+  function watchActors(){var layer=byId('pk-actor-layer');if(!layer)return false;observer=new MutationObserver(function(){if(!applying)setTimeout(applyRoomLayout,0)});observer.observe(layer,{childList:true,subtree:true});return true}
   function init(){bindPanel();var tries=0;(function wait(){tries++;bindEmitter();if(watchActors())return;if(tries<120)setTimeout(wait,75)})();}
 
   window.PokerolHotspotEditorV01=Object.freeze({BUILD:BUILD,persistSelected:persistSelected,applyRoomLayout:applyRoomLayout});
