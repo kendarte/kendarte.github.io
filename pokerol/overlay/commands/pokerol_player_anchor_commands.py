@@ -2,9 +2,10 @@ import base64
 import json
 
 from evennia import Command
+from evennia.utils import logger
 
 
-PLAYER_ANCHOR_BUILD = "0.3.0-versioned-player-state"
+PLAYER_ANCHOR_BUILD = "0.4.0-authoritative-player-visual-state"
 
 
 def _clean(value):
@@ -100,14 +101,37 @@ class CmdPokerolEditorPlayerState(Command):
             return
 
         revision = _next_revision(self.caller)
-        layout["revision"] = revision
+        room_layout = dict(layout)
+        room_layout["revision"] = revision
 
-        # The current Room always keeps the same layout. If ANCLAR is enabled,
-        # the character also keeps an identical global copy used in every Room.
-        room.db.pokerol_player_layout = dict(layout)
+        visual_state = {
+            "x": layout["x"],
+            "y": layout["y"],
+            "scale": layout["scale"],
+            "anchored": anchored,
+            "room_dbref": int(room.id),
+            "revision": revision,
+        }
+
+        # One latest authoritative visual state always lives on the character.
+        # Room-local state is also kept so disabling ANCLAR restores this Room.
+        self.caller.db.pokerol_player_visual_state = dict(visual_state)
+        room.db.pokerol_player_layout = dict(room_layout)
         self.caller.db.pokerol_player_anchor_enabled = anchored
         if anchored:
-            self.caller.db.pokerol_player_anchor_layout = dict(layout)
+            self.caller.db.pokerol_player_anchor_layout = dict(room_layout)
+
+        logger.log_info(
+            "[POKEROL PLAYER SAVE] caller={} room=#{} x={:.3f} y={:.3f} scale={:.3f} anchored={} rev={}".format(
+                self.caller.key,
+                int(room.id),
+                layout["x"],
+                layout["y"],
+                layout["scale"],
+                anchored,
+                revision,
+            )
+        )
 
         packet = {
             "status": "PLAYER_STATE_SAVED",
@@ -115,7 +139,8 @@ class CmdPokerolEditorPlayerState(Command):
             "seq": seq,
             "revision": revision,
             "anchored": anchored,
-            "layout": dict(layout),
+            "layout": dict(room_layout),
+            "visual_state": dict(visual_state),
             "room_dbref": int(room.id),
             "scope": "PLAYER_ANCHOR" if anchored else "ROOM",
         }
@@ -141,10 +166,20 @@ class CmdPokerolEditorPlayerAnchor(Command):
 
         if enabled:
             revision = _next_revision(self.caller)
-            self.caller.db.pokerol_player_anchor_layout = {
+            layout = {
                 "x": _number(data.get("x"), 11, 1, 99),
                 "y": _number(data.get("y"), 94, 0, 500),
                 "scale": _number(data.get("scale"), 1, 0.35, 3),
+                "revision": revision,
+            }
+            self.caller.db.pokerol_player_anchor_layout = dict(layout)
+            room = getattr(self.caller, "location", None)
+            self.caller.db.pokerol_player_visual_state = {
+                "x": layout["x"],
+                "y": layout["y"],
+                "scale": layout["scale"],
+                "anchored": True,
+                "room_dbref": int(room.id) if room else None,
                 "revision": revision,
             }
         elif bool(data.get("clear")):
