@@ -9,9 +9,14 @@ from services.dm_free_action_judgment_bridge import apply_dm_judgment
 from services.dm_free_action_runtime import dispatch_dm_free_action_async
 from services.dm_world_context import build_dm_world_snapshot
 from services.player_language_contract import get_actor_turn_language, localize
+from services.pokerol_role_intent_router import (
+    classify_role_intent,
+    diegetic_redirect,
+    oak_challenge_free_intent,
+)
 
 
-DM_FREE_ACTION_PIPELINE_BUILD = "dm-0.1.1-single-bounded-context-retry"
+DM_FREE_ACTION_PIPELINE_BUILD = "dm-0.2.0-role-bound-scene-intents"
 MAX_CONTEXT_RETRIES = 1
 
 
@@ -39,14 +44,11 @@ def _unique_strings(values):
 
 
 def _schedule_next_reactor_tick(callback):
-    """Schedule a context retry outside the completed serialized provider callback."""
     from twisted.internet import reactor
-
     return reactor.callLater(0, callback)
 
 
 def is_valid_unsupported_proposal(proposal_result):
-    """Escalate only a schema-valid capability-parser UNSUPPORTED decision."""
     packet = _plain_dict(proposal_result)
     proposal = _plain_dict(packet.get("proposal"))
     return bool(
@@ -57,27 +59,69 @@ def is_valid_unsupported_proposal(proposal_result):
     )
 
 
+def _refresh_scene(actor):
+    try:
+        from commands.pokerol_ui_runtime_commands import emit_room_snapshot
+        emit_room_snapshot(actor, visible_text=False)
+        return True
+    except Exception:
+        return False
+
+
+def _role_scene_preflight(actor, raw_player_input):
+    """Keep free input inside the fiction and resolve deterministic scene choices before AI.
+
+    This is intentionally narrow. Anything genuinely in-world that is not one of
+    these high-confidence event intents continues into the normal AI DM pipeline.
+    """
+    role = classify_role_intent(raw_player_input)
+    if role.get("kind") == "OFF_SCENE":
+        redirect = diegetic_redirect(actor)
+        speaker = str(redirect.get("speaker") or "NARRADOR")
+        text = str(redirect.get("text") or "").strip()
+        actor.msg("\n{}: {}".format(speaker, text))
+        return {
+            "status": "ROLE_REDIRECT",
+            "handled": True,
+            "role": role,
+            "presentation": {"speaker": speaker, "text": text},
+            "build": DM_FREE_ACTION_PIPELINE_BUILD,
+        }
+
+    scene_intent = oak_challenge_free_intent(actor, raw_player_input)
+    if scene_intent:
+        from services.pokerol_oak_situation_engine import negotiate_rival_challenge
+        from services.pokerol_tutorial_progress import mark_oak_battle_started, resume_oak_event
+
+        choice = str(scene_intent.get("choice") or "").upper()
+        if choice in {"HERE", "OUTSIDE"}:
+            resume_oak_event(actor)
+        result = negotiate_rival_challenge(actor, choice)
+        if result.get("accepted") and str(result.get("status") or "").endswith("STARTED"):
+            mark_oak_battle_started(actor, _plain_dict(result.get("tutorial_state")))
+        _refresh_scene(actor)
+        return {
+            "status": "SCENE_INTENT_EXECUTED" if result.get("accepted") else "SCENE_INTENT_REJECTED",
+            "handled": True,
+            "role": role,
+            "scene_intent": scene_intent,
+            "result": result,
+            "build": DM_FREE_ACTION_PIPELINE_BUILD,
+        }
+    return None
+
+
 def _campaign_ready(actor):
     active = get_active_campaign_definition(actor)
     state = _plain_dict(active.get("state"))
     definition = active.get("definition")
     wanted = str(active.get("campaign_id") or "")
     if not state:
-        return {
-            "status": "NO_ACTIVE_CAMPAIGN",
-            "ready": False,
-            "campaign_id": wanted,
-            "build": DM_FREE_ACTION_PIPELINE_BUILD,
-        }
+        return {"status": "NO_ACTIVE_CAMPAIGN", "ready": False, "campaign_id": wanted, "build": DM_FREE_ACTION_PIPELINE_BUILD}
     if not definition:
         return {"status": "ACTIVE_CAMPAIGN_NOT_REGISTERED", "ready": False, "campaign_id": wanted, "build": DM_FREE_ACTION_PIPELINE_BUILD}
     if str(state.get("status") or "") == "COMPLETED":
-        return {
-            "status": "CAMPAIGN_COMPLETED",
-            "ready": False,
-            "campaign_id": wanted,
-            "build": DM_FREE_ACTION_PIPELINE_BUILD,
-        }
+        return {"status": "CAMPAIGN_COMPLETED", "ready": False, "campaign_id": wanted, "build": DM_FREE_ACTION_PIPELINE_BUILD}
     return {
         "status": "READY",
         "ready": True,
@@ -89,22 +133,11 @@ def _campaign_ready(actor):
 
 
 def prepare_dm_unsupported_turn(actor, raw_player_input):
-    """Snapshot authoritative context and build the non-authoritative Director plan on the reactor."""
     ready = _campaign_ready(actor)
     if not ready.get("ready"):
-        return {
-            "status": ready.get("status"),
-            "prepared": False,
-            "campaign": ready,
-            "build": DM_FREE_ACTION_PIPELINE_BUILD,
-        }
+        return {"status": ready.get("status"), "prepared": False, "campaign": ready, "build": DM_FREE_ACTION_PIPELINE_BUILD}
     snapshot = build_dm_world_snapshot(actor, raw_player_input=raw_player_input)
-    plan = build_dm_turn_plan(
-        actor,
-        ready.get("definition"),
-        raw_player_input,
-        world_snapshot=snapshot,
-    )
+    plan = build_dm_turn_plan(actor, ready.get("definition"), raw_player_input, world_snapshot=snapshot)
     if str(plan.get("status") or "") != "PLANNED":
         return {
             "status": "DIRECTOR_NOT_READY",
@@ -154,7 +187,6 @@ def _safe_pipeline_failure_text(actor, status):
 
 
 def present_dm_execution_result(actor, execution):
-    """Present only authoritative execution results and never echo model-authored outcome text."""
     packet = _plain_dict(execution)
     language = get_actor_turn_language(actor)
     if not packet.get("executed"):
@@ -169,7 +201,6 @@ def present_dm_execution_result(actor, execution):
         return {"presented": True, "text": rendered, "build": DM_FREE_ACTION_PIPELINE_BUILD}
 
     results = [_plain_dict(row) for row in _plain_list(packet.get("results"))]
-    # MOVEMENT executes the actual current Exit command and COMBAT emits its client handoff; both own presentation.
     if results and all(str(row.get("status") or "").startswith(("MOVEMENT_", "COMBAT_")) or row.get("encounter_id") for row in results):
         return {"presented": False, "text": "", "delegated": True, "build": DM_FREE_ACTION_PIPELINE_BUILD}
 
@@ -183,11 +214,7 @@ def present_dm_execution_result(actor, execution):
 
 
 def _execute_and_present(actor, admissible_plan, raw_player_input):
-    execution = execute_adjudicated_dm_free_action(
-        actor,
-        admissible_plan,
-        raw_player_input=raw_player_input,
-    )
+    execution = execute_adjudicated_dm_free_action(actor, admissible_plan, raw_player_input=raw_player_input)
     presentation = present_dm_execution_result(actor, execution)
     return {
         "status": "DM_ACTION_EXECUTED" if execution.get("executed") else "DM_ACTION_EXECUTION_REJECTED",
@@ -210,7 +237,6 @@ def handle_dm_interpretation_result(
     judge_provider_callable=None,
     judge_provider_options=None,
 ):
-    """Deterministic middle. Context may be retrieved once; only NEEDS_JUDGMENT can invoke the bounded Judge."""
     packet = _plain_dict(interpreted)
     if packet.get("status") != "INTERPRETED" or packet.get("accepted") is not True:
         text = _safe_pipeline_failure_text(actor, packet.get("status"))
@@ -318,7 +344,11 @@ def dispatch_dm_unsupported_action_async(
     judge_provider_options=None,
     retry_scheduler_callable=None,
 ):
-    """Escalate unsupported input through Director -> Interpreter -> one context retry -> Adjudicator -> Judge -> Engine."""
+    """Route free input through role/scene authority, then Director/Interpreter/Judge as needed."""
+    preflight = _role_scene_preflight(actor, raw_player_input)
+    if preflight is not None:
+        return preflight
+
     prepared = prepare_dm_unsupported_turn(actor, raw_player_input)
     if not prepared.get("prepared"):
         text = _safe_pipeline_failure_text(actor, prepared.get("status"))
