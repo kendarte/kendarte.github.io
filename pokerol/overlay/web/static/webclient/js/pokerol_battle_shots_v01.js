@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var BUILD="0.1.0-authoritative-anime-shots";
+var BUILD="0.2.0-wego-anime-shots";
 var queue=[],active=null,index=0,timer=null;
 function byId(id){return document.getElementById(id)}
 function text(v){return String(v==null?"":v).trim()}
@@ -10,9 +10,10 @@ function ensure(){
   var root=byId("pkb-shot-layer");if(root)return root;
   root=document.createElement("div");root.id="pkb-shot-layer";root.className="pkbShotLayer";root.hidden=true;
   root.innerHTML='<div class="pkbShotFrame">'
+    +'<div class="pkbShotRound"><span id="pkb-shot-mode">WEGO</span><b id="pkb-shot-progress">1 / 1</b></div>'
     +'<div class="pkbShotMedia" id="pkb-shot-media"></div>'
     +'<div class="pkbShotText"><small id="pkb-shot-kind">TOMA</small><h2 id="pkb-shot-title"></h2><p id="pkb-shot-copy"></p></div>'
-    +'<div class="pkbShotControls"><button id="pkb-shot-next" type="button">SIGUIENTE</button><button id="pkb-shot-skip" type="button">SALTAR</button></div>'
+    +'<div class="pkbShotControls"><button id="pkb-shot-next" type="button">SIGUIENTE</button><button id="pkb-shot-skip" type="button">SALTAR SECUENCIA</button></div>'
     +'</div>';
   document.body.appendChild(root);
   byId("pkb-shot-next").onclick=next;
@@ -33,10 +34,12 @@ function show(){
   var shot=active.shots[index]||{};
   root.hidden=false;root.dataset.shot=text(shot.shot).toUpperCase();
   byId("pkb-shot-media").innerHTML=mediaHtml(shot);
+  byId("pkb-shot-mode").textContent=(text(active.round_mode)||"WEGO")+' · TURNO '+(active.turn||1);
+  byId("pkb-shot-progress").textContent=(index+1)+' / '+active.shots.length;
   byId("pkb-shot-kind").textContent=(text(shot.shot)||"TOMA").replace(/_/g," ");
   byId("pkb-shot-title").textContent=text(shot.title)||"";
   byId("pkb-shot-copy").textContent=text(shot.text)||"";
-  var wait=Math.max(500,Math.min(3500,Number(shot.duration_ms)||950));
+  var wait=Math.max(650,Math.min(4200,Number(shot.duration_ms)||950));
   timer=setTimeout(next,wait);
 }
 function play(packet){
