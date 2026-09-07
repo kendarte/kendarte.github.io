@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>POKEROL</title>
 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/vRr7kALbUpJcOK7cOwpBYfJqSff/t1cSDFp9J7D3nG9VZPfV+UpX" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/webclient.css' %}">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/custom.css' %}">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_onboarding_v01.css' %}">
@@ -17,6 +17,7 @@
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_world_editor_v01.css' %}?v=20260906-worldedit1">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_event_editor_v01.css' %}?v=20260906-eventedit1">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_player_sheet_v01.css' %}?v=20260906-sheet1">
+  <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_event_modal_v01.css' %}?v=20260906-eventmodal1">
 
   {% block jquery_import %}
   <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -48,13 +49,14 @@
   <script src="{% static 'webclient/js/pokerol_hotspot_editor_v01.js' %}?v=20260906-serverhotspots3" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_player_editor_v01.js' %}?v=20260906-serverplayer2" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_trainer_sprite_editor_v01.js' %}?v=20260906-spritefix1" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/pokerol_scene_action_hotspots_v01.js' %}?v=20260906-scenehotspots1" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'webclient/js/pokerol_scene_action_hotspots_v01.js' %}?v=20260906-scenehotspots2" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_editor_panels_drag_v01.js' %}?v=20260906-editor3" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_world_editor_v01.js' %}?v=20260906-worldedit1" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_event_editor_v01.js' %}?v=20260906-eventedit2" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_session_controls_v01.js' %}?v=20260906-logout4" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_editor_input_guard_v01.js' %}?v=20260906-inputguard1" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/pokerol_tutorial_v01.js' %}?v=20260906-oaktutorial1" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'webclient/js/pokerol_event_modal_v01.js' %}?v=20260906-eventmodal1" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'webclient/js/pokerol_tutorial_v01.js' %}?v=20260906-oakevent2" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_visual_recovery_v01.js' %}?v=20260906-visualrecovery1" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_asset_manager_v01.js' %}?v=20260906-projectassets3" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_project_persistence_v01.js' %}?v=20260906-projectassets3" type="text/javascript" charset="utf-8"></script>
@@ -65,7 +67,7 @@
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_gba_theme_v01.css' %}?v=20260906-firered1">
   <script src="{% static 'webclient/js/pokerol_room_transition_v01.js' %}?v=20260906-gba1" type="text/javascript" charset="utf-8"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf4+1nzPfr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf4YFjDznA7YMMdU4S3bKb2X4kNNWc4hRdjH0zjD6a2I8h8E/VTv3p" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hK4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNmj4" crossorigin="anonymous"></script>
   {% block scripts %}{% endblock %}
 </head>
