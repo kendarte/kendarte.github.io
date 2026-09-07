@@ -1,8 +1,9 @@
 (function(){
   'use strict';
 
-  var BUILD='0.2.0-server-player-layout';
+  var BUILD='0.3.0-global-player-anchor';
   var editing=false;
+  var anchored=false;
   var drag=null;
   var resize=null;
   var current={x:11,y:94,scale:1};
@@ -12,47 +13,91 @@
   function clamp(v,min,max){var n=Number(v);if(!Number.isFinite(n))n=min;return Math.max(min,Math.min(max,n))}
   function packetFrom(args){var p=args&&args.length?args[0]:args;if(Array.isArray(p)&&p.length===1)p=p[0];return p&&typeof p==='object'?p:{}}
   function encodePayload(data){var bytes=new TextEncoder().encode(JSON.stringify(data||{})),bin='';for(var i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-  function sendLayout(reset){
+  function sendCommand(command,payload){
     if(!window.Evennia||typeof Evennia.msg!=='function')return false;
-    var payload=reset?{reset:true}:{x:current.x,y:current.y,scale:current.scale};
-    try{Evennia.msg('text',['pokerol-editor-player-layout '+encodePayload(payload)],{});return true}catch(e){return false}
+    try{Evennia.msg('text',[command+' '+encodePayload(payload)],{});return true}catch(e){return false}
+  }
+  function sendLayout(reset){
+    if(anchored){
+      return sendCommand('pokerol-editor-player-anchor',{enabled:true,x:current.x,y:current.y,scale:current.scale,reset:!!reset});
+    }
+    return sendCommand('pokerol-editor-player-layout',reset?{reset:true}:{x:current.x,y:current.y,scale:current.scale});
+  }
+  function setAnchor(on){
+    anchored=!!on;
+    var checkbox=byId('pk-player-anchor');if(checkbox)checkbox.checked=anchored;
+    if(anchored){
+      sendCommand('pokerol-editor-player-anchor',{enabled:true,x:current.x,y:current.y,scale:current.scale});
+    }else{
+      sendCommand('pokerol-editor-player-anchor',{enabled:false});
+      sendCommand('pokerol-editor-player-layout',{x:current.x,y:current.y,scale:current.scale});
+    }
   }
 
   function apply(){
     var avatar=byId('pk-player-avatar');if(!avatar)return;
-    avatar.style.left=current.x+'%';avatar.style.bottom=current.y+'px';avatar.style.setProperty('--pk-player-edit-scale',String(current.scale));avatar.style.transform='translateX(-50%) scale('+current.scale+')';avatar.style.transformOrigin='bottom center';
-    var x=byId('pk-player-x'),y=byId('pk-player-y'),s=byId('pk-player-scale');if(x)x.value=current.x.toFixed(1);if(y)y.value=current.y.toFixed(0);if(s)s.value=current.scale.toFixed(2);
+    avatar.style.left=current.x+'%';
+    avatar.style.bottom=current.y+'px';
+    avatar.style.setProperty('--pk-player-edit-scale',String(current.scale));
+    avatar.style.transform='translateX(-50%) scale('+current.scale+')';
+    avatar.style.transformOrigin='bottom center';
+    var x=byId('pk-player-x'),y=byId('pk-player-y'),s=byId('pk-player-scale'),a=byId('pk-player-anchor');
+    if(x)x.value=current.x.toFixed(1);if(y)y.value=current.y.toFixed(0);if(s)s.value=current.scale.toFixed(2);if(a)a.checked=anchored;
   }
   function applyPacket(packet){
     var row=packet&&packet.player_editor||{};
-    current={x:clamp(row.scene_x==null?11:row.scene_x,1,99),y:clamp(row.scene_y==null?94:row.scene_y,0,500),scale:clamp(row.scene_scale==null?1:row.scene_scale,.35,3)};apply();
+    anchored=!!row.anchored;
+    current={
+      x:clamp(row.scene_x==null?11:row.scene_x,1,99),
+      y:clamp(row.scene_y==null?94:row.scene_y,0,500),
+      scale:clamp(row.scene_scale==null?1:row.scene_scale,.35,3)
+    };
+    apply();
   }
   function setEditing(on){
     editing=!!on;var stage=byId('pk-stage'),avatar=byId('pk-player-avatar'),panel=byId('pk-player-panel'),btn=byId('pk-edit-player');
-    if(stage)stage.classList.toggle('pkPlayerEditing',editing);if(avatar)avatar.classList.toggle('pkPlayerEditable',editing);if(panel)panel.hidden=!editing;if(btn)btn.classList.toggle('pkActive',editing);if(editing){ensureHandle();apply()}else{drag=null;resize=null}
+    if(stage)stage.classList.toggle('pkPlayerEditing',editing);
+    if(avatar)avatar.classList.toggle('pkPlayerEditable',editing);
+    if(panel)panel.hidden=!editing;
+    if(btn)btn.classList.toggle('pkActive',editing);
+    if(editing){ensureHandle();apply()}else{drag=null;resize=null}
   }
-  function ensureHandle(){var avatar=byId('pk-player-avatar');if(!avatar||byId('pk-player-resize-handle'))return;var h=document.createElement('span');h.id='pk-player-resize-handle';h.className='pkPlayerResizeHandle';h.title='Arrastra para cambiar tamaño';avatar.appendChild(h)}
+  function ensureHandle(){
+    var avatar=byId('pk-player-avatar');if(!avatar||byId('pk-player-resize-handle'))return;
+    var h=document.createElement('span');h.id='pk-player-resize-handle';h.className='pkPlayerResizeHandle';h.title='Arrastra para cambiar tamaño';avatar.appendChild(h)
+  }
   function bindAvatar(){
-    var avatar=byId('pk-player-avatar'),stage=byId('pk-stage');if(!avatar||!stage||avatar.dataset.pkPlayerEditBound==='1')return false;avatar.dataset.pkPlayerEditBound='1';ensureHandle();
-    avatar.addEventListener('pointerdown',function(ev){if(!editing||ev.target===byId('pk-player-resize-handle'))return;ev.preventDefault();ev.stopPropagation();drag={id:ev.pointerId,rect:stage.getBoundingClientRect()};avatar.setPointerCapture&&avatar.setPointerCapture(ev.pointerId)},true);
-    avatar.addEventListener('pointermove',function(ev){if(!editing||!drag||drag.id!==ev.pointerId)return;var r=drag.rect;current.x=clamp(((ev.clientX-r.left)/r.width)*100,1,99);current.y=clamp(r.bottom-ev.clientY,0,Math.max(100,r.height-20));apply()},true);
+    var avatar=byId('pk-player-avatar'),stage=byId('pk-stage');if(!avatar||!stage||avatar.dataset.pkPlayerEditBound==='1')return false;
+    avatar.dataset.pkPlayerEditBound='1';ensureHandle();
+    avatar.addEventListener('pointerdown',function(ev){
+      if(!editing||ev.target===byId('pk-player-resize-handle'))return;
+      ev.preventDefault();ev.stopPropagation();drag={id:ev.pointerId,rect:stage.getBoundingClientRect()};avatar.setPointerCapture&&avatar.setPointerCapture(ev.pointerId)
+    },true);
+    avatar.addEventListener('pointermove',function(ev){
+      if(!editing||!drag||drag.id!==ev.pointerId)return;
+      var r=drag.rect;current.x=clamp(((ev.clientX-r.left)/r.width)*100,1,99);current.y=clamp(r.bottom-ev.clientY,0,Math.max(100,r.height-20));apply()
+    },true);
     avatar.addEventListener('pointerup',function(ev){if(drag&&drag.id===ev.pointerId){drag=null;sendLayout(false)}},true);
     var h=byId('pk-player-resize-handle');if(h&&h.dataset.pkBound!=='1'){
-      h.dataset.pkBound='1';h.addEventListener('pointerdown',function(ev){if(!editing)return;ev.preventDefault();ev.stopPropagation();resize={id:ev.pointerId,startY:ev.clientY,startScale:current.scale};h.setPointerCapture&&h.setPointerCapture(ev.pointerId)},true);
+      h.dataset.pkBound='1';
+      h.addEventListener('pointerdown',function(ev){if(!editing)return;ev.preventDefault();ev.stopPropagation();resize={id:ev.pointerId,startY:ev.clientY,startScale:current.scale};h.setPointerCapture&&h.setPointerCapture(ev.pointerId)},true);
       h.addEventListener('pointermove',function(ev){if(!editing||!resize||resize.id!==ev.pointerId)return;ev.preventDefault();current.scale=clamp(resize.startScale+((resize.startY-ev.clientY)/120),.35,3);apply()},true);
       h.addEventListener('pointerup',function(ev){if(resize&&resize.id===ev.pointerId){resize=null;sendLayout(false)}},true);
     }
     return true;
   }
   function readFields(){
-    var x=parseFloat(byId('pk-player-x')&&byId('pk-player-x').value),y=parseFloat(byId('pk-player-y')&&byId('pk-player-y').value),s=parseFloat(byId('pk-player-scale')&&byId('pk-player-scale').value);if(Number.isFinite(x))current.x=clamp(x,1,99);if(Number.isFinite(y))current.y=clamp(y,0,500);if(Number.isFinite(s))current.scale=clamp(s,.35,3)
+    var x=parseFloat(byId('pk-player-x')&&byId('pk-player-x').value),y=parseFloat(byId('pk-player-y')&&byId('pk-player-y').value),s=parseFloat(byId('pk-player-scale')&&byId('pk-player-scale').value);
+    if(Number.isFinite(x))current.x=clamp(x,1,99);if(Number.isFinite(y))current.y=clamp(y,0,500);if(Number.isFinite(s))current.scale=clamp(s,.35,3)
   }
   function bindPanel(){
-    var btn=byId('pk-edit-player'),close=byId('pk-player-close'),save=byId('pk-player-save'),reset=byId('pk-player-reset');
-    if(btn&&btn.dataset.pkBound!=='1'){btn.dataset.pkBound='1';btn.addEventListener('click',function(){setEditing(true)})}if(close)close.addEventListener('click',function(){setEditing(false)});
-    if(save)save.addEventListener('click',function(){readFields();apply();sendLayout(false)});
-    if(reset)reset.addEventListener('click',function(){current={x:11,y:94,scale:1};apply();sendLayout(true)});
-    ['pk-player-x','pk-player-y','pk-player-scale'].forEach(function(id){var n=byId(id);if(n)n.addEventListener('change',function(){readFields();apply();sendLayout(false)})});
+    var btn=byId('pk-edit-player'),close=byId('pk-player-close'),save=byId('pk-player-save'),reset=byId('pk-player-reset'),anchor=byId('pk-player-anchor');
+    if(btn&&btn.dataset.pkBound!=='1'){btn.dataset.pkBound='1';btn.addEventListener('click',function(){setEditing(true)})}
+    if(close&&close.dataset.pkBound!=='1'){close.dataset.pkBound='1';close.addEventListener('click',function(){setEditing(false)})}
+    if(save&&save.dataset.pkBound!=='1'){save.dataset.pkBound='1';save.addEventListener('click',function(){readFields();apply();sendLayout(false)})}
+    if(reset&&reset.dataset.pkBound!=='1'){reset.dataset.pkBound='1';reset.addEventListener('click',function(){current={x:11,y:94,scale:1};apply();sendLayout(true)})}
+    if(anchor&&anchor.dataset.pkBound!=='1'){anchor.dataset.pkBound='1';anchor.addEventListener('change',function(){readFields();apply();setAnchor(anchor.checked)})}
+    ['pk-player-x','pk-player-y','pk-player-scale'].forEach(function(id){var n=byId(id);if(n&&n.dataset.pkBound!=='1'){n.dataset.pkBound='1';n.addEventListener('change',function(){readFields();apply();sendLayout(false)})}});
   }
   function onSnapshot(args){applyPacket(packetFrom(args));return true}
   function bindEmitter(){if(emitterBound)return true;if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;Evennia.emitter.on('pokerol_room_snapshot',onSnapshot);emitterBound=true;return true}
