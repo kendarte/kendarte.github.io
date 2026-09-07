@@ -1,9 +1,12 @@
 from ipaddress import ip_address
 
+from django.conf import settings
+
 from evennia import Command
 from evennia.accounts.models import AccountDB
+from evennia.utils.utils import mod_import
 
-LOCAL_LOGIN_BUILD = "pokerol-0.3-auth-state"
+LOCAL_LOGIN_BUILD = "pokerol-0.4-hard-logout"
 
 
 def _client_host(session):
@@ -85,6 +88,39 @@ def _command_character(command, session):
     return None
 
 
+def _clear_browser_auth(session):
+    """Clear every Evennia/Django auth marker tied to this browser session."""
+    csessid = str(getattr(session, "csessid", "") or "").strip() if session else ""
+    if not csessid:
+        return False
+
+    try:
+        session_module = mod_import(settings.SESSION_ENGINE)
+        store = session_module.SessionStore(session_key=csessid)
+        # Evennia's SharedLoginMiddleware mirrors webclient authentication into
+        # Django website authentication. Clearing only webclient_authenticated_uid
+        # is therefore insufficient: the next HTTP request would immediately
+        # restore the old account from Django's auth session.
+        for key in (
+            "webclient_authenticated_uid",
+            "webclient_authenticated_nonce",
+            "website_authenticated_uid",
+            "_auth_user_id",
+            "_auth_user_backend",
+            "_auth_user_hash",
+        ):
+            try:
+                del store[key]
+            except KeyError:
+                pass
+        store["webclient_authenticated_uid"] = None
+        store["webclient_authenticated_nonce"] = 0
+        store.save()
+        return True
+    except Exception:
+        return False
+
+
 class CmdPokerolAuthState(Command):
     """Return authoritative authentication state to the visual client."""
 
@@ -115,6 +151,30 @@ class CmdPokerolAuthState(Command):
         target = session or getattr(self, "caller", None)
         if target:
             target.msg(pokerol_auth_state=((packet,), {}))
+
+
+class CmdPokerolHardLogout(Command):
+    """Clear browser-shared auth state before the webclient reconnects."""
+
+    key = "pokerol-hard-logout"
+    locks = "cmd:all()"
+    arg_regex = r"\s.*?|$"
+
+    def func(self):
+        session = _command_session(self)
+        account = _command_account(self, session)
+        token = str(self.args or "").strip()
+        cleared = _clear_browser_auth(session)
+        packet = {
+            "status": "LOGOUT_READY" if cleared else "LOGOUT_FAILED",
+            "build": LOCAL_LOGIN_BUILD,
+            "token": token,
+            "cleared": bool(cleared),
+            "account_name": str(getattr(account, "key", "") or getattr(account, "username", "") or ""),
+        }
+        target = session or getattr(self, "caller", None)
+        if target:
+            target.msg(pokerol_logout_ready=((packet,), {}))
 
 
 class CmdPokerolLocalLogin(Command):
