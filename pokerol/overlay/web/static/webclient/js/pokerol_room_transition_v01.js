@@ -32,7 +32,7 @@
     stage.classList.remove('pkRoomTransitioning');
     void stage.offsetWidth;
     stage.classList.add('pkRoomTransitioning');
-    timer=setTimeout(function(){stage.classList.remove('pkRoomTransitioning');timer=0},620);
+    timer=setTimeout(function(){stage.classList.remove('pkRoomTransitioning');timer=0;window.dispatchEvent(new CustomEvent('pokerol-room-transition-complete'))},620);
   }
   function checkRoom(){
     var key=currentRoomKey();

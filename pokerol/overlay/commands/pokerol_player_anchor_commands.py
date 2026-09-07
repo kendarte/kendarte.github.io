@@ -5,7 +5,7 @@ from evennia import Command
 from evennia.utils import logger
 
 
-PLAYER_ANCHOR_BUILD = "0.5.0-character-room-player-layouts"
+PLAYER_ANCHOR_BUILD = "0.6.0-character-global-player-transform"
 
 
 def _clean(value):
@@ -55,7 +55,9 @@ def _layout_from(data):
 
 def _next_revision(caller):
     try:
-        revision = int(getattr(caller.db, "pokerol_player_state_revision", 0) or 0) + 1
+        visual = getattr(caller.db, "pokerol_player_visual_state", None) or {}
+        revision = max(int(getattr(caller.db, "pokerol_player_state_revision", 0) or 0),
+                       int(visual.get("revision", 0) or 0)) + 1
     except (TypeError, ValueError):
         revision = 1
     caller.db.pokerol_player_state_revision = revision
@@ -64,19 +66,6 @@ def _next_revision(caller):
 
 def _room_layout_key(room):
     return str(int(room.id))
-
-
-def _room_layouts(caller):
-    raw = getattr(caller.db, "pokerol_player_room_layouts", None)
-    return dict(raw) if isinstance(raw, dict) else {}
-
-
-def _save_character_room_layout(caller, room, layout):
-    layouts = _room_layouts(caller)
-    key = _room_layout_key(room)
-    layouts[key] = dict(layout)
-    caller.db.pokerol_player_room_layouts = layouts
-    return key
 
 
 class CmdPokerolEditorPlayerState(Command):
@@ -101,6 +90,8 @@ class CmdPokerolEditorPlayerState(Command):
 
         try:
             data = _decode_payload(self.args)
+            if data.get("character_dbref") is not None and int(data["character_dbref"]) != int(self.caller.id):
+                raise ValueError("El personaje activo ha cambiado; vuelve a abrir PLAYER.")
             anchored = bool(data.get("anchored"))
             layout = _layout_from(data)
             try:
@@ -120,15 +111,13 @@ class CmdPokerolEditorPlayerState(Command):
         revision = _next_revision(self.caller)
         room_layout = dict(layout)
         room_layout["revision"] = revision
-        room_key = _save_character_room_layout(self.caller, room, room_layout)
+        room_key = _room_layout_key(room)
 
         visual_state = {
             "x": layout["x"],
             "y": layout["y"],
             "scale": layout["scale"],
             "anchored": anchored,
-            "room_dbref": int(room.id),
-            "room_key": room_key,
             "revision": revision,
         }
 
@@ -141,7 +130,7 @@ class CmdPokerolEditorPlayerState(Command):
             self.caller.db.pokerol_player_anchor_layout = dict(room_layout)
 
         logger.log_info(
-            "[POKEROL PLAYER SAVE] caller={} room=#{} key={} x={:.3f} y={:.3f} scale={:.3f} anchored={} rev={} scope={}".format(
+            "[POKEROL PLAYER SAVE] caller={} room=#{} key={} x={:.3f} y={:.3f} scale={:.3f} anchored={} revision={} source={}".format(
                 self.caller.key,
                 int(room.id),
                 room_key,
@@ -150,7 +139,7 @@ class CmdPokerolEditorPlayerState(Command):
                 layout["scale"],
                 anchored,
                 revision,
-                "PLAYER_ANCHOR" if anchored else "PLAYER_ROOM",
+                "PLAYER_VISUAL_STATE",
             )
         )
 
@@ -164,7 +153,8 @@ class CmdPokerolEditorPlayerState(Command):
             "visual_state": dict(visual_state),
             "room_dbref": int(room.id),
             "room_key": room_key,
-            "scope": "PLAYER_ANCHOR" if anchored else "PLAYER_ROOM",
+            "scope": "PLAYER_VISUAL_STATE",
+            "character_dbref": int(self.caller.id),
         }
         self.caller.msg(pokerol_asset_result=((packet,), {}))
         _refresh(self.caller)
@@ -185,8 +175,6 @@ class CmdPokerolEditorPlayerAnchor(Command):
 
         enabled = bool(data.get("enabled"))
         self.caller.db.pokerol_player_anchor_enabled = enabled
-        room = getattr(self.caller, "location", None)
-
         if enabled:
             revision = _next_revision(self.caller)
             layout = {
@@ -196,16 +184,16 @@ class CmdPokerolEditorPlayerAnchor(Command):
                 "revision": revision,
             }
             self.caller.db.pokerol_player_anchor_layout = dict(layout)
-            room_key = _save_character_room_layout(self.caller, room, layout) if room else ""
             self.caller.db.pokerol_player_visual_state = {
                 "x": layout["x"],
                 "y": layout["y"],
                 "scale": layout["scale"],
                 "anchored": True,
-                "room_dbref": int(room.id) if room else None,
-                "room_key": room_key,
                 "revision": revision,
             }
+            logger.log_info(
+                "[POKEROL PLAYER SAVE] caller={} x={} y={} scale={} revision={} source=PLAYER_VISUAL_STATE".format(
+                    self.caller.key, layout["x"], layout["y"], layout["scale"], revision))
         elif bool(data.get("clear")):
             self.caller.db.pokerol_player_anchor_layout = None
 

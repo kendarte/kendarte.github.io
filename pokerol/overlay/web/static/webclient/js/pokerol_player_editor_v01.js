@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.7.0-character-room-player-authority';
+  var BUILD='0.8.0-character-global-player-authority';
   var editing=false;
   var anchored=false;
   var drag=null;
@@ -16,9 +16,11 @@
   var saveTimer=null;
   var dirty=false;
   var lastRoomDbref=null;
-  var baseSize=null;
+  // Stable logical dimensions, independent of frame initialization and Room CSS.
+  var baseSize={w:96,h:140};
+  var characterDbref=null;
+  var renderedAvatar=null;
   var refreshTimers=[];
-  var reapplyTimers=[];
 
   function byId(id){return document.getElementById(id)}
   function clamp(v,min,max){var n=Number(v);if(!Number.isFinite(n))n=min;return Math.max(min,Math.min(max,n))}
@@ -50,22 +52,10 @@
 
   function markDirty(){dirty=true;status(anchored?'CAMBIOS SIN GUARDAR · ANCLADO':'CAMBIOS SIN GUARDAR',false)}
 
-  function captureBaseSize(){
-    if(baseSize)return baseSize;
-    var avatar=byId('pk-player-avatar');
-    if(!avatar){baseSize={w:70,h:100};return baseSize}
-    var cs=window.getComputedStyle?getComputedStyle(avatar):null;
-    var w=parseFloat(cs&&cs.width)||avatar.offsetWidth||70;
-    var h=parseFloat(cs&&cs.height)||avatar.offsetHeight||100;
-    var applied=parseFloat(avatar.dataset.pkPlayerAppliedScale||'1');
-    if(Number.isFinite(applied)&&applied>0){w=w/applied;h=h/applied}
-    baseSize={w:Math.max(16,w),h:Math.max(24,h)};
-    return baseSize;
-  }
-
   function apply(){
-    var avatar=byId('pk-player-avatar');if(!avatar)return false;
-    var size=captureBaseSize();
+    var avatar=byId('pk-player-avatar');if(!avatar||characterDbref===null)return false;
+    renderedAvatar=avatar;
+    var size=baseSize;
     var w=size.w*current.scale,h=size.h*current.scale;
 
     // Inline !important is intentional: PLAYER editor is the only owner of
@@ -81,6 +71,8 @@
     avatar.dataset.pkPlayerX=String(current.x);
     avatar.dataset.pkPlayerY=String(current.y);
     avatar.dataset.pkPlayerScale=String(current.scale);
+    avatar.dataset.pkPlayerCharacter=String(characterDbref);
+    avatar.dataset.pkPlayerRevision=String(committed.revision);
 
     var sprite=byId('pk-player-sprite');
     if(sprite){
@@ -100,14 +92,8 @@
     return true;
   }
 
-  function scheduleReapply(){
-    reapplyTimers.forEach(function(t){clearTimeout(t)});reapplyTimers=[];
-    [0,25,90,220,500].forEach(function(ms){
-      reapplyTimers.push(setTimeout(function(){if(!drag&&!resize)apply()},ms));
-    });
-  }
-
   function saveState(reset){
+    if(characterDbref===null){status('ESPERANDO ESTADO DEL PERSONAJE',true);return false}
     if(pendingSeq){status('GUARDADO YA EN PROCESO…',false);return false}
     seq+=1;pendingSeq=seq;
     var payload={
@@ -117,6 +103,7 @@
       scale:current.scale,
       reset:!!reset,
       seq:seq,
+      character_dbref:characterDbref,
       room_dbref:lastRoomDbref
     };
     status('GUARDANDO EN SERVIDOR…',false);
@@ -133,7 +120,7 @@
     return true;
   }
 
-  function closeNow(){
+  function closeNow(skipRender){
     editing=false;drag=null;resize=null;pendingClose=false;
     var stage=byId('pk-stage'),avatar=byId('pk-player-avatar'),panel=byId('pk-player-panel'),btn=byId('pk-edit-player');
     if(stage)stage.classList.remove('pkPlayerEditing');
@@ -142,7 +129,7 @@
     if(btn)btn.classList.remove('pkActive');
     document.documentElement.dataset.pkPlayerEditing='0';
     // Closing EDIT must never change the saved transform.
-    apply();scheduleReapply();
+    if(!skipRender)apply();
   }
 
   function setEditing(on,force){
@@ -165,7 +152,16 @@
   }
 
   function applyPacket(packet){
-    var row=packet&&packet.player_editor||{};
+    var row=packet&&packet.player_editor;
+    if(!row||row.character_dbref==null||row.scene_x==null||row.scene_y==null||row.scene_scale==null)return false;
+    var incomingCharacter=Number(row.character_dbref);
+    if(!Number.isFinite(incomingCharacter))return false;
+    if(characterDbref!==incomingCharacter){
+      clearTimeout(saveTimer);pendingSeq=0;pendingClose=false;dirty=false;
+      editing=false;drag=null;resize=null;characterDbref=incomingCharacter;
+      committed={revision:0,roomDbref:null};
+      closeNow(true);
+    }
     var roomDbref=packet&&packet.room_dbref!=null?Number(packet.room_dbref):null;
     if(!Number.isFinite(roomDbref))roomDbref=null;
     if(editing||drag||resize||dirty||pendingSeq)return false;
@@ -179,15 +175,15 @@
       roomDbref:roomDbref
     };
 
-    // Reject stale snapshots only inside the same Room. A previously visited
-    // Room can legitimately have an older revision and must still restore.
-    if(roomDbref!==null&&committed.roomDbref===roomDbref&&incoming.revision&&committed.revision&&incoming.revision<committed.revision)return false;
+    // Revisions belong to the character, so stale packets are rejected across
+    // all Rooms, including a delayed default packet after a confirmed save.
+    if(incoming.revision<committed.revision)return false;
 
     lastRoomDbref=roomDbref;
     committed=incoming;
     anchored=incoming.anchored;
     current={x:incoming.x,y:incoming.y,scale:incoming.scale};
-    apply();scheduleReapply();
+    apply();
     return true;
   }
 
@@ -282,6 +278,7 @@
   function onAssetResult(args){
     var p=packetFrom(args),st=String(p.status||'').toUpperCase();
     if(st==='PLAYER_STATE_SAVED'){
+      if(Number(p.character_dbref)!==characterDbref)return true;
       var ackSeq=Number(p.seq||0);if(!pendingSeq||ackSeq!==pendingSeq)return true;
       clearTimeout(saveTimer);saveTimer=null;
       var row=p.layout||{};
@@ -298,8 +295,8 @@
       anchored=saved.anchored;
       current={x:saved.x,y:saved.y,scale:saved.scale};
       dirty=false;pendingSeq=0;
-      apply();scheduleReapply();
-      status(anchored?'GUARDADO · ANCLADO GLOBAL':'GUARDADO · ESTE ROOM',false);
+      apply();
+      status(anchored?'GUARDADO · PERSONAJE · ANCLADO':'GUARDADO · PERSONAJE',false);
       requestRoomState();
       if(pendingClose)setTimeout(function(){if(!dirty&&!pendingSeq)closeNow()},80);
       return true;
@@ -326,12 +323,19 @@
       tries++;
       bindEmitter();
       if(byId('pk-player-avatar')&&byId('pk-edit-player')){
-        captureBaseSize();bindAvatar();bindPanel();apply();
+        bindAvatar();bindPanel();apply();
         if(emitterBound&&assetEmitterBound){scheduleRefresh();return}
       }
       if(tries<240)setTimeout(wait,50);
     })();
 
+    // Rebind only when the avatar node is replaced. No transform writer or
+    // timed restore layer competes with this renderer.
+    new MutationObserver(function(){
+      var avatar=byId('pk-player-avatar');
+      if(avatar&&avatar!==renderedAvatar){bindAvatar();bindPanel();apply()}
+    }).observe(document.body,{childList:true,subtree:true});
+    window.addEventListener('pokerol-room-transition-complete',apply);
     window.addEventListener('pokerol-authenticated',scheduleRefresh);
     window.addEventListener('focus',function(){if(!editing&&!dirty&&!pendingSeq)scheduleRefresh()});
     document.addEventListener('visibilitychange',function(){if(!document.hidden&&!editing&&!dirty&&!pendingSeq)scheduleRefresh()});
@@ -340,6 +344,7 @@
   window.PokerolPlayerEditorV01=Object.freeze({
     BUILD:BUILD,
     applyPacket:applyPacket,
+    render:apply,
     isEditing:function(){return editing},
     isDirty:function(){return dirty||!!pendingSeq},
     current:function(){return {x:current.x,y:current.y,scale:current.scale,anchored:anchored}},

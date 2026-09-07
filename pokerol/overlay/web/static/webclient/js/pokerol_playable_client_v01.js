@@ -227,6 +227,7 @@
     var nameNode=byId('pk-room-name');if(nameNode)nameNode.textContent=name||'Ubicación actual';
     var idNode=byId('pk-room-id');if(idNode)idNode.textContent=roomId||'';
     renderBackground(packet);renderExits(packet);renderActors(packet);renderActions(packet);narrateSnapshot(packet);
+    if(window.PokerolPlayerEditorV01)window.PokerolPlayerEditorV01.applyPacket(packet);
   }
   function renderContextActions(args){var packet=packetFrom(args);lastActions=packet;renderActions(packet)}
   function requestRoomState(){if(!window.Evennia||typeof Evennia.msg!=='function')return false;try{Evennia.msg('text',['pokerol-room-state'],{});return true}catch(e){return false}}
