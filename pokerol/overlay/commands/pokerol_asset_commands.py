@@ -13,6 +13,7 @@ ASSET_ROOT = Path(os.environ.get("POKEROL_ASSET_ROOT", "/data/pokerol_assets"))
 PUBLIC_PREFIX = "/pokerol-assets/"
 MAX_ASSET_BYTES = 8 * 1024 * 1024
 MAX_CUSTOM_HOTSPOTS = 80
+MAX_ACTION_HOTSPOTS = 160
 MIME_EXT = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -167,10 +168,18 @@ def _delete_managed_asset(url):
             pass
 
 
-def _folder_for(folder):
-    path = ASSET_ROOT / folder
+def _ensure_public_dir(path):
     path.mkdir(parents=True, exist_ok=True)
+    try:
+        path.chmod(0o755)
+    except OSError:
+        pass
     return path
+
+
+def _folder_for(folder):
+    _ensure_public_dir(ASSET_ROOT)
+    return _ensure_public_dir(ASSET_ROOT / folder)
 
 
 class CmdPokerolAssetBegin(Command):
@@ -196,9 +205,8 @@ class CmdPokerolAssetBegin(Command):
             _result(self.caller, "ERROR", str(exc))
             return
 
-        ASSET_ROOT.mkdir(parents=True, exist_ok=True)
-        tmp_dir = ASSET_ROOT / ".tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
+        _ensure_public_dir(ASSET_ROOT)
+        tmp_dir = _ensure_public_dir(ASSET_ROOT / ".tmp")
         token = uuid4().hex
         temp_path = tmp_dir / (token + ".part")
         temp_path.write_bytes(b"")
@@ -274,6 +282,10 @@ class CmdPokerolAssetFinish(Command):
             filename = f"{folder.rstrip('s')}-{target_id}-{uuid4().hex[:12]}{ext}"
             final_path = final_dir / filename
             shutil.move(upload["temp"], final_path)
+            try:
+                final_path.chmod(0o644)
+            except OSError:
+                pass
             url = PUBLIC_PREFIX + folder + "/" + filename
             old_url = _current_url(target, attr, hid)
             _set_url(target, attr, url, hid)
@@ -371,10 +383,32 @@ class CmdPokerolEditorSaveHotspots(Command):
             for hid in removed:
                 _delete_managed_asset(existing[hid].get("sprite"))
             room.db.pokerol_custom_hotspots = rows
+
+            incoming_actions = data.get("actions") or {}
+            if not isinstance(incoming_actions, dict) or len(incoming_actions) > MAX_ACTION_HOTSPOTS:
+                raise ValueError("Layout de hotspots de acción inválido.")
+            action_layouts = {}
+            for raw_key, raw in incoming_actions.items():
+                key = _safe_hotspot_id(raw_key)
+                if not key or not isinstance(raw, dict):
+                    continue
+                action_layouts[key] = {
+                    "x": _number(raw.get("x"), 50, 0, 100),
+                    "y": _number(raw.get("y"), 20, 0, 100),
+                    "scale": _number(raw.get("scale"), 1, 0.2, 4),
+                }
+            room.db.pokerol_action_hotspot_layouts = action_layouts
         except Exception as exc:
             _result(self.caller, "ERROR", str(exc))
             return
-        _result(self.caller, "HOTSPOTS_SAVED", "Hotspots guardados en el proyecto.", count=len(rows), room_dbref=int(room.id))
+        _result(
+            self.caller,
+            "HOTSPOTS_SAVED",
+            "Hotspots guardados en el proyecto.",
+            count=len(rows),
+            action_count=len(action_layouts),
+            room_dbref=int(room.id),
+        )
         _refresh(self.caller)
 
 
@@ -394,16 +428,21 @@ class CmdPokerolEditorPlayerLayout(Command):
         except Exception as exc:
             _result(self.caller, "ERROR", str(exc))
             return
+
         key = _clean(getattr(room.db, "room_id", "")) or f"DBREF:{int(room.id)}"
-        layouts = dict(getattr(self.caller.db, "pokerol_player_layouts", None) or {})
         if bool(data.get("reset")):
-            layouts.pop(key, None)
+            room.db.pokerol_player_layout = None
         else:
-            layouts[key] = {
+            room.db.pokerol_player_layout = {
                 "x": _number(data.get("x"), 11, 1, 99),
                 "y": _number(data.get("y"), 94, 0, 500),
                 "scale": _number(data.get("scale"), 1, 0.35, 3),
             }
-        self.caller.db.pokerol_player_layouts = layouts
-        _result(self.caller, "PLAYER_LAYOUT_SAVED", "Posición del jugador guardada en el proyecto.", room_key=key)
+        _result(
+            self.caller,
+            "PLAYER_LAYOUT_SAVED",
+            "Posición y tamaño del jugador guardados en el Room del proyecto.",
+            room_key=key,
+            room_dbref=int(room.id),
+        )
         _refresh(self.caller)
