@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.4.0-direct-auth-no-poll-loop';
+  var BUILD='0.5.0-auto-switch-stale-session';
   var auth=null,feedObserver=null,emitterBound=false;
 
   function byId(id){return document.getElementById(id)}
@@ -16,6 +16,18 @@
   function sendRaw(command){
     if(!window.Evennia||typeof Evennia.msg!=='function')return false;
     try{Evennia.msg('text',[String(command||'')],{});return true}catch(e){return false}
+  }
+  function isConnected(){
+    try{return !!(window.Evennia&&typeof Evennia.isConnected==='function'&&Evennia.isConnected())}catch(e){return false}
+  }
+  function forceTransportClose(){
+    try{
+      if(window.Evennia&&Evennia.connection&&typeof Evennia.connection.close==='function'){
+        Evennia.connection.close();
+        return true;
+      }
+    }catch(e){}
+    return false;
   }
   function formMode(form){
     var button=form&&form.querySelector('button[type="submit"]');
@@ -69,6 +81,11 @@
     auth.timers.push(t);
     return t;
   }
+  function armDeadline(ms){
+    later(function(){
+      if(auth&&auth.active)fail('El servidor no respondió al acceso. La solicitud se canceló; reintenta.');
+    },ms||18000);
+  }
   function fail(message){
     if(!auth||!auth.active)return;
     auth.active=false;clearTimers();
@@ -79,6 +96,10 @@
   function succeed(characterName){
     if(!auth||!auth.active)return;
     var trainerName=clean(auth.name),character=clean(characterName)||trainerName;
+    if(character&&lower(character)!==lower(trainerName)){
+      switchAccount(character);
+      return;
+    }
     auth.active=false;clearTimers();
     try{sessionStorage.removeItem('pokerol.manual_logout')}catch(e){}
     try{localStorage.setItem('pokerol.last_user',trainerName)}catch(e){}
@@ -88,7 +109,7 @@
   }
   function checkState(delay){
     later(function(){
-      if(!auth||!auth.active)return;
+      if(!auth||!auth.active||auth.phase==='switching'||auth.phase==='reconnecting')return;
       sendRaw('pokerol-auth-state '+auth.name);
     },delay);
   }
@@ -113,6 +134,68 @@
     progress(38,'VALIDANDO CUENTA','La comprobación previa no respondió; entrando por la ruta directa…','pkLoginSlow');
     if(auth.mode==='new')sendCreate();else sendConnect();
   }
+  function startPreflight(afterSwitch){
+    if(!auth||!auth.active)return;
+    clearTimers();
+    auth.phase='preflight';auth.createSent=false;auth.connectSent=false;
+    if(afterSwitch){
+      setStatus('Sesión anterior cerrada. Continuando…',false);
+      progress(34,'SESIÓN LIMPIA','La cuenta anterior fue cerrada. Verificando '+auth.name+'…','');
+    }else{
+      setStatus(auth.mode==='new'?'Comprobando nombre…':'Comprobando cuenta…',false);
+      progress(18,'CONTACTANDO SERVIDOR','Enviando una comprobación corta al servidor…','');
+    }
+    sendRaw('pokerol-auth-state '+auth.name);
+    later(fallbackDirect,afterSwitch?1600:1200);
+    armDeadline(afterSwitch?18000:15000);
+  }
+  function reconnectAfterSwitch(){
+    if(!auth||!auth.active)return;
+    clearTimers();auth.phase='reconnecting';
+    progress(28,'RECONECTANDO','Abriendo una sesión limpia para '+auth.name+'…','pkLoginSlow');
+    var started=Date.now(),lastConnect=0;
+    (function waitOpen(){
+      if(!auth||!auth.active||auth.phase!=='reconnecting')return;
+      if(isConnected()){
+        later(function(){startPreflight(true)},220);
+        return;
+      }
+      var now=Date.now();
+      if(now-lastConnect>700){
+        lastConnect=now;
+        try{if(window.Evennia&&typeof Evennia.connect==='function')Evennia.connect()}catch(e){}
+      }
+      if(now-started>7000){fail('No se pudo abrir una sesión limpia con el servidor.');return}
+      later(waitOpen,120);
+    })();
+  }
+  function switchAccount(oldName){
+    if(!auth||!auth.active)return;
+    if(auth.phase==='switching'||auth.phase==='reconnecting')return;
+    auth.switchAttempts=(Number(auth.switchAttempts)||0)+1;
+    if(auth.switchAttempts>2){
+      fail('No se pudo cerrar por completo la sesión anterior del navegador.');
+      return;
+    }
+    clearTimers();auth.phase='switching';
+    var previous=clean(oldName)||'la cuenta anterior';
+    setStatus('Cerrando '+previous+'…',false);
+    progress(22,'CAMBIANDO ENTRENADOR','Cerrando automáticamente la sesión de '+previous+' antes de entrar como '+auth.name+'…','pkLoginSlow');
+
+    var started=Date.now(),forced=false;
+    if(!sendRaw('quit'))forceTransportClose();
+    (function waitClosed(){
+      if(!auth||!auth.active||auth.phase!=='switching')return;
+      if(!isConnected()){
+        reconnectAfterSwitch();
+        return;
+      }
+      var elapsed=Date.now()-started;
+      if(elapsed>2200&&!forced){forced=true;forceTransportClose()}
+      if(elapsed>6500){fail('La sesión anterior no se cerró correctamente.');return}
+      later(waitClosed,120);
+    })();
+  }
   function onAuthState(args){
     var packet=packetFrom(args);
     if(clean(packet.status).toUpperCase()!=='AUTH_STATE'||!auth||!auth.active)return true;
@@ -122,7 +205,7 @@
       if(!packet.account_name||lower(packet.account_name)===lower(auth.name)){
         succeed(packet.character_name||packet.account_name||auth.name);
       }else{
-        fail('El navegador sigue conectado como '+clean(packet.account_name)+'. Pulsa SALIR una vez y vuelve a entrar.');
+        switchAccount(packet.account_name);
       }
       return true;
     }
@@ -151,17 +234,9 @@
     if(!/^[A-Za-z0-9_\-]{3,24}$/.test(name)){setStatus('El nombre debe tener 3–24 caracteres: letras, números, _ o -.',true);return}
     if(password.length<4||/\s/.test(password)){setStatus('La clave debe tener al menos 4 caracteres y no usar espacios.',true);return}
 
-    auth={active:true,mode:mode,name:name,password:password,phase:'preflight',startedAt:Date.now(),createSent:false,connectSent:false,timers:[]};
-    setFormBusy(true);setStatus(mode==='new'?'Comprobando nombre…':'Comprobando cuenta…',false);
-    progress(18,'CONTACTANDO SERVIDOR','Enviando una comprobación corta al servidor…','');
-
-    /* Important: do not gate auth on Evennia.isConnected(). That test was
-       intermittently false even while the websocket transport was usable. */
-    sendRaw('pokerol-auth-state '+name);
-    later(fallbackDirect,1200);
-    later(function(){
-      if(auth&&auth.active)fail('El servidor no respondió al acceso en 15 segundos. La solicitud se canceló; reintenta.');
-    },15000);
+    auth={active:true,mode:mode,name:name,password:password,phase:'preflight',startedAt:Date.now(),createSent:false,connectSent:false,switchAttempts:0,timers:[]};
+    setFormBusy(true);
+    startPreflight(false);
   }
   function bindForm(form){
     if(!form||form.dataset.pkAuthBridge==='1')return;
@@ -178,6 +253,7 @@
     var text=clean(value);if(!text)return;
     if(/you become\s+/i.test(text)){
       var m=text.match(/you become\s+([^.\n]+)/i),who=m&&clean(m[1]);
+      if(who&&lower(who)!==lower(auth.name)){switchAccount(who);return}
       succeed(who||auth.name);return;
     }
     if(/you can now log|account.*created|created.*account/i.test(text)&&auth.mode==='new'){
