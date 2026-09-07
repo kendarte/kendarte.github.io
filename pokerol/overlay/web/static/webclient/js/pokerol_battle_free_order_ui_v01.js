@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='0.1.0-battle-free-order-input';
+var BUILD='0.2.0-wego-turn-order-input';
 var state=null;
 var bound=false;
 function text(v){return String(v==null?'':v).trim()}
@@ -13,7 +13,7 @@ function ensure(){
   var existing=document.getElementById('pkb-free-order-bar');if(existing)return existing;
   var windowNode=battle.querySelector('.pkbMenuWindow')||battle.querySelector('.pkbBottom')||battle;
   var bar=document.createElement('div');bar.id='pkb-free-order-bar';bar.className='pkbFreeOrderBar';
-  bar.innerHTML='<span class="pkbFreeOrderLabel">ORDEN LIBRE</span><input id="pkb-free-order-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ej: Pikachu, sube al árbol / usa Impactrueno / esquiva"><button id="pkb-free-order-send" type="button">ORDENAR</button>';
+  bar.innerHTML='<span class="pkbFreeOrderLabel">ORDEN DEL TURNO</span><input id="pkb-free-order-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ej: Pikachu, sube al árbol y usa Impactrueno / esquiva / usa el entorno"><button id="pkb-free-order-send" type="button">DECLARAR</button>';
   windowNode.appendChild(bar);
   var input=document.getElementById('pkb-free-order-input'),button=document.getElementById('pkb-free-order-send');
   function submit(){if(!input)return;var raw=text(input.value);if(send(raw)){input.value='';input.focus()}}
