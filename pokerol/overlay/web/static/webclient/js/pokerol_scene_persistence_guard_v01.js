@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.0-authoritative-scene-layouts';
+  var BUILD='0.1.1-player-edit-lock';
   var packet=null;
   var emitterBound=false;
   var observer=null;
@@ -73,7 +73,14 @@
     actor.style.left=clamp(row.x==null?50:row.x,0,100)+'%';actor.style.bottom=clamp(row.y==null?20:row.y,0,100)+'%';
     var s=clamp(row.scale==null?1:row.scale,.2,4);actor.dataset.pkWorldScale=String(s);actor.style.setProperty('--pk-world-actor-scale',String(s));
   }
+  function playerEditing(){
+    var stage=byId('pk-stage');
+    if(stage&&stage.classList.contains('pkPlayerEditing'))return true;
+    if(document.documentElement.dataset.pkPlayerEditing==='1')return true;
+    try{return !!(window.PokerolPlayerEditorV01&&typeof PokerolPlayerEditorV01.isEditing==='function'&&PokerolPlayerEditorV01.isEditing())}catch(e){return false}
+  }
   function applyPlayer(){
+    if(playerEditing())return;
     var avatar=byId('pk-player-avatar'),row=packet&&packet.player_editor;if(!avatar||!row)return;
     if(Number.isFinite(Number(row.scene_x)))avatar.style.left=clamp(row.scene_x,1,99)+'%';
     if(Number.isFinite(Number(row.scene_y)))avatar.style.bottom=clamp(row.scene_y,0,500)+'px';
