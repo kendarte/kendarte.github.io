@@ -1,4 +1,4 @@
-"""Resolve direct-move and position-change rounds with anime spatial rules."""
+"""Resolve direct-move and position-change rounds with anime spatial WEGO rules."""
 
 import random
 from copy import deepcopy
@@ -27,7 +27,7 @@ from services.pokemon_battle_tactical_action_engine import (
 )
 
 
-TACTICAL_ROUND_BUILD = "0.1.0-anime-position-round"
+TACTICAL_ROUND_BUILD = "0.2.0-wego-declare-resolve"
 
 
 def _dict(value):
@@ -113,23 +113,34 @@ def _round_finish(state):
     state["updated_at"] = int(time())
 
 
-def _ordered_rows(state, player_action, rng):
+def _declare_wego_round(state, player_action, rng):
     enemy_action = enemy_action_position_aware(state, rng)
     order = _order_actions(state, player_action, enemy_action, rng)
-    _log(
-        state,
-        "ORDER",
-        "Las acciones quedan ordenadas según prioridad, velocidad y posición.",
-        order=[
+    declaration = {
+        "mode": "WEGO",
+        "turn": _int(state.get("turn"), 1),
+        "player_action": _clone(player_action),
+        "enemy_action": _clone(enemy_action),
+        "resolution_order": [
             {"side": row["side"], "priority": row["priority"], "speed": row["speed"]}
             for row in order
         ],
+    }
+    state["round_declaration"] = _clone(declaration)
+    state["last_round_declaration"] = _clone(declaration)
+    _log(
+        state,
+        "WEGO_DECLARATION",
+        "Ambos bandos declaran su intención. Después se revelan y resuelven según prioridad, velocidad y posición.",
+        player_action=_clone(player_action),
+        enemy_action=_clone(enemy_action),
+        order=_clone(declaration["resolution_order"]),
     )
     return enemy_action, order
 
 
 def resolve_tactical_player_action(actor, battle, action, *, rng=None):
-    """Resolve MOVE or FREE_ORDER/position_action using positional combat rules."""
+    """Resolve MOVE or FREE_ORDER/position_action using WEGO positional combat rules."""
     rng = rng or random.SystemRandom()
     state = _clone(_dict(battle))
     action = _dict(action)
@@ -178,7 +189,7 @@ def resolve_tactical_player_action(actor, battle, action, *, rng=None):
 
     state["pending_player_action"] = _clone(action)
     state["phase"] = "ORDER"
-    enemy_action, order = _ordered_rows(state, action, rng)
+    enemy_action, order = _declare_wego_round(state, action, rng)
 
     for row in order:
         if state.get("status") != ACTIVE_STATUS:
@@ -193,17 +204,19 @@ def resolve_tactical_player_action(actor, battle, action, *, rng=None):
         _log(
             state,
             "REACTION_WINDOW",
-            "Se comprueba alcance, cobertura y efectos inmediatos.",
+            "La intención revelada cruza alcance, cobertura, defensa y reacciones preparadas.",
             actor=row.get("side"),
         )
         _end_check(state)
 
     _round_finish(state)
+    state.pop("round_declaration", None)
     return {
         "accepted": True,
-        "status": "TACTICAL_ROUND_RESOLVED",
+        "status": "TACTICAL_WEGO_ROUND_RESOLVED",
         "battle": state,
         "enemy_action": enemy_action,
+        "round_declaration": _clone(state.get("last_round_declaration")),
         "build": TACTICAL_ROUND_BUILD,
         "engine_build": BATTLE_BUILD,
     }
