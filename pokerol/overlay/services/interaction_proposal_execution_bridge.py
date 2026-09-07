@@ -4,7 +4,7 @@ from services.conversation_fact_acquisition_engine import acquire_fact_from_new_
 from services.interaction_engine import normalize, resolve_interaction
 
 
-INTERACTION_BRIDGE_BUILD = "0.74.1-dm-interaction-fact-acquisition"
+INTERACTION_BRIDGE_BUILD = "0.75.0-room-event-npc-trigger"
 MAX_TOPIC_CHARS = 180
 TOPIC_MARKERS = (
     " tema del ",
@@ -64,6 +64,15 @@ def _find_local_visible_npc(actor, dbref):
             return None
         return obj
     return None
+
+
+def _trigger_authored_npc_events(actor, npc):
+    try:
+        from services.pokerol_event_trigger_bridge import trigger_npc_interaction
+
+        return trigger_npc_interaction(actor, npc)
+    except Exception:
+        return []
 
 
 def execute_validated_interaction_proposal(
@@ -172,6 +181,7 @@ def execute_validated_interaction_proposal(
             "build": INTERACTION_BRIDGE_BUILD,
         }
 
+    event_triggers = _trigger_authored_npc_events(actor, npc)
     return {
         "status": "INTERACTION_EXECUTED",
         "executed": True,
@@ -186,5 +196,6 @@ def execute_validated_interaction_proposal(
         "topic": topic or None,
         "topic_source": "PLAYER_INPUT" if topic else None,
         "knowledge_acquisition": acquisition,
+        "room_event_triggers": event_triggers,
         "build": INTERACTION_BRIDGE_BUILD,
     }
