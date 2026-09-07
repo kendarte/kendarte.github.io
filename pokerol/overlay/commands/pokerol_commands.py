@@ -152,6 +152,19 @@ def _route_oak_free_challenge(caller, raw):
     return True
 
 
+def _trigger_direct_dialogue_event(caller, location, raw):
+    try:
+        from services.interaction_engine import _find_npc
+        from services.pokerol_event_trigger_bridge import trigger_npc_interaction
+
+        npc = _find_npc(location, raw)
+        if npc:
+            return trigger_npc_interaction(caller, npc)
+    except Exception:
+        pass
+    return []
+
+
 class CmdPokerolStatus(Command):
     key = "pokerol-status"
     aliases = ["world-status"]
@@ -283,6 +296,7 @@ class CmdPokerolNoMatch(Command):
             text = str((packet or {}).get("response_text") or "").strip()
             if text:
                 caller.msg("\n" + text)
+            _trigger_direct_dialogue_event(caller, location, raw)
             return
 
         perception_intent = parse_perception_intent(raw)
