@@ -9,6 +9,11 @@ from services.interaction_engine import parse_interaction_intent
 from services.npc_simulation import find_npc, npc_state, simstep
 from services.ollama_narrator import NARRATOR_BUILD, narrate_perception_async
 from services.perception_engine import parse_perception_intent, resolve_perception
+from services.pokemon_battle_free_order_engine import submit_battle_free_order
+from services.pokemon_battle_runtime import current_battle
+from services.pokerol_oak_situation_engine import negotiate_rival_challenge
+from services.pokerol_role_intent_router import classify_role_intent, diegetic_redirect, oak_challenge_free_intent
+from services.pokerol_tutorial_progress import mark_oak_battle_started
 from services.ranked_fact_conversation_engine import resolve_ranked_talk_with_disclosure_and_acquisition
 from services.world_combat_handoff_engine import build_world_combat_encounter, emit_world_combat_encounter
 from typeclasses.world_tick import DEFAULT_INTERVAL, pause_world_tick, start_world_tick, world_tick_state
@@ -115,6 +120,36 @@ def format_roll(result):
     if not roll:
         return None
     return f"[PER TEST] {roll['stat_value']} + d{roll['die_sides']}({roll['die']}) = {roll['total']}"
+
+
+def _route_role_boundary(caller, raw):
+    role = classify_role_intent(raw)
+    if str(role.get("kind") or "").upper() != "OFF_SCENE":
+        return False
+    redirect = diegetic_redirect(caller)
+    speaker = str(redirect.get("speaker") or "NARRADOR").strip()
+    text = str(redirect.get("text") or "").strip()
+    if text:
+        caller.msg("\n{}: {}".format(speaker, text) if speaker != "NARRADOR" else "\n" + text)
+    return True
+
+
+def _route_oak_free_challenge(caller, raw):
+    intent = oak_challenge_free_intent(caller, raw)
+    if not intent:
+        return False
+    result = negotiate_rival_challenge(caller, intent.get("choice"))
+    if result.get("accepted") and str(result.get("status") or "").endswith("STARTED"):
+        state = dict(result.get("tutorial_state") or {})
+        mark_oak_battle_started(caller, state)
+    elif not result.get("accepted"):
+        caller.msg("\nEl reto no puede resolverse así ahora: {}.".format(result.get("status")))
+    try:
+        from commands.pokerol_ui_runtime_commands import emit_room_snapshot
+        emit_room_snapshot(caller, visible_text=False)
+    except Exception:
+        pass
+    return True
 
 
 class CmdPokerolStatus(Command):
@@ -227,6 +262,17 @@ class CmdPokerolNoMatch(Command):
         location = getattr(caller, "location", None)
         if not raw or not location:
             caller.msg("No entiendo esa acción.")
+            return
+
+        if _route_role_boundary(caller, raw):
+            return
+
+        active_battle = current_battle(caller)
+        if str(active_battle.get("status") or "").upper() == "ACTIVE":
+            submit_battle_free_order(caller, raw)
+            return
+
+        if _route_oak_free_challenge(caller, raw):
             return
 
         if try_combat(caller, raw):
