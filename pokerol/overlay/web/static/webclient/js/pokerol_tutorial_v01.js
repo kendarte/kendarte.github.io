@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.2.0-oak-autorun-media-event';
+  var BUILD='0.3.0-oak-event-lifecycle';
   var LAB_ROOM='KANTO-PAL-002';
   var BATTLE_SOURCE='TUTORIAL-RIVAL-1';
   var OAK_SRC='https://play.pokemonshowdown.com/sprites/trainers/oak.png';
@@ -15,7 +15,9 @@
   var emitterBound=false;
   var lastSnapshot={};
   var lastTutorial={};
+  var lastRoomId='';
   var enterSentFor='';
+  var syncSignature='';
   var stageSeen={};
 
   function clean(value){return String(value==null?'':value).trim()}
@@ -63,7 +65,7 @@
       blocking:true,
       buttons:[
         {label:'ACEPTAR RETO',command:'tutorial-reto',primary:true},
-        {label:'AHORA NO',close:true}
+        {label:'AHORA NO',command:'tutorial-oak snooze'}
       ]
     };
   }
@@ -81,29 +83,60 @@
       buttons:[{label:'VER LAS POKÉ BALLS',close:true,primary:true}]
     };
   }
+  function scheduleStageModal(stage,factory){
+    window.setTimeout(function(){
+      if(roomId(lastSnapshot)!==LAB_ROOM)return;
+      if(clean(lastTutorial.stage).toUpperCase()!==stage)return;
+      if(lastTutorial.completed)return;
+      openPacket(factory());
+    },120);
+  }
+  function syncServerState(rid,stage){
+    var sig=[rid,stage,clean(lastTutorial.starter_id),clean(lastTutorial.rival_starter_id),clean(lastTutorial.outcome),lastTutorial.completed?'1':'0'].join('|');
+    if(syncSignature===sig)return;
+    syncSignature=sig;
+    window.setTimeout(function(){send('tutorial-oak sync')},35);
+  }
   function handleStage(packet){
     lastSnapshot=packet||{};
     lastTutorial=packet&&packet.tutorial&&typeof packet.tutorial==='object'?packet.tutorial:{};
     var rid=roomId(packet),stage=clean(lastTutorial.stage).toUpperCase();
-    if(rid!==LAB_ROOM||!lastTutorial.enabled||lastTutorial.completed){
-      enterSentFor='';return;
+
+    if(rid!==lastRoomId){
+      lastRoomId=rid;
+      enterSentFor='';
+      syncSignature='';
+      stageSeen={};
     }
+
+    if(rid!==LAB_ROOM||!lastTutorial.enabled){
+      enterSentFor='';
+      return;
+    }
+
+    syncServerState(rid,stage);
+    if(lastTutorial.completed){
+      enterSentFor='';
+      return;
+    }
+
     if(stage==='MEET_OAK'&&lastTutorial.autorun!==false){
       stageSeen={};
       var key=rid+':'+stage;
       if(enterSentFor!==key){
         enterSentFor=key;
-        window.setTimeout(function(){send('tutorial-oak enter')},80);
+        window.setTimeout(function(){send('tutorial-oak enter')},110);
       }
       return;
     }
+
     enterSentFor='';
     if(stage==='CHOOSE_STARTER'&&!stageSeen.CHOOSE_STARTER){
       stageSeen.CHOOSE_STARTER=true;
-      window.setTimeout(function(){openPacket(chooseReminder())},120);
+      scheduleStageModal('CHOOSE_STARTER',chooseReminder);
     }else if(stage==='RIVAL_CHALLENGE'&&!stageSeen.RIVAL_CHALLENGE){
       stageSeen.RIVAL_CHALLENGE=true;
-      window.setTimeout(function(){openPacket(challengePacket())},120);
+      scheduleStageModal('RIVAL_CHALLENGE',challengePacket);
     }
   }
   function onSnapshot(args){
@@ -127,7 +160,7 @@
       var rivalId=clean(lastTutorial.rival_starter_id);
       if(STARTER_IMAGE[rivalId])media=STARTER_IMAGE[rivalId];
       caption=(STARTER_NAME[rivalId]||'POKÉMON DEL RIVAL').toUpperCase();
-      buttons=[{label:'ACEPTAR RETO',command:'tutorial-reto',primary:true},{label:'AHORA NO',close:true}];
+      buttons=[{label:'ACEPTAR RETO',command:'tutorial-reto',primary:true},{label:'AHORA NO',command:'tutorial-oak snooze'}];
     }else if(isOak&&stage==='CHOOSE_STARTER'){
       stageSeen.CHOOSE_STARTER=true;
       caption='ELIGE UNA DE LAS POKÉ BALLS DE LA ESCENA';
