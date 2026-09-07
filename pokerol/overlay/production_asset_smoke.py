@@ -1,9 +1,10 @@
 """Opt-in production smoke test for persistent Fakemon visuals.
 
 Run only when POKEROL_ASSET_SMOKE_TEST=1. It talks to the local production HTTP
-stack, creates a disposable species asset folder, verifies the visual registry
-normalizer and battle-shot director in-process, then clears every test asset.
-It never creates or edits a player, room, or persistent species registry row.
+stack using the real GitHub Pages Origin, creates a disposable species asset
+folder, verifies the visual registry normalizer and battle-shot director
+in-process, then clears every test asset. It never creates or edits a player,
+room, or persistent species registry row.
 """
 
 import base64
@@ -11,12 +12,12 @@ import json
 import os
 import sys
 import time
-import urllib.error
 import urllib.request
 from pathlib import Path
 from uuid import uuid4
 
 BASE = os.environ.get("POKEROL_SMOKE_BASE_URL", "http://127.0.0.1:4001").rstrip("/")
+ORIGIN = "https://kendarte.github.io"
 SPECIES_ID = "SMOKE-ASSET-" + uuid4().hex[:10].upper()
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZVtQAAAAASUVORK5CYII="
@@ -29,11 +30,16 @@ def log(message):
 
 
 def request_json(path, *, data=None, headers=None, method=None, timeout=10):
-    req = urllib.request.Request(BASE + path, data=data, headers=headers or {}, method=method)
+    merged = {"Origin": ORIGIN}
+    merged.update(headers or {})
+    req = urllib.request.Request(BASE + path, data=data, headers=merged, method=method)
     with urllib.request.urlopen(req, timeout=timeout) as response:
         raw = response.read()
         if response.status < 200 or response.status >= 300:
             raise RuntimeError(f"HTTP {response.status}: {raw[:200]!r}")
+        allow_origin = str(response.headers.get("Access-Control-Allow-Origin") or "")
+        if allow_origin != ORIGIN:
+            raise AssertionError(f"CORS inválido: esperado={ORIGIN} recibido={allow_origin!r}")
     return json.loads(raw.decode("utf-8"))
 
 
@@ -185,7 +191,7 @@ def main():
     refs = {}
     try:
         health = wait_for_server()
-        log(f"HEALTH OK slots={len(health.get('slots') or [])}")
+        log(f"HEALTH+CORS OK origin={ORIGIN} slots={len(health.get('slots') or [])}")
         for slot in SLOTS:
             refs[slot] = upload(slot)
             fetch_asset(refs[slot])
