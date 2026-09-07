@@ -1,12 +1,13 @@
 """Persistent Fakemon visual-asset storage shared by the public creator and POKEROL.
 
 Files live under POKEROL_ASSET_ROOT/pokemon/<species_id>/ and JSON stores only
-/public URLs. No database blobs or data URLs are written here.
+public URLs. No database blobs or data URLs are written here.
 """
 
 import os
 import re
 from pathlib import Path
+from uuid import uuid4
 
 ASSET_ROOT = Path(os.environ.get("POKEROL_ASSET_ROOT", "/data/pokerol_assets"))
 PUBLIC_PREFIX = "/pokerol-assets/pokemon/"
@@ -121,19 +122,28 @@ def validate_upload(upload, slot, media_kind):
 
 def _remove_slot_family(folder, slot, media_kind):
     extensions = VIDEO_EXTENSIONS if media_kind == "video" else IMAGE_EXTENSIONS
-    for ext in extensions:
-        candidate = folder / f"{slot}{ext}"
-        if candidate.is_file():
-            candidate.unlink()
+    prefixes = (f"{slot}.", f"{slot}-")
+    for candidate in folder.iterdir():
+        if not candidate.is_file():
+            continue
+        if candidate.suffix.lower() not in extensions:
+            continue
+        if candidate.name.startswith(prefixes):
+            try:
+                candidate.unlink()
+            except OSError:
+                pass
 
 
 def save_upload(upload, species_id, slot, media_kind="image"):
     species_id = clean_species_id(species_id)
     slot, media_kind, ext = validate_upload(upload, slot, media_kind)
     folder = species_dir(species_id)
-    _remove_slot_family(folder, slot, media_kind)
-    final_path = folder / f"{slot}{ext}"
-    temp_path = folder / f".{slot}.{os.getpid()}.part"
+    # Nginx intentionally serves persistent assets as immutable. Give every
+    # replacement a fresh URL so browsers can never reuse an old slot image.
+    filename = f"{slot}-{uuid4().hex[:12]}{ext}"
+    final_path = folder / filename
+    temp_path = folder / f".{slot}.{os.getpid()}.{uuid4().hex[:8]}.part"
     with temp_path.open("wb") as handle:
         chunks = getattr(upload, "chunks", None)
         if callable(chunks):
@@ -147,7 +157,21 @@ def save_upload(upload, species_id, slot, media_kind="image"):
         final_path.chmod(0o644)
     except OSError:
         pass
+    _remove_slot_family_except(folder, slot, media_kind, final_path)
     return f"{PUBLIC_PREFIX}{species_id}/{final_path.name}"
+
+
+def _remove_slot_family_except(folder, slot, media_kind, keep):
+    extensions = VIDEO_EXTENSIONS if media_kind == "video" else IMAGE_EXTENSIONS
+    prefixes = (f"{slot}.", f"{slot}-")
+    for candidate in folder.iterdir():
+        if candidate == keep or not candidate.is_file():
+            continue
+        if candidate.suffix.lower() in extensions and candidate.name.startswith(prefixes):
+            try:
+                candidate.unlink()
+            except OSError:
+                pass
 
 
 def clear_slot(species_id, slot, media_kind=None):
@@ -155,14 +179,12 @@ def clear_slot(species_id, slot, media_kind=None):
     slot = clean_slot(slot)
     folder = species_dir(species_id)
     kinds = [str(media_kind).lower()] if media_kind else ["image", "video"]
-    removed = 0
+    before = {path for path in folder.iterdir() if path.is_file()}
     for kind in kinds:
         if kind == "video" and slot not in VIDEO_SLOTS:
             continue
-        extensions = VIDEO_EXTENSIONS if kind == "video" else IMAGE_EXTENSIONS
-        for ext in extensions:
-            candidate = folder / f"{slot}{ext}"
-            if candidate.is_file():
-                candidate.unlink()
-                removed += 1
-    return removed
+        if kind not in {"image", "video"}:
+            raise ValueError("tipo de media inválido")
+        _remove_slot_family(folder, slot, kind)
+    after = {path for path in folder.iterdir() if path.is_file()}
+    return len(before - after)
