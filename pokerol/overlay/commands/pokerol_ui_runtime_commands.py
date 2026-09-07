@@ -5,14 +5,17 @@ from commands.siza_ui_runtime_commands import (
     context_action_packet as _legacy_context_action_packet,
     room_snapshot_packet as _legacy_room_snapshot_packet,
 )
+from services.pokerol_event_editor_service import OAK_TUTORIAL_EVENT_ID, get_room_event
 from services.pokerol_tutorial_engine import (
     OAK_NPC_ID,
     RIVAL_NPC_ID,
+    STARTERS,
     ensure_tutorial_world,
     tutorial_context_actions,
+    tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.8.0-project-layouts"
+POKEROL_UI_RUNTIME_BUILD = "0.9.0-oak-event-runtime"
 
 
 def _stamp(packet):
@@ -46,7 +49,6 @@ def _room_key(location):
 def _player_metadata(actor, location):
     layout = _db_value(location, "pokerol_player_layout", None)
     if not isinstance(layout, dict):
-        # Read old per-character layouts as a migration fallback only.
         legacy = _db_value(actor, "pokerol_player_layouts", {})
         if isinstance(legacy, dict):
             layout = legacy.get(_room_key(location))
@@ -94,6 +96,32 @@ def _action_hotspot_layouts(location):
     return result
 
 
+def _tutorial_packet(actor):
+    room = getattr(actor, "location", None) if actor else None
+    state = dict(tutorial_state(actor) or {}) if actor else {}
+    event = get_room_event(room, OAK_TUTORIAL_EVENT_ID) if room else None
+    event = dict(event or {})
+    settings = dict(event.get("settings") or {})
+    try:
+        chance = max(0, min(100, int(settings.get("chance_percent", 100) or 100)))
+    except (TypeError, ValueError):
+        chance = 100
+    return {
+        "event_id": OAK_TUTORIAL_EVENT_ID,
+        "enabled": bool(event.get("enabled", True)) if event else False,
+        "trigger": str(event.get("trigger") or "ENTER_ROOM"),
+        "autorun": bool(settings.get("autorun", True)),
+        "chance_percent": chance,
+        "blocking": bool(settings.get("blocking", True)),
+        "stage": str(state.get("stage") or ""),
+        "starter_id": str(state.get("starter_id") or ""),
+        "rival_starter_id": str(state.get("rival_starter_id") or ""),
+        "battle_id": str(state.get("battle_id") or ""),
+        "outcome": str(state.get("outcome") or ""),
+        "completed": bool(state.get("completed")),
+    }
+
+
 def _enrich_world_rows(actor, packet):
     location = getattr(actor, "location", None) if actor else None
     if not location:
@@ -116,6 +144,7 @@ def _enrich_world_rows(actor, packet):
     packet["player_editor"] = _player_metadata(actor, location)
     packet["custom_hotspots"] = _custom_hotspots(location)
     packet["action_hotspot_layouts"] = _action_hotspot_layouts(location)
+    packet["tutorial"] = _tutorial_packet(actor)
 
     local = {}
     for obj in list(getattr(location, "contents", []) or []):
@@ -175,6 +204,26 @@ def _tutorial_target_names(actor):
     return names
 
 
+def _preview_starter_actions(actor, rows):
+    state = tutorial_state(actor)
+    if str(state.get("stage") or "") != "CHOOSE_STARTER":
+        return rows
+    index = 0
+    output = []
+    for raw in rows:
+        row = dict(raw or {})
+        if str(row.get("id") or "").startswith("TUTORIAL:STARTER:"):
+            index += 1
+            slug = str(row.get("id") or "").rsplit(":", 1)[-1].lower()
+            if slug in STARTERS:
+                row["label"] = "POKÉ BALL {}".format(index)
+                row["command"] = "tutorial-elegir " + slug
+                row["target"] = "Poké Ball {}".format(index)
+                row["tutorial_starter"] = slug
+        output.append(row)
+    return output
+
+
 def room_snapshot_packet(actor):
     ensure_tutorial_world(actor)
     return _enrich_world_rows(actor, _stamp(_legacy_room_snapshot_packet(actor)))
@@ -184,7 +233,7 @@ def context_action_packet(actor):
     ensure_tutorial_world(actor)
     packet = _stamp(_legacy_context_action_packet(actor))
     actions = [dict(row or {}) for row in list(packet.get("actions") or [])]
-    tutorial_rows = tutorial_context_actions(actor)
+    tutorial_rows = _preview_starter_actions(actor, tutorial_context_actions(actor))
     tutorial_targets = _tutorial_target_names(actor)
     if tutorial_targets:
         actions = [
@@ -196,6 +245,7 @@ def context_action_packet(actor):
             )
         ]
     packet["actions"] = tutorial_rows + actions
+    packet["tutorial"] = _tutorial_packet(actor)
     return packet
 
 
