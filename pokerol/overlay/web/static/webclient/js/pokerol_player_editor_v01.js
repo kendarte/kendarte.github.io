@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.4.0-authoritative-player-save';
+  var BUILD='0.5.0-ack-locked-player-save';
   var editing=false;
   var anchored=false;
   var drag=null;
@@ -13,6 +13,8 @@
   var pendingSeq=0;
   var dirty=false;
   var lastRoomDbref=null;
+  var lastAckRevision=0;
+  var lastAppliedRevision=0;
 
   function byId(id){return document.getElementById(id)}
   function clamp(v,min,max){var n=Number(v);if(!Number.isFinite(n))n=min;return Math.max(min,Math.min(max,n))}
@@ -29,13 +31,18 @@
   }
   function saveState(reset){
     var payload=desiredPayload(reset);
-    status('GUARDANDO…',false);
-    if(!sendCommand('pokerol-editor-player-state',payload)){dirty=false;return false}
+    status('GUARDANDO EN SERVIDOR…',false);
+    if(!sendCommand('pokerol-editor-player-state',payload)){
+      pendingSeq=0;
+      dirty=true;
+      return false;
+    }
     return true;
   }
   function setAnchor(on){
     anchored=!!on;
     var checkbox=byId('pk-player-anchor');if(checkbox)checkbox.checked=anchored;
+    dirty=true;
     apply();
     saveState(false);
   }
@@ -58,20 +65,21 @@
     var row=packet&&packet.player_editor||{};
     var roomDbref=packet&&packet.room_dbref!=null?Number(packet.room_dbref):null;
     var roomChanged=lastRoomDbref!=null&&roomDbref!=null&&roomDbref!==lastRoomDbref;
-    if(roomDbref!=null)lastRoomDbref=roomDbref;
+    var revision=Number(row.revision||0);
 
-    if(editing||drag||resize)return false;
-    if(dirty&&!sameLayout(row)){
-      /* Ignore stale server snapshots until the save ACK arrives. */
-      return false;
-    }
-    /* When ANCLAR is active, room changes must keep the player-global layout. */
+    /* Never let a server snapshot overwrite a live edit or a save waiting for ACK. */
+    if(editing||drag||resize||dirty||pendingSeq)return false;
+    if(revision<lastAckRevision)return false;
+    if(!roomChanged&&revision<lastAppliedRevision)return false;
+
+    if(roomDbref!=null)lastRoomDbref=roomDbref;
     anchored=!!row.anchored;
     current={
       x:clamp(row.scene_x==null?11:row.scene_x,1,99),
       y:clamp(row.scene_y==null?94:row.scene_y,0,500),
       scale:clamp(row.scene_scale==null?1:row.scene_scale,.35,3)
     };
+    lastAppliedRevision=Math.max(lastAppliedRevision,revision);
     apply();
     if(roomChanged&&anchored)status('ANCLADO · POSICIÓN GLOBAL',false);
     return true;
@@ -88,7 +96,10 @@
     if(editing){ensureHandle();apply();status(anchored?'ANCLADO · EDITANDO':'EDITANDO ROOM',false)}
     else{
       drag=null;resize=null;
-      if(wasEditing)saveState(false);
+      /* Closing the PLAYER tab must not create a second racing save. If there
+         are unsent field edits, save once; if an ACK is already pending, keep
+         the inline layout exactly where the user left it until that ACK. */
+      if(wasEditing&&dirty&&!pendingSeq)saveState(false);
     }
   }
   function ensureHandle(){
@@ -126,9 +137,9 @@
     var btn=byId('pk-edit-player'),close=byId('pk-player-close'),save=byId('pk-player-save'),reset=byId('pk-player-reset'),anchor=byId('pk-player-anchor');
     if(btn&&btn.dataset.pkBound!=='1'){btn.dataset.pkBound='1';btn.addEventListener('click',function(){setEditing(true)})}
     if(close&&close.dataset.pkBound!=='1'){close.dataset.pkBound='1';close.addEventListener('click',function(){setEditing(false)})}
-    if(save&&save.dataset.pkBound!=='1'){save.dataset.pkBound='1';save.addEventListener('click',function(){readFields();apply();saveState(false)})}
+    if(save&&save.dataset.pkBound!=='1'){save.dataset.pkBound='1';save.addEventListener('click',function(){readFields();dirty=true;apply();saveState(false)})}
     if(reset&&reset.dataset.pkBound!=='1'){reset.dataset.pkBound='1';reset.addEventListener('click',function(){current={x:11,y:94,scale:1};dirty=true;apply();saveState(true)})}
-    if(anchor&&anchor.dataset.pkBound!=='1'){anchor.dataset.pkBound='1';anchor.addEventListener('change',function(){readFields();dirty=true;setAnchor(anchor.checked)})}
+    if(anchor&&anchor.dataset.pkBound!=='1'){anchor.dataset.pkBound='1';anchor.addEventListener('change',function(){readFields();setAnchor(anchor.checked)})}
     ['pk-player-x','pk-player-y','pk-player-scale'].forEach(function(id){var n=byId(id);if(n&&n.dataset.pkBound!=='1'){n.dataset.pkBound='1';n.addEventListener('input',function(){readFields();dirty=true;apply()});n.addEventListener('change',function(){readFields();dirty=true;apply();saveState(false)})}});
   }
   function onSnapshot(args){applyPacket(packetFrom(args));return true}
@@ -138,11 +149,20 @@
       var ackSeq=Number(p.seq||0);
       if(ackSeq<pendingSeq)return true;
       var row=p.layout||{};
+      var revision=Number(p.revision||row.revision||0);
       anchored=!!p.anchored;
       current={x:clamp(row.x==null?current.x:row.x,1,99),y:clamp(row.y==null?current.y:row.y,0,500),scale:clamp(row.scale==null?current.scale:row.scale,.35,3)};
-      dirty=false;pendingSeq=0;apply();status(anchored?'GUARDADO · ANCLADO GLOBAL':'GUARDADO EN ESTE ROOM',false);return true;
+      lastAckRevision=Math.max(lastAckRevision,revision);
+      lastAppliedRevision=Math.max(lastAppliedRevision,revision);
+      dirty=false;pendingSeq=0;apply();status(anchored?'GUARDADO EN SERVIDOR · ANCLADO GLOBAL':'GUARDADO EN SERVIDOR · ESTE ROOM',false);return true;
     }
-    if(st==='ERROR'&&String(p.kind||'')==='player_state'){dirty=false;pendingSeq=0;status(String(p.message||'ERROR AL GUARDAR PLAYER'),true);return true}
+    if(st==='ERROR'&&String(p.kind||'')==='player_state'){
+      pendingSeq=0;
+      dirty=true;
+      status(String(p.message||'ERROR AL GUARDAR PLAYER'),true);
+      apply();
+      return true;
+    }
     return true;
   }
   function bindEmitter(){
@@ -151,8 +171,9 @@
     if(!assetEmitterBound){Evennia.emitter.on('pokerol_asset_result',onAssetResult);assetEmitterBound=true}
     return emitterBound&&assetEmitterBound;
   }
-  function init(){var tries=0;(function wait(){tries++;bindEmitter();if(byId('pk-player-avatar')&&byId('pk-edit-player')){bindAvatar();bindPanel();apply();if(emitterBound&&assetEmitterBound)return}if(tries<200)setTimeout(wait,50)})()}
+  function saveIfNeeded(){if(dirty&&!pendingSeq)saveState(false)}
+  function init(){var tries=0;(function wait(){tries++;bindEmitter();if(byId('pk-player-avatar')&&byId('pk-edit-player')){bindAvatar();bindPanel();apply();if(emitterBound&&assetEmitterBound)return}if(tries<200)setTimeout(wait,50)})();document.addEventListener('visibilitychange',function(){if(document.hidden)saveIfNeeded()});window.addEventListener('pagehide',saveIfNeeded)}
 
-  window.PokerolPlayerEditorV01=Object.freeze({BUILD:BUILD,applyPacket:applyPacket,isEditing:function(){return editing},isDirty:function(){return dirty}});
+  window.PokerolPlayerEditorV01=Object.freeze({BUILD:BUILD,applyPacket:applyPacket,isEditing:function(){return editing},isDirty:function(){return dirty||!!pendingSeq},current:function(){return {x:current.x,y:current.y,scale:current.scale,anchored:anchored}}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
