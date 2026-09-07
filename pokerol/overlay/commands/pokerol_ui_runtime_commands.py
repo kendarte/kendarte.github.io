@@ -12,7 +12,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_context_actions,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.6.0-oak-tutorial"
+POKEROL_UI_RUNTIME_BUILD = "0.7.0-persistent-project-assets"
 
 
 def _stamp(packet):
@@ -39,6 +39,39 @@ def _scene_metadata(obj):
     }
 
 
+def _player_metadata(actor, location):
+    room_key = str(_db_value(location, "room_id", "") or f"DBREF:{int(location.id)}")
+    layouts = _db_value(actor, "pokerol_player_layouts", {}) or {}
+    if not isinstance(layouts, dict):
+        layouts = {}
+    layout = layouts.get(room_key) or {}
+    return {
+        "room_key": room_key,
+        "scene_x": layout.get("x", 11),
+        "scene_y": layout.get("y", 94),
+        "scene_scale": layout.get("scale", 1),
+        "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
+    }
+
+
+def _custom_hotspots(location):
+    rows = []
+    for raw in list(_db_value(location, "pokerol_custom_hotspots", []) or []):
+        if not isinstance(raw, dict):
+            continue
+        rows.append({
+            "id": str(raw.get("id") or ""),
+            "name": str(raw.get("name") or "HOTSPOT"),
+            "command": str(raw.get("command") or "mirar"),
+            "x": raw.get("x", 50),
+            "y": raw.get("y", 20),
+            "description": str(raw.get("description") or ""),
+            "scale": raw.get("scale", 1),
+            "sprite": str(raw.get("sprite") or ""),
+        })
+    return rows
+
+
 def _enrich_world_rows(actor, packet):
     location = getattr(actor, "location", None) if actor else None
     if not location:
@@ -55,6 +88,11 @@ def _enrich_world_rows(actor, packet):
         packet["scene_image"] = str(scene_image.get("src") or "")
     elif scene_image:
         packet["scene_image"] = str(scene_image)
+    else:
+        packet["scene_image"] = ""
+
+    packet["custom_hotspots"] = _custom_hotspots(location)
+    packet["player_editor"] = _player_metadata(actor, location)
 
     local = {}
     for obj in list(getattr(location, "contents", []) or []):
