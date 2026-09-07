@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var BUILD='0.1.1-player-edit-lock';
+  var BUILD='0.2.0-world-only-guard';
   var packet=null;
   var emitterBound=false;
   var observer=null;
@@ -73,19 +73,6 @@
     actor.style.left=clamp(row.x==null?50:row.x,0,100)+'%';actor.style.bottom=clamp(row.y==null?20:row.y,0,100)+'%';
     var s=clamp(row.scale==null?1:row.scale,.2,4);actor.dataset.pkWorldScale=String(s);actor.style.setProperty('--pk-world-actor-scale',String(s));
   }
-  function playerEditing(){
-    var stage=byId('pk-stage');
-    if(stage&&stage.classList.contains('pkPlayerEditing'))return true;
-    if(document.documentElement.dataset.pkPlayerEditing==='1')return true;
-    try{return !!(window.PokerolPlayerEditorV01&&typeof PokerolPlayerEditorV01.isEditing==='function'&&PokerolPlayerEditorV01.isEditing())}catch(e){return false}
-  }
-  function applyPlayer(){
-    if(playerEditing())return;
-    var avatar=byId('pk-player-avatar'),row=packet&&packet.player_editor;if(!avatar||!row)return;
-    if(Number.isFinite(Number(row.scene_x)))avatar.style.left=clamp(row.scene_x,1,99)+'%';
-    if(Number.isFinite(Number(row.scene_y)))avatar.style.bottom=clamp(row.scene_y,0,500)+'px';
-    if(Number.isFinite(Number(row.scene_scale))){var s=clamp(row.scene_scale,.35,3);avatar.style.setProperty('--pk-player-edit-scale',String(s));avatar.style.transform='translateX(-50%) scale('+s+')';avatar.style.transformOrigin='bottom center'}
-  }
   function applyAll(){
     var layer=byId('pk-actor-layer');if(!layer||!packet)return;
     Array.from(layer.querySelectorAll('.pkActor')).forEach(function(actor){
@@ -93,7 +80,8 @@
       else if(actor.classList.contains('pkActionHotspot'))applyAction(actor);
       else{var entry=rowForActor(actor);if(entry)applyWorld(actor,entry)}
     });
-    applyPlayer();
+    /* PLAYER is intentionally NOT touched here. pokerol_player_editor_v01.js is
+       the single owner of player X/Y/scale and protects pending server saves. */
   }
   function scheduleApply(){[0,30,90,220,500].forEach(function(ms){setTimeout(applyAll,ms)})}
 
