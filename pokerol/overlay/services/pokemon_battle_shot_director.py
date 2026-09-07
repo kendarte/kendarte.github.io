@@ -8,7 +8,7 @@ from copy import deepcopy
 
 from services.pokemon_move_capability_engine import move_combat_profile
 
-SHOT_DIRECTOR_BUILD = "0.3.0-fakemon-combat-visual-pack"
+SHOT_DIRECTOR_BUILD = "0.4.0-tsubasa-attacker-target-order"
 POSE_MAP = {
     "NEUTRAL": "neutral", "ATTACK_PHYSICAL": "attack_physical",
     "ATTACK_SPECIAL": "attack_special", "CHARGE": "charge",
@@ -116,12 +116,12 @@ def _enemy_declared_action(before, logs):
 
 
 def _action_text(battle, action, side):
-    action = _dict(action); pokemon = _combatant(battle, side); name = _text(pokemon.get("name")) or "POKÉMON"
+    action = _dict(action); pokemon = _combatant(battle, side); name = _text(pokemon.get("name")) or "PKM"
     move_id = _text(action.get("move_id"))
     if move_id:
         move = _source_move(battle, move_id, side); move_name = _text(move.get("name")) or move_id
         target = _text(_dict(action.get("world_target")).get("name"))
-        return (f"{name} → {move_name} SOBRE {target}" if target else f"{name} → {move_name}").upper()
+        return (f"{name} USA {move_name} SOBRE {target}" if target else f"{name} USA {move_name}").upper()
     kind = _text(action.get("type")).upper()
     return f"{name} → {kind or 'ACCIÓN'}".upper()
 
@@ -139,28 +139,47 @@ def _reaction_info(logs):
 
 def build_battle_shots(before_battle, after_battle, action, *, log_start=0, event="ROUND"):
     before, after, action = _dict(before_battle), _dict(after_battle), _dict(action)
-    player, enemy, site = _combatant(before, "PLAYER"), _combatant(before, "ENEMY"), _dict(before.get("site"))
+    player, enemy = _combatant(before, "PLAYER"), _combatant(before, "ENEMY")
     logs = [_dict(row) for row in _list(after.get("log"))[max(0, int(log_start or 0)):]]
     move_id = _text(action.get("move_id")); move = _source_move(before, move_id, "PLAYER") if move_id else {}; profile = move_combat_profile(move) if move else {}
     enemy_action = _enemy_declared_action(before, logs); shots = []
-    scene_src = _text(_dict(site.get("scene_image")).get("src"))
-    shots.append({"shot":"ESTABLISHING","title":_text(site.get("name")) or "CAMPO DE BATALLA","text":f"TURNO {before.get('turn') or 1} · EL ESCENARIO REAL SIGUE SIENDO PARTE DEL COMBATE.","media_type":"image" if scene_src else None,"media_src":scene_src or None,"duration_ms":650})
 
-    shots.append({"shot":"DECLARATION_PLAYER","title":"TU ORDEN","text":_action_text(before,action,"PLAYER"),**_pose(_source_profile(before,"PLAYER"),"neutral","PLAYER"),"duration_ms":800})
-    if enemy_action:
-        enemy_move = _source_move(before, enemy_action.get("move_id"), "ENEMY") if enemy_action.get("move_id") else {}
-        media = _attack_media(before, enemy_move, "ENEMY") if enemy_move else _pose(_source_profile(before,"ENEMY"),"neutral","ENEMY")
-        shots.append({"shot":"DECLARATION_ENEMY","title":"INTENCIÓN RIVAL","text":_action_text(before,enemy_action,"ENEMY"),**media,"duration_ms":800})
+    shots.append({
+        "shot":"DECLARATION_PLAYER",
+        "title":"ORDEN",
+        "text":_action_text(before, action, "PLAYER"),
+        **_pose(_source_profile(before,"PLAYER"),"neutral","PLAYER"),
+        "duration_ms":560,
+    })
 
     reaction_pose, reaction_lines = _reaction_info(logs)
-    if reaction_lines:
-        shots.append({"shot":"REACTION","title":"REACCIÓN / COBERTURA","text":" ".join(reaction_lines[-2:]),**_pose(_source_profile(before,"ENEMY"),reaction_pose,"ENEMY"),"duration_ms":850})
-
     if move_id:
         media = _attack_media(before, move, "PLAYER")
-        shots.append({"shot":"EXECUTION","title":f"{_text(player.get('name')) or 'POKÉMON'} USA {_text(move.get('name')) or move_id}".upper(),"text":"POT {} · CONTROL {} · VELOCIDAD {} · {} · {}".format(profile.get("power",0),profile.get("control",0),profile.get("speed",0),profile.get("range") or "",profile.get("trajectory") or "").strip(" ·"),**media,"duration_ms":950})
-        world_target = _dict(action.get("world_target")); target_name = _text(world_target.get("name")) or _text(enemy.get("name")) or "OBJETIVO"
-        shots.append({"shot":"TARGET","title":target_name.upper(),"text":"Trayectoria, cobertura, posición y tags del escenario determinan el contacto.",**(_pose(_source_profile(before,"ENEMY"),"neutral","ENEMY") if not world_target else {}),"impact_asset":media.get("impact_asset"),"duration_ms":700})
+        shots.append({
+            "shot":"EXECUTION",
+            "title":_action_text(before, action, "PLAYER"),
+            "text":"",
+            **media,
+            "duration_ms":900,
+        })
+        world_target = _dict(action.get("world_target"))
+        if world_target:
+            target_name = _text(world_target.get("name")) or "OBJETIVO"
+            shots.append({
+                "shot":"TARGET",
+                "title":target_name.upper(),
+                "text":"",
+                "duration_ms":480,
+            })
+
+    if reaction_lines:
+        shots.append({
+            "shot":"REACTION",
+            "title":"REACCIÓN",
+            "text":" ".join(reaction_lines[-2:]),
+            **_pose(_source_profile(before,"ENEMY"),reaction_pose,"ENEMY"),
+            "duration_ms":780,
+        })
 
     resolution_lines=[]
     for row in logs:
@@ -169,21 +188,53 @@ def build_battle_shots(before_battle, after_battle, action, *, log_start=0, even
         if line and line not in resolution_lines: resolution_lines.append(line)
     if resolution_lines:
         damage_hit=any(_text(row.get("kind")).upper() in {"DAMAGE","CRITICAL","WORLD_BATTLE_IMPACT"} for row in logs)
-        shots.append({"shot":"IMPACT","title":"RESOLUCIÓN","text":" ".join(resolution_lines[-4:]),**_pose(_source_profile(after,"ENEMY"),"hit" if damage_hit else reaction_pose,"ENEMY"),"impact_asset":_text(_move_visual(move).get("impact_asset")) or None,"duration_ms":1200})
+        impact_pose = "hit" if damage_hit else reaction_pose
+        shots.append({
+            "shot":"IMPACT",
+            "title":(_text(enemy.get("name")) or "OBJETIVO").upper(),
+            "text":" ".join(resolution_lines[-3:]),
+            **_pose(_source_profile(after,"ENEMY"),impact_pose,"ENEMY"),
+            "impact_asset":_text(_move_visual(move).get("impact_asset")) or None,
+            "duration_ms":1050,
+        })
 
     world=_dict(after.get("last_world_resolution")); scene_reaction=_dict(world.get("scene_reaction"))
     if world.get("executed") or scene_reaction.get("reacted"):
-        target=_text(world.get("target_name")) or _text(_dict(action.get("world_target")).get("name")) or "el entorno"
-        text="El escenario cambia físicamente."
-        if scene_reaction.get("reacted"): text += " La escena y sus NPC reaccionan a ese hecho."
-        shots.append({"shot":"CONSEQUENCE","title":target.upper(),"text":text,"media_type":"image" if scene_src else None,"media_src":scene_src or None,"duration_ms":1250})
+        target=_text(world.get("target_name")) or _text(_dict(action.get("world_target")).get("name")) or "ENTORNO"
+        consequence_text = _text(world.get("text")) or _text(scene_reaction.get("text")) or "EL ENTORNO CAMBIA COMO CONSECUENCIA DE LA ACCIÓN."
+        shots.append({
+            "shot":"CONSEQUENCE",
+            "title":target.upper(),
+            "text":consequence_text,
+            "duration_ms":1000,
+        })
+
+    if enemy_action:
+        enemy_move = _source_move(before, enemy_action.get("move_id"), "ENEMY") if enemy_action.get("move_id") else {}
+        media = _attack_media(before, enemy_move, "ENEMY") if enemy_move else _pose(_source_profile(before,"ENEMY"),"neutral","ENEMY")
+        shots.append({
+            "shot":"DECLARATION_ENEMY",
+            "title":"RIVAL",
+            "text":_action_text(before,enemy_action,"ENEMY"),
+            **media,
+            "duration_ms":620,
+        })
 
     if _text(after.get("status")).upper()=="COMPLETE":
         loser="ENEMY" if _text(after.get("outcome")).upper()=="PLAYER_WIN" else "PLAYER" if _text(after.get("outcome")).upper()=="PLAYER_LOSS" else None
         media=_pose(_source_profile(after,loser),"ko",loser) if loser else {}
         shots.append({"shot":"END","title":"FIN DEL COMBATE","text":_text(after.get("outcome")),**media,"duration_ms":1100})
 
-    return {"battle_id":after.get("battle_id") or before.get("battle_id"),"event":_text(event).upper() or "ROUND","turn":before.get("turn") or after.get("turn") or 1,"action":deepcopy(action),"enemy_action":deepcopy(enemy_action),"move_profile":profile,"shots":shots,"build":SHOT_DIRECTOR_BUILD}
+    return {
+        "battle_id":after.get("battle_id") or before.get("battle_id"),
+        "event":_text(event).upper() or "ROUND",
+        "turn":before.get("turn") or after.get("turn") or 1,
+        "action":deepcopy(action),
+        "enemy_action":deepcopy(enemy_action),
+        "move_profile":profile,
+        "shots":shots,
+        "build":SHOT_DIRECTOR_BUILD,
+    }
 
 
 def emit_battle_shots(actor,before_battle,after_battle,action,*,log_start=0,event="ROUND"):
