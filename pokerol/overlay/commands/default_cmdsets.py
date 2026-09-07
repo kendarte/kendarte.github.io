@@ -24,6 +24,7 @@ from commands.pokerol_asset_commands import (
     CmdPokerolEditorSaveHotspots,
     CmdPokerolEditorPlayerLayout,
 )
+from commands.pokerol_hotspot_geometry_commands import CmdPokerolEditorHotspotGeometry
 from commands.pokerol_event_editor_commands import (
     CmdPokerolEventEditorDelete,
     CmdPokerolEventEditorList,
@@ -128,7 +129,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
             CmdPokerolAuthState(), CmdPokerolHardLogout(), CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
             CmdPokerolAssetBegin(), CmdPokerolAssetChunk(), CmdPokerolAssetFinish(), CmdPokerolAssetClear(),
-            CmdPokerolEditorSaveHotspots(), CmdPokerolEditorPlayerLayout(), CmdPokerolPlayerSheet(),
+            CmdPokerolEditorSaveHotspots(), CmdPokerolEditorHotspotGeometry(), CmdPokerolEditorPlayerLayout(), CmdPokerolPlayerSheet(),
             CmdPokerolEventEditorList(), CmdPokerolEventEditorSave(), CmdPokerolEventEditorDelete(),
             CmdPokerolTutorialOak(), CmdPokerolTutorialRival(), CmdPokerolTutorialChooseStarter(), CmdPokerolTutorialRivalChallenge(),
             CmdSizaCombatResult(), CmdSizaCombatBridgeTest(), CmdSizaCombatBridgeStatus(), CmdSizaCombatBridgeClear(),
