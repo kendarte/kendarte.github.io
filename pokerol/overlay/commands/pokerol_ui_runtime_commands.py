@@ -16,7 +16,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.11.0-console-frame"
+POKEROL_UI_RUNTIME_BUILD = "0.12.0-player-anchor"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
@@ -49,18 +49,32 @@ def _room_key(location):
 
 
 def _player_metadata(actor, location):
-    layout = _db_value(location, "pokerol_player_layout", None)
-    if not isinstance(layout, dict):
-        legacy = _db_value(actor, "pokerol_player_layouts", {})
-        if isinstance(legacy, dict):
-            layout = legacy.get(_room_key(location))
-    if not isinstance(layout, dict):
-        layout = {}
+    anchored = bool(_db_value(actor, "pokerol_player_anchor_enabled", False))
+    anchor_layout = _db_value(actor, "pokerol_player_anchor_layout", {})
+
+    if anchored and isinstance(anchor_layout, dict):
+        layout = anchor_layout
+        source = "PLAYER_ANCHOR"
+    else:
+        layout = _db_value(location, "pokerol_player_layout", None)
+        source = "ROOM"
+        if not isinstance(layout, dict):
+            legacy = _db_value(actor, "pokerol_player_layouts", {})
+            if isinstance(legacy, dict):
+                layout = legacy.get(_room_key(location))
+                if isinstance(layout, dict):
+                    source = "LEGACY_ROOM"
+        if not isinstance(layout, dict):
+            layout = {}
+            source = "DEFAULT"
+
     return {
         "scene_x": layout.get("x", 11),
         "scene_y": layout.get("y", 94),
         "scene_scale": layout.get("scale", 1.0),
         "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
+        "anchored": anchored,
+        "layout_source": source,
     }
 
 
