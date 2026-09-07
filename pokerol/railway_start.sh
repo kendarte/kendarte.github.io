@@ -35,7 +35,7 @@ fi
 
 # Persistent project assets must be traversable/readable by the nginx worker.
 # This fixes old uploads too, without changing the database file permissions.
-mkdir -p "$ASSET_DIR/rooms" "$ASSET_DIR/entities" "$ASSET_DIR/players" "$ASSET_DIR/hotspots" "$ASSET_DIR/.tmp"
+mkdir -p "$ASSET_DIR/rooms" "$ASSET_DIR/entities" "$ASSET_DIR/players" "$ASSET_DIR/hotspots" "$ASSET_DIR/pokemon" "$ASSET_DIR/.tmp"
 chmod 755 "$DATA_DIR" 2>/dev/null || true
 find "$ASSET_DIR" -type d -exec chmod 755 {} \; 2>/dev/null || true
 find "$ASSET_DIR" -type f -exec chmod 644 {} \; 2>/dev/null || true
