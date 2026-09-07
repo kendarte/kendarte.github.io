@@ -69,5 +69,13 @@ if command -v nginx >/dev/null 2>&1; then
   nginx
 fi
 
+if [ "${POKEROL_ASSET_SMOKE_TEST:-0}" = "1" ] && [ -f "$RUNTIME/production_asset_smoke.py" ]; then
+  echo "[POKEROL] Smoke test Fakemon assets habilitado para este arranque."
+  (
+    cd "$RUNTIME"
+    python production_asset_smoke.py
+  ) &
+fi
+
 echo "[POKEROL] Iniciando Evennia HTTP interno 4003 + WebSocket 4002..."
 exec python -m evennia start --log
