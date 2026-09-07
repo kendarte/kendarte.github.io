@@ -5,7 +5,7 @@ from services.pokerol_event_progress import event_progress
 from services.pokerol_room_event_runtime import start_room_event
 
 
-EVENT_TRIGGER_BRIDGE_BUILD = "0.1.0-authoritative-world-trigger-bridge"
+EVENT_TRIGGER_BRIDGE_BUILD = "0.1.1-room-visit-scoped-world-triggers"
 
 
 def _text(value):
@@ -38,6 +38,14 @@ def _target_matches(event, obj):
     return any(value.casefold() == normalized for value in _aliases(obj))
 
 
+def _visit_token(actor, trigger_name, obj):
+    try:
+        visit = max(0, int(getattr(actor.db, "pokerol_room_visit_serial", 0) or 0))
+    except (TypeError, ValueError):
+        visit = 0
+    return "{}:{}:VISIT:{}".format(trigger_name, int(obj.id), visit)
+
+
 def trigger_object_event(actor, obj, trigger, *, token=""):
     """Trigger only inactive matching ROOM_EVENT definitions for one concrete object/NPC."""
     room = getattr(actor, "location", None) if actor else None
@@ -66,7 +74,7 @@ def trigger_object_event(actor, obj, trigger, *, token=""):
             event,
             trigger=trigger_name,
             trigger_target=target,
-            trigger_token=token or "{}:{}".format(trigger_name, int(obj.id)),
+            trigger_token=token or _visit_token(actor, trigger_name, obj),
         )
         rows.append(result)
     return rows
