@@ -8,6 +8,7 @@ from commands.siza_ui_runtime_commands import (
     room_snapshot_packet as _legacy_room_snapshot_packet,
 )
 from services.pokerol_event_editor_service import OAK_TUTORIAL_EVENT_ID, get_room_event
+from services.pokerol_global_player_visual import get_global_player_visual
 from services.pokerol_tutorial_engine import (
     OAK_NPC_ID,
     RIVAL_NPC_ID,
@@ -17,7 +18,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.16.0-character-global-player-transform"
+POKEROL_UI_RUNTIME_BUILD = "0.17.0-global-persistent-player-transform"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
@@ -54,56 +55,29 @@ def _player_room_key(location):
 
 
 def _player_metadata(actor, location):
-    anchored = bool(_db_value(actor, "pokerol_player_anchor_enabled", False))
-    visual = _db_value(actor, "pokerol_player_visual_state", {})
     current_room_id = int(location.id)
     current_room_key = _player_room_key(location)
-
-    # The character's last save wins everywhere, regardless of Room or ANCLAR.
-    # Migrate only character-owned history. Shared Room layouts cannot identify
-    # which trainer saved them and must never become another trainer's state.
-    if not isinstance(visual, dict) or not visual:
-        candidates = []
-        anchor = _db_value(actor, "pokerol_player_anchor_layout", {})
-        if isinstance(anchor, dict) and anchor:
-            candidates.append(anchor)
-        for attr in ("pokerol_player_room_layouts", "pokerol_player_layouts"):
-            history = _db_value(actor, attr, {})
-            if isinstance(history, dict):
-                candidates.extend(row for row in history.values() if isinstance(row, dict) and row)
-        if candidates:
-            def saved_revision(row):
-                try:
-                    return int(row.get("revision", 0) or 0)
-                except (TypeError, ValueError):
-                    return 0
-            previous = max(candidates, key=saved_revision)
-            visual = {key: previous.get(key, default) for key, default in
-                      (("x", 11), ("y", 94), ("scale", 1.0))}
-            visual["revision"] = saved_revision(previous)
-            actor.db.pokerol_player_visual_state = dict(visual)
-    layout = visual if isinstance(visual, dict) and visual else {}
-    source = "PLAYER_VISUAL_STATE" if layout else "DEFAULT"
+    visual = get_global_player_visual(actor, migrate_legacy=True)
 
     try:
-        revision = int(layout.get("revision", 0) or 0)
+        revision = int(visual.get("revision", 0) or 0)
     except (TypeError, ValueError, AttributeError):
         revision = 0
 
     result = {
         "character_dbref": int(actor.id),
-        "scene_x": layout.get("x", 11),
-        "scene_y": layout.get("y", 94),
-        "scene_scale": layout.get("scale", 1.0),
+        "scene_x": visual.get("x", 11),
+        "scene_y": visual.get("y", 94),
+        "scene_scale": visual.get("scale", 1.0),
         "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
-        "anchored": anchored,
-        "layout_source": source,
+        "anchored": bool(visual.get("anchored", False)),
+        "layout_source": str(visual.get("scope") or "GLOBAL_PLAYER_VISUAL_STATE"),
         "room_layout_key": current_room_key,
         "revision": revision,
     }
 
     logger.log_info(
-        "[POKEROL PLAYER LOAD] caller={} room=#{} key={} x={} y={} scale={} anchored={} source={} revision={}".format(
+        "[POKEROL PLAYER GLOBAL LOAD] caller={} room=#{} key={} x={} y={} scale={} anchored={} source={} revision={}".format(
             getattr(actor, "key", "?"),
             current_room_id,
             current_room_key,
@@ -111,7 +85,7 @@ def _player_metadata(actor, location):
             result["scene_y"],
             result["scene_scale"],
             result["anchored"],
-            source,
+            result["layout_source"],
             revision,
         )
     )
