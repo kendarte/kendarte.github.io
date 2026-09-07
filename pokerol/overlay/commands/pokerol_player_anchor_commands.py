@@ -4,7 +4,7 @@ import json
 from evennia import Command
 
 
-PLAYER_ANCHOR_BUILD = "0.2.0-authoritative-player-state"
+PLAYER_ANCHOR_BUILD = "0.3.0-versioned-player-state"
 
 
 def _clean(value):
@@ -52,6 +52,15 @@ def _layout_from(data):
     }
 
 
+def _next_revision(caller):
+    try:
+        revision = int(getattr(caller.db, "pokerol_player_state_revision", 0) or 0) + 1
+    except (TypeError, ValueError):
+        revision = 1
+    caller.db.pokerol_player_state_revision = revision
+    return revision
+
+
 class CmdPokerolEditorPlayerState(Command):
     """Save PLAYER position, scale and anchor state in one authoritative transaction."""
 
@@ -90,8 +99,11 @@ class CmdPokerolEditorPlayerState(Command):
             )
             return
 
-        # Always save the current Room layout too. This means disabling ANCLAR
-        # never jumps the player back to an older Room position.
+        revision = _next_revision(self.caller)
+        layout["revision"] = revision
+
+        # The current Room always keeps the same layout. If ANCLAR is enabled,
+        # the character also keeps an identical global copy used in every Room.
         room.db.pokerol_player_layout = dict(layout)
         self.caller.db.pokerol_player_anchor_enabled = anchored
         if anchored:
@@ -101,6 +113,7 @@ class CmdPokerolEditorPlayerState(Command):
             "status": "PLAYER_STATE_SAVED",
             "build": PLAYER_ANCHOR_BUILD,
             "seq": seq,
+            "revision": revision,
             "anchored": anchored,
             "layout": dict(layout),
             "room_dbref": int(room.id),
@@ -127,10 +140,12 @@ class CmdPokerolEditorPlayerAnchor(Command):
         self.caller.db.pokerol_player_anchor_enabled = enabled
 
         if enabled:
+            revision = _next_revision(self.caller)
             self.caller.db.pokerol_player_anchor_layout = {
                 "x": _number(data.get("x"), 11, 1, 99),
                 "y": _number(data.get("y"), 94, 0, 500),
                 "scale": _number(data.get("scale"), 1, 0.35, 3),
+                "revision": revision,
             }
         elif bool(data.get("clear")):
             self.caller.db.pokerol_player_anchor_layout = None
