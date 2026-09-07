@@ -1,8 +1,8 @@
 """Resolve environment-targeted battle rounds at exact initiative timing.
 
-This orchestrator reuses the pure battle core ordering/action primitives. Only the
-world-target action pauses the round to execute authoritative Evennia physics and
-translate shared-medium impacts back into Pokémon HP/status before the next actor.
+World effects are authoritative Room mutations. After physics persists a result,
+scene-reaction authority may react to those hard facts (for example Oak stopping
+a destructive fight in his laboratory) before the round continues.
 """
 
 import random
@@ -14,7 +14,6 @@ from services.pokemon_battle_engine import (
     BATTLE_BUILD,
     _apply_round_end,
     _end_check,
-    _enemy_action,
     _log,
     _order_actions,
     move_by_id,
@@ -23,13 +22,11 @@ from services.pokemon_battle_engine import (
 from services.pokemon_battle_environment_engine import execute_battle_environment_request
 from services.pokemon_battle_move_position_bridge import apply_world_move_position_followthrough
 from services.pokemon_battle_physics_impact_engine import apply_world_physics_to_battle
-from services.pokemon_battle_tactical_action_engine import (
-    enemy_action_position_aware,
-    execute_row_position_aware,
-)
+from services.pokemon_battle_tactical_action_engine import enemy_action_position_aware, execute_row_position_aware
+from services.pokerol_battle_scene_reaction_engine import apply_battle_scene_reactions
 
 
-WORLD_ROUND_BUILD = "0.2.0-position-aware-world-resolution"
+WORLD_ROUND_BUILD = "0.3.0-reactive-world-scene-resolution"
 
 
 def _dict(value):
@@ -103,13 +100,8 @@ def _resolve_new_world_requests(actor, state, previous_count):
         world_result = execute_battle_environment_request(actor, player, move, request)
         executed = bool(world_result.get("executed"))
         impact = apply_world_physics_to_battle(state, move, world_result)
-        position_result = apply_world_move_position_followthrough(
-            state,
-            "PLAYER",
-            move,
-            world_result,
-            request=request,
-        )
+        position_result = apply_world_move_position_followthrough(state, "PLAYER", move, world_result, request=request)
+        scene_reaction = apply_battle_scene_reactions(actor, state, move, world_result, request=request)
         request["status"] = "WORLD_EXECUTED" if executed else "WORLD_REJECTED"
         request["resolution"] = {
             "executed": executed,
@@ -125,6 +117,7 @@ def _resolve_new_world_requests(actor, state, previous_count):
             "persisted_area_impacts": _clone(_list(world_result.get("persisted_area_impacts"))),
             "battle_impact": _clone(impact),
             "position_followthrough": _clone(position_result),
+            "scene_reaction": _clone(scene_reaction),
         }
         target_name = _text(world_result.get("target_name")) or _text(_dict(request.get("world_target")).get("name")) or "el entorno"
         if executed:
@@ -146,6 +139,15 @@ def _resolve_new_world_requests(actor, state, previous_count):
                     move_id=move.get("move_id"),
                     position=position_result.get("position"),
                 )
+            if scene_reaction.get("reacted"):
+                _log(
+                    state,
+                    "SCENE_REACTION",
+                    "La escena reacciona a las consecuencias físicas del combate.",
+                    reaction_status=scene_reaction.get("status"),
+                    npc_id=scene_reaction.get("npc_id"),
+                    target_name=scene_reaction.get("target_name"),
+                )
         else:
             _log(
                 state,
@@ -157,6 +159,8 @@ def _resolve_new_world_requests(actor, state, previous_count):
         requests[index] = request
         changed = True
         _end_check(state)
+        if state.get("status") != ACTIVE_STATUS:
+            break
     if changed:
         state["world_requests"] = requests[-80:]
         state["last_world_resolution"] = _clone(_dict(requests[-1].get("resolution"))) if requests else None
@@ -179,12 +183,7 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
         }
 
     if _text(action.get("type")).upper() != "FREE_ORDER" or not _text(action.get("move_id")):
-        return {
-            "accepted": False,
-            "status": "NOT_ENVIRONMENT_MOVE_ORDER",
-            "battle": state,
-            "build": WORLD_ROUND_BUILD,
-        }
+        return {"accepted": False, "status": "NOT_ENVIRONMENT_MOVE_ORDER", "battle": state, "build": WORLD_ROUND_BUILD}
 
     state["pending_player_action"] = _clone(action)
     state["phase"] = "ORDER"
@@ -210,7 +209,8 @@ def resolve_environment_player_action(actor, battle, action, *, rng=None):
         _log(state, "REACTION_WINDOW", "Se comprueba alcance, cobertura y efectos inmediatos.", actor=row["side"])
         _end_check(state)
 
-    _apply_round_end(state)
+    if state.get("status") == ACTIVE_STATUS:
+        _apply_round_end(state)
     if state.get("status") == ACTIVE_STATUS:
         state["turn"] = _int(state.get("turn"), 1) + 1
         state["phase"] = "COMMAND"
