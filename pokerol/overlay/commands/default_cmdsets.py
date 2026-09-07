@@ -90,7 +90,7 @@ from commands.pokerol_commands import (
     CmdPokerolWorldCheck,
 )
 from commands.pokerol_dm_commands import CmdPokerolDMAdvance, CmdPokerolDMPlan, CmdPokerolDMSignal, CmdPokerolDMStart, CmdPokerolDMStatus
-from commands.pokerol_local_login_commands import CmdPokerolAuthState, CmdPokerolLocalLogin
+from commands.pokerol_local_login_commands import CmdPokerolAuthState, CmdPokerolHardLogout, CmdPokerolLocalLogin
 from commands.pokerol_roll_commands import CmdPokerolRoll
 
 
@@ -125,7 +125,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
-            CmdPokerolAuthState(), CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
+            CmdPokerolAuthState(), CmdPokerolHardLogout(), CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
             CmdPokerolAssetBegin(), CmdPokerolAssetChunk(), CmdPokerolAssetFinish(), CmdPokerolAssetClear(),
             CmdPokerolEditorSaveHotspots(), CmdPokerolEditorPlayerLayout(),
             CmdPokerolEventEditorList(), CmdPokerolEventEditorSave(), CmdPokerolEventEditorDelete(),
@@ -141,6 +141,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
     def at_cmdset_creation(self):
         super().at_cmdset_creation()
         self.add(CmdPokerolAuthState())
+        self.add(CmdPokerolHardLogout())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
@@ -153,5 +154,3 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
     key = "DefaultSession"
-    def at_cmdset_creation(self):
-        super().at_cmdset_creation()
