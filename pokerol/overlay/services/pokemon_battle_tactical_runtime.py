@@ -20,11 +20,12 @@ from services.pokemon_battle_runtime import (
     emit_battle_state,
     submit_player_battle_action,
 )
+from services.pokemon_battle_shot_director import emit_battle_shots
 from services.pokemon_battle_tactical_round_engine import resolve_tactical_player_action
 from services.pokemon_party_engine import update_owned_from_battle
 
 
-TACTICAL_RUNTIME_BUILD = "0.3.2-position-defensive-reaction-runtime"
+TACTICAL_RUNTIME_BUILD = "0.4.0-authoritative-anime-shot-runtime"
 
 
 def _dict(value):
@@ -124,7 +125,7 @@ def set_player_reaction(actor, policy="DODGE", method_move_id=""):
     return {**result, "build": TACTICAL_RUNTIME_BUILD}
 
 
-def _finalize_tactical_result(actor, result):
+def _finalize_tactical_result(actor, result, *, before=None, action=None, log_start=0):
     if not result.get("accepted"):
         battle = current_battle(actor)
         actor.msg(pokerol_pokemon_battle_error=(({
@@ -145,6 +146,8 @@ def _finalize_tactical_result(actor, result):
 
     actor.db.pokerol_pokemon_battle = next_battle
     is_complete = _text(next_battle.get("status")).upper() == COMPLETE_STATUS
+    if before is not None and action is not None:
+        emit_battle_shots(actor, before, next_battle, action, log_start=log_start, event="END" if is_complete else "ROUND")
     emit_battle_state(actor, next_battle, event="END" if is_complete else "ROUND")
 
     if is_complete:
@@ -156,6 +159,7 @@ def _finalize_tactical_result(actor, result):
             "world_requests": _clone(next_battle.get("world_requests") or []),
             "collection_result": None,
             "travel_event_resolution": _clone(next_battle.get("travel_event_resolution")),
+            "scene_interruption": _clone(next_battle.get("scene_interruption")),
             "build": TACTICAL_RUNTIME_BUILD,
             "runtime_build": RUNTIME_BUILD,
             "engine_build": BATTLE_BUILD,
@@ -170,7 +174,6 @@ def _finalize_tactical_result(actor, result):
 
 
 def _settle_delegated_reaction(actor, log_start, result):
-    """Settle and persist an armed reaction after ITEM/CAPTURE/RUN paths."""
     if not result.get("accepted"):
         return result
     battle = current_battle(actor)
@@ -179,8 +182,6 @@ def _settle_delegated_reaction(actor, log_start, result):
     settlement = settle_incoming_attack_reaction(battle, "PLAYER", log_start)
     if not settlement.get("consumed"):
         return result
-    # The legacy runtime already persisted the main round before this settlement.
-    # Persist again so reaction-move PP (Gust/Harden/etc.) cannot be lost.
     update_owned_from_battle(actor, _dict(battle.get("player")))
     actor.db.pokerol_pokemon_battle = battle
     is_complete = _text(battle.get("status")).upper() == COMPLETE_STATUS
@@ -192,21 +193,24 @@ def _settle_delegated_reaction(actor, log_start, result):
 
 
 def submit_tactical_battle_action(actor, action):
-    """Route tactical actions while preserving existing item/capture/world authority."""
+    """Route tactical actions while preserving item/capture/world authority."""
     if not actor:
         return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
     action = _dict(action)
     kind = _text(action.get("type")).upper()
     position_action = _text(action.get("position_action")).upper()
+    before = _clone(current_battle(actor))
+    log_start = len(_list(before.get("log"))) if before else 0
 
     tactical = kind == "MOVE" or (kind == "FREE_ORDER" and bool(position_action))
     if not tactical:
-        before = current_battle(actor)
-        log_start = len(_list(before.get("log"))) if before else 0
         result = submit_player_battle_action(actor, action)
-        if kind == "FREE_ORDER" and _text(action.get("move_id")):
-            return result
-        return _settle_delegated_reaction(actor, log_start, result)
+        if kind != "FREE_ORDER" or not _text(action.get("move_id")):
+            result = _settle_delegated_reaction(actor, log_start, result)
+        after = current_battle(actor)
+        if result.get("accepted") and before and after:
+            emit_battle_shots(actor, before, after, action, log_start=log_start, event="END" if _text(after.get("status")).upper() == COMPLETE_STATUS else "ROUND")
+        return result
 
     battle = current_battle(actor)
     if not battle:
@@ -216,4 +220,4 @@ def submit_tactical_battle_action(actor, action):
         return _finalize_tactical_result(actor, {"accepted": False, "status": gate, "battle": battle})
 
     result = resolve_tactical_player_action(actor, battle, action)
-    return _finalize_tactical_result(actor, result)
+    return _finalize_tactical_result(actor, result, before=before, action=action, log_start=log_start)
