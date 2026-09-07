@@ -7,10 +7,12 @@ from pathlib import Path
 from uuid import uuid4
 
 from evennia import Command
+from evennia.server.models import ServerConfig
 
 
 ASSET_ROOT = Path(os.environ.get("POKEROL_ASSET_ROOT", "/data/pokerol_assets"))
 PUBLIC_PREFIX = "/pokerol-assets/"
+GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 MAX_ASSET_BYTES = 8 * 1024 * 1024
 MAX_CUSTOM_HOTSPOTS = 80
 MAX_ACTION_HOTSPOTS = 160
@@ -100,6 +102,8 @@ def _safe_hotspot_id(value):
 
 def _asset_slot(caller, kind, dbref=None, hotspot_id=None):
     kind = _clean(kind).lower()
+    if kind == "ui_frame":
+        return None, GLOBAL_FRAME_CONFIG, "ui", 0, ""
     if kind == "room_background":
         target = getattr(caller, "location", None)
         if not target:
@@ -127,6 +131,8 @@ def _asset_slot(caller, kind, dbref=None, hotspot_id=None):
 
 
 def _current_url(target, attr, hotspot_id=""):
+    if target is None and attr == GLOBAL_FRAME_CONFIG:
+        return _clean(ServerConfig.objects.conf(attr, default=""))
     if hotspot_id:
         rows = list(getattr(target.db, attr, None) or [])
         for row in rows:
@@ -137,6 +143,9 @@ def _current_url(target, attr, hotspot_id=""):
 
 
 def _set_url(target, attr, url, hotspot_id=""):
+    if target is None and attr == GLOBAL_FRAME_CONFIG:
+        ServerConfig.objects.conf(attr, value=_clean(url))
+        return
     if hotspot_id:
         rows = [dict(row) for row in list(getattr(target.db, attr, None) or []) if isinstance(row, dict)]
         found = False
@@ -222,7 +231,7 @@ class CmdPokerolAssetBegin(Command):
             "attr": attr,
             "folder": folder,
             "target_id": target_id,
-            "dbref": int(getattr(target, "id", target_id)),
+            "dbref": int(getattr(target, "id", target_id)) if target is not None else int(target_id),
             "hotspot_id": hid,
         }
         _result(self.caller, "UPLOAD_READY", "Carga preparada.", token=token, chunk_size=32768)
@@ -310,7 +319,7 @@ class CmdPokerolAssetFinish(Command):
             token=token,
             kind=kind,
             url=url,
-            dbref=int(getattr(target, "id", target_id)),
+            dbref=int(getattr(target, "id", target_id)) if target is not None else int(target_id),
             hotspot_id=hid,
         )
         _refresh(self.caller)
