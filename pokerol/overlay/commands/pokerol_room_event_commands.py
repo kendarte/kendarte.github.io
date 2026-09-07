@@ -57,7 +57,15 @@ class CmdPokerolRoomEvent(Command):
             if not event:
                 result = {"accepted": False, "status": "ROOM_EVENT_NOT_FOUND", "event_id": event_id}
             else:
-                result = start_room_event(self.caller, event, trigger="MANUAL", trigger_token="COMMAND")
+                # Editor/manual testing uses the event's authored trigger itself;
+                # this never bypasses its start conditions or chance gate.
+                result = start_room_event(
+                    self.caller,
+                    event,
+                    trigger=_text(event.get("trigger")).upper() or "MANUAL",
+                    trigger_target=_text(event.get("trigger_target")),
+                    trigger_token="COMMAND",
+                )
         else:
             self.caller.msg("Uso: pokerol-room-event <start|snooze|complete|sync> [EVENT_ID]")
             return
