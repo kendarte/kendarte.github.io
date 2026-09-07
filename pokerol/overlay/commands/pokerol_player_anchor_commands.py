@@ -4,8 +4,13 @@ import json
 from evennia import Command
 from evennia.utils import logger
 
+from services.pokerol_global_player_visual import (
+    get_global_player_visual,
+    save_global_player_visual,
+)
 
-PLAYER_ANCHOR_BUILD = "0.6.0-character-global-player-transform"
+
+PLAYER_ANCHOR_BUILD = "1.0.0-global-persistent-player-transform"
 
 
 def _clean(value):
@@ -53,23 +58,12 @@ def _layout_from(data):
     }
 
 
-def _next_revision(caller):
-    try:
-        visual = getattr(caller.db, "pokerol_player_visual_state", None) or {}
-        revision = max(int(getattr(caller.db, "pokerol_player_state_revision", 0) or 0),
-                       int(visual.get("revision", 0) or 0)) + 1
-    except (TypeError, ValueError):
-        revision = 1
-    caller.db.pokerol_player_state_revision = revision
-    return revision
-
-
 def _room_layout_key(room):
     return str(int(room.id))
 
 
 class CmdPokerolEditorPlayerState(Command):
-    """Save PLAYER position, scale and anchor state in one authoritative transaction."""
+    """Save global PLAYER position, scale and anchor state in one transaction."""
 
     key = "pokerol-editor-player-state"
     aliases = ()
@@ -108,38 +102,32 @@ class CmdPokerolEditorPlayerState(Command):
             )
             return
 
-        revision = _next_revision(self.caller)
-        room_layout = dict(layout)
-        room_layout["revision"] = revision
-        room_key = _room_layout_key(room)
-
-        visual_state = {
+        saved = save_global_player_visual({
             "x": layout["x"],
             "y": layout["y"],
             "scale": layout["scale"],
             "anchored": anchored,
+        }, actor=self.caller)
+        revision = int(saved.get("revision", 0) or 0)
+        room_layout = {
+            "x": saved["x"],
+            "y": saved["y"],
+            "scale": saved["scale"],
             "revision": revision,
         }
-
-        # PLAYER layout belongs to the character, never to the shared Room.
-        # This prevents Chumeco/Azulith (or any two trainers) from overwriting
-        # each other's position and scale in the same location.
-        self.caller.db.pokerol_player_visual_state = dict(visual_state)
-        self.caller.db.pokerol_player_anchor_enabled = anchored
-        if anchored:
-            self.caller.db.pokerol_player_anchor_layout = dict(room_layout)
+        room_key = _room_layout_key(room)
 
         logger.log_info(
-            "[POKEROL PLAYER SAVE] caller={} room=#{} key={} x={:.3f} y={:.3f} scale={:.3f} anchored={} revision={} source={}".format(
+            "[POKEROL PLAYER GLOBAL SAVE] caller={} room=#{} key={} x={:.3f} y={:.3f} scale={:.3f} anchored={} revision={} source={}".format(
                 self.caller.key,
                 int(room.id),
                 room_key,
-                layout["x"],
-                layout["y"],
-                layout["scale"],
-                anchored,
+                saved["x"],
+                saved["y"],
+                saved["scale"],
+                saved["anchored"],
                 revision,
-                "PLAYER_VISUAL_STATE",
+                "GLOBAL_PLAYER_VISUAL_STATE",
             )
         )
 
@@ -148,12 +136,12 @@ class CmdPokerolEditorPlayerState(Command):
             "build": PLAYER_ANCHOR_BUILD,
             "seq": seq,
             "revision": revision,
-            "anchored": anchored,
+            "anchored": bool(saved["anchored"]),
             "layout": dict(room_layout),
-            "visual_state": dict(visual_state),
+            "visual_state": dict(saved),
             "room_dbref": int(room.id),
             "room_key": room_key,
-            "scope": "PLAYER_VISUAL_STATE",
+            "scope": "GLOBAL_PLAYER_VISUAL_STATE",
             "character_dbref": int(self.caller.id),
         }
         self.caller.msg(pokerol_asset_result=((packet,), {}))
@@ -173,35 +161,37 @@ class CmdPokerolEditorPlayerAnchor(Command):
             self.caller.msg("No se pudo guardar ANCLAR: {}".format(exc))
             return
 
+        current = get_global_player_visual(self.caller, migrate_legacy=True)
         enabled = bool(data.get("enabled"))
-        self.caller.db.pokerol_player_anchor_enabled = enabled
-        if enabled:
-            revision = _next_revision(self.caller)
-            layout = {
-                "x": _number(data.get("x"), 11, 1, 99),
-                "y": _number(data.get("y"), 94, 0, 500),
-                "scale": _number(data.get("scale"), 1, 0.35, 3),
-                "revision": revision,
-            }
-            self.caller.db.pokerol_player_anchor_layout = dict(layout)
-            self.caller.db.pokerol_player_visual_state = {
-                "x": layout["x"],
-                "y": layout["y"],
-                "scale": layout["scale"],
-                "anchored": True,
-                "revision": revision,
-            }
-            logger.log_info(
-                "[POKEROL PLAYER SAVE] caller={} x={} y={} scale={} revision={} source=PLAYER_VISUAL_STATE".format(
-                    self.caller.key, layout["x"], layout["y"], layout["scale"], revision))
-        elif bool(data.get("clear")):
-            self.caller.db.pokerol_player_anchor_layout = None
+        saved = save_global_player_visual({
+            "x": _number(data.get("x"), current.get("x", 11), 1, 99),
+            "y": _number(data.get("y"), current.get("y", 94), 0, 500),
+            "scale": _number(data.get("scale"), current.get("scale", 1), 0.35, 3),
+            "anchored": enabled,
+        }, actor=self.caller)
+
+        logger.log_info(
+            "[POKEROL PLAYER GLOBAL SAVE] caller={} x={} y={} scale={} anchored={} revision={} source=GLOBAL_PLAYER_VISUAL_STATE".format(
+                self.caller.key,
+                saved["x"],
+                saved["y"],
+                saved["scale"],
+                saved["anchored"],
+                saved["revision"],
+            )
+        )
 
         packet = {
             "status": "PLAYER_ANCHOR_SAVED",
             "build": PLAYER_ANCHOR_BUILD,
-            "enabled": enabled,
-            "layout": dict(getattr(self.caller.db, "pokerol_player_anchor_layout", None) or {}),
+            "enabled": bool(saved["anchored"]),
+            "layout": {
+                "x": saved["x"],
+                "y": saved["y"],
+                "scale": saved["scale"],
+                "revision": saved["revision"],
+            },
+            "scope": "GLOBAL_PLAYER_VISUAL_STATE",
         }
         self.caller.msg(pokerol_asset_result=((packet,), {}))
         _refresh(self.caller)
