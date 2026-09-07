@@ -1,5 +1,6 @@
 from evennia import Command
 from evennia.server.models import ServerConfig
+from evennia.utils import logger
 
 from commands.siza_ui_runtime_commands import (
     _room_text_block,
@@ -16,7 +17,7 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.14.0-authoritative-player-visual-state"
+POKEROL_UI_RUNTIME_BUILD = "0.15.0-character-room-player-layouts"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
 
 
@@ -48,18 +49,36 @@ def _room_key(location):
     return str(_db_value(location, "room_id", "") or "").strip() or f"DBREF:{int(location.id)}"
 
 
+def _player_room_key(location):
+    return str(int(location.id))
+
+
 def _player_metadata(actor, location):
     anchored = bool(_db_value(actor, "pokerol_player_anchor_enabled", False))
     visual = _db_value(actor, "pokerol_player_visual_state", {})
     anchor_layout = _db_value(actor, "pokerol_player_anchor_layout", {})
+    room_layouts = _db_value(actor, "pokerol_player_room_layouts", {})
     current_room_id = int(location.id)
+    current_room_key = _player_room_key(location)
 
     layout = None
     source = "DEFAULT"
 
-    # Prefer the exact last saved transaction when it belongs to this Room,
-    # or everywhere when ANCLAR was saved on that transaction.
-    if isinstance(visual, dict):
+    # ANCLAR is character-global and wins in every Room.
+    if anchored and isinstance(anchor_layout, dict) and anchor_layout:
+        layout = anchor_layout
+        source = "PLAYER_ANCHOR"
+
+    # Without ANCLAR, the authoritative layout is stored on the character,
+    # keyed by Room. It is never shared between trainers.
+    if not isinstance(layout, dict) and isinstance(room_layouts, dict):
+        candidate = room_layouts.get(current_room_key)
+        if isinstance(candidate, dict):
+            layout = candidate
+            source = "PLAYER_ROOM"
+
+    # Exact last transaction is a safe fallback for the same Room.
+    if not isinstance(layout, dict) and isinstance(visual, dict):
         visual_anchored = bool(visual.get("anchored", False))
         try:
             visual_room_id = int(visual.get("room_dbref"))
@@ -70,37 +89,57 @@ def _player_metadata(actor, location):
             anchored = visual_anchored
             source = "PLAYER_VISUAL_STATE"
 
+    # Older per-character room map from the first editor implementation.
     if not isinstance(layout, dict):
-        if anchored and isinstance(anchor_layout, dict):
-            layout = anchor_layout
-            source = "PLAYER_ANCHOR"
-        else:
-            layout = _db_value(location, "pokerol_player_layout", None)
-            source = "ROOM"
-            if not isinstance(layout, dict):
-                legacy = _db_value(actor, "pokerol_player_layouts", {})
-                if isinstance(legacy, dict):
-                    layout = legacy.get(_room_key(location))
-                    if isinstance(layout, dict):
-                        source = "LEGACY_ROOM"
-            if not isinstance(layout, dict):
-                layout = {}
-                source = "DEFAULT"
+        legacy = _db_value(actor, "pokerol_player_layouts", {})
+        if isinstance(legacy, dict):
+            candidate = legacy.get(_room_key(location))
+            if isinstance(candidate, dict):
+                layout = candidate
+                source = "LEGACY_PLAYER_ROOM"
+
+    # Shared Room state is read only as a final legacy migration fallback.
+    # New saves never write here, because multiple trainers share the Room.
+    if not isinstance(layout, dict):
+        legacy_room = _db_value(location, "pokerol_player_layout", None)
+        if isinstance(legacy_room, dict):
+            layout = legacy_room
+            source = "LEGACY_SHARED_ROOM"
+
+    if not isinstance(layout, dict):
+        layout = {}
+        source = "DEFAULT"
 
     try:
         revision = int(layout.get("revision", 0) or 0)
     except (TypeError, ValueError, AttributeError):
         revision = 0
 
-    return {
+    result = {
         "scene_x": layout.get("x", 11),
         "scene_y": layout.get("y", 94),
         "scene_scale": layout.get("scale", 1.0),
         "scene_sprite": str(_db_value(actor, "scene_sprite", "") or ""),
         "anchored": anchored,
         "layout_source": source,
+        "room_layout_key": current_room_key,
         "revision": revision,
     }
+
+    logger.log_info(
+        "[POKEROL PLAYER LOAD] caller={} room=#{} key={} x={} y={} scale={} anchored={} source={} rev={}".format(
+            getattr(actor, "key", "?"),
+            current_room_id,
+            current_room_key,
+            result["scene_x"],
+            result["scene_y"],
+            result["scene_scale"],
+            result["anchored"],
+            source,
+            revision,
+        )
+    )
+    return result
 
 
 def _custom_hotspots(location):
