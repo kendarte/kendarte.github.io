@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='0.4.0-room-text-fallback';
+var BUILD='0.5.0-restored-session-room-bootstrap';
 var ROOM_PREFIX='__POKEROL_ROOM_STATE_V1__:';
 var bound=false;
 var requested=false;
@@ -9,6 +9,7 @@ var roomSyncActive=false;
 var roomSyncAttempts=0;
 var pendingRoomPacket=null;
 var lastFallbackRoomPacket=null;
+var roomResolved=false;
 function packetFrom(args){
   var p=args;
   if(p&&typeof p.length==='number'&&typeof p!=='string')p=p.length?p[0]:null;
@@ -17,6 +18,19 @@ function packetFrom(args){
 }
 function connected(){
   try{return !!(window.Evennia&&typeof Evennia.isConnected==='function'&&Evennia.isConnected()&&typeof Evennia.msg==='function')}catch(e){return false}
+}
+function authFormVisible(){
+  var form=document.getElementById('pk-auth-form');
+  if(!form)return false;
+  if(form.hidden)return false;
+  var node=form;
+  while(node&&node!==document.body){
+    if(node.hidden)return false;
+    var style=window.getComputedStyle?window.getComputedStyle(node):null;
+    if(style&&(style.display==='none'||style.visibility==='hidden'))return false;
+    node=node.parentElement;
+  }
+  return !!form.offsetParent;
 }
 function battleClient(){return window.PokerolPokemonBattleV01||null}
 function playableClient(){return window.PokerolPlayableClientV01||null}
@@ -52,6 +66,7 @@ function flushPendingRoom(){
   client.renderSnapshot(pendingRoomPacket);
   lastFallbackRoomPacket=pendingRoomPacket;
   pendingRoomPacket=null;
+  roomResolved=true;
   return true;
 }
 function removeFallbackEcho(){
@@ -91,18 +106,19 @@ function acceptFallbackText(value){
   return true;
 }
 function roomSyncTick(){
-  if(!roomSyncActive)return;
+  if(!roomSyncActive||roomResolved)return;
   roomSyncAttempts+=1;
-  flushPendingRoom();
-  requestRoomState();
-  if(roomSyncAttempts>=24){stopRoomSync();return}
-  roomSyncTimer=setTimeout(roomSyncTick,450);
+  if(flushPendingRoom()){stopRoomSync();return}
+  if(connected()&&!authFormVisible())requestRoomState();
+  if(roomSyncAttempts>=120){stopRoomSync();return}
+  roomSyncTimer=setTimeout(roomSyncTick,650);
 }
 function startRoomSync(){
+  roomResolved=false;
   stopRoomSync();
   roomSyncActive=true;
   roomSyncAttempts=0;
-  roomSyncTimer=setTimeout(roomSyncTick,25);
+  roomSyncTimer=setTimeout(roomSyncTick,120);
 }
 function onRoomSnapshot(args){
   var packet=packetFrom(args);
@@ -123,8 +139,13 @@ function onText(args){
   if(/you become\s+/i.test(value))startRoomSync();
   return true;
 }
+function onConnectionOpen(){
+  requested=false;
+  startRoomSync();
+}
 function onConnectionClose(){
   requested=false;
+  roomResolved=false;
   stopRoomSync();
 }
 function bind(){
@@ -134,6 +155,7 @@ function bind(){
   Evennia.emitter.on('pokerol_room_snapshot',onRoomSnapshot);
   Evennia.emitter.on('pokerol_auth_state',onAuthState);
   Evennia.emitter.on('text',onText);
+  Evennia.emitter.on('connection_open',onConnectionOpen);
   Evennia.emitter.on('connection_close',onConnectionClose);
   bound=true;
   return true;
@@ -144,9 +166,13 @@ function init(){
   (function wait(){
     tries+=1;
     bind();
-    flushPendingRoom();
-    if(requestState(false))return;
-    if(tries<150)setTimeout(wait,100);
+    if(flushPendingRoom())return;
+    if(connected()){
+      startRoomSync();
+      requestState(false);
+      return;
+    }
+    if(tries<240)setTimeout(wait,100);
   })();
 }
 window.PokerolBattleOpenGuardV01=Object.freeze({BUILD:BUILD,requestState:function(){return requestState(true)},renderPacket:renderPacket,startRoomSync:startRoomSync,requestRoomState:requestRoomState});
