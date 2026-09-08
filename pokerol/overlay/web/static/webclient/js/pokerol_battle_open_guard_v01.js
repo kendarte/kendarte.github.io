@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='0.5.0-restored-session-room-bootstrap';
+var BUILD='0.6.0-force-room-bootstrap';
 var ROOM_PREFIX='__POKEROL_ROOM_STATE_V1__:';
 var bound=false;
 var requested=false;
@@ -10,15 +10,14 @@ var roomSyncAttempts=0;
 var pendingRoomPacket=null;
 var lastFallbackRoomPacket=null;
 var roomResolved=false;
+var feedObserver=null;
 function packetFrom(args){
   var p=args;
   if(p&&typeof p.length==='number'&&typeof p!=='string')p=p.length?p[0]:null;
   while(Array.isArray(p)&&p.length===1)p=p[0];
   return p&&typeof p==='object'&&!Array.isArray(p)?p:{};
 }
-function connected(){
-  try{return !!(window.Evennia&&typeof Evennia.isConnected==='function'&&Evennia.isConnected()&&typeof Evennia.msg==='function')}catch(e){return false}
-}
+function transportReady(){return !!(window.Evennia&&typeof Evennia.msg==='function')}
 function authFormVisible(){
   var form=document.getElementById('pk-auth-form');
   if(!form)return false;
@@ -45,10 +44,12 @@ function renderPacket(args){
 function requestState(force){
   if(force)requested=false;
   if(requested)return true;
-  if(!connected())return false;
-  requested=true;
-  Evennia.msg('text',['pokerol-battle-state'],{});
-  return true;
+  if(!transportReady())return false;
+  try{
+    Evennia.msg('text',['pokerol-battle-state'],{});
+    requested=true;
+    return true;
+  }catch(e){return false}
 }
 function stopRoomSync(){
   roomSyncActive=false;
@@ -56,7 +57,7 @@ function stopRoomSync(){
   if(roomSyncTimer){clearTimeout(roomSyncTimer);roomSyncTimer=null}
 }
 function requestRoomState(){
-  if(!connected())return false;
+  if(!transportReady())return false;
   try{Evennia.msg('text',['pokerol-room-state'],{});return true}catch(e){return false}
 }
 function flushPendingRoom(){
@@ -105,20 +106,39 @@ function acceptFallbackText(value){
   removeFallbackEcho();
   return true;
 }
+function inspectNode(node){
+  if(!node)return;
+  var text=String(node.textContent||'');
+  if(text.indexOf(ROOM_PREFIX)!==-1)acceptFallbackText(text);
+}
+function bindFeedObserver(){
+  if(feedObserver)return true;
+  var feed=document.getElementById('messagewindow');
+  if(!feed)return false;
+  feedObserver=new MutationObserver(function(records){
+    records.forEach(function(record){
+      Array.prototype.slice.call(record.addedNodes||[]).forEach(inspectNode);
+    });
+  });
+  feedObserver.observe(feed,{childList:true,subtree:true});
+  Array.prototype.slice.call(feed.children||[]).forEach(inspectNode);
+  return true;
+}
 function roomSyncTick(){
   if(!roomSyncActive||roomResolved)return;
   roomSyncAttempts+=1;
+  bindFeedObserver();
   if(flushPendingRoom()){stopRoomSync();return}
-  if(connected()&&!authFormVisible())requestRoomState();
-  if(roomSyncAttempts>=120){stopRoomSync();return}
-  roomSyncTimer=setTimeout(roomSyncTick,650);
+  if(!authFormVisible())requestRoomState();
+  if(roomSyncAttempts>=180){stopRoomSync();return}
+  roomSyncTimer=setTimeout(roomSyncTick,500);
 }
 function startRoomSync(){
   roomResolved=false;
   stopRoomSync();
   roomSyncActive=true;
   roomSyncAttempts=0;
-  roomSyncTimer=setTimeout(roomSyncTick,120);
+  roomSyncTimer=setTimeout(roomSyncTick,50);
 }
 function onRoomSnapshot(args){
   var packet=packetFrom(args);
@@ -139,15 +159,8 @@ function onText(args){
   if(/you become\s+/i.test(value))startRoomSync();
   return true;
 }
-function onConnectionOpen(){
-  requested=false;
-  startRoomSync();
-}
-function onConnectionClose(){
-  requested=false;
-  roomResolved=false;
-  stopRoomSync();
-}
+function onConnectionOpen(){requested=false;startRoomSync()}
+function onConnectionClose(){requested=false;roomResolved=false;stopRoomSync()}
 function bind(){
   if(bound)return true;
   if(!window.Evennia||!Evennia.emitter||typeof Evennia.emitter.on!=='function')return false;
@@ -163,16 +176,17 @@ function bind(){
 function init(){
   window.addEventListener('pokerol-authenticated',startRoomSync);
   var tries=0;
-  (function wait(){
+  (function boot(){
     tries+=1;
     bind();
+    bindFeedObserver();
     if(flushPendingRoom())return;
-    if(connected()){
+    if(transportReady()){
       startRoomSync();
       requestState(false);
       return;
     }
-    if(tries<240)setTimeout(wait,100);
+    if(tries<300)setTimeout(boot,100);
   })();
 }
 window.PokerolBattleOpenGuardV01=Object.freeze({BUILD:BUILD,requestState:function(){return requestState(true)},renderPacket:renderPacket,startRoomSync:startRoomSync,requestRoomState:requestRoomState});
