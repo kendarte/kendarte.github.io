@@ -4,12 +4,8 @@ from copy import deepcopy
 
 from services.pokemon_battle_engine import ACTIVE_STATUS, COMPLETE_STATUS, BATTLE_BUILD
 from services.pokemon_battle_position_engine import position_label, position_targets
-from services.pokemon_battle_reaction_engine import (
-    arm_reaction,
-    reaction_options,
-    reaction_state,
-    settle_incoming_attack_reaction,
-)
+from services.pokemon_battle_reaction_engine import reaction_state
+from services.pokemon_battle_reaction_window_engine import apply_choice, public_window
 from services.pokemon_battle_runtime import (
     RUNTIME_BUILD,
     _basic_action_gate,
@@ -21,11 +17,14 @@ from services.pokemon_battle_runtime import (
     submit_player_battle_action,
 )
 from services.pokemon_battle_shot_director import emit_battle_shots
-from services.pokemon_battle_tactical_round_engine import resolve_tactical_player_action
+from services.pokemon_battle_tactical_round_engine import (
+    resolve_tactical_player_action,
+    resume_tactical_reaction,
+)
 from services.pokemon_party_engine import update_owned_from_battle
 
 
-TACTICAL_RUNTIME_BUILD = "0.4.0-authoritative-anime-shot-runtime"
+TACTICAL_RUNTIME_BUILD = "0.5.0-contextual-reaction-window-runtime"
 
 
 def _dict(value):
@@ -78,51 +77,34 @@ def emit_position_options(actor):
 
 def reaction_options_packet(actor):
     battle = current_battle(actor)
+    window = public_window(battle)
     if not battle:
         return {"accepted": False, "status": "NO_BATTLE", "options": [], "build": TACTICAL_RUNTIME_BUILD}
-    if _text(battle.get("status")).upper() != ACTIVE_STATUS:
-        return {"accepted": False, "status": "BATTLE_NOT_ACTIVE", "options": [], "build": TACTICAL_RUNTIME_BUILD}
-    player = _dict(battle.get("player"))
-    options = reaction_options(battle, "PLAYER")
-    if not bool(battle.get("protected_target_pipeline_active")):
-        options = [row for row in options if _text(_dict(row).get("policy")).upper() != "INTERCEPT"]
+    if not window:
+        return {"accepted": False, "status": "NO_REACTION_WINDOW", "options": [], "build": TACTICAL_RUNTIME_BUILD}
     return {
         "accepted": True,
-        "status": "REACTION_OPTIONS",
-        "battle_id": battle.get("battle_id"),
-        "current": reaction_state(player),
-        "options": options,
+        "status": "REACTION_WINDOW",
+        **_clone(window),
         "build": TACTICAL_RUNTIME_BUILD,
     }
 
 
 def emit_reaction_options(actor):
     packet = reaction_options_packet(actor)
-    if actor:
-        actor.msg(pokerol_pokemon_reaction_options=((packet,), {"build": TACTICAL_RUNTIME_BUILD}))
+    if actor and packet.get("accepted"):
+        actor.msg(pokerol_pokemon_reaction_window=((packet,), {"build": TACTICAL_RUNTIME_BUILD}))
     return packet
 
 
-def set_player_reaction(actor, policy="DODGE", method_move_id=""):
-    if not actor:
-        return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
-    battle = current_battle(actor)
-    if not battle:
-        return {"accepted": False, "status": "NO_BATTLE", "build": TACTICAL_RUNTIME_BUILD}
-    if _text(battle.get("status")).upper() != ACTIVE_STATUS:
-        return {"accepted": False, "status": "BATTLE_NOT_ACTIVE", "build": TACTICAL_RUNTIME_BUILD}
-    if _text(battle.get("phase")).upper() != "COMMAND":
-        return {"accepted": False, "status": "NOT_COMMAND_PHASE", "build": TACTICAL_RUNTIME_BUILD}
-    if bool(battle.get("forced_switch")):
-        return {"accepted": False, "status": "FORCED_SWITCH_REQUIRED", "build": TACTICAL_RUNTIME_BUILD}
-    wanted_policy = _text(policy).upper() or "DODGE"
-    if wanted_policy == "INTERCEPT" and not bool(battle.get("protected_target_pipeline_active")):
-        return {"accepted": False, "status": "INTERCEPT_PIPELINE_NOT_ACTIVE", "build": TACTICAL_RUNTIME_BUILD}
-    result = arm_reaction(battle, "PLAYER", wanted_policy, method_move_id=method_move_id)
-    if result.get("accepted"):
-        actor.db.pokerol_pokemon_battle = battle
-        emit_battle_state(actor, battle, event="STATE")
-    return {**result, "build": TACTICAL_RUNTIME_BUILD}
+def emit_active_reaction_window(actor, battle=None):
+    state = _dict(battle) or current_battle(actor)
+    window = public_window(state)
+    if not actor or not window:
+        return False
+    packet = {"accepted": True, "status": "REACTION_WINDOW", **_clone(window), "build": TACTICAL_RUNTIME_BUILD}
+    actor.msg(pokerol_pokemon_reaction_window=((packet,), {"build": TACTICAL_RUNTIME_BUILD}))
+    return True
 
 
 def _finalize_tactical_result(actor, result, *, before=None, action=None, log_start=0):
@@ -135,12 +117,25 @@ def _finalize_tactical_result(actor, result, *, before=None, action=None, log_st
         },), {}))
         if battle:
             emit_battle_state(actor, battle, event="STATE")
+            emit_active_reaction_window(actor, battle)
         return {**result, "build": TACTICAL_RUNTIME_BUILD}
 
     next_battle = _dict(result.get("battle"))
     update_owned_from_battle(actor, _dict(next_battle.get("player")))
-    _promote_forced_switch_if_possible(actor, next_battle)
 
+    if _text(result.get("status")).upper() == "REACTION_WINDOW_OPEN":
+        actor.db.pokerol_pokemon_battle = next_battle
+        emit_battle_state(actor, next_battle, event="REACTION")
+        emit_active_reaction_window(actor, next_battle)
+        return {
+            "accepted": True,
+            "status": "REACTION_WINDOW_OPEN",
+            "battle": _public_state(actor, next_battle),
+            "reaction_window": _clone(public_window(next_battle)),
+            "build": TACTICAL_RUNTIME_BUILD,
+        }
+
+    _promote_forced_switch_if_possible(actor, next_battle)
     if _text(next_battle.get("status")).upper() == COMPLETE_STATUS:
         next_battle["travel_event_resolution"] = _clone(_resolve_source_travel_event(actor, next_battle))
 
@@ -173,27 +168,38 @@ def _finalize_tactical_result(actor, result, *, before=None, action=None, log_st
     }
 
 
-def _settle_delegated_reaction(actor, log_start, result):
-    if not result.get("accepted"):
-        return result
+def submit_reaction_window_choice(actor, window_id, policy="PASS", method_move_id=""):
+    if not actor:
+        return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
     battle = current_battle(actor)
     if not battle:
-        return result
-    settlement = settle_incoming_attack_reaction(battle, "PLAYER", log_start)
-    if not settlement.get("consumed"):
-        return result
-    update_owned_from_battle(actor, _dict(battle.get("player")))
-    actor.db.pokerol_pokemon_battle = battle
-    is_complete = _text(battle.get("status")).upper() == COMPLETE_STATUS
-    emit_battle_state(actor, battle, event="END" if is_complete else "ROUND")
-    output = dict(result)
-    output["battle"] = _public_state(actor, battle)
-    output["reaction_settlement"] = _clone(settlement)
-    return output
+        return {"accepted": False, "status": "NO_BATTLE", "build": TACTICAL_RUNTIME_BUILD}
+    window = public_window(battle)
+    if not window:
+        return {"accepted": False, "status": "NO_REACTION_WINDOW", "build": TACTICAL_RUNTIME_BUILD}
+
+    before = _clone(battle)
+    log_start = len(_list(before.get("log")))
+    action = _dict(_dict(battle.get("pending_round_resume")).get("player_action"))
+    chosen = apply_choice(battle, window_id, policy, method_move_id)
+    if not chosen.get("accepted"):
+        return _finalize_tactical_result(actor, {"accepted": False, "status": chosen.get("status"), "battle": battle})
+
+    result = resume_tactical_reaction(battle)
+    return _finalize_tactical_result(actor, result, before=before, action=action, log_start=log_start)
+
+
+def set_player_reaction(actor, policy="DODGE", method_move_id="", window_id=""):
+    """Compatibility entry point: reactions are legal only inside an open window."""
+    battle = current_battle(actor)
+    window = public_window(battle)
+    if not window:
+        return {"accepted": False, "status": "NO_REACTION_WINDOW", "build": TACTICAL_RUNTIME_BUILD}
+    return submit_reaction_window_choice(actor, window_id or window.get("window_id"), policy, method_move_id)
 
 
 def submit_tactical_battle_action(actor, action):
-    """Route tactical actions while preserving item/capture/world authority."""
+    """Route tactical actions; enemy attacks pause for contextual reaction windows."""
     if not actor:
         return {"accepted": False, "status": "NO_ACTOR", "build": TACTICAL_RUNTIME_BUILD}
     action = _dict(action)
@@ -204,13 +210,7 @@ def submit_tactical_battle_action(actor, action):
 
     tactical = kind == "MOVE" or (kind == "FREE_ORDER" and bool(position_action))
     if not tactical:
-        result = submit_player_battle_action(actor, action)
-        if kind != "FREE_ORDER" or not _text(action.get("move_id")):
-            result = _settle_delegated_reaction(actor, log_start, result)
-        after = current_battle(actor)
-        if result.get("accepted") and before and after:
-            emit_battle_shots(actor, before, after, action, log_start=log_start, event="END" if _text(after.get("status")).upper() == COMPLETE_STATUS else "ROUND")
-        return result
+        return submit_player_battle_action(actor, action)
 
     battle = current_battle(actor)
     if not battle:
