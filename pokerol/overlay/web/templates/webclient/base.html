@@ -22,11 +22,6 @@
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_battle_free_order_ui_v01.css' %}?v=20260908-attacks1">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_battle_scene_editor_v01.css' %}?v=20260908-battlescene1">
 
-  {#
-    The stock Evennia client expects a jQuery-ready hook even though POKEROL
-    owns its transport.  Keep that tiny compatibility surface local so a CDN
-    timeout can never prevent the game from opening its WebSocket.
-  #}
   <script>
     window.$ = window.$ || function () {
       return {
