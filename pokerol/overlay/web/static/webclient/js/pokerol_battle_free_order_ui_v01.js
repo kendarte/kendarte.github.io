@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='0.3.0-generic-battle-free-order';
+var BUILD='0.4.0-free-order-without-fixed-reaction';
 var state=null;
 var bound=false;
 function text(v){return String(v==null?'':v).trim()}
@@ -13,7 +13,7 @@ function ensure(){
   var existing=document.getElementById('pkb-free-order-bar');if(existing)return existing;
   var slot=document.getElementById('pkb-free-order-slot')||battle;
   var bar=document.createElement('div');bar.id='pkb-free-order-bar';bar.className='pkbFreeOrderBar';
-  bar.innerHTML='<span class="pkbFreeOrderLabel">ACCIÓN LIBRE</span><input id="pkb-free-order-input" type="text" autocomplete="off" spellcheck="false" placeholder="Describe la orden: movimiento, posición, reacción o uso del entorno"><button id="pkb-free-order-send" type="button">ORDENAR</button>';
+  bar.innerHTML='<span class="pkbFreeOrderLabel">ACCIÓN LIBRE</span><input id="pkb-free-order-input" type="text" autocomplete="off" spellcheck="false" placeholder="Describe la orden: ataque, movimiento, posición o uso del entorno"><button id="pkb-free-order-send" type="button">ORDENAR</button>';
   slot.appendChild(bar);
   var input=document.getElementById('pkb-free-order-input'),button=document.getElementById('pkb-free-order-send');
   function submit(){if(!input)return;var raw=text(input.value);if(send(raw)){input.value='';input.focus()}}
