@@ -10,7 +10,7 @@ from copy import deepcopy
 from services.pokerol_event_progress import mark_event_active, snooze_event
 from services.pokerol_event_editor_service import OAK_TUTORIAL_EVENT_ID
 from services.pokemon_battle_runtime import start_pokemon_battle
-from services.pokemon_party_engine import battle_profile_for_slot, set_active_slot
+from services.pokemon_party_engine import battle_profile_for_slot, set_active_slot, set_party_slot_profile
 from services.pokerol_tutorial_engine import (
     LAB_ROOM_ID,
     RIVAL_NPC_ID,
@@ -18,6 +18,7 @@ from services.pokerol_tutorial_engine import (
     TUTORIAL_BATTLE_SOURCE,
     _emit_dialogue,
     _event_line,
+    _fallback_starter,
     _find_npc,
     _starter_level,
     _starter_profile,
@@ -25,7 +26,7 @@ from services.pokerol_tutorial_engine import (
 )
 
 
-OAK_SITUATION_BUILD = "0.1.0-free-challenge-negotiation"
+OAK_SITUATION_BUILD = "0.2.0-battle-attacks-ready"
 
 
 def _text(value):
@@ -72,6 +73,39 @@ def _rival_label():
     return _text(getattr(rival, "key", "")) or "Rival"
 
 
+def _moves(profile):
+    if not isinstance(profile, dict):
+        return []
+    rows = profile.get("moves") or profile.get("resolved_moves") or []
+    return [row for row in rows if isinstance(row, dict) and _text(row.get("move_id"))]
+
+
+def _ensure_player_attacks(actor, state, slot, player):
+    if _moves(player):
+        return player
+    starter_id = _text(state.get("starter_id"))
+    fallback = _fallback_starter(starter_id, level=_starter_level(actor)) if starter_id else None
+    if not fallback or not _moves(fallback):
+        return player
+    player = deepcopy(player)
+    player["moves"] = deepcopy(fallback.get("moves") or [])
+    player["resolved_moves"] = deepcopy(player["moves"])
+    set_party_slot_profile(actor, slot, player)
+    return player
+
+
+def _ensure_enemy_attacks(actor, rival_id, enemy):
+    if _moves(enemy):
+        return enemy
+    fallback = _fallback_starter(rival_id, level=_starter_level(actor))
+    if not fallback or not _moves(fallback):
+        return enemy
+    enemy = deepcopy(enemy)
+    enemy["moves"] = deepcopy(fallback.get("moves") or [])
+    enemy["resolved_moves"] = deepcopy(enemy["moves"])
+    return enemy
+
+
 def _start_battle_in_current_room(actor, state):
     slot = state.get("starter_slot")
     if slot is None:
@@ -84,6 +118,10 @@ def _start_battle_in_current_room(actor, state):
     enemy = _starter_profile(rival_id, level=_starter_level(actor))
     if not player or not enemy:
         return {"accepted": False, "status": "BATTLE_PROFILE_MISSING", "build": OAK_SITUATION_BUILD}
+    player = _ensure_player_attacks(actor, state, slot, player)
+    enemy = _ensure_enemy_attacks(actor, rival_id, enemy)
+    if not _moves(player) or not _moves(enemy):
+        return {"accepted": False, "status": "BATTLE_MOVES_MISSING", "build": OAK_SITUATION_BUILD}
     enemy = deepcopy(enemy)
     enemy["wild"] = False
     enemy["owner_id"] = RIVAL_NPC_ID
@@ -149,7 +187,6 @@ def negotiate_rival_challenge(actor, choice):
             _emit_dialogue(actor, "Profesor Oak", _event_line(actor, "oak_lab_warning", "Si van a pelear aquí, mantengan el control."))
         return _start_battle_in_current_room(actor, state)
 
-    # OUTSIDE: derive an actual exit from the current authored map. No invented room.
     if _room_id(room) == LAB_ROOM_ID:
         exit_obj = _outside_exit(room)
         if not exit_obj or not getattr(exit_obj, "destination", None):
