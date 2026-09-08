@@ -7,6 +7,7 @@ from services.pokemon_battle_free_order_engine import submit_battle_free_order
 from services.pokemon_battle_runtime import (
     abandon_battle,
     current_battle,
+    emit_battle_state,
     start_pokemon_battle,
 )
 from services.pokemon_battle_tactical_runtime import (
@@ -94,13 +95,18 @@ def _demo_caterpie():
 
 class CmdPokerolBattleState(Command):
     key = "batalla"
-    aliases = ["pokemon-battle", "pokerol-battle"]
+    aliases = ["pokemon-battle", "pokerol-battle", "pokerol-battle-state"]
     locks = "cmd:all()"
 
     def func(self):
         battle = current_battle(self.caller)
+        sync_only = str(getattr(self, "cmdstring", "") or "").strip().lower() == "pokerol-battle-state"
         if not battle:
-            self.caller.msg("No hay una batalla Pokémon activa.")
+            if not sync_only:
+                self.caller.msg("No hay una batalla Pokémon activa.")
+            return
+        emit_battle_state(self.caller, battle, event="SYNC")
+        if sync_only:
             return
         player = battle.get("player") or {}
         enemy = battle.get("enemy") or {}
