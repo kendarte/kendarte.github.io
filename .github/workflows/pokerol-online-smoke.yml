@@ -21,12 +21,14 @@ jobs:
 
       - name: Start POKEROL container
         run: |
+          mkdir -p "$RUNNER_TEMP/pokerol-smoke-data"
           docker run -d --name pokerol-smoke-run \
             -e PORT=4001 \
             -e POKEROL_SOLO_TEST_MODE=1 \
             -e EVENNIA_SUPERUSER_USERNAME=SmokeAdmin \
             -e EVENNIA_SUPERUSER_PASSWORD=SmokeOnly-LocalRunner-9274 \
             -e EVENNIA_SUPERUSER_EMAIL= \
+            -v "$RUNNER_TEMP/pokerol-smoke-data:/data" \
             -p 4001:4001 \
             pokerol-smoke
 
