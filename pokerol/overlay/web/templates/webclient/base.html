@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>POKEROL</title>
 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/webclient.css' %}">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/custom.css' %}">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_onboarding_v01.css' %}">
@@ -23,9 +22,24 @@
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_battle_free_order_ui_v01.css' %}?v=20260908-attacks1">
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_battle_scene_editor_v01.css' %}?v=20260908-battlescene1">
 
-  {% block jquery_import %}
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-  {% endblock %}
+  {#
+    The stock Evennia client expects a jQuery-ready hook even though POKEROL
+    owns its transport.  Keep that tiny compatibility surface local so a CDN
+    timeout can never prevent the game from opening its WebSocket.
+  #}
+  <script>
+    window.$ = window.$ || function () {
+      return {
+        ready: function (callback) {
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", callback, { once: true });
+          } else {
+            window.setTimeout(callback, 0);
+          }
+        }
+      };
+    };
+  </script>
 
   <script>
     function generateUID(){
@@ -38,13 +52,9 @@
   </script>
 
   <script src="{% static 'webclient/js/evennia.js' %}" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/pokerol_emitter_multicast_v01.js' %}?v=20260906-multicast1" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'webclient/js/pokerol_transport_bootstrap_v01.js' %}?v=20260908-transport1" type="text/javascript" charset="utf-8"></script>
 
   {% block guilib_import %}
-  <script src="{% static 'webclient/js/webclient_gui.js' %}" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/plugins/history.js' %}" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/plugins/default_in.js' %}" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/plugins/default_out.js' %}" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_logout_guard_v01.js' %}?v=20260906-logout2" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_onboarding_v01.js' %}?v=20260906-identity1" type="text/javascript" charset="utf-8"></script>
   <script src="{% static 'webclient/js/pokerol_login_progress_v01.js' %}?v=20260906-loginfix4" type="text/javascript" charset="utf-8"></script>
@@ -77,9 +87,6 @@
 
   <link rel="stylesheet" type="text/css" media="screen" href="{% static 'webclient/css/pokerol_gba_theme_v01.css' %}?v=20260906-firered1">
   <script src="{% static 'webclient/js/pokerol_room_transition_v01.js' %}?v=20260907-playerglobal1" type="text/javascript" charset="utf-8"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf4+1nzPfr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hK4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNmj4" crossorigin="anonymous"></script>
   {% block scripts %}{% endblock %}
 </head>
 <body>
