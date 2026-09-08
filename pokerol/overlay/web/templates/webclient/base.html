@@ -84,19 +84,7 @@
 </head>
 <body>
   <div id="connecting">{% block connecting %}{% endblock %}</div>
-  <div id="noscript" class="err">POKEROL necesita JavaScript activado.</div>
-  <div id="clientwrapper" class="d-none">{% block client %}{% endblock %}</div>
-
-  <script>
-    (function(){
-      function revealClient(){
-        var noScript=document.getElementById('noscript');
-        if(noScript&&noScript.parentNode)noScript.parentNode.removeChild(noScript);
-        var wrapper=document.getElementById('clientwrapper');
-        if(wrapper)wrapper.classList.remove('d-none');
-      }
-      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',revealClient);else revealClient();
-    })();
-  </script>
+  <noscript><div id="noscript" class="err">POKEROL necesita JavaScript activado.</div></noscript>
+  <div id="clientwrapper">{% block client %}{% endblock %}</div>
 </body>
 </html>
