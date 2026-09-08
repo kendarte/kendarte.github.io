@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var BUILD="0.6.0-tsubasa-shared-frame";
+var BUILD="0.7.0-attacks-primary-no-fixed-reaction";
 var state=null;
 var menuMode="ACTION";
 var pendingItemId="";
@@ -36,7 +36,7 @@ function ensure(){
       +'<div class="pkbSpriteWrap pkbPlayerSpriteWrap" id="pkb-player-sprite"></div>'
     +'</div>'
     +'<div class="pkbNarrator"><div class="pkbNarratorHead"><span id="pkb-narrator-label">NARRADOR</span><span id="pkb-turn">TURNO 1</span></div><div class="pkbLog" id="pkb-log"></div></div>'
-    +'<div class="pkbCommandDeck"><div class="pkbCommandHead"><span id="pkb-menu-title">ORDEN</span><span id="pkb-command-hint">SKILLS + ACCIONES</span></div><div class="pkbMenuBody" id="pkb-menu-body"></div></div>'
+    +'<div class="pkbCommandDeck"><div class="pkbCommandHead"><span id="pkb-menu-title">ORDEN</span><span id="pkb-command-hint">ATAQUES + ACCIONES</span></div><div class="pkbMenuBody" id="pkb-menu-body"></div></div>'
     +'<div id="pkb-free-order-slot" class="pkbFreeOrderSlot"></div>'
     +'<div class="pkbOutcome"><div class="pkbOutcomeCard"><h2 id="pkb-outcome-title">COMBATE TERMINADO</h2><p id="pkb-outcome-text"></p><button class="pkbReturn" id="pkb-return" type="button">VOLVER</button></div></div>';
   host().appendChild(root);
@@ -71,11 +71,18 @@ function moveButton(m,disabled,attrName){
 function outcomeText(v){var map={PLAYER_WIN:"VICTORIA",PLAYER_LOSS:"DERROTA",DRAW:"EMPATE",CAPTURED:"CAPTURADO",ESCAPED:"ESCAPASTE",ABANDONED:"COMBATE TERMINADO"};return map[text(v).toUpperCase()]||text(v)||"COMBATE TERMINADO"}
 function menuTitle(value){
   if(forcedSwitch()&&value==="PARTY")return "ELIGE REEMPLAZO";
-  var map={ACTION:"ORDEN",MOVE:"MOVIMIENTOS",MOVE_TARGET:"OBJETIVO",ENV_TARGET:"ENTORNO",PARTY:"CAMBIO",BAG:"BOLSA",ITEM_TARGET:"OBJETIVO",ITEM_MOVE:"MOVIMIENTO"};
+  var map={ACTION:"ORDEN",MOVE:"ATAQUES",MOVE_TARGET:"OBJETIVO",ENV_TARGET:"ENTORNO",PARTY:"CAMBIO",BAG:"BOLSA",ITEM_TARGET:"OBJETIVO",ITEM_MOVE:"MOVIMIENTO"};
   return map[value]||"ORDEN";
 }
 function setMenuMode(next){if(forcedSwitch()&&next!=="PARTY")next="PARTY";if(next==="ACTION")clearPending();menuMode=next;renderMenu()}
-function playerMoves(){return state&&state.player&&Array.isArray(state.player.moves)?state.player.moves:[]}
+function playerMoves(){
+  var p=state&&state.player||{},moves=Array.isArray(p.moves)?p.moves:(Array.isArray(p.resolved_moves)?p.resolved_moves:[]);
+  if(moves.length)return moves;
+  var party=state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[];
+  var active=party.find(function(row){return !!row.active})||party.find(function(row){return Number(row.party_slot)===Number(state&&state.party_state&&state.party_state.active_slot)});
+  if(active){moves=Array.isArray(active.moves)?active.moves:(Array.isArray(active.resolved_moves)?active.resolved_moves:[])}
+  return moves||[];
+}
 function moveAt(moveId){var wanted=text(moveId).toUpperCase();return playerMoves().find(function(m){return text(m.move_id).toUpperCase()===wanted})||null}
 function partyRows(){return state&&state.party_state&&Array.isArray(state.party_state.party)?state.party_state.party:[]}
 function partyAt(slot){return partyRows().find(function(p){return Number(p.party_slot)===Number(slot)})||null}
@@ -107,25 +114,23 @@ function itemTargetEligible(profile,p){
 }
 function bindActionButton(id,fn){var n=byId(id);if(n)n.onclick=fn}
 function openPosition(){if(window.PokerolBattlePositionUiV01&&typeof window.PokerolBattlePositionUiV01.requestOptions==="function")window.PokerolBattlePositionUiV01.requestOptions()}
-function openReaction(){if(window.PokerolBattleReactionUiV01&&typeof window.PokerolBattleReactionUiV01.requestOptions==="function")window.PokerolBattleReactionUiV01.requestOptions()}
 function renderActionMenu(body,disabled){
   var moves=playerMoves();
-  body.innerHTML='<div class="pkbMoveStrip">'+(moves.length?moves.slice(0,4).map(function(m){return moveButton(m,disabled)}).join(''):'<div class="pkbStubText">SIN MOVIMIENTOS DISPONIBLES.</div>')+'</div>'
+  body.innerHTML='<div class="pkbMoveStrip">'+(moves.length?moves.slice(0,4).map(function(m){return moveButton(m,disabled)}).join(''):'<div class="pkbStubText">SIN ATAQUES DISPONIBLES.</div>')+'</div>'
     +'<div class="pkbUtilityStrip">'
       +'<button class="pkbUtility" id="pkb-move-position" '+(disabled?'disabled':'')+'>MOVER</button>'
-      +'<button class="pkbUtility" id="pkb-reaction-menu" '+(disabled?'disabled':'')+'>REACCIÓN</button>'
       +'<button class="pkbUtility" id="pkb-party" '+(disabled?'disabled':'')+'>CAMBIO</button>'
       +'<button class="pkbUtility" id="pkb-bag" '+(disabled?'disabled':'')+'>BOLSA</button>'
       +'<button class="pkbUtility" id="pkb-run" '+(disabled||text(state&&state.battle_kind).toUpperCase()!=="WILD"?'disabled':'')+'>HUIR</button>'
     +'</div>';
   Array.prototype.forEach.call(body.querySelectorAll("[data-move]"),function(btn){btn.onclick=function(){var id=btn.getAttribute("data-move"),move=moveAt(id);if(move&&move.world_enabled&&Array.isArray(move.world_effects)&&move.world_effects.length){pendingMoveId=id;setMenuMode("MOVE_TARGET")}else sendAction({type:"MOVE",move_id:id})}});
-  bindActionButton("pkb-move-position",openPosition);bindActionButton("pkb-reaction-menu",openReaction);bindActionButton("pkb-party",function(){setMenuMode("PARTY")});bindActionButton("pkb-bag",function(){setMenuMode("BAG")});bindActionButton("pkb-run",function(){sendAction({type:"RUN"})});
+  bindActionButton("pkb-move-position",openPosition);bindActionButton("pkb-party",function(){setMenuMode("PARTY")});bindActionButton("pkb-bag",function(){setMenuMode("BAG")});bindActionButton("pkb-run",function(){sendAction({type:"RUN"})});
 }
 function renderMenu(){
   ensure();var body=byId("pkb-menu-body");if(!body)return;if(forcedSwitch())menuMode="PARTY";byId("pkb-menu-title").textContent=menuTitle(menuMode);var disabled=!battleReady();
   if(menuMode==="ACTION"){renderActionMenu(body,disabled);return}
   if(menuMode==="MOVE"){
-    body.innerHTML='<div class="pkbMoveGrid">'+(playerMoves().map(function(m){return moveButton(m,disabled)}).join('')||'<div class="pkbStubText">SIN MOVIMIENTOS.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
+    body.innerHTML='<div class="pkbMoveGrid">'+(playerMoves().map(function(m){return moveButton(m,disabled)}).join('')||'<div class="pkbStubText">SIN ATAQUES.</div>')+'</div><button class="pkbBack" id="pkb-back">ATRÁS</button>';
     Array.prototype.forEach.call(body.querySelectorAll("[data-move]"),function(btn){btn.onclick=function(){var id=btn.getAttribute("data-move"),move=moveAt(id);if(move&&move.world_enabled&&Array.isArray(move.world_effects)&&move.world_effects.length){pendingMoveId=id;setMenuMode("MOVE_TARGET")}else sendAction({type:"MOVE",move_id:id})}});byId("pkb-back").onclick=function(){setMenuMode("ACTION")};return;
   }
   if(menuMode==="MOVE_TARGET"){
@@ -167,7 +172,7 @@ function restoreNarration(){
 }
 function render(packet){
   state=clone(packet||{});if(forcedSwitch())menuMode="PARTY";var root=ensure();root.setAttribute("data-open","true");root.setAttribute("data-complete",text(state.status).toUpperCase()==="COMPLETE"?"true":"false");root.setAttribute("data-forced-switch",forcedSwitch()?"true":"false");document.body.classList.add("pkCombatMode");
-  var site=state.site||{},bg=text(site.scene_image&&site.scene_image.src),backdrop=byId("pkb-battle-bg");if(backdrop)backdrop.style.backgroundImage=bg?'url("'+bg.replace(/"/g,'%22')+'")':'';
+  var site=state.site||{},img=site.scene_image,bg=text(img&&typeof img==="object"?img.src:img),backdrop=byId("pkb-battle-bg");if(backdrop)backdrop.style.backgroundImage=bg?'url("'+bg.replace(/"/g,'%22')+'")':'';
   byId("pkb-site").textContent=text(site.name)||"COMBATE";byId("pkb-phase").textContent=forcedSwitch()?"CAMBIO":(text(state.phase)||"COMMAND");byId("pkb-turn").textContent="TURNO "+(state.turn||1);
   byId("pkb-player-info").innerHTML=infoHtml(state.player||{});byId("pkb-enemy-info").innerHTML=infoHtml(state.enemy||{});byId("pkb-player-sprite").innerHTML=spriteHtml(state.player||{},"PLAYER");byId("pkb-enemy-sprite").innerHTML=spriteHtml(state.enemy||{},"ENEMY");restoreNarration();
   if(text(state.status).toUpperCase()==="COMPLETE"){byId("pkb-outcome-title").textContent=outcomeText(state.outcome);var collection=state.capture_collection_result||{},collectionText=text(collection.status)==="ADDED_TO_PARTY"?' · EQUIPO':text(collection.status)==="SENT_TO_STORAGE"?' · STORAGE':'';byId("pkb-outcome-text").textContent=(state.player&&state.player.name?state.player.name+" · ":"")+(state.enemy&&state.enemy.name?state.enemy.name:"")+collectionText}
@@ -175,7 +180,7 @@ function render(packet){
 }
 function encode(value){var json=JSON.stringify(value),raw=unescape(encodeURIComponent(json)),bin="";for(var i=0;i<raw.length;i++)bin+=String.fromCharCode(raw.charCodeAt(i));return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")}
 function sendAction(action){if(!battleReady())return;if(forcedSwitch()&&text(action&&action.type).toUpperCase()!=="SWITCH")return;if(!window.Evennia||!Evennia.isConnected())return;disableCommands();Evennia.msg("text",["pokerol-battle-action "+encode(action)],{})}
-function disableCommands(){var root=ensure();Array.prototype.forEach.call(root.querySelectorAll("button"),function(btn){if(!btn.classList.contains("pkbReturn"))btn.disabled=true})}
+function disableCommands(){var root=ensure();Array.prototype.forEach.call(root.querySelectorAll("button"),function(btn){if(!btn.classList.contains("pkbReturn")&&!btn.classList.contains("pkbSceneEditToggle"))btn.disabled=true})}
 function closeBattle(){
   var root=ensure();root.setAttribute("data-closing","true");window.setTimeout(function(){root.removeAttribute("data-open");root.removeAttribute("data-complete");root.removeAttribute("data-forced-switch");root.removeAttribute("data-closing");document.body.classList.remove("pkCombatMode");state=null;menuMode="ACTION";clearPending();if(window.SizaWorldBookClient&&typeof window.SizaWorldBookClient.setMode==="function")window.SizaWorldBookClient.setMode("EXPLORATION")},220);
 }
