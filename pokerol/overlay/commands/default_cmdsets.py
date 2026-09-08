@@ -24,6 +24,14 @@ from commands.pokerol_asset_commands import (
     CmdPokerolEditorSaveHotspots,
     CmdPokerolEditorPlayerLayout,
 )
+from commands.pokerol_battle_scene_commands import (
+    CmdPokerolBattleSceneState,
+    CmdPokerolBattleSceneSave,
+    CmdPokerolBattleSceneAssetBegin,
+    CmdPokerolBattleSceneAssetChunk,
+    CmdPokerolBattleSceneAssetFinish,
+    CmdPokerolBattleSceneAssetClear,
+)
 from commands.pokerol_player_anchor_commands import CmdPokerolEditorPlayerAnchor, CmdPokerolEditorPlayerState
 from commands.pokerol_hotspot_geometry_commands import CmdPokerolEditorHotspotGeometry
 from commands.pokerol_event_editor_commands import (
@@ -129,6 +137,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
             CmdPokerolBattleState(), CmdPokerolBattleTest(), CmdPokerolBattleAction(), CmdPokerolBattleFreeOrder(), CmdPokerolPositionOptions(),
             CmdPokerolReactionOptions(), CmdPokerolBattleReaction(), CmdPokerolBattleMove(),
             CmdPokerolBattleCapture(), CmdPokerolBattleRun(), CmdPokerolBattleAbandon(),
+            CmdPokerolBattleSceneState(), CmdPokerolBattleSceneSave(), CmdPokerolBattleSceneAssetBegin(),
+            CmdPokerolBattleSceneAssetChunk(), CmdPokerolBattleSceneAssetFinish(), CmdPokerolBattleSceneAssetClear(),
             CmdPokerolDMStart(), CmdPokerolDMStatus(), CmdPokerolDMPlan(), CmdPokerolDMSignal(), CmdPokerolDMAdvance(),
             CmdPokerolAuthState(), CmdPokerolHardLogout(), CmdPokerolRoomState(), CmdPokerolUiContext(), CmdPokerolEditorUpdateEntity(), CmdPokerolEditorCreateRoom(),
             CmdPokerolAssetBegin(), CmdPokerolAssetChunk(), CmdPokerolAssetFinish(), CmdPokerolAssetClear(),
