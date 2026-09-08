@@ -1,12 +1,14 @@
 (function(){
 'use strict';
-var BUILD='0.3.0-room-bootstrap-guard';
+var BUILD='0.4.0-room-text-fallback';
+var ROOM_PREFIX='__POKEROL_ROOM_STATE_V1__:';
 var bound=false;
 var requested=false;
 var roomSyncTimer=null;
 var roomSyncActive=false;
 var roomSyncAttempts=0;
 var pendingRoomPacket=null;
+var lastFallbackRoomPacket=null;
 function packetFrom(args){
   var p=args;
   if(p&&typeof p.length==='number'&&typeof p!=='string')p=p.length?p[0]:null;
@@ -48,7 +50,44 @@ function flushPendingRoom(){
   var client=playableClient();
   if(!client||typeof client.renderSnapshot!=='function')return false;
   client.renderSnapshot(pendingRoomPacket);
+  lastFallbackRoomPacket=pendingRoomPacket;
   pendingRoomPacket=null;
+  return true;
+}
+function removeFallbackEcho(){
+  window.setTimeout(function(){
+    var feed=document.getElementById('messagewindow');
+    if(feed){
+      Array.prototype.slice.call(feed.children||[]).forEach(function(node){
+        if(String(node.textContent||'').indexOf(ROOM_PREFIX)!==-1&&node.parentNode)node.parentNode.removeChild(node);
+      });
+    }
+    var packet=lastFallbackRoomPacket;
+    var client=playableClient();
+    if(packet&&client&&typeof client.setDialogue==='function'){
+      var text=String(packet.room_description||packet.description||'').trim();
+      if(text)client.setDialogue(text,'NARRADOR',false);
+    }
+  },0);
+}
+function acceptFallbackText(value){
+  var raw=String(value||'');
+  var at=raw.indexOf(ROOM_PREFIX);
+  if(at===-1)return false;
+  var encoded=raw.slice(at+ROOM_PREFIX.length).trim();
+  try{
+    var payload=JSON.parse(encoded);
+    var room=payload&&payload.room&&typeof payload.room==='object'?payload.room:payload;
+    if(room&&typeof room==='object'&&!Array.isArray(room)){
+      pendingRoomPacket=room;
+      lastFallbackRoomPacket=room;
+      if(flushPendingRoom())stopRoomSync();
+      window.setTimeout(function(){requestState(true)},40);
+    }
+  }catch(err){
+    if(window.console&&console.error)console.error('[POKEROL room fallback]',err);
+  }
+  removeFallbackEcho();
   return true;
 }
 function roomSyncTick(){
@@ -80,6 +119,7 @@ function onAuthState(args){
 }
 function onText(args){
   var value=args&&args.length?String(args[0]||''):String(args||'');
+  if(acceptFallbackText(value))return true;
   if(/you become\s+/i.test(value))startRoomSync();
   return true;
 }
