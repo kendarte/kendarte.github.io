@@ -1,8 +1,10 @@
 import base64
 import json
+from copy import deepcopy
 
 from evennia import Command
 
+from services.pokemon_battle_engine import normalize_pokemon
 from services.pokemon_battle_free_order_engine import submit_battle_free_order
 from services.pokemon_battle_runtime import (
     abandon_battle,
@@ -14,7 +16,8 @@ from services.pokemon_battle_tactical_runtime import (
     emit_position_options,
     submit_tactical_battle_action,
 )
-from services.pokemon_party_engine import active_pokemon
+from services.pokemon_party_engine import active_pokemon, update_owned_from_battle
+from services.pokerol_tutorial_engine import TUTORIAL_BATTLE_SOURCE, _fallback_starter
 
 
 def _decode_token(token):
@@ -93,6 +96,37 @@ def _demo_caterpie():
     }
 
 
+def _repair_active_tutorial_attacks(actor, battle):
+    if not isinstance(battle, dict):
+        return battle
+    if str(battle.get("source_event_id") or "") != TUTORIAL_BATTLE_SOURCE:
+        return battle
+    changed = False
+    for side in ("player", "enemy"):
+        row = battle.get(side) or {}
+        if row.get("moves"):
+            continue
+        species_id = str(row.get("species_id") or "").strip()
+        if not species_id:
+            continue
+        fallback = _fallback_starter(species_id, level=int(row.get("level") or 5))
+        if not fallback:
+            continue
+        normalized = normalize_pokemon(fallback, side="PLAYER" if side == "player" else "ENEMY")
+        moves = deepcopy(normalized.get("moves") or [])
+        if not moves:
+            continue
+        row["moves"] = moves
+        known = [str(move.get("move_id") or "") for move in moves if move.get("move_id")]
+        row["known_moves"] = known
+        battle[side] = row
+        changed = True
+    if changed:
+        actor.db.pokerol_pokemon_battle = battle
+        update_owned_from_battle(actor, battle.get("player") or {})
+    return battle
+
+
 class CmdPokerolBattleState(Command):
     key = "batalla"
     aliases = ["pokemon-battle", "pokerol-battle", "pokerol-battle-state"]
@@ -105,6 +139,7 @@ class CmdPokerolBattleState(Command):
             if not sync_only:
                 self.caller.msg("No hay una batalla Pokémon activa.")
             return
+        battle = _repair_active_tutorial_attacks(self.caller, battle)
         emit_battle_state(self.caller, battle, event="SYNC")
         if sync_only:
             return
