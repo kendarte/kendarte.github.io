@@ -1,3 +1,5 @@
+import json
+
 from evennia import Command
 from evennia.server.models import ServerConfig
 from evennia.utils import logger
@@ -18,8 +20,9 @@ from services.pokerol_tutorial_engine import (
     tutorial_state,
 )
 
-POKEROL_UI_RUNTIME_BUILD = "0.17.0-global-persistent-player-transform"
+POKEROL_UI_RUNTIME_BUILD = "0.18.0-room-text-fallback"
 GLOBAL_FRAME_CONFIG = "pokerol_ui_frame_url"
+ROOM_SNAPSHOT_TEXT_PREFIX = "__POKEROL_ROOM_STATE_V1__:"
 
 
 def _stamp(packet):
@@ -305,11 +308,29 @@ def context_action_packet(actor):
     return packet
 
 
+def _fallback_room_packet(packet, actions):
+    fallback = dict(packet or {})
+    action_rows = [dict(row or {}) for row in list((actions or {}).get("actions") or [])]
+    fallback["actions"] = action_rows
+    fallback["available_actions"] = action_rows
+    if (actions or {}).get("tutorial") is not None:
+        fallback["tutorial"] = (actions or {}).get("tutorial")
+    return fallback
+
+
 def emit_room_snapshot(actor, *, visible_text=False):
     packet = room_snapshot_packet(actor)
     actions = context_action_packet(actor)
     actor.msg(pokerol_room_snapshot=((packet,), {}))
     actor.msg(pokerol_context_actions=((actions,), {}))
+    fallback = _fallback_room_packet(packet, actions)
+    try:
+        actor.msg(
+            ROOM_SNAPSHOT_TEXT_PREFIX
+            + json.dumps({"room": fallback}, ensure_ascii=False, separators=(",", ":"), default=str)
+        )
+    except Exception as err:
+        logger.log_err("[POKEROL ROOM FALLBACK] {}".format(err))
     if visible_text:
         actor.msg(_room_text_block(packet))
     return packet
