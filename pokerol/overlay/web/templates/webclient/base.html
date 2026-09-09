@@ -43,11 +43,15 @@
     var cuid=generateUID();
     {% if websocket_enabled %}var wsactive=true;{% else %}var wsactive=false;{% endif %}
     {% if browser_sessid %}var csessid="{{browser_sessid}}";{% else %}var csessid=false;{% endif %}
-    {% if websocket_url %}var wsurl="{{websocket_url}}";{% else %}var wsurl="ws://"+this.location.hostname+":{{websocket_port}}";{% endif %}
+    {% if websocket_url %}
+    var wsurl="{{websocket_url}}";
+    {% else %}
+    var wsurl=(this.location.protocol === "https:" ? "wss://" : "ws://")+this.location.host+"/ws";
+    {% endif %}
   </script>
 
   <script src="{% static 'webclient/js/evennia.js' %}" type="text/javascript" charset="utf-8"></script>
-  <script src="{% static 'webclient/js/pokerol_transport_bootstrap_v01.js' %}?v=20260908-transport1" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'webclient/js/pokerol_transport_bootstrap_v01.js' %}?v=20260909-transport2" type="text/javascript" charset="utf-8"></script>
 
   {% block guilib_import %}
   <script src="{% static 'webclient/js/pokerol_logout_guard_v01.js' %}?v=20260906-logout2" type="text/javascript" charset="utf-8"></script>
