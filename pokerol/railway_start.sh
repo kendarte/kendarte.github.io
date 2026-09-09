@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# Production launcher. Smoke tests must not replace or bypass this path.
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 RUNTIME="$ROOT/runtime"
 DATA_DIR="${POKEROL_DATA_DIR:-/data}"
