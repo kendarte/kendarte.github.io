@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "0.1.0-local-websocket-bootstrap";
+  var BUILD = "0.1.1-connect-on-bootstrap";
   var reconnectTimer = null;
   var reconnectAttempts = 0;
   var reconnectDelays = [700, 1400, 2800, 5000, 8000];
@@ -207,6 +207,9 @@
     }
     window.Evennia.init({ emitter: createEmitter(), connection: createWebSocketConnection() });
     bindInput();
+    // Evennia.init stores a supplied connection; it does not open it.
+    // Let the other DOMContentLoaded handlers register before connecting.
+    window.setTimeout(function () { window.Evennia.connect(); }, 0);
   }
 
   window.PokerolTransportBootstrapV01 = Object.freeze({ BUILD: BUILD, send: sendTypedAction });
