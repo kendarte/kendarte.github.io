@@ -11,18 +11,18 @@
 </head>
 <body>
 <header class="top">
-  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v7 · 2026-09-19</div></div>
+  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v8 · 2026-09-19</div></div>
   <div class="actions"><a class="btn" href="../?live=1" target="_blank">LIVE SITE</a><button class="btn" id="reloadBtn" type="button">Reload</button></div>
 </header>
 <div class="wrap">
   <div class="status" id="status">Loading…</div>
 
   <div class="connect" style="grid-template-columns:1fr auto auto">
-    <input id="token" type="password" autocomplete="off" placeholder="GitHub token for publishing">
-    <a class="btn" target="_blank" href="https://github.com/settings/personal-access-tokens/new?name=Kendarte%20Archviz&description=Publishes%20the%20architectural%20visualization%20portfolio&target_name=kendarte&expires_in=366&contents=write">CREATE CORRECT TOKEN</a>
+    <input id="token" type="password" autocomplete="off" placeholder="GitHub classic token (ghp_...)">
+    <a class="btn" target="_blank" href="https://github.com/settings/tokens/new?scopes=repo&description=Kendarte%20Archviz%20Publisher">CREATE WORKING TOKEN</a>
     <button class="btn" id="forgetBtn" type="button">Forget token</button>
   </div>
-  <div class="note" style="margin-top:8px">Token must target <b>kendarte</b>, include repository <b>kendarte.github.io</b>, and have <b>Contents: Read and write</b>.</div>
+  <div class="note" style="margin-top:8px"><b>Use a Personal access token (classic)</b>. The button opens GitHub with <b>repo</b> already selected. Generate it, copy the <b>ghp_...</b> token, paste it here, then press <b>PUBLISH TO SITE</b>.</div>
 
   <section class="panel">
     <h2>Site</h2>
@@ -64,9 +64,9 @@ var OWNER='kendarte';
 var REPO='kendarte.github.io';
 var BRANCH='main';
 var BASE='architectural-visualization';
-var DRAFT_KEY='archviz-editor-draft-v7';
+var DRAFT_KEY='archviz-editor-draft-v8';
 var TOKEN_KEY='archvizToken';
-var DB_NAME='archviz-editor-files-v7';
+var DB_NAME='archviz-editor-files-v8';
 var DB_STORE='files';
 
 var cfg=null;
@@ -449,9 +449,7 @@ async function uploadFile(file,path){
 async function requireToken(){
   var t=$('#token').value.trim()||sessionStorage.getItem(TOKEN_KEY)||'';
   if(!t){
-    t=window.prompt('Paste the GitHub token for kendarte/kendarte.github.io');
-    if(!t)throw new Error('No GitHub token provided.');
-    t=t.trim();
+    throw new Error('Paste the GitHub classic token (ghp_...) first.');
   }
   sessionStorage.setItem(TOKEN_KEY,t);
   return t;
@@ -460,7 +458,10 @@ async function requireToken(){
 function permissionError(e){
   var m=e&&e.message?e.message:String(e);
   if(m.indexOf('403')>=0){
-    return 'TOKEN DOES NOT HAVE WRITE ACCESS.\n\nCreate a token with:\nResource owner: kendarte\nRepository: kendarte.github.io\nContents: Read and write';
+    return 'THIS TOKEN CANNOT WRITE TO THE REPOSITORY.\n\nUse CREATE WORKING TOKEN, generate a classic ghp_ token with the repo scope, paste it here, then publish again.';
+  }
+  if(m.indexOf('401')>=0){
+    return 'GITHUB REJECTED THE TOKEN. Generate a new classic ghp_ token with repo scope.';
   }
   return m;
 }
@@ -498,10 +499,12 @@ async function publish(){
 
   try{
     await saveDraft(true);
-    await requireToken();
+    var t=await requireToken();
+    if(t.indexOf('github_pat_')===0){
+      throw new Error('The current token is fine-grained and is the one GitHub is rejecting. Use CREATE WORKING TOKEN and paste the classic ghp_ token instead.');
+    }
 
-    // Read current portfolio.json. If this fails, token/repo access is wrong.
-    setStatus('Checking GitHub…');
+    setStatus('Checking GitHub write access…');
     var current=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
 
     var publishCfg=JSON.parse(JSON.stringify(cfg));
@@ -562,7 +565,7 @@ async function publish(){
     var shortSha=result.commit.sha.slice(0,7);
     setStatus('PUBLISHED TO SITE · commit '+shortSha,'ok');
     btn.textContent='PUBLISHED';
-    window.alert('PUBLISHED TO SITE\n\nCommit: '+shortSha);
+    window.alert('PUBLISHED TO SITE\n\nCommit: '+shortSha+'\n\nThe live page will update from GitHub Pages.');
     setTimeout(function(){btn.textContent=old;},1200);
   }catch(e){
     var message=permissionError(e);
