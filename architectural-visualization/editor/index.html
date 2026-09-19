@@ -252,6 +252,13 @@ function clearPreviewUrls(){
   previewUrls=[];
 }
 
+function publishedImageUrl(src){
+  var value=String(src||'');
+  if(/^https?:\/\//i.test(value))return value;
+  if(value.indexOf('media/')===0)return 'https://raw.githubusercontent.com/kendarte/kendarte.github.io/main/architectural-visualization/'+value;
+  return '../'+value;
+}
+
 async function legacySpriteData(){
   if(legacySprite)return legacySprite;
   var r=await fetch('../sprite.b64',{cache:'force-cache'});
@@ -271,7 +278,7 @@ async function previewHTML(image,alt){
     return '<div class="legacy">Draft file missing</div>';
   }
   if(image.type==='file'){
-    return '<img src="../'+esc(image.src)+'?v='+Date.now()+'" alt="'+esc(alt||'')+'">';
+    return '<img src="'+esc(publishedImageUrl(image.src))+'" alt="'+esc(alt||'')+'">';
   }
   var sprite=await legacySpriteData();
   var viewBox=image.viewBox||'0 0 300 225';
