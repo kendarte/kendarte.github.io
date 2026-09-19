@@ -22,6 +22,9 @@
 <script>
 const q=new URLSearchParams(location.search);if(q.get("admin")==="1")document.body.classList.add("admin");
 let spriteData=null;
+let renderedPortfolio='';
+let refreshBusy=false;
+const LIVE_REVISION_KEY='archviz-live-revision-v1';
 async function loadSprite(src){
  if(spriteData)return spriteData;
  const b64=await fetch(src,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error("sprite");return r.text()});
@@ -36,8 +39,14 @@ async function mediaEl(image, hero=false){
  return '<svg viewBox="'+vb+'" preserveAspectRatio="xMidYMid slice" aria-label="'+esc(image.alt||"")+'"><image href="'+data+'" width="'+(image.spriteWidth||300)+'" height="'+(image.spriteHeight||3227)+'"/></svg>';
 }
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-async function render(){
- const data=await fetch("portfolio.json?"+Date.now()).then(r=>r.json());
+async function loadPortfolio(){
+ const response=await fetch("portfolio.json?"+Date.now(),{cache:"no-store"});
+ if(!response.ok)throw new Error("Portfolio failed to load.");
+ return response.json();
+}
+async function render(data){
+ data=data||await loadPortfolio();
+ renderedPortfolio=JSON.stringify(data);
  document.title="Kendarte — "+data.site.title;
  document.getElementById("brand").textContent=data.site.brand;
  document.getElementById("contactTop").href=data.site.contactUrl;
@@ -60,6 +69,25 @@ async function render(){
  '<div class="capstrip"><span>Static renders</span><b>+</b><span>360° panorama</span><b>+</b><span>Interactive walkthrough</span><b>+</b><span>VR visualization</span></div>'+
  '<section class="cta"><div class="eyebrow">Start a project</div><h2>'+esc(data.site.ctaTitle)+'</h2><p>'+esc(data.site.ctaText)+'</p><a class="btn" href="'+esc(data.site.contactUrl)+'">Contact Kendarte ↗</a></section>';
 }
+async function refreshPortfolio(){
+ if(refreshBusy)return false;
+ refreshBusy=true;
+ try{
+  const data=await loadPortfolio();
+  const next=JSON.stringify(data);
+  if(next!==renderedPortfolio){await render(data);return true;}
+ }catch(e){console.warn(e);}
+ finally{refreshBusy=false;}
+ return false;
+}
+function refreshAfterPublish(){
+ const until=Date.now()+60000;
+ (function retry(){
+  refreshPortfolio().then(function(changed){if(!changed&&Date.now()<until)setTimeout(retry,2000);});
+ })();
+}
+window.addEventListener('storage',function(event){if(event.key===LIVE_REVISION_KEY)refreshAfterPublish();});
+setInterval(refreshPortfolio,30000);
 render().catch(e=>{console.error(e);document.getElementById("app").innerHTML='<div class="loading">Portfolio failed to load.</div>'});
 </script>
 <footer class="footer"><span>KENDARTE · Pre-Sale Architectural Visualization</span><a href="#top">Back to top ↑</a></footer>
