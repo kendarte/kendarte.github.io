@@ -11,7 +11,7 @@
 </head>
 <body>
 <header class="top">
-  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v4 · 2026-09-19</div></div>
+  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v5 · 2026-09-19</div></div>
   <div class="actions"><a class="btn" href="../index.html" target="_blank">Open portfolio</a><button class="btn" id="reloadBtn" type="button">Reload</button></div>
 </header>
 <div class="wrap">
@@ -63,9 +63,9 @@ var OWNER='kendarte';
 var REPO='kendarte.github.io';
 var BRANCH='main';
 var BASE='architectural-visualization';
-var DRAFT_KEY='archviz-editor-draft-v3';
+var DRAFT_KEY='archviz-editor-draft-v5';
 var TOKEN_KEY='archvizToken';
-var DB_NAME='archviz-editor-files-v3';
+var DB_NAME='archviz-editor-files-v5';
 var DB_STORE='files';
 
 var cfg=null;
@@ -80,17 +80,33 @@ function slug(v){return String(v||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-
 function token(){return sessionStorage.getItem(TOKEN_KEY)||$('#token').value.trim();}
 function clone(v){return JSON.parse(JSON.stringify(v));}
 
-function saveDraft(silent){
-  if(!cfg)return;
-  localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));
+async function saveDraft(silent){
+  if(!cfg)throw new Error('Portfolio is not loaded yet.');
+  var payload=JSON.stringify(cfg);
+  localStorage.setItem(DRAFT_KEY,payload);
+  var verify=localStorage.getItem(DRAFT_KEY);
+  if(verify!==payload)throw new Error('Browser draft verification failed.');
   dirty=false;
-  if(!silent)setStatus('Draft saved in this browser.','ok');
+  if(!silent){
+    var now=new Date().toLocaleTimeString();
+    setStatus('DRAFT SAVED · '+now,'ok');
+    var b=$('#saveDraftBtn');
+    var old=b.textContent;
+    b.textContent='SAVED';
+    b.disabled=true;
+    setTimeout(function(){b.textContent=old;b.disabled=false;},900);
+  }
+  return true;
 }
 
 function mark(msg){
   dirty=true;
-  localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));
-  setStatus(msg||'Draft updated.','ok');
+  try{
+    localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));
+    setStatus(msg||'Draft updated.','ok');
+  }catch(e){
+    setStatus('Draft save error: '+e.message,'err');
+  }
 }
 
 function clearDraft(){
@@ -169,13 +185,22 @@ async function gh(path,opts){
 }
 
 async function connectGitHub(){
-  var t=$('#token').value.trim()||sessionStorage.getItem(TOKEN_KEY);
+  var typed=$('#token').value.trim();
+  var previous=sessionStorage.getItem(TOKEN_KEY)||'';
+  var t=typed||previous;
   if(!t)throw new Error('Paste the GitHub token first.');
   sessionStorage.setItem(TOKEN_KEY,t);
-  await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
-  connected=true;
-  $('#token').value='';
-  setStatus('GitHub connected. Publish is ready.','ok');
+  try{
+    await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
+    connected=true;
+    $('#token').value='';
+    setStatus('GitHub connected. Publish is ready.','ok');
+    return true;
+  }catch(e){
+    connected=false;
+    if(typed)sessionStorage.removeItem(TOKEN_KEY);
+    throw e;
+  }
 }
 
 function forgetToken(){
@@ -420,52 +445,75 @@ async function uploadFile(file,path){
 }
 
 async function publish(){
-  if(!connected){
-    try{await connectGitHub();}
-    catch(e){setStatus(e.message,'err');return;}
-  }
-  var btn=$('#publishBtn');btn.disabled=true;
+  var btn=$('#publishBtn');
+  btn.disabled=true;
   try{
-    setStatus('Uploading full-resolution images…');
-    if(cfg.heroImage&&cfg.heroImage.type==='draft'){
-      var hf=await dbGet(cfg.heroImage.key);
-      if(!hf)throw new Error('Hero draft file is missing.');
-      var hp=BASE+'/media/hero-'+Date.now()+'.'+extOf(hf);
-      await uploadFile(hf,hp);
-      cfg.heroImage={type:'file',src:hp.replace(BASE+'/',''),alt:'Architectural visualization hero'};
-    }
+    await saveDraft(true);
 
+    setStatus('Checking GitHub access…');
+    await connectGitHub();
+
+    var uploads=[];
+    if(cfg.heroImage&&cfg.heroImage.type==='draft'){
+      uploads.push({kind:'hero',image:cfg.heroImage});
+    }
     for(var pi=0;pi<cfg.projects.length;pi++){
       var p=cfg.projects[pi];
       var shots=p.shots||[];
       for(var si=0;si<shots.length;si++){
         var s=shots[si];
-        if(s.image&&s.image.type==='draft'){
-          var file=await dbGet(s.image.key);
-          if(!file)throw new Error('Missing draft file for '+(s.label||'shot')+'.');
-          var path=BASE+'/media/'+slug(p.id)+'-'+slug(s.id)+'-'+Date.now()+'.'+extOf(file);
-          await uploadFile(file,path);
-          s.image={type:'file',src:path.replace(BASE+'/',''),alt:s.label||p.title};
-        }
+        if(s.image&&s.image.type==='draft')uploads.push({kind:'shot',project:p,shot:s,image:s.image});
       }
     }
 
-    setStatus('Saving portfolio.json…');
+    for(var ui=0;ui<uploads.length;ui++){
+      var item=uploads[ui];
+      setStatus('Uploading full-resolution image '+(ui+1)+' / '+uploads.length+'…');
+      var file=await dbGet(item.image.key);
+      if(!file)throw new Error('Missing draft file: '+(item.image.name||item.image.key));
+      var path;
+      if(item.kind==='hero'){
+        path=BASE+'/media/hero-'+Date.now()+'-'+ui+'.'+extOf(file);
+      }else{
+        path=BASE+'/media/'+slug(item.project.id)+'-'+slug(item.shot.id)+'-'+Date.now()+'-'+ui+'.'+extOf(file);
+      }
+      await uploadFile(file,path);
+      var finalImage={type:'file',src:path.replace(BASE+'/',''),alt:item.kind==='hero'?'Architectural visualization hero':(item.shot.label||item.project.title)};
+      if(item.kind==='hero')cfg.heroImage=finalImage;
+      else item.shot.image=finalImage;
+      localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));
+    }
+
+    setStatus('Saving portfolio.json to GitHub…');
     var cur=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
     var json=JSON.stringify(cfg,null,2);
     await gh('contents/'+BASE+'/portfolio.json',{
       method:'PUT',
-      body:JSON.stringify({message:'Update architectural visualization portfolio',content:textToBase64(json),sha:cur.sha,branch:BRANCH})
+      body:JSON.stringify({
+        message:'Update architectural visualization portfolio',
+        content:textToBase64(json),
+        sha:cur.sha,
+        branch:BRANCH
+      })
     });
+
+    setStatus('Verifying GitHub save…');
+    var verify=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
+    if(!verify||!verify.sha)throw new Error('GitHub verification failed.');
 
     clearDraft();
     await dbClear();
     dirty=false;
-    setStatus('PUBLISHED. GitHub Pages is updating.','ok');
     await render();
+
+    var now=new Date().toLocaleTimeString();
+    setStatus('PUBLISHED TO SITE · '+now+' · GitHub Pages may take a moment to refresh.','ok');
+    var old=btn.textContent;
+    btn.textContent='PUBLISHED';
+    setTimeout(function(){btn.textContent=old;},1200);
   }catch(e){
-    setStatus(e.message,'err');
-    localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));}catch(_e){}
+    setStatus('PUBLISH FAILED: '+e.message,'err');
   }finally{
     btn.disabled=false;
   }
@@ -477,7 +525,7 @@ $('#reloadBtn').addEventListener('click',function(){
   if(!confirm('Reload LIVE portfolio and discard this browser draft?'))return;
   clearDraft();dbClear().then(function(){loadPortfolio(true).catch(function(e){setStatus(e.message,'err');});});
 });
-$('#saveDraftBtn').addEventListener('click',function(){saveDraft(false);});
+$('#saveDraftBtn').addEventListener('click',function(){saveDraft(false).catch(function(e){setStatus('SAVE FAILED: '+e.message,'err');});});
 $('#publishBtn').addEventListener('click',publish);
 $('#addProjectBtn').addEventListener('click',addProject);
 $('#heroReplaceBtn').addEventListener('click',function(){$('#heroFile').click();});
@@ -487,8 +535,10 @@ window.addEventListener('beforeunload',function(e){
   if(dirty){e.preventDefault();e.returnValue='';}
 });
 
-if(sessionStorage.getItem(TOKEN_KEY))connected=true;
-loadPortfolio(false).catch(function(e){setStatus(e.message,'err');});
+window.addEventListener('error',function(e){setStatus('EDITOR ERROR: '+(e.message||'Unknown error'),'err');});
+window.addEventListener('unhandledrejection',function(e){var m=e.reason&&e.reason.message?e.reason.message:String(e.reason||'Unknown error');setStatus('EDITOR ERROR: '+m,'err');});
+connected=false;
+loadPortfolio(false).catch(function(e){setStatus('LOAD FAILED: '+e.message,'err');});
 })();
 </script>
 </body>
