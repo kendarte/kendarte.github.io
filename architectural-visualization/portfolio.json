@@ -9,12 +9,9 @@
     "contactUrl": "https://kendarte.github.io/#contact"
   },
   "heroImage": {
-    "type": "sprite",
-    "src": "sprite.b64",
-    "viewBox": "0 912 300 225",
-    "spriteWidth": 300,
-    "spriteHeight": 3227,
-    "alt": "Architectural visualization dusk hero"
+    "type": "file",
+    "src": "media/hero-1789850272225-0.png",
+    "alt": "Architectural visualization hero"
   },
   "services": [
     "Exterior Visualization",
