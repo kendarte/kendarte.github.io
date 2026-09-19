@@ -109,11 +109,22 @@ async function publish(){
   btn.disabled=true;btn.textContent='PUBLISHING…';
   try{
     await saveDraft(true);
+    var images=draftImages();
+    if(!images.length){
+      var liveResponse=await fetch('../portfolio.json?v='+Date.now(),{cache:'no-store'});
+      if(!liveResponse.ok)throw new Error('Could not verify the live portfolio.');
+      var livePortfolio=await liveResponse.json();
+      if(JSON.stringify(livePortfolio)===JSON.stringify(cfg)){
+        setStatus('NO CHANGES TO PUBLISH.','ok');
+        btn.textContent='NO CHANGES';
+        setTimeout(function(){btn.textContent=old;},1400);
+        return;
+      }
+    }
     var api=await publisherApi();
     var session=localStorage.getItem(PUBLISH_SESSION_KEY)||await signInForPublish(api);
     var form=new FormData();
     form.append('portfolio',JSON.stringify(cfg));
-    var images=draftImages();
     for(var i=0;i<images.length;i++){
       var image=images[i],file=await dbGet(image.key);
       if(!file)throw new Error('Missing image: '+(image.name||image.key));
