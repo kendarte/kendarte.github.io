@@ -46,6 +46,7 @@
 
 <div class="savebar">
   <button class="btn" id="saveDraftBtn" type="button">SAVE DRAFT</button>
+  <button class="btn primary" id="publishBtn" type="button">PUBLISH TO SITE</button>
 </div>
 
 <script>
@@ -55,6 +56,7 @@
 var DRAFT_KEY='archviz-editor-draft-v8';
 var DB_NAME='archviz-editor-files-v8';
 var DB_STORE='files';
+var PUBLISH_SESSION_KEY='archviz-publish-session-v1';
 
 var cfg=null;
 var dirty=false;
@@ -64,6 +66,77 @@ var legacySprite=null;
 function $(s){return document.querySelector(s);}
 function setStatus(text,type){var e=$('#status');e.textContent=text;e.className='status'+(type?' '+type:'');}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
+
+async function publisherApi(){
+  var r=await fetch('../publisher.json?v='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error('Publisher configuration is unavailable.');
+  var c=await r.json();
+  if(!c.publishApi)throw new Error('Publisher setup is not finished yet.');
+  var u=new URL(c.publishApi);
+  if(u.protocol!=='https:')throw new Error('Publisher must use HTTPS.');
+  return u.origin;
+}
+
+function draftImages(){
+  var out=[];
+  function add(image){if(image&&image.type==='draft')out.push(image);}
+  add(cfg.heroImage);
+  (cfg.projects||[]).forEach(function(project){(project.shots||[]).forEach(function(shot){add(shot.image);});});
+  return out;
+}
+
+function signInForPublish(api){
+  return new Promise(function(resolve,reject){
+    var popup=window.open(api+'/auth/start','archviz-publisher','popup=yes,width=560,height=720');
+    if(!popup){reject(new Error('Allow the GitHub sign-in popup, then publish again.'));return;}
+    var timeout=setTimeout(function(){finish(new Error('GitHub sign-in timed out.'));},10*60*1000);
+    var timer=setInterval(function(){if(popup.closed)finish(new Error('GitHub sign-in was closed.'));},400);
+    function finish(error,session){
+      clearTimeout(timeout);clearInterval(timer);window.removeEventListener('message',receive);
+      if(error)reject(error);else resolve(session);
+    }
+    function receive(event){
+      if(event.origin!==api||!event.data||event.data.type!=='archviz-publish-session'||!event.data.session)return;
+      localStorage.setItem(PUBLISH_SESSION_KEY,event.data.session);finish(null,event.data.session);
+    }
+    window.addEventListener('message',receive);
+  });
+}
+
+async function publish(){
+  var btn=$('#publishBtn'),old=btn.textContent;
+  btn.disabled=true;btn.textContent='PUBLISHING…';
+  try{
+    await saveDraft(true);
+    var api=await publisherApi();
+    var session=localStorage.getItem(PUBLISH_SESSION_KEY)||await signInForPublish(api);
+    var form=new FormData();
+    form.append('portfolio',JSON.stringify(cfg));
+    var images=draftImages();
+    for(var i=0;i<images.length;i++){
+      var image=images[i],file=await dbGet(image.key);
+      if(!file)throw new Error('Missing image: '+(image.name||image.key));
+      form.append('file',file,image.key);
+    }
+    var response=await fetch(api+'/publish',{method:'POST',headers:{'Authorization':'Bearer '+session},body:form});
+    if(response.status===401){
+      localStorage.removeItem(PUBLISH_SESSION_KEY);
+      session=await signInForPublish(api);
+      response=await fetch(api+'/publish',{method:'POST',headers:{'Authorization':'Bearer '+session},body:form});
+    }
+    var result=await response.json().catch(function(){return {};});
+    if(!response.ok)throw new Error(result.error||'Publish failed.');
+    cfg=result.portfolio;
+    clearDraft();await dbClear();dirty=false;await render();
+    var commit=result.commit?result.commit.slice(0,7):'confirmed';
+    setStatus('PUBLISHED TO SITE · '+commit,'ok');
+    btn.textContent='PUBLISHED';
+    setTimeout(function(){btn.textContent=old;},1400);
+  }catch(e){
+    setStatus('PUBLISH FAILED: '+e.message,'err');
+    btn.textContent=old;
+  }finally{btn.disabled=false;}
+}
 
 async function saveDraft(silent){
   if(!cfg)throw new Error('Portfolio is not loaded yet.');
@@ -373,6 +446,7 @@ $('#reloadBtn').addEventListener('click',function(){
   clearDraft();dbClear().then(function(){loadPortfolio(true).catch(function(e){setStatus(e.message,'err');});});
 });
 $('#saveDraftBtn').addEventListener('click',function(){saveDraft(false).catch(function(e){setStatus('SAVE FAILED: '+e.message,'err');});});
+$('#publishBtn').addEventListener('click',publish);
 $('#addProjectBtn').addEventListener('click',addProject);
 $('#heroReplaceBtn').addEventListener('click',function(){$('#heroFile').click();});
 $('#heroFile').addEventListener('change',function(){if(this.files&&this.files[0])replaceHero(this.files[0]);});
