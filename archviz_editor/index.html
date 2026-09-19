@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Archviz Portfolio Editor</title>
+<style>
+:root{--bg:#090b0d;--panel:#121518;--panel2:#181c20;--line:#30363b;--text:#f4f5f5;--muted:#98a1a6;--accent:#d9c3a3;--danger:#ff8e8e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}.wrap{width:min(1320px,calc(100% - 32px));margin:auto;padding:28px 0 90px}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}.top h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:2px 0 10px;letter-spacing:-.05em}.top p{max-width:700px;color:var(--muted);margin:0}.actions,.row{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 13px;font-weight:700;cursor:pointer;border-radius:6px}.btn:hover{border-color:#697177}.btn.primary{background:var(--accent);border-color:var(--accent);color:#111}.btn.danger{color:var(--danger)}.btn:disabled{opacity:.45;cursor:not-allowed}.status{border:1px solid var(--line);padding:12px 14px;color:var(--muted);margin:18px 0;white-space:pre-wrap}.status.ok{color:#aee58d;border-color:#486a35}.status.err{color:var(--danger);border-color:#7a3a3a}.panel{border:1px solid var(--line);background:var(--panel);padding:18px;margin-top:18px;border-radius:10px}.panel h2{margin:0 0 4px;font-size:24px}.help{color:var(--muted);margin:0 0 15px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field.full{grid-column:1/-1}.field label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid var(--line);background:#080a0c;color:var(--text);border-radius:5px}.field textarea{min-height:86px;resize:vertical}.hero-grid{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}.thumb{background:#050607;border:1px solid var(--line);height:220px;display:grid;place-items:center;overflow:hidden}.thumb img,.thumb svg{width:100%;height:100%;object-fit:contain;display:block;background:#fff}.file{position:relative;overflow:hidden}.file input{position:absolute;inset:0;opacity:0;cursor:pointer}.projects{display:grid;gap:18px;margin-top:18px}.project{border:1px solid var(--line);background:var(--panel);border-radius:10px;overflow:hidden}.project-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;background:#0e1113;border-bottom:1px solid var(--line)}.project-head b{font-size:18px}.project-body{padding:16px}.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.shot{border:1px solid var(--line);background:#0c0f11;padding:12px;border-radius:8px}.shot .thumb{height:230px}.shot-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px}.pill{padding:4px 7px;background:#242a2f;color:#b8c0c4;border-radius:999px;font-size:11px}.drop{border:1px dashed #596166;padding:12px;text-align:center;color:var(--muted);margin-top:9px}.drop.drag{border-color:var(--accent);color:var(--accent)}.log{display:none;max-height:260px;overflow:auto;background:#050607;border:1px solid var(--line);padding:12px;white-space:pre-wrap;color:#cfd6d2;font:12px/1.45 Consolas,monospace;margin-top:14px}.note{font-size:12px;color:var(--muted)}
+@media(max-width:900px){.top{display:block}.top .actions{margin-top:16px}.hero-grid,.fields,.shots{grid-template-columns:1fr}.field.full{grid-column:auto}.thumb,.shot .thumb{height:210px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="note">LOCAL OWNER EDITOR · ORIGINAL IMAGE BYTES</div><h1>Archviz Portfolio Editor</h1><p>Replace full-resolution images directly, add projects and shots, reorder them, edit text, save locally and publish to GitHub Pages.</p></div>
+    <div class="actions"><button class="btn" id="openLive">Open live portfolio</button><button class="btn primary" id="publishTop">Publish changes</button></div>
+  </div>
+  <div class="status" id="status">Loading portfolio…</div>
+
+  <section class="panel">
+    <h2>Site</h2><p class="help">Text edits save locally automatically.</p>
+    <div class="fields" id="siteFields"></div>
+    <div style="height:1px;background:var(--line);margin:18px 0"></div>
+    <h2>Hero image</h2><p class="help">Upload the actual JPG, PNG or WebP. The file is copied byte-for-byte.</p>
+    <div class="hero-grid"><div class="thumb" id="heroThumb"></div><div><label class="btn primary file">Replace hero<input id="heroFile" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="note" style="margin-top:10px">Recommended: 1920 px wide or larger. No editor-side resizing or recompression.</div></div></div>
+  </section>
+
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2>Projects</h2><p class="help">No fixed limit. Add Project and add as many shots as needed.</p></div><button class="btn primary" id="addProject">+ Add project</button></div>
+  </section>
+
+  <div class="projects" id="projects"></div>
+
+  <section class="panel">
+    <h2>Publish</h2><p class="help">Saves the manifest and original uploaded images, commits them, pulls main and pushes main.</p>
+    <button class="btn primary" id="publish">Publish changes</button>
+    <pre class="log" id="log"></pre>
+  </section>
+</div>
+<script>
+let data=null,saveTimer=null,spriteData=null;
+const $=s=>document.querySelector(s), status=$('#status'), projects=$('#projects'), log=$('#log');
+function msg(t,type=''){status.textContent=t;status.className='status'+(type?' '+type:'')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+async function api(path,options={}){const r=await fetch(path,{cache:'no-store',...options});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||j.log||('HTTP '+r.status));return j}
+async function sprite(){if(spriteData)return spriteData;const b64=await fetch('/architectural-visualization/sprite.b64?v='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Legacy preview unavailable');return r.text()});return spriteData='data:image/jpeg;base64,'+b64.replace(/\s+/g,'')}
+async function imageHTML(img,alt='Image'){
+ if(!img)return '<span class="note">No image yet</span>';
+ if(img.type==='file')return '<img src="/architectural-visualization/'+esc(img.src)+'?v='+Date.now()+'" alt="'+esc(alt)+'">';
+ try{const src=await sprite();return '<svg viewBox="'+esc(img.viewBox||'0 0 300 225')+'" preserveAspectRatio="xMidYMid slice"><image href="'+src+'" width="'+(img.spriteWidth||300)+'" height="'+(img.spriteHeight||3227)+'"/></svg>'}catch{return '<span class="note">Legacy image — replace it</span>'}
+}
+function field(obj,key,label,{full=false,area=false}={}){const w=document.createElement('div');w.className='field'+(full?' full':'');const l=document.createElement('label');l.textContent=label;const i=document.createElement(area?'textarea':'input');i.value=obj[key]??'';i.addEventListener('input',()=>{obj[key]=i.value;queueSave()});w.append(l,i);return w}
+async function load(){try{data=await api('/api/content');data.projects=Array.isArray(data.projects)?data.projects:[];await render();msg('Editor ready. Changes save locally as you make them.','ok')}catch(e){msg(e.message,'err')}}
+async function render(){
+ const sf=$('#siteFields');sf.innerHTML='';
+ sf.append(field(data.site,'brand','Brand'),field(data.site,'title','Service title'),field(data.site,'heroTitle','Hero headline',{full:true}),field(data.site,'heroText','Hero text',{full:true,area:true}),field(data.site,'ctaTitle','CTA headline',{full:true}),field(data.site,'ctaText','CTA text',{full:true,area:true}),field(data.site,'contactUrl','Contact URL',{full:true}));
+ $('#heroThumb').innerHTML=await imageHTML(data.heroImage,'Hero');
+ projects.innerHTML='';for(let i=0;i<data.projects.length;i++)projects.append(await projectCard(data.projects[i],i));
+}
+async function projectCard(p,i){
+ const card=document.createElement('section');card.className='project';
+ const head=document.createElement('div');head.className='project-head';head.innerHTML='<div><span class="pill">'+esc(p.number||String(i+1).padStart(2,'0'))+'</span> <b>'+esc(p.title||'Untitled project')+'</b></div>';
+ const a=document.createElement('div');a.className='row';a.append(button('↑',()=>moveProject(i,-1)),button('↓',()=>moveProject(i,1)),button('+ Shot',()=>addShot(p)),button('Delete',()=>deleteProject(i),'danger'));head.append(a);card.append(head);
+ const body=document.createElement('div');body.className='project-body';const fs=document.createElement('div');fs.className='fields';fs.append(field(p,'number','Number'),field(p,'eyebrow','Eyebrow'),field(p,'title','Title',{full:true}),field(p,'summary','Summary',{full:true,area:true}));body.append(fs);
+ const grid=document.createElement('div');grid.className='shots';for(let j=0;j<(p.shots||[]).length;j++)grid.append(await shotCard(p,p.shots[j],j));body.append(grid);card.append(body);return card;
+}
+async function shotCard(p,s,i){
+ const c=document.createElement('article');c.className='shot';c.innerHTML='<div class="shot-title"><b>'+esc(s.label||'Shot')+'</b><span class="pill">'+esc(s.size||'half')+'</span></div><div class="thumb"></div>';c.querySelector('.thumb').innerHTML=await imageHTML(s.image,s.label);
+ const fs=document.createElement('div');fs.className='fields';fs.append(field(s,'label','Label'));const sw=document.createElement('div');sw.className='field';sw.innerHTML='<label>Layout size</label><select><option value="half">Half</option><option value="wide">Wide</option></select>';sw.querySelector('select').value=s.size||'half';sw.querySelector('select').onchange=e=>{s.size=e.target.value;queueSave()};fs.append(sw);c.append(fs);
+ const row=document.createElement('div');row.className='row';row.style.marginTop='10px';const lab=document.createElement('label');lab.className='btn primary file';lab.textContent=s.image?.type==='file'?'Replace image':'Use full-res image';const inp=document.createElement('input');inp.type='file';inp.accept='image/png,image/jpeg,image/webp';inp.onchange=()=>inp.files[0]&&replaceImage(p,s,inp.files[0]);lab.append(inp);row.append(lab,button('↑',()=>moveShot(p,i,-1)),button('↓',()=>moveShot(p,i,1)),button('Delete',()=>deleteShot(p,i),'danger'));c.append(row);
+ const drop=document.createElement('div');drop.className='drop';drop.textContent='Drop full-resolution image here';drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');if(e.dataTransfer.files[0])replaceImage(p,s,e.dataTransfer.files[0])};c.append(drop);return c;
+}
+function button(label,fn,cls=''){const b=document.createElement('button');b.className='btn '+cls;b.textContent=label;b.onclick=fn;return b}
+async function save(text='Saved locally.'){await api('/api/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});msg(text,'ok')}
+function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>save().catch(e=>msg(e.message,'err')),250)}
+async function upload(file,prefix){if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw new Error('Use PNG, JPG/JPEG or WebP.');const r=await fetch('/api/upload?prefix='+encodeURIComponent(prefix)+'&name='+encodeURIComponent(file.name),{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||'Upload failed');return j.src}
+async function del(src){if(!src||!src.startsWith('media/uploads/'))return;await api('/api/file?src='+encodeURIComponent(src),{method:'DELETE'})}
+async function replaceImage(p,s,file){const old=s.image?.type==='file'?s.image.src:'';msg('Copying original image…');try{const src=await upload(file,(p.id||'project')+'-'+(s.id||'shot'));s.image={type:'file',src,alt:s.label||p.title||'Portfolio image'};await save('Image replaced locally.');await del(old);await render()}catch(e){msg(e.message,'err')}}
+async function replaceHero(file){const old=data.heroImage?.type==='file'?data.heroImage.src:'';msg('Copying original hero…');try{const src=await upload(file,'hero');data.heroImage={type:'file',src,alt:'Architectural visualization hero'};await save('Hero replaced locally.');await del(old);await render()}catch(e){msg(e.message,'err')}}
+function renumber(){data.projects.forEach((p,i)=>p.number=String(i+1).padStart(2,'0'))}
+async function addProject(){const n=data.projects.length+1;data.projects.push({id:'project-'+Date.now(),number:String(n).padStart(2,'0'),eyebrow:'Portfolio study',title:'New Project',summary:'Project description.',shots:[]});await save('Project added.');await render()}
+async function deleteProject(i){if(!confirm('Delete this project from the portfolio?'))return;const p=data.projects[i];for(const s of (p.shots||[]))if(s.image?.type==='file')await del(s.image.src);data.projects.splice(i,1);renumber();await save('Project removed.');await render()}
+async function moveProject(i,d){const j=i+d;if(j<0||j>=data.projects.length)return;[data.projects[i],data.projects[j]]=[data.projects[j],data.projects[i]];renumber();await save('Project order saved.');await render()}
+async function addShot(p){p.shots=p.shots||[];p.shots.push({id:'shot-'+Date.now(),label:'New shot',size:'half',image:null});await save('Shot added.');await render()}
+async function deleteShot(p,i){if(!confirm('Delete this shot?'))return;const s=p.shots[i];if(s.image?.type==='file')await del(s.image.src);p.shots.splice(i,1);await save('Shot removed.');await render()}
+async function moveShot(p,i,d){const j=i+d;if(j<0||j>=p.shots.length)return;[p.shots[i],p.shots[j]]=[p.shots[j],p.shots[i]];await save('Shot order saved.');await render()}
+async function publish(){const bs=[...document.querySelectorAll('#publish,#publishTop')];bs.forEach(b=>b.disabled=true);log.style.display='block';log.textContent='Publishing…';msg('Publishing to GitHub…');try{await save('Saved locally. Publishing…');const r=await api('/api/publish',{method:'POST'});log.textContent=r.log||'Done.';msg('Published to main. GitHub Pages will update shortly.','ok')}catch(e){log.textContent=e.message;msg('Publish failed. Read the log below.','err')}finally{bs.forEach(b=>b.disabled=false)}}
+$('#heroFile').onchange=e=>e.target.files[0]&&replaceHero(e.target.files[0]);$('#addProject').onclick=addProject;$('#publish').onclick=publish;$('#publishTop').onclick=publish;$('#openLive').onclick=()=>window.open('https://kendarte.github.io/architectural-visualization/','_blank');
+load();
+</script>
+</body></html>
