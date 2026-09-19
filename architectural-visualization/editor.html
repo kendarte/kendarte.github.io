@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kendarte Archviz — Portfolio Manager</title>
+<style>
+:root{--bg:#111318;--panel:#1a1d24;--line:#343844;--text:#f2f2f2;--muted:#9da3af;--accent:#e0c9a7;--danger:#ff7c7c}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}.bar{position:sticky;top:0;z-index:30;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(17,19,24,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}.brand{font-weight:800;letter-spacing:.1em}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#232731;color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer}.btn.primary{background:var(--accent);color:#171717;border-color:var(--accent);font-weight:800}.btn.danger{color:var(--danger)}.wrap{max-width:1200px;margin:auto;padding:24px}.notice{background:#171a20;border:1px solid var(--line);padding:14px 16px;border-radius:10px;color:var(--muted);line-height:1.5}.tokenbox{display:grid;grid-template-columns:1fr auto;gap:8px;margin:16px 0}.tokenbox input,.field input,.field textarea,.field select{width:100%;background:#0f1116;border:1px solid var(--line);color:#fff;padding:10px 11px;border-radius:8px}.status{font-size:13px;color:var(--muted)}.status.ok{color:#8ed39d}.status.err{color:#ff9090}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-top:18px;padding:18px}.panel h2,.panel h3{margin-top:0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}.field.full{grid-column:1/-1}.field textarea{min-height:92px;resize:vertical}.hero-edit{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start}.preview{background:#0d0f13;border:1px solid var(--line);border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}.preview img,.preview svg{width:100%;height:100%;object-fit:cover;display:block}.small{font-size:12px;color:var(--muted)}.projects{display:grid;gap:18px;margin-top:18px}.project-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}.project-top{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px;border-bottom:1px solid var(--line)}.project-controls{display:flex;gap:6px;flex-wrap:wrap}.project-body{padding:16px}.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.shot{border:1px solid var(--line);border-radius:12px;padding:12px;background:#14171d}.shot-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px}.shot .preview{aspect-ratio:16/10;margin-bottom:9px}.shot-controls{display:flex;gap:6px;flex-wrap:wrap}.upload{position:relative;overflow:hidden}.upload input{position:absolute;inset:0;opacity:0;cursor:pointer}.drop{border:1px dashed #555d6d;border-radius:8px;padding:9px;text-align:center;color:var(--muted);margin-top:8px}.drop.over{border-color:var(--accent);color:var(--accent)}.sep{height:1px;background:var(--line);margin:18px 0}.savebar{position:fixed;right:18px;bottom:18px;display:flex;gap:8px;z-index:40}.pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#272c36;color:#b9c0ca;font-size:11px}.dangerzone{border-color:#583939}.dangerzone .project-top{background:#231719}@media(max-width:800px){.fields,.shots,.hero-edit{grid-template-columns:1fr}.bar{align-items:flex-start}.wrap{padding:14px}.hero-edit{gap:12px}.tokenbox{grid-template-columns:1fr}.savebar{left:14px;right:14px}.savebar .btn{flex:1}}
+</style>
+</head><body>
+<header class="bar"><div><div class="brand">KENDARTE / ARCHVIZ MANAGER</div><div class="status" id="status">Loading…</div></div><div class="actions"><a class="btn" href="index.html?admin=1" target="_blank">Open portfolio</a><button class="btn" id="reloadBtn">Reload</button></div></header>
+<div class="wrap">
+<div class="notice"><b>Direct image replacement:</b> choose a full-resolution JPG, PNG or WebP and it is uploaded to this GitHub Pages project without resizing. The token is stored only in this browser session. For security, use a fine-grained GitHub token restricted to <b>kendarte/kendarte.github.io</b> with <b>Contents: Read and write</b>.</div>
+<div class="tokenbox"><input id="token" type="password" autocomplete="off" placeholder="GitHub fine-grained token"><button class="btn" id="rememberBtn">Use for this session</button></div>
+
+<section class="panel">
+<h2>Site</h2>
+<div class="fields" id="siteFields"></div>
+<div class="sep"></div>
+<h3>Hero image</h3>
+<div class="hero-edit"><div class="preview" id="heroPreview"></div><div><label class="btn upload">Replace hero image<input id="heroUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="small">Upload the original/full-resolution image. No sprite, no downsampling.</p></div></div>
+</section>
+
+<section class="panel">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin-bottom:4px">Projects</h2><div class="small">Add, delete, reorder projects and replace any shot directly.</div></div><button class="btn primary" id="addProjectBtn">+ Add project</button></div>
+</section>
+
+<div class="projects" id="projects"></div>
+</div>
+<div class="savebar"><button class="btn primary" id="saveBtn">Save portfolio</button></div>
+
+<script>
+const OWNER="kendarte", REPO="kendarte.github.io", BRANCH="main", BASE="architectural-visualization";
+let cfg=null, spriteData=null, dirty=false;
+const $=s=>document.querySelector(s);
+function status(msg,type=""){const e=$("#status");e.textContent=msg;e.className="status "+type}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function slug(s){return String(s||"item").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"item"}
+function tok(){return sessionStorage.getItem("archvizToken")||$("#token").value.trim()}
+function mark(){dirty=true;status("Unsaved changes")}
+function ghHeaders(){const t=tok();if(!t)throw new Error("Enter a GitHub token first.");return{"Accept":"application/vnd.github+json","Authorization":"Bearer "+t,"X-GitHub-Api-Version":"2022-11-28"}}
+async function gh(path,opts={}){const r=await fetch("https://api.github.com/repos/"+OWNER+"/"+REPO+"/"+path,{...opts,headers:{...ghHeaders(),...(opts.headers||{})}});if(!r.ok){let m="GitHub "+r.status;try{const j=await r.json();m+=": "+j.message}catch{}throw new Error(m)}return r.status===204?null:r.json()}
+function arrayBufferToBase64(buf){let binary="",bytes=new Uint8Array(buf),chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
+async function sprite(){if(spriteData)return spriteData;const b64=await fetch("sprite.b64?"+Date.now()).then(r=>r.text());return spriteData="data:image/jpeg;base64,"+b64.replace(/\s+/g,"")}
+async function previewHTML(image){if(!image)return "<span class='small'>No image</span>";if(image.type==="file")return '<img src="'+esc(image.src)+'?v='+Date.now()+'" alt="">';const d=await sprite();return '<svg viewBox="'+esc(image.viewBox||"0 0 300 225")+'" preserveAspectRatio="xMidYMid slice"><image href="'+d+'" width="'+(image.spriteWidth||300)+'" height="'+(image.spriteHeight||3227)+'"/></svg>'}
+async function load(){
+ status("Loading portfolio…");
+ cfg=await fetch("portfolio.json?"+Date.now()).then(r=>{if(!r.ok)throw new Error("Could not load portfolio.json");return r.json()});
+ render();
+ dirty=false;status("Ready","ok");
+}
+function textField(obj,key,label,full=false,textarea=false){
+ const wrap=document.createElement("div");wrap.className="field "+(full?"full":"");
+ const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
+ const input=document.createElement(textarea?"textarea":"input");input.value=obj[key]??"";input.addEventListener("input",()=>{obj[key]=input.value;mark()});wrap.appendChild(input);return wrap
+}
+async function render(){
+ const sf=$("#siteFields");sf.innerHTML="";
+ sf.append(textField(cfg.site,"brand","Brand"));
+ sf.append(textField(cfg.site,"title","Service title"));
+ sf.append(textField(cfg.site,"heroTitle","Hero headline",true));
+ sf.append(textField(cfg.site,"heroText","Hero text",true,true));
+ sf.append(textField(cfg.site,"ctaTitle","CTA headline",true));
+ sf.append(textField(cfg.site,"ctaText","CTA text",true,true));
+ sf.append(textField(cfg.site,"contactUrl","Contact URL",true));
+ $("#heroPreview").innerHTML=await previewHTML(cfg.heroImage);
+ const list=$("#projects");list.innerHTML="";
+ for(let i=0;i<cfg.projects.length;i++) list.append(await projectCard(cfg.projects[i],i));
+}
+async function projectCard(p,index){
+ const card=document.createElement("section");card.className="project-card";
+ const top=document.createElement("div");top.className="project-top";
+ top.innerHTML='<div><span class="pill">'+esc(p.number||String(index+1).padStart(2,"0"))+'</span> <b>'+esc(p.title||"Untitled project")+'</b></div>';
+ const controls=document.createElement("div");controls.className="project-controls";
+ controls.append(btn("↑",()=>moveProject(index,-1)),btn("↓",()=>moveProject(index,1)),btn("+ Shot",()=>addShot(p)),btn("Delete",()=>deleteProject(index),"danger"));
+ top.appendChild(controls);card.appendChild(top);
+ const body=document.createElement("div");body.className="project-body";
+ const fields=document.createElement("div");fields.className="fields";
+ fields.append(textField(p,"number","Number"),textField(p,"eyebrow","Eyebrow"),textField(p,"title","Title",true),textField(p,"summary","Summary",true,true));
+ body.appendChild(fields);
+ const shots=document.createElement("div");shots.className="shots";
+ for(let j=0;j<(p.shots||[]).length;j++)shots.append(await shotCard(p,p.shots[j],j));
+ body.appendChild(shots);card.appendChild(body);return card;
+}
+async function shotCard(project,s,index){
+ const el=document.createElement("div");el.className="shot";
+ const head=document.createElement("div");head.className="shot-head";head.innerHTML='<b>'+esc(s.label||"Shot")+'</b><span class="pill">'+esc(s.size||"half")+'</span>';el.appendChild(head);
+ const prev=document.createElement("div");prev.className="preview";prev.innerHTML=await previewHTML(s.image);el.appendChild(prev);
+ const f=document.createElement("div");f.className="fields";
+ f.append(textField(s,"label","Label"));
+ const size=document.createElement("div");size.className="field";size.innerHTML="<label>Layout size</label><select><option value='half'>Half</option><option value='wide'>Wide</option></select>";size.querySelector("select").value=s.size||"half";size.querySelector("select").onchange=e=>{s.size=e.target.value;mark()};f.append(size);el.appendChild(f);
+ const actions=document.createElement("div");actions.className="shot-controls";
+ const upload=document.createElement("label");upload.className="btn upload";upload.textContent="Replace image";const inp=document.createElement("input");inp.type="file";inp.accept="image/jpeg,image/png,image/webp";inp.onchange=()=>inp.files[0]&&replaceShot(project,s,inp.files[0],prev);upload.appendChild(inp);actions.append(upload,btn("↑",()=>moveShot(project,index,-1)),btn("↓",()=>moveShot(project,index,1)),btn("Delete",()=>deleteShot(project,index),"danger"));el.appendChild(actions);
+ const drop=document.createElement("div");drop.className="drop";drop.textContent="or drop full-resolution image here";["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));drop.addEventListener("drop",e=>{const file=e.dataTransfer.files[0];if(file)replaceShot(project,s,file,prev)});el.appendChild(drop);return el
+}
+function btn(label,fn,cls=""){const b=document.createElement("button");b.className="btn "+cls;b.textContent=label;b.onclick=fn;return b}
+function moveProject(i,d){const j=i+d;if(j<0||j>=cfg.projects.length)return;[cfg.projects[i],cfg.projects[j]]=[cfg.projects[j],cfg.projects[i]];mark();render()}
+function deleteProject(i){if(!confirm("Delete this project from the portfolio?"))return;cfg.projects.splice(i,1);renumber();mark();render()}
+function addProject(){const n=cfg.projects.length+1;cfg.projects.push({id:"project-"+Date.now(),number:String(n).padStart(2,"0"),eyebrow:"Portfolio study",title:"New Project",summary:"Project description.",shots:[]});mark();render()}
+function renumber(){cfg.projects.forEach((p,i)=>p.number=String(i+1).padStart(2,"0"))}
+function addShot(p){p.shots=p.shots||[];p.shots.push({id:"shot-"+Date.now(),label:"New shot",size:"half",image:null});mark();render()}
+function moveShot(p,i,d){const j=i+d;if(j<0||j>=p.shots.length)return;[p.shots[i],p.shots[j]]=[p.shots[j],p.shots[i]];mark();render()}
+function deleteShot(p,i){if(!confirm("Delete this shot?"))return;p.shots.splice(i,1);mark();render()}
+async function uploadFile(file,nameBase){
+ if(!/^image\/(jpeg|png|webp)$/.test(file.type))throw new Error("Use JPG, PNG or WebP.");
+ if(file.size>25*1024*1024)throw new Error("Image is over 25 MB. Export a web-ready full-resolution copy first.");
+ const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
+ const path=BASE+"/media/"+slug(nameBase)+"-"+Date.now()+"."+ext;
+ status("Uploading "+file.name+"…");
+ const content=arrayBufferToBase64(await file.arrayBuffer());
+ await gh("contents/"+path,{method:"PUT",body:JSON.stringify({message:"Upload archviz image: "+file.name,content,branch:BRANCH})});
+ return path.replace(BASE+"/","");
+}
+async function replaceShot(project,shot,file,prev){
+ try{const src=await uploadFile(file,project.id+"-"+shot.id);shot.image={type:"file",src,alt:shot.label||project.title};prev.innerHTML='<img src="'+esc(src)+'?v='+Date.now()+'" alt="">';mark();await save();status("Image replaced","ok")}catch(e){status(e.message,"err")}
+}
+async function replaceHero(file){
+ try{const src=await uploadFile(file,"hero");cfg.heroImage={type:"file",src,alt:"Architectural visualization hero"};$("#heroPreview").innerHTML='<img src="'+esc(src)+'?v='+Date.now()+'" alt="">';mark();await save();status("Hero replaced","ok")}catch(e){status(e.message,"err")}
+}
+async function save(){
+ try{
+  status("Saving portfolio…");
+  const path=BASE+"/portfolio.json";
+  const cur=await gh("contents/"+path+"?ref="+BRANCH);
+  const json=JSON.stringify(cfg,null,2);
+  const content=btoa(unescape(encodeURIComponent(json)));
+  await gh("contents/"+path,{method:"PUT",body:JSON.stringify({message:"Update archviz portfolio",content,sha:cur.sha,branch:BRANCH})});
+  dirty=false;status("Saved to GitHub Pages","ok");
+ }catch(e){status(e.message,"err");throw e}
+}
+$("#rememberBtn").onclick=()=>{const t=$("#token").value.trim();if(!t)return status("Enter a token first","err");sessionStorage.setItem("archvizToken",t);$("#token").value="";status("Token active for this session","ok")};
+$("#saveBtn").onclick=()=>save().catch(()=>{});
+$("#reloadBtn").onclick=()=>{if(dirty&&!confirm("Discard unsaved changes?"))return;load().catch(e=>status(e.message,"err"))};
+$("#addProjectBtn").onclick=addProject;
+$("#heroUpload").onchange=e=>e.target.files[0]&&replaceHero(e.target.files[0]);
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
+load().catch(e=>status(e.message,"err"));
+</script>
+</body></html>
