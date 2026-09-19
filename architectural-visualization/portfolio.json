@@ -109,6 +109,16 @@
       "summary": "A three-unit residential development visualized as a sales story: street presence, evening mood, aerial layout and private amenity spaces.",
       "shots": [
         {
+          "id": "shot-1789852228306",
+          "label": "New shot",
+          "size": "half",
+          "image": {
+            "type": "file",
+            "src": "media/townhouse-development-shot-1789852228306-1789852294101-0.png",
+            "alt": "New shot"
+          }
+        },
+        {
           "id": "street-day",
           "label": "Street hero · Day",
           "size": "wide",
@@ -122,19 +132,6 @@
           }
         },
         {
-          "id": "street-dusk",
-          "label": "Street hero · Dusk",
-          "size": "half",
-          "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 1437 300 300",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse street hero dusk"
-          }
-        },
-        {
           "id": "aerial",
           "label": "Aerial overview",
           "size": "half",
@@ -145,6 +142,19 @@
             "spriteWidth": 300,
             "spriteHeight": 3227,
             "alt": "Townhouse aerial overview"
+          }
+        },
+        {
+          "id": "street-dusk",
+          "label": "Street hero · Dusk",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 1437 300 300",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse street hero dusk"
           }
         },
         {
