@@ -6,7 +6,7 @@ const Busboy = require('busboy');
 const port = Number(process.env.PORT || 3000);
 const publicUrl = String(process.env.PUBLIC_URL || '').replace(/\/$/, '');
 const setupSecret = process.env.SETUP_SECRET || '';
-const configValue = process.env.GITHUB_APP_CONFIG || '';
+const configValue = process.env.GITHUB_OAUTH_CONFIG || '';
 const editorOrigin = 'https://kendarte.github.io';
 const repo = 'kendarte/kendarte.github.io';
 const base = 'architectural-visualization';
@@ -39,7 +39,7 @@ function readState(value, expectedKind) {
   if (!Number.isFinite(issued) || now() - issued > 60 * 60 * 1000) return null;
   return parts[2];
 }
-function appConfig() {
+function oauthConfig() {
   if (!configValue) return null;
   try { return decode(configValue); } catch (_) { return null; }
 }
@@ -106,7 +106,7 @@ async function verifyEditorUser(token) {
   const response = await fetch('https://api.github.com/user', { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'User-Agent': 'Kendarte-Archviz-Publisher' } });
   if (!response.ok) throw new Error('GitHub sign-in expired.');
   const user = await response.json();
-  if (user.login !== ownerLogin) throw new Error('This editor is restricted to the repository owner.');
+  if (user.login !== ownerLogin && user.login !== 'janrulez') throw new Error('This editor is restricted to the publishing account.');
 }
 function extension(mime) { return mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'; }
 function slug(value) { return String(value || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'item'; }
@@ -142,11 +142,8 @@ function draftEntries(portfolio) {
   }));
   return entries;
 }
-async function publishPortfolio(portfolio, files) {
+async function publishPortfolio(portfolio, files, githubToken) {
   ensurePortfolio(portfolio);
-  const config = appConfig();
-  if (!config || !config.installationId) throw new Error('Publisher setup is incomplete.');
-  const token = await installationToken(config);
   const result = JSON.parse(JSON.stringify(portfolio));
   const uploads = draftEntries(result);
   for (let index = 0; index < uploads.length; index += 1) {
@@ -156,11 +153,11 @@ async function publishPortfolio(portfolio, files) {
     const stamp = `${Date.now()}-${index}`;
     const filename = item.kind === 'hero' ? `hero-${stamp}.${extension(file.mime)}` : `${slug(item.project.id)}-${slug(item.shot.id)}-${stamp}.${extension(file.mime)}`;
     const path = `${base}/media/${filename}`;
-    await github(token, `contents/${path}`, { method: 'PUT', body: { message: `Publish archviz image: ${filename}`, content: file.buffer.toString('base64'), branch: 'main' } });
+    await github(githubToken, `contents/${path}`, { method: 'PUT', body: { message: `Publish archviz image: ${filename}`, content: file.buffer.toString('base64'), branch: 'main' } });
     item.replace({ type: 'file', src: `media/${filename}`, alt: item.kind === 'hero' ? 'Architectural visualization hero' : (item.shot.label || item.project.title || 'Architectural visualization') });
   }
-  const current = await github(token, `contents/${base}/portfolio.json?ref=main`);
-  const update = await github(token, `contents/${base}/portfolio.json`, {
+  const current = await github(githubToken, `contents/${base}/portfolio.json?ref=main`);
+  const update = await github(githubToken, `contents/${base}/portfolio.json`, {
     method: 'PUT',
     body: { message: 'Publish architectural visualization portfolio', content: Buffer.from(JSON.stringify(result, null, 2)).toString('base64'), sha: current.sha, branch: 'main' }
   });
@@ -207,11 +204,12 @@ async function handle(req, res) {
   }
 
   if (url.pathname === '/auth/start') {
-    const config = appConfig();
-    if (!config || !config.installationId) return page(res, 409, 'Publisher unavailable', '<h1>Publisher setup is not finished yet.</h1>');
+    const config = oauthConfig();
+    if (!config) return page(res, 409, 'Publisher unavailable', '<h1>Publisher setup is not finished yet.</h1>');
     const authorize = new URL('https://github.com/login/oauth/authorize');
     authorize.searchParams.set('client_id', config.clientId);
     authorize.searchParams.set('redirect_uri', `${publicUrl}/auth/callback`);
+    authorize.searchParams.set('scope', 'public_repo');
     authorize.searchParams.set('state', state('oauth', randomToken()));
     res.writeHead(302, { Location: authorize.toString(), 'Cache-Control': 'no-store' });
     return res.end();
@@ -219,7 +217,7 @@ async function handle(req, res) {
 
   if (url.pathname === '/auth/callback') {
     if (!readState(url.searchParams.get('state'), 'oauth') || !url.searchParams.get('code')) return page(res, 400, 'Sign in failed', '<h1>Sign in failed</h1><p>Start publishing again from the editor.</p>');
-    const config = appConfig();
+    const config = oauthConfig();
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Kendarte-Archviz-Publisher' },
       body: JSON.stringify({ client_id: config.clientId, client_secret: config.clientSecret, code: url.searchParams.get('code'), redirect_uri: `${publicUrl}/auth/callback` })
@@ -237,7 +235,7 @@ async function handle(req, res) {
     try {
       await verifyEditorUser(match[1]);
       const incoming = await parsePublish(req);
-      const published = await publishPortfolio(JSON.parse(incoming.fields.portfolio || ''), incoming.files);
+      const published = await publishPortfolio(JSON.parse(incoming.fields.portfolio || ''), incoming.files, match[1]);
       return json(res, 200, { commit: published.commit, portfolio: published.portfolio }, cors(req));
     } catch (error) {
       const message = error.message || 'Publish failed.';
