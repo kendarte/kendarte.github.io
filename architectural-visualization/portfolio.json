@@ -200,7 +200,7 @@
         {
           "id": "living-room",
           "label": "Living room hero",
-          "size": "wide",
+          "size": "half",
           "image": {
             "type": "file",
             "src": "media/interior-pre-sale-living-room-1789852744372-2.png",
