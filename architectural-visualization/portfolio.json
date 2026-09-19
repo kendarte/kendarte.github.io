@@ -111,7 +111,7 @@
         {
           "id": "shot-1789852228306",
           "label": "New shot",
-          "size": "half",
+          "size": "wide",
           "image": {
             "type": "file",
             "src": "media/townhouse-development-shot-1789852228306-1789852294101-0.png",
@@ -123,12 +123,9 @@
           "label": "Street hero · Day",
           "size": "wide",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 1137 300 300",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse street hero day"
+            "type": "file",
+            "src": "media/townhouse-development-street-day-1789852516032-0.png",
+            "alt": "Street hero · Day"
           }
         },
         {
@@ -136,12 +133,9 @@
           "label": "Aerial overview",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 1737 300 225",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse aerial overview"
+            "type": "file",
+            "src": "media/townhouse-development-aerial-1789852517375-1.png",
+            "alt": "Aerial overview"
           }
         },
         {
@@ -149,12 +143,9 @@
           "label": "Street hero · Dusk",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 1437 300 300",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse street hero dusk"
+            "type": "file",
+            "src": "media/townhouse-development-street-dusk-1789852519028-2.png",
+            "alt": "Street hero · Dusk"
           }
         },
         {
@@ -162,12 +153,9 @@
           "label": "Private rear patio",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 1962 300 300",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse private rear patio"
+            "type": "file",
+            "src": "media/townhouse-development-rear-patio-1789852520360-3.png",
+            "alt": "Private rear patio"
           }
         },
         {
@@ -175,12 +163,9 @@
           "label": "Carport / courtyard",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 2262 300 300",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Townhouse carport courtyard"
+            "type": "file",
+            "src": "media/townhouse-development-carport-1789852521778-4.png",
+            "alt": "Carport / courtyard"
           }
         }
       ]
