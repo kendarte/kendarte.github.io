@@ -11,17 +11,18 @@
 </head>
 <body>
 <header class="top">
-  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v6 · 2026-09-19</div></div>
+  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v7 · 2026-09-19</div></div>
   <div class="actions"><a class="btn" href="../?live=1" target="_blank">LIVE SITE</a><button class="btn" id="reloadBtn" type="button">Reload</button></div>
 </header>
 <div class="wrap">
   <div class="status" id="status">Loading…</div>
 
-  <div class="connect">
-    <input id="token" type="password" autocomplete="off" placeholder="GitHub token — only needed for PUBLISH TO SITE">
-    <button class="btn" id="connectBtn" type="button">Connect GitHub</button>
+  <div class="connect" style="grid-template-columns:1fr auto auto">
+    <input id="token" type="password" autocomplete="off" placeholder="GitHub token for publishing">
+    <a class="btn" target="_blank" href="https://github.com/settings/personal-access-tokens/new?name=Kendarte%20Archviz&description=Publishes%20the%20architectural%20visualization%20portfolio&target_name=kendarte&expires_in=366&contents=write">CREATE CORRECT TOKEN</a>
     <button class="btn" id="forgetBtn" type="button">Forget token</button>
   </div>
+  <div class="note" style="margin-top:8px">Token must target <b>kendarte</b>, include repository <b>kendarte.github.io</b>, and have <b>Contents: Read and write</b>.</div>
 
   <section class="panel">
     <h2>Site</h2>
@@ -63,9 +64,9 @@ var OWNER='kendarte';
 var REPO='kendarte.github.io';
 var BRANCH='main';
 var BASE='architectural-visualization';
-var DRAFT_KEY='archviz-editor-draft-v6';
+var DRAFT_KEY='archviz-editor-draft-v7';
 var TOKEN_KEY='archvizToken';
-var DB_NAME='archviz-editor-files-v6';
+var DB_NAME='archviz-editor-files-v7';
 var DB_STORE='files';
 
 var cfg=null;
@@ -446,120 +447,111 @@ async function uploadFile(file,path){
 
 
 async function requireToken(){
-  var t=token();
+  var t=$('#token').value.trim()||sessionStorage.getItem(TOKEN_KEY)||'';
   if(!t){
-    t=window.prompt('Paste the GitHub token for kendarte/kendarte.github.io\nRequired permission: Contents — Read and write');
-    if(!t)throw new Error('Publishing cancelled: no GitHub token was provided.');
+    t=window.prompt('Paste the GitHub token for kendarte/kendarte.github.io');
+    if(!t)throw new Error('No GitHub token provided.');
     t=t.trim();
-    sessionStorage.setItem(TOKEN_KEY,t);
   }
-  try{
-    await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
-    connected=true;
-    return t;
-  }catch(e){
-    sessionStorage.removeItem(TOKEN_KEY);
-    connected=false;
-    throw new Error('GitHub access failed. Check that the token is valid and has Contents: Read and write.\n'+e.message);
-  }
+  sessionStorage.setItem(TOKEN_KEY,t);
+  return t;
 }
 
-async function createBlobBase64(base64){
-  return gh('git/blobs',{
-    method:'POST',
-    body:JSON.stringify({content:base64,encoding:'base64'})
+function permissionError(e){
+  var m=e&&e.message?e.message:String(e);
+  if(m.indexOf('403')>=0){
+    return 'TOKEN DOES NOT HAVE WRITE ACCESS.\n\nCreate a token with:\nResource owner: kendarte\nRepository: kendarte.github.io\nContents: Read and write';
+  }
+  return m;
+}
+
+
+async function putNewFile(path,file){
+  var content=bytesToBase64(await file.arrayBuffer());
+  return gh('contents/'+path,{
+    method:'PUT',
+    body:JSON.stringify({
+      message:'Upload archviz image: '+file.name,
+      content:content,
+      branch:BRANCH
+    })
   });
 }
 
-async function createBlobText(text){
-  return gh('git/blobs',{
-    method:'POST',
-    body:JSON.stringify({content:text,encoding:'utf-8'})
+async function putTextFile(path,text,sha){
+  return gh('contents/'+path,{
+    method:'PUT',
+    body:JSON.stringify({
+      message:'Update architectural visualization portfolio',
+      content:textToBase64(text),
+      sha:sha,
+      branch:BRANCH
+    })
   });
 }
 
 async function publish(){
   var btn=$('#publishBtn');
+  var old=btn.textContent;
   btn.disabled=true;
-  var oldLabel=btn.textContent;
   btn.textContent='PUBLISHING…';
 
   try{
     await saveDraft(true);
     await requireToken();
 
-    setStatus('Preparing one GitHub commit…');
-    var ref=await gh('git/ref/heads/'+BRANCH);
-    var headSha=ref.object.sha;
-    var commit=await gh('git/commits/'+headSha);
-    var baseTree=commit.tree.sha;
+    // Read current portfolio.json. If this fails, token/repo access is wrong.
+    setStatus('Checking GitHub…');
+    var current=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
 
     var publishCfg=JSON.parse(JSON.stringify(cfg));
-    var treeEntries=[];
+    var uploads=[];
 
     if(publishCfg.heroImage&&publishCfg.heroImage.type==='draft'){
-      var heroFile=await dbGet(publishCfg.heroImage.key);
-      if(!heroFile)throw new Error('Hero draft file is missing.');
-      setStatus('Uploading hero image…');
-      var heroBlob=await createBlobBase64(bytesToBase64(await heroFile.arrayBuffer()));
-      var heroPath=BASE+'/media/hero-'+Date.now()+'.'+extOf(heroFile);
-      treeEntries.push({path:heroPath,mode:'100644',type:'blob',sha:heroBlob.sha});
-      publishCfg.heroImage={type:'file',src:heroPath.replace(BASE+'/',''),alt:'Architectural visualization hero'};
+      uploads.push({kind:'hero',image:publishCfg.heroImage});
     }
-
-    var imageCount=0;
-    for(var p0=0;p0<publishCfg.projects.length;p0++){
-      var proj0=publishCfg.projects[p0];
-      var shots0=proj0.shots||[];
-      for(var s0=0;s0<shots0.length;s0++){
-        if(shots0[s0].image&&shots0[s0].image.type==='draft')imageCount++;
-      }
-    }
-
-    var done=0;
     for(var pi=0;pi<publishCfg.projects.length;pi++){
       var p=publishCfg.projects[pi];
       var shots=p.shots||[];
       for(var si=0;si<shots.length;si++){
         var s=shots[si];
         if(s.image&&s.image.type==='draft'){
-          done++;
-          setStatus('Uploading image '+done+' / '+imageCount+'…');
-          var file=await dbGet(s.image.key);
-          if(!file)throw new Error('Missing draft file for '+(s.label||'shot')+'.');
-          var blob=await createBlobBase64(bytesToBase64(await file.arrayBuffer()));
-          var imgPath=BASE+'/media/'+slug(p.id)+'-'+slug(s.id)+'-'+Date.now()+'-'+done+'.'+extOf(file);
-          treeEntries.push({path:imgPath,mode:'100644',type:'blob',sha:blob.sha});
-          s.image={type:'file',src:imgPath.replace(BASE+'/',''),alt:s.label||p.title};
+          uploads.push({kind:'shot',project:p,shot:s,image:s.image});
         }
       }
     }
 
-    setStatus('Writing portfolio.json…');
-    var json=JSON.stringify(publishCfg,null,2);
-    var jsonBlob=await createBlobText(json);
-    treeEntries.push({path:BASE+'/portfolio.json',mode:'100644',type:'blob',sha:jsonBlob.sha});
+    for(var i=0;i<uploads.length;i++){
+      var item=uploads[i];
+      var file=await dbGet(item.image.key);
+      if(!file)throw new Error('Missing draft image: '+(item.image.name||item.image.key));
 
-    setStatus('Creating GitHub commit…');
-    var tree=await gh('git/trees',{
-      method:'POST',
-      body:JSON.stringify({base_tree:baseTree,tree:treeEntries})
-    });
+      setStatus('Uploading full-resolution image '+(i+1)+' / '+uploads.length+'…');
+      var path;
+      if(item.kind==='hero'){
+        path=BASE+'/media/hero-'+Date.now()+'-'+i+'.'+extOf(file);
+      }else{
+        path=BASE+'/media/'+slug(item.project.id)+'-'+slug(item.shot.id)+'-'+Date.now()+'-'+i+'.'+extOf(file);
+      }
 
-    var newCommit=await gh('git/commits',{
-      method:'POST',
-      body:JSON.stringify({
-        message:'Update architectural visualization portfolio',
-        tree:tree.sha,
-        parents:[headSha]
-      })
-    });
+      await putNewFile(path,file);
 
-    setStatus('Publishing main branch…');
-    await gh('git/refs/heads/'+BRANCH,{
-      method:'PATCH',
-      body:JSON.stringify({sha:newCommit.sha,force:false})
-    });
+      var finalImage={
+        type:'file',
+        src:path.replace(BASE+'/',''),
+        alt:item.kind==='hero'?'Architectural visualization hero':(item.shot.label||item.project.title)
+      };
+
+      if(item.kind==='hero') publishCfg.heroImage=finalImage;
+      else item.shot.image=finalImage;
+    }
+
+    setStatus('Updating portfolio.json…');
+    var result=await putTextFile(BASE+'/portfolio.json',JSON.stringify(publishCfg,null,2),current.sha);
+
+    if(!result || !result.commit || !result.commit.sha){
+      throw new Error('GitHub did not confirm the portfolio update.');
+    }
 
     cfg=publishCfg;
     clearDraft();
@@ -567,23 +559,21 @@ async function publish(){
     dirty=false;
     await render();
 
-    var now=new Date().toLocaleTimeString();
-    setStatus('PUBLISHED TO SITE · '+now+' · LIVE SITE UPDATED ON GITHUB.','ok');
+    var shortSha=result.commit.sha.slice(0,7);
+    setStatus('PUBLISHED TO SITE · commit '+shortSha,'ok');
     btn.textContent='PUBLISHED';
-    window.alert('PUBLISHED TO SITE\n\nGitHub commit: '+newCommit.sha.slice(0,7)+'\n\nOpen LIVE SITE and hard-refresh if the old page is cached.');
-    setTimeout(function(){btn.textContent=oldLabel;},1200);
+    window.alert('PUBLISHED TO SITE\n\nCommit: '+shortSha);
+    setTimeout(function(){btn.textContent=old;},1200);
   }catch(e){
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(cfg));}catch(_e){}
-    var message=e&&e.message?e.message:String(e);
+    var message=permissionError(e);
     setStatus('PUBLISH FAILED: '+message,'err');
     window.alert('PUBLISH FAILED\n\n'+message);
-    btn.textContent=oldLabel;
+    btn.textContent=old;
   }finally{
     btn.disabled=false;
   }
 }
 
-$('#connectBtn').addEventListener('click',function(){requireToken().then(function(){setStatus('GitHub connected.','ok');}).catch(function(e){setStatus(e.message,'err');window.alert(e.message);});});
 $('#forgetBtn').addEventListener('click',forgetToken);
 $('#reloadBtn').addEventListener('click',function(){
   if(!confirm('Reload LIVE portfolio and discard this browser draft?'))return;
