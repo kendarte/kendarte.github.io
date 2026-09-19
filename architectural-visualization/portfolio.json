@@ -1,0 +1,232 @@
+{
+  "site": {
+    "brand": "KENDARTE / ARCHVIZ",
+    "title": "Pre-Sale Architectural Visualization",
+    "heroTitle": "Turn unbuilt properties into sales-ready visuals.",
+    "heroText": "Exterior, interior and multi-unit visualization for home builders and residential developers.",
+    "ctaTitle": "Have an upcoming property to market?",
+    "ctaText": "Send the existing model or project reference and I can prepare a visualization proposal.",
+    "contactUrl": "https://kendarte.github.io/#contact"
+  },
+  "heroImage": {
+    "type": "sprite",
+    "src": "sprite.b64",
+    "viewBox": "0 912 300 225",
+    "spriteWidth": 300,
+    "spriteHeight": 3227,
+    "alt": "Architectural visualization dusk hero"
+  },
+  "services": [
+    "Exterior Visualization",
+    "Interior Visualization",
+    "Multi-unit Developments",
+    "Day / Dusk",
+    "Finish Options",
+    "360° Panorama",
+    "Interactive Walkthrough",
+    "VR Visualization"
+  ],
+  "workflow": [
+    {
+      "title": "Receive the project",
+      "text": "Existing 3D model, CAD export or agreed project reference."
+    },
+    {
+      "title": "Visual direction",
+      "text": "Camera, materials, lighting, environment and presentation style."
+    },
+    {
+      "title": "Review",
+      "text": "Finish and presentation adjustments before final output."
+    },
+    {
+      "title": "Delivery",
+      "text": "High-resolution marketing images, plus optional 360°, interactive or VR deliverables."
+    }
+  ],
+  "projects": [
+    {
+      "id": "ranch-house",
+      "number": "01",
+      "eyebrow": "Single-family · Portfolio study",
+      "title": "Ranch House",
+      "summary": "A base residential model transformed into a complete pre-sale exterior presentation: daylight, rear-living view and premium dusk hero.",
+      "shots": [
+        {
+          "id": "base-front",
+          "label": "Base render",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 225 300 237",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Ranch house base render"
+          }
+        },
+        {
+          "id": "final-front",
+          "label": "Final front",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 462 300 225",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Ranch house final front"
+          }
+        },
+        {
+          "id": "rear-view",
+          "label": "Rear living view",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 687 300 225",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Ranch house rear view"
+          }
+        },
+        {
+          "id": "dusk-hero",
+          "label": "Dusk hero",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 912 300 225",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Ranch house dusk hero"
+          }
+        }
+      ]
+    },
+    {
+      "id": "townhouse-development",
+      "number": "02",
+      "eyebrow": "Multi-unit · Portfolio study",
+      "title": "Townhouse Development",
+      "summary": "A three-unit residential development visualized as a sales story: street presence, evening mood, aerial layout and private amenity spaces.",
+      "shots": [
+        {
+          "id": "street-day",
+          "label": "Street hero · Day",
+          "size": "wide",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 1137 300 300",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse street hero day"
+          }
+        },
+        {
+          "id": "street-dusk",
+          "label": "Street hero · Dusk",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 1437 300 300",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse street hero dusk"
+          }
+        },
+        {
+          "id": "aerial",
+          "label": "Aerial overview",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 1737 300 225",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse aerial overview"
+          }
+        },
+        {
+          "id": "rear-patio",
+          "label": "Private rear patio",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 1962 300 300",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse private rear patio"
+          }
+        },
+        {
+          "id": "carport",
+          "label": "Carport / courtyard",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 2262 300 300",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Townhouse carport courtyard"
+          }
+        }
+      ]
+    },
+    {
+      "id": "interior-pre-sale",
+      "number": "03",
+      "eyebrow": "Interiors · Portfolio study",
+      "title": "Interior Pre-Sale Visualization",
+      "summary": "A dark realtime base developed into bright, livable interior marketing imagery that helps buyers understand atmosphere, scale and finish quality.",
+      "shots": [
+        {
+          "id": "living-room",
+          "label": "Living room hero",
+          "size": "wide",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 2562 300 220",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Living room visualization"
+          }
+        },
+        {
+          "id": "kitchen",
+          "label": "Kitchen",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 2782 300 225",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Kitchen visualization"
+          }
+        },
+        {
+          "id": "bedroom",
+          "label": "Primary bedroom",
+          "size": "half",
+          "image": {
+            "type": "sprite",
+            "src": "sprite.b64",
+            "viewBox": "0 3007 300 220",
+            "spriteWidth": 300,
+            "spriteHeight": 3227,
+            "alt": "Bedroom visualization"
+          }
+        }
+      ]
+    }
+  ]
+}
