@@ -27,9 +27,8 @@
 </main><footer class="footer"><span>KENDARTE · Pre-Sale Architectural Visualization</span><a href="#top">Back to top ↑</a></footer>
 <script>
 (async()=>{try{
- const names=["chunk_00.txt","chunk_01.txt","chunk_02.txt","chunk_03.txt","chunk_04.txt","chunk_05.txt"];
- const parts=await Promise.all(names.map(n=>fetch(n,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error(n);return r.text()})));
- const data="data:image/jpeg;base64,"+parts.join("").replace(/\s+/g,"");
+ const b64=await fetch("sprite.b64",{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error("sprite");return r.text()});
+ const data="data:image/jpeg;base64,"+b64.replace(/\s+/g,"");
  document.querySelectorAll("svg image").forEach(el=>{el.setAttribute("href",data);el.setAttributeNS("http://www.w3.org/1999/xlink","href",data)});
 }catch(e){console.error("Portfolio image load failed",e)}
 })();
