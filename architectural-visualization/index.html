@@ -24,6 +24,8 @@ const q=new URLSearchParams(location.search);if(q.get("admin")==="1")document.bo
 let spriteData=null;
 let renderedPortfolio='';
 let refreshBusy=false;
+let pendingPublished='';
+let pendingUntil=0;
 const LIVE_REVISION_KEY='archviz-live-revision-v1';
 async function loadSprite(src){
  if(spriteData)return spriteData;
@@ -75,7 +77,9 @@ async function refreshPortfolio(){
  try{
   const data=await loadPortfolio();
   const next=JSON.stringify(data);
+  if(pendingPublished&&Date.now()<pendingUntil&&next!==pendingPublished)return false;
   if(next!==renderedPortfolio){await render(data);return true;}
+  if(next===pendingPublished){pendingPublished='';pendingUntil=0;}
  }catch(e){console.warn(e);}
  finally{refreshBusy=false;}
  return false;
@@ -86,9 +90,24 @@ function refreshAfterPublish(){
   refreshPortfolio().then(function(changed){if(!changed&&Date.now()<until)setTimeout(retry,2000);});
  })();
 }
-window.addEventListener('storage',function(event){if(event.key===LIVE_REVISION_KEY)refreshAfterPublish();});
+function readPublishedPortfolio(value){
+ try{var published=JSON.parse(value||localStorage.getItem(LIVE_REVISION_KEY)||'null');return published&&published.portfolio?published:null;}catch(_e){return null;}
+}
+function showPublishedPortfolio(published){
+ if(!published)return;
+ pendingPublished=JSON.stringify(published.portfolio);
+ pendingUntil=Math.max(Date.now()+60000,Number(published.at||0)+5*60*1000);
+ render(published.portfolio).catch(function(error){console.warn(error);});
+}
+window.addEventListener('storage',function(event){
+ if(event.key!==LIVE_REVISION_KEY)return;
+ showPublishedPortfolio(readPublishedPortfolio(event.newValue));
+ refreshAfterPublish();
+});
 setInterval(refreshPortfolio,30000);
-render().catch(e=>{console.error(e);document.getElementById("app").innerHTML='<div class="loading">Portfolio failed to load.</div>'});
+var localPublish=readPublishedPortfolio();
+showPublishedPortfolio(localPublish);
+render(localPublish?localPublish.portfolio:null).catch(e=>{console.error(e);document.getElementById("app").innerHTML='<div class="loading">Portfolio failed to load.</div>'});
 </script>
 <footer class="footer"><span>KENDARTE · Pre-Sale Architectural Visualization</span><a href="#top">Back to top ↑</a></footer>
 </body></html>
