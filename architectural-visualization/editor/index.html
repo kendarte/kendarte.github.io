@@ -6,7 +6,7 @@
 <title>Kendarte Archviz Editor</title>
 <style>
 :root{--bg:#0b0d10;--panel:#14171b;--panel2:#1b1f24;--line:#343a40;--text:#f4f5f6;--muted:#9ca4aa;--accent:#d9c3a3;--ok:#98e49d;--bad:#ff8f8f}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}button,input,textarea,select{font:inherit}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 18px;background:rgba(11,13,16,.97);border-bottom:1px solid var(--line)}.brand{font-weight:800;letter-spacing:.12em}.actions,.row{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:#fff;padding:9px 12px;border-radius:7px;font-weight:700;cursor:pointer}.btn:hover{border-color:#6e7880}.btn.primary{background:var(--accent);border-color:var(--accent);color:#111}.btn.bad{color:var(--bad)}.btn:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1260px;margin:auto;padding:22px}.status{border:1px solid var(--line);background:#101318;padding:12px 14px;margin-bottom:16px;color:var(--muted);white-space:pre-wrap}.status.ok{color:var(--ok);border-color:#47784b}.status.err{color:var(--bad);border-color:#7d4141}.connect{display:grid;grid-template-columns:1fr auto auto;gap:8px}.connect input{width:100%;padding:10px;border:1px solid var(--line);background:#080a0c;color:#fff;border-radius:7px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:18px 0}.panel h2,.panel h3{margin:0 0 6px}.help,.note{color:var(--muted)}.help{margin:0 0 16px}.note{font-size:12px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field.full{grid-column:1/-1}.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px}.field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid var(--line);background:#090b0e;color:#fff;border-radius:6px}.field textarea{min-height:84px;resize:vertical}.hero-row{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}.preview{height:220px;border:1px solid var(--line);background:#080a0c;display:grid;place-items:center;overflow:hidden;border-radius:8px}.preview img{width:100%;height:100%;object-fit:contain;background:#fff}.legacy{padding:20px;text-align:center;color:var(--accent)}.projects{display:grid;gap:18px}.project{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}.project-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#0f1215;border-bottom:1px solid var(--line)}.project-title{display:flex;gap:10px;align-items:center}.project-title b{font-size:18px}.pill{padding:4px 7px;background:#252b31;border-radius:999px;color:#bcc4ca;font-size:11px}.project-body{padding:16px}.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.shot{border:1px solid var(--line);background:#0d1013;padding:12px;border-radius:9px}.shot-top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}.shot .preview{height:235px;margin-bottom:10px}.drop{border:1px dashed #58616a;color:var(--muted);padding:11px;text-align:center;border-radius:6px;margin-top:8px}.drop.over{border-color:var(--accent);color:var(--accent)}.queued{font-size:11px;color:var(--accent);margin-top:7px}.savebar{position:fixed;right:18px;bottom:18px;z-index:30;display:flex;gap:8px}.ver{font-size:11px;color:#687078;margin-top:5px}@media(max-width:820px){.connect,.fields,.hero-row,.shots{grid-template-columns:1fr}.field.full{grid-column:auto}.top{align-items:flex-start}.wrap{padding:14px}.preview,.shot .preview{height:200px}.savebar{left:14px;right:14px}.savebar .btn{flex:1;padding:13px}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Arial,sans-serif}button,input,textarea,select{font:inherit}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 18px;background:rgba(11,13,16,.97);border-bottom:1px solid var(--line)}.brand{font-weight:800;letter-spacing:.12em}.actions,.row{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:#fff;padding:9px 12px;border-radius:7px;font-weight:700;cursor:pointer}.btn:hover{border-color:#6e7880}.btn.primary{background:var(--accent);border-color:var(--accent);color:#111}.btn.bad{color:var(--bad)}.btn:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1260px;margin:auto;padding:22px}.status{border:1px solid var(--line);background:#101318;padding:12px 14px;margin-bottom:16px;color:var(--muted);white-space:pre-wrap}.status.ok{color:var(--ok);border-color:#47784b}.status.err{color:var(--bad);border-color:#7d4141}.connect{display:grid;grid-template-columns:1fr auto auto;gap:8px}.connect input{width:100%;padding:10px;border:1px solid var(--line);background:#080a0c;color:#fff;border-radius:7px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:18px 0}.panel h2,.panel h3{margin:0 0 6px}.help,.note{color:var(--muted)}.help{margin:0 0 16px}.note{font-size:12px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field.full{grid-column:1/-1}.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px}.field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid var(--line);background:#090b0e;color:#fff;border-radius:6px}.field textarea{min-height:84px;resize:vertical}.hero-row{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}.preview{height:220px;border:1px solid var(--line);background:#080a0c;display:grid;place-items:center;overflow:hidden;border-radius:8px}.preview img,.preview svg{width:100%;height:100%;display:block;object-fit:contain;background:#fff}.preview svg{background:#090b0e}.legacy{padding:20px;text-align:center;color:var(--accent)}.projects{display:grid;gap:18px}.project{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}.project-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#0f1215;border-bottom:1px solid var(--line)}.project-title{display:flex;gap:10px;align-items:center}.project-title b{font-size:18px}.pill{padding:4px 7px;background:#252b31;border-radius:999px;color:#bcc4ca;font-size:11px}.project-body{padding:16px}.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.shot{border:1px solid var(--line);background:#0d1013;padding:12px;border-radius:9px}.shot-top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}.shot .preview{height:235px;margin-bottom:10px}.drop{border:1px dashed #58616a;color:var(--muted);padding:11px;text-align:center;border-radius:6px;margin-top:8px}.drop.over{border-color:var(--accent);color:var(--accent)}.queued{font-size:11px;color:var(--accent);margin-top:7px}.savebar{position:fixed;right:18px;bottom:18px;z-index:30;display:flex;gap:8px}.ver{font-size:11px;color:#687078;margin-top:5px}@media(max-width:820px){.connect,.fields,.hero-row,.shots{grid-template-columns:1fr}.field.full{grid-column:auto}.top{align-items:flex-start}.wrap{padding:14px}.preview,.shot .preview{height:200px}.savebar{left:14px;right:14px}.savebar .btn{flex:1;padding:13px}}
 </style>
 </head>
 <body>
@@ -17,12 +17,13 @@
 <div class="wrap">
   <div class="status" id="status">Loading…</div>
 
-  <div class="connect" style="grid-template-columns:1fr auto auto">
-    <input id="token" type="password" autocomplete="off" placeholder="GitHub classic token (ghp_...)">
-    <a class="btn" target="_blank" href="https://github.com/settings/tokens/new?scopes=repo&description=Kendarte%20Archviz%20Publisher">CREATE WORKING TOKEN</a>
+  <div class="connect" style="grid-template-columns:1fr auto auto auto">
+    <input id="token" type="password" autocomplete="off" placeholder="GitHub token (github_pat_... or ghp_...)">
+    <button class="btn" id="testTokenBtn" type="button">TEST ACCESS</button>
+    <a class="btn" target="_blank" href="https://github.com/settings/personal-access-tokens/new">CREATE TOKEN</a>
     <button class="btn" id="forgetBtn" type="button">Forget token</button>
   </div>
-  <div class="note" style="margin-top:8px"><b>Use a Personal access token (classic)</b>. The button opens GitHub with <b>repo</b> already selected. Generate it, copy the <b>ghp_...</b> token, paste it here, then press <b>PUBLISH TO SITE</b>.</div>
+  <div class="note" style="margin-top:8px"><b>Fine-grained token:</b> Resource owner <b>kendarte</b> → only repository <b>kendarte.github.io</b> → <b>Contents: Read and write</b>. Paste it, use <b>TEST ACCESS</b>, then <b>PUBLISH TO SITE</b>. Classic <b>ghp_...</b> tokens also work.</div>
 
   <section class="panel">
     <h2>Site</h2>
@@ -73,6 +74,7 @@ var cfg=null;
 var connected=false;
 var dirty=false;
 var previewUrls=[];
+var legacySprite=null;
 
 function $(s){return document.querySelector(s);}
 function setStatus(text,type){var e=$('#status');e.textContent=text;e.className='status'+(type?' '+type:'');}
@@ -204,6 +206,21 @@ async function connectGitHub(){
   }
 }
 
+async function testGitHubAccess(){
+  var b=$('#testTokenBtn');
+  var old=b.textContent;
+  b.disabled=true;
+  b.textContent='TESTING…';
+  try{
+    await connectGitHub();
+  }catch(e){
+    setStatus('ACCESS FAILED: '+permissionError(e),'err');
+  }finally{
+    b.disabled=false;
+    b.textContent=old;
+  }
+}
+
 function forgetToken(){
   sessionStorage.removeItem(TOKEN_KEY);
   $('#token').value='';
@@ -224,6 +241,14 @@ function clearPreviewUrls(){
   previewUrls=[];
 }
 
+async function legacySpriteData(){
+  if(legacySprite)return legacySprite;
+  var r=await fetch('../sprite.b64',{cache:'force-cache'});
+  if(!r.ok)throw new Error('Could not load the existing portfolio previews.');
+  legacySprite='data:image/jpeg;base64,'+(await r.text()).replace(/\s+/g,'');
+  return legacySprite;
+}
+
 async function previewHTML(image,alt){
   if(!image)return '<div class="legacy">No image yet</div>';
   if(image.type==='draft'){
@@ -237,7 +262,11 @@ async function previewHTML(image,alt){
   if(image.type==='file'){
     return '<img src="../'+esc(image.src)+'?v='+Date.now()+'" alt="'+esc(alt||'')+'">';
   }
-  return '<div class="legacy">PIXELATED LEGACY IMAGE<br><span class="note">Replace this slot with the original full-resolution file.</span></div>';
+  var sprite=await legacySpriteData();
+  var viewBox=image.viewBox||'0 0 300 225';
+  var width=image.spriteWidth||300;
+  var height=image.spriteHeight||3227;
+  return '<svg viewBox="'+esc(viewBox)+'" preserveAspectRatio="xMidYMid meet" aria-label="'+esc(alt||'')+'"><image href="'+sprite+'" width="'+width+'" height="'+height+'"/></svg>';
 }
 
 async function loadPortfolio(forceRemote){
@@ -363,7 +392,7 @@ function validImage(file){return file&&/^image\/(jpeg|png|webp)$/.test(file.type
 
 async function replaceImage(project,shot,file){
   if(!validImage(file)){setStatus('Use JPG, PNG or WebP.','err');return;}
-  if(file.size>50*1024*1024){setStatus('Image is over 50 MB.','err');return;}
+  if(file.size>95*1024*1024){setStatus('Image is over GitHub\'s 95 MB API limit.','err');return;}
   var key=slotKey(project,shot);
   await dbPut(key,file);
   shot.image={type:'draft',key:key,name:file.name,alt:shot.label||project.title};
@@ -373,7 +402,7 @@ async function replaceImage(project,shot,file){
 
 async function replaceHero(file){
   if(!validImage(file)){setStatus('Use JPG, PNG or WebP.','err');return;}
-  if(file.size>50*1024*1024){setStatus('Image is over 50 MB.','err');return;}
+  if(file.size>95*1024*1024){setStatus('Image is over GitHub\'s 95 MB API limit.','err');return;}
   await dbPut('hero',file);
   cfg.heroImage={type:'draft',key:'hero',name:file.name,alt:'Architectural visualization hero'};
   mark('Hero replaced in draft.');
@@ -449,7 +478,7 @@ async function uploadFile(file,path){
 async function requireToken(){
   var t=$('#token').value.trim()||sessionStorage.getItem(TOKEN_KEY)||'';
   if(!t){
-    throw new Error('Paste the GitHub classic token (ghp_...) first.');
+    throw new Error('Paste the GitHub token first.');
   }
   sessionStorage.setItem(TOKEN_KEY,t);
   return t;
@@ -458,10 +487,10 @@ async function requireToken(){
 function permissionError(e){
   var m=e&&e.message?e.message:String(e);
   if(m.indexOf('403')>=0){
-    return 'THIS TOKEN CANNOT WRITE TO THE REPOSITORY.\n\nUse CREATE WORKING TOKEN, generate a classic ghp_ token with the repo scope, paste it here, then publish again.';
+    return 'THIS TOKEN CANNOT WRITE TO THE REPOSITORY.\n\nCreate a fine-grained token for kendarte / kendarte.github.io with Contents: Read and write, then test it again.';
   }
   if(m.indexOf('401')>=0){
-    return 'GITHUB REJECTED THE TOKEN. Generate a new classic ghp_ token with repo scope.';
+    return 'GITHUB REJECTED THE TOKEN. Create a new fine-grained token with access to kendarte / kendarte.github.io.';
   }
   return m;
 }
@@ -499,10 +528,7 @@ async function publish(){
 
   try{
     await saveDraft(true);
-    var t=await requireToken();
-    if(t.indexOf('github_pat_')===0){
-      throw new Error('The current token is fine-grained and is the one GitHub is rejecting. Use CREATE WORKING TOKEN and paste the classic ghp_ token instead.');
-    }
+    await requireToken();
 
     setStatus('Checking GitHub write access…');
     var current=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
@@ -578,6 +604,7 @@ async function publish(){
 }
 
 $('#forgetBtn').addEventListener('click',forgetToken);
+$('#testTokenBtn').addEventListener('click',testGitHubAccess);
 $('#reloadBtn').addEventListener('click',function(){
   if(!confirm('Reload LIVE portfolio and discard this browser draft?'))return;
   clearDraft();dbClear().then(function(){loadPortfolio(true).catch(function(e){setStatus(e.message,'err');});});
