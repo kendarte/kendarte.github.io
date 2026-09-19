@@ -25,4 +25,13 @@
 <div class="capstrip"><span>Static renders</span><b>+</b><span>360° panorama</span><b>+</b><span>Interactive walkthrough</span><b>+</b><span>VR visualization</span></div>
 <section class="cta"><div class="eyebrow">Start a project</div><h2>Have an upcoming property to market?</h2><p>Send the existing model or project reference and I can prepare a visualization proposal.</p><a class="btn" href="https://kendarte.github.io/#contact">Contact Kendarte ↗</a></section>
 </main><footer class="footer"><span>KENDARTE · Pre-Sale Architectural Visualization</span><a href="#top">Back to top ↑</a></footer>
+<script>
+(async()=>{try{
+ const names=["chunk_00.txt","chunk_01.txt","chunk_02.txt","chunk_03.txt","chunk_04.txt","chunk_05.txt"];
+ const parts=await Promise.all(names.map(n=>fetch(n,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error(n);return r.text()})));
+ const data="data:image/jpeg;base64,"+parts.join("").replace(/\s+/g,"");
+ document.querySelectorAll("svg image").forEach(el=>{el.setAttribute("href",data);el.setAttributeNS("http://www.w3.org/1999/xlink","href",data)});
+}catch(e){console.error("Portfolio image load failed",e)}
+})();
+</script>
 </body></html>
