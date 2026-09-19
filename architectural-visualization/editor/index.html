@@ -62,6 +62,7 @@ var cfg=null;
 var dirty=false;
 var previewUrls=[];
 var legacySprite=null;
+var LIVE_REVISION_KEY='archviz-live-revision-v1';
 
 function $(s){return document.querySelector(s);}
 function setStatus(text,type){var e=$('#status');e.textContent=text;e.className='status'+(type?' '+type:'');}
@@ -128,7 +129,14 @@ async function publish(){
     if(!response.ok)throw new Error(result.error||'Publish failed.');
     cfg=result.portfolio;
     clearDraft();await dbClear();dirty=false;await render();
+    if(result.unchanged){
+      setStatus('NO CHANGES TO PUBLISH.','ok');
+      btn.textContent='NO CHANGES';
+      setTimeout(function(){btn.textContent=old;},1400);
+      return;
+    }
     var commit=result.commit?result.commit.slice(0,7):'confirmed';
+    localStorage.setItem(LIVE_REVISION_KEY,commit+'.'+Date.now());
     setStatus('PUBLISHED TO SITE · '+commit,'ok');
     btn.textContent='PUBLISHED';
     setTimeout(function(){btn.textContent=old;},1400);
