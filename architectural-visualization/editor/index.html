@@ -147,7 +147,7 @@ async function publish(){
       return;
     }
     var commit=result.commit?result.commit.slice(0,7):'confirmed';
-    localStorage.setItem(LIVE_REVISION_KEY,commit+'.'+Date.now());
+    localStorage.setItem(LIVE_REVISION_KEY,JSON.stringify({commit:commit,portfolio:cfg,at:Date.now()}));
     setStatus('PUBLISHED TO SITE · '+commit,'ok');
     btn.textContent='PUBLISHED';
     setTimeout(function(){btn.textContent=old;},1400);
