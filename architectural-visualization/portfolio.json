@@ -51,15 +51,12 @@
       "shots": [
         {
           "id": "base-front",
-          "label": "Base render",
-          "size": "half",
+          "label": "Pre Visualizaction",
+          "size": "wide",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 225 300 237",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Ranch house base render"
+            "type": "file",
+            "src": "media/ranch-house-base-front-1789850679693-0.png",
+            "alt": "Pre Visualizaction"
           }
         },
         {
@@ -67,12 +64,9 @@
           "label": "Final front",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 462 300 225",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Ranch house final front"
+            "type": "file",
+            "src": "media/ranch-house-final-front-1789850680858-1.png",
+            "alt": "Final front"
           }
         },
         {
@@ -80,12 +74,9 @@
           "label": "Rear living view",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 687 300 225",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Ranch house rear view"
+            "type": "file",
+            "src": "media/ranch-house-rear-view-1789850683050-2.png",
+            "alt": "Rear living view"
           }
         },
         {
@@ -93,12 +84,19 @@
           "label": "Dusk hero",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 912 300 225",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Ranch house dusk hero"
+            "type": "file",
+            "src": "media/ranch-house-dusk-hero-1789850684332-3.png",
+            "alt": "Dusk hero"
+          }
+        },
+        {
+          "id": "shot-1789850539979",
+          "label": "Base render",
+          "size": "half",
+          "image": {
+            "type": "file",
+            "src": "media/ranch-house-shot-1789850539979-1789850685703-4.png",
+            "alt": "Base render"
           }
         }
       ]
