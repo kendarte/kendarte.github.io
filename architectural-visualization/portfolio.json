@@ -178,16 +178,13 @@
       "summary": "A dark realtime base developed into bright, livable interior marketing imagery that helps buyers understand atmosphere, scale and finish quality.",
       "shots": [
         {
-          "id": "living-room",
-          "label": "Living room hero",
+          "id": "shot-1789852556818",
+          "label": "Hero",
           "size": "wide",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 2562 300 220",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Living room visualization"
+            "type": "file",
+            "src": "media/interior-pre-sale-shot-1789852556818-1789852741430-0.png",
+            "alt": "Hero"
           }
         },
         {
@@ -195,12 +192,19 @@
           "label": "Kitchen",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 2782 300 225",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Kitchen visualization"
+            "type": "file",
+            "src": "media/interior-pre-sale-kitchen-1789852742865-1.png",
+            "alt": "Kitchen"
+          }
+        },
+        {
+          "id": "living-room",
+          "label": "Living room hero",
+          "size": "wide",
+          "image": {
+            "type": "file",
+            "src": "media/interior-pre-sale-living-room-1789852744372-2.png",
+            "alt": "Living room hero"
           }
         },
         {
@@ -208,12 +212,9 @@
           "label": "Primary bedroom",
           "size": "half",
           "image": {
-            "type": "sprite",
-            "src": "sprite.b64",
-            "viewBox": "0 3007 300 220",
-            "spriteWidth": 300,
-            "spriteHeight": 3227,
-            "alt": "Bedroom visualization"
+            "type": "file",
+            "src": "media/interior-pre-sale-bedroom-1789852746132-3.png",
+            "alt": "Primary bedroom"
           }
         }
       ]
