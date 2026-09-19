@@ -27,6 +27,7 @@ let refreshBusy=false;
 let pendingPublished='';
 let pendingUntil=0;
 const LIVE_REVISION_KEY='archviz-live-revision-v1';
+const RAW_MEDIA_BASE='https://raw.githubusercontent.com/kendarte/kendarte.github.io/main/architectural-visualization/';
 async function loadSprite(src){
  if(spriteData)return spriteData;
  const b64=await fetch(src,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error("sprite");return r.text()});
@@ -35,10 +36,15 @@ async function loadSprite(src){
 }
 async function mediaEl(image, hero=false){
  if(!image)return '<div class="shot"></div>';
- if(image.type==="file") return '<img loading="'+(hero?'eager':'lazy')+'" src="'+esc(image.src)+'" alt="'+esc(image.alt||"")+'">';
+ if(image.type==="file") return '<img loading="'+(hero?'eager':'lazy')+'" src="'+esc(publishedImageUrl(image.src))+'" alt="'+esc(image.alt||"")+'">';
  const data=await loadSprite(image.src||"sprite.b64");
  const vb=image.viewBox||"0 0 300 225";
  return '<svg viewBox="'+vb+'" preserveAspectRatio="xMidYMid slice" aria-label="'+esc(image.alt||"")+'"><image href="'+data+'" width="'+(image.spriteWidth||300)+'" height="'+(image.spriteHeight||3227)+'"/></svg>';
+}
+function publishedImageUrl(src){
+ const value=String(src||'');
+ if(/^https?:\/\//i.test(value))return value;
+ return value.startsWith('media/')?RAW_MEDIA_BASE+value:value;
 }
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 async function loadPortfolio(){
