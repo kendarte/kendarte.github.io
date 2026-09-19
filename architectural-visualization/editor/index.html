@@ -11,19 +11,11 @@
 </head>
 <body>
 <header class="top">
-  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v8 · 2026-09-19</div></div>
+  <div><div class="brand">KENDARTE / ARCHVIZ EDITOR</div><div class="ver">WEB EDITOR v9 · 2026-09-19</div></div>
   <div class="actions"><a class="btn" href="../?live=1" target="_blank">LIVE SITE</a><button class="btn" id="reloadBtn" type="button">Reload</button></div>
 </header>
 <div class="wrap">
   <div class="status" id="status">Loading…</div>
-
-  <div class="connect" style="grid-template-columns:1fr auto auto auto">
-    <input id="token" type="password" autocomplete="off" placeholder="GitHub token (github_pat_... or ghp_...)">
-    <button class="btn" id="testTokenBtn" type="button">TEST ACCESS</button>
-    <a class="btn" target="_blank" href="https://github.com/settings/personal-access-tokens/new">CREATE TOKEN</a>
-    <button class="btn" id="forgetBtn" type="button">Forget token</button>
-  </div>
-  <div class="note" style="margin-top:8px"><b>Fine-grained token:</b> Resource owner <b>kendarte</b> → only repository <b>kendarte.github.io</b> → <b>Contents: Read and write</b>. Paste it, use <b>TEST ACCESS</b>, then <b>PUBLISH TO SITE</b>. Classic <b>ghp_...</b> tokens also work.</div>
 
   <section class="panel">
     <h2>Site</h2>
@@ -54,24 +46,17 @@
 
 <div class="savebar">
   <button class="btn" id="saveDraftBtn" type="button">SAVE DRAFT</button>
-  <button class="btn primary" id="publishBtn" type="button">PUBLISH TO SITE</button>
 </div>
 
 <script>
 (function(){
 'use strict';
 
-var OWNER='kendarte';
-var REPO='kendarte.github.io';
-var BRANCH='main';
-var BASE='architectural-visualization';
 var DRAFT_KEY='archviz-editor-draft-v8';
-var TOKEN_KEY='archvizToken';
 var DB_NAME='archviz-editor-files-v8';
 var DB_STORE='files';
 
 var cfg=null;
-var connected=false;
 var dirty=false;
 var previewUrls=[];
 var legacySprite=null;
@@ -79,9 +64,6 @@ var legacySprite=null;
 function $(s){return document.querySelector(s);}
 function setStatus(text,type){var e=$('#status');e.textContent=text;e.className='status'+(type?' '+type:'');}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
-function slug(v){return String(v||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'item';}
-function token(){return sessionStorage.getItem(TOKEN_KEY)||$('#token').value.trim();}
-function clone(v){return JSON.parse(JSON.stringify(v));}
 
 async function saveDraft(silent){
   if(!cfg)throw new Error('Portfolio is not loaded yet.');
@@ -165,69 +147,6 @@ async function dbClear(){
   });
 }
 
-function ghHeaders(){
-  var t=token();
-  if(!t)throw new Error('Paste a GitHub token and click Connect GitHub.');
-  return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28'};
-}
-
-async function gh(path,opts){
-  opts=opts||{};
-  var r=await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/'+path,{
-    method:opts.method||'GET',
-    headers:Object.assign({},ghHeaders(),opts.headers||{}),
-    body:opts.body
-  });
-  if(!r.ok){
-    var m='GitHub '+r.status;
-    try{var j=await r.json();if(j&&j.message)m+=': '+j.message;}catch(_e){}
-    throw new Error(m);
-  }
-  if(r.status===204)return null;
-  return r.json();
-}
-
-async function connectGitHub(){
-  var typed=$('#token').value.trim();
-  var previous=sessionStorage.getItem(TOKEN_KEY)||'';
-  var t=typed||previous;
-  if(!t)throw new Error('Paste the GitHub token first.');
-  sessionStorage.setItem(TOKEN_KEY,t);
-  try{
-    await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
-    connected=true;
-    $('#token').value='';
-    setStatus('GitHub connected. Publish is ready.','ok');
-    return true;
-  }catch(e){
-    connected=false;
-    if(typed)sessionStorage.removeItem(TOKEN_KEY);
-    throw e;
-  }
-}
-
-async function testGitHubAccess(){
-  var b=$('#testTokenBtn');
-  var old=b.textContent;
-  b.disabled=true;
-  b.textContent='TESTING…';
-  try{
-    await connectGitHub();
-  }catch(e){
-    setStatus('ACCESS FAILED: '+permissionError(e),'err');
-  }finally{
-    b.disabled=false;
-    b.textContent=old;
-  }
-}
-
-function forgetToken(){
-  sessionStorage.removeItem(TOKEN_KEY);
-  $('#token').value='';
-  connected=false;
-  setStatus('GitHub token forgotten. Editor still works and keeps drafts.','ok');
-}
-
 function field(obj,key,label,full,area){
   var w=document.createElement('div');w.className='field'+(full?' full':'');
   var l=document.createElement('label');l.textContent=label;
@@ -274,7 +193,7 @@ async function loadPortfolio(forceRemote){
   var draft=!forceRemote?localStorage.getItem(DRAFT_KEY):null;
   if(draft){
     cfg=JSON.parse(draft);
-    setStatus('DRAFT LOADED — this is NOT on the live site yet. Publish must succeed before the public page changes.');
+    setStatus('DRAFT LOADED.');
   }else{
     var r=await fetch('../portfolio.json?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('Could not load portfolio.json');
@@ -392,7 +311,7 @@ function validImage(file){return file&&/^image\/(jpeg|png|webp)$/.test(file.type
 
 async function replaceImage(project,shot,file){
   if(!validImage(file)){setStatus('Use JPG, PNG or WebP.','err');return;}
-  if(file.size>95*1024*1024){setStatus('Image is over GitHub\'s 95 MB API limit.','err');return;}
+  if(file.size>95*1024*1024){setStatus('Image is over the 95 MB limit.','err');return;}
   var key=slotKey(project,shot);
   await dbPut(key,file);
   shot.image={type:'draft',key:key,name:file.name,alt:shot.label||project.title};
@@ -402,7 +321,7 @@ async function replaceImage(project,shot,file){
 
 async function replaceHero(file){
   if(!validImage(file)){setStatus('Use JPG, PNG or WebP.','err');return;}
-  if(file.size>95*1024*1024){setStatus('Image is over GitHub\'s 95 MB API limit.','err');return;}
+  if(file.size>95*1024*1024){setStatus('Image is over the 95 MB limit.','err');return;}
   await dbPut('hero',file);
   cfg.heroImage={type:'draft',key:'hero',name:file.name,alt:'Architectural visualization hero'};
   mark('Hero replaced in draft.');
@@ -449,168 +368,11 @@ async function moveShot(project,i,d){
   mark('Shot order changed. Draft saved.');await renderProjects();
 }
 
-function bytesToBase64(buf){
-  var bytes=new Uint8Array(buf),binary='',chunk=0x8000;
-  for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
-  return btoa(binary);
-}
-
-function textToBase64(str){
-  return bytesToBase64(new TextEncoder().encode(str).buffer);
-}
-
-function extOf(file){
-  var n=(file.name||'').toLowerCase();
-  if(n.endsWith('.png'))return 'png';
-  if(n.endsWith('.webp'))return 'webp';
-  return 'jpg';
-}
-
-async function uploadFile(file,path){
-  var content=bytesToBase64(await file.arrayBuffer());
-  await gh('contents/'+path,{
-    method:'PUT',
-    body:JSON.stringify({message:'Upload archviz image: '+file.name,content:content,branch:BRANCH})
-  });
-}
-
-
-async function requireToken(){
-  var t=$('#token').value.trim()||sessionStorage.getItem(TOKEN_KEY)||'';
-  if(!t){
-    throw new Error('Paste the GitHub token first.');
-  }
-  sessionStorage.setItem(TOKEN_KEY,t);
-  return t;
-}
-
-function permissionError(e){
-  var m=e&&e.message?e.message:String(e);
-  if(m.indexOf('403')>=0){
-    return 'THIS TOKEN CANNOT WRITE TO THE REPOSITORY.\n\nCreate a fine-grained token for kendarte / kendarte.github.io with Contents: Read and write, then test it again.';
-  }
-  if(m.indexOf('401')>=0){
-    return 'GITHUB REJECTED THE TOKEN. Create a new fine-grained token with access to kendarte / kendarte.github.io.';
-  }
-  return m;
-}
-
-
-async function putNewFile(path,file){
-  var content=bytesToBase64(await file.arrayBuffer());
-  return gh('contents/'+path,{
-    method:'PUT',
-    body:JSON.stringify({
-      message:'Upload archviz image: '+file.name,
-      content:content,
-      branch:BRANCH
-    })
-  });
-}
-
-async function putTextFile(path,text,sha){
-  return gh('contents/'+path,{
-    method:'PUT',
-    body:JSON.stringify({
-      message:'Update architectural visualization portfolio',
-      content:textToBase64(text),
-      sha:sha,
-      branch:BRANCH
-    })
-  });
-}
-
-async function publish(){
-  var btn=$('#publishBtn');
-  var old=btn.textContent;
-  btn.disabled=true;
-  btn.textContent='PUBLISHING…';
-
-  try{
-    await saveDraft(true);
-    await requireToken();
-
-    setStatus('Checking GitHub write access…');
-    var current=await gh('contents/'+BASE+'/portfolio.json?ref='+BRANCH);
-
-    var publishCfg=JSON.parse(JSON.stringify(cfg));
-    var uploads=[];
-
-    if(publishCfg.heroImage&&publishCfg.heroImage.type==='draft'){
-      uploads.push({kind:'hero',image:publishCfg.heroImage});
-    }
-    for(var pi=0;pi<publishCfg.projects.length;pi++){
-      var p=publishCfg.projects[pi];
-      var shots=p.shots||[];
-      for(var si=0;si<shots.length;si++){
-        var s=shots[si];
-        if(s.image&&s.image.type==='draft'){
-          uploads.push({kind:'shot',project:p,shot:s,image:s.image});
-        }
-      }
-    }
-
-    for(var i=0;i<uploads.length;i++){
-      var item=uploads[i];
-      var file=await dbGet(item.image.key);
-      if(!file)throw new Error('Missing draft image: '+(item.image.name||item.image.key));
-
-      setStatus('Uploading full-resolution image '+(i+1)+' / '+uploads.length+'…');
-      var path;
-      if(item.kind==='hero'){
-        path=BASE+'/media/hero-'+Date.now()+'-'+i+'.'+extOf(file);
-      }else{
-        path=BASE+'/media/'+slug(item.project.id)+'-'+slug(item.shot.id)+'-'+Date.now()+'-'+i+'.'+extOf(file);
-      }
-
-      await putNewFile(path,file);
-
-      var finalImage={
-        type:'file',
-        src:path.replace(BASE+'/',''),
-        alt:item.kind==='hero'?'Architectural visualization hero':(item.shot.label||item.project.title)
-      };
-
-      if(item.kind==='hero') publishCfg.heroImage=finalImage;
-      else item.shot.image=finalImage;
-    }
-
-    setStatus('Updating portfolio.json…');
-    var result=await putTextFile(BASE+'/portfolio.json',JSON.stringify(publishCfg,null,2),current.sha);
-
-    if(!result || !result.commit || !result.commit.sha){
-      throw new Error('GitHub did not confirm the portfolio update.');
-    }
-
-    cfg=publishCfg;
-    clearDraft();
-    await dbClear();
-    dirty=false;
-    await render();
-
-    var shortSha=result.commit.sha.slice(0,7);
-    setStatus('PUBLISHED TO SITE · commit '+shortSha,'ok');
-    btn.textContent='PUBLISHED';
-    window.alert('PUBLISHED TO SITE\n\nCommit: '+shortSha+'\n\nThe live page will update from GitHub Pages.');
-    setTimeout(function(){btn.textContent=old;},1200);
-  }catch(e){
-    var message=permissionError(e);
-    setStatus('PUBLISH FAILED: '+message,'err');
-    window.alert('PUBLISH FAILED\n\n'+message);
-    btn.textContent=old;
-  }finally{
-    btn.disabled=false;
-  }
-}
-
-$('#forgetBtn').addEventListener('click',forgetToken);
-$('#testTokenBtn').addEventListener('click',testGitHubAccess);
 $('#reloadBtn').addEventListener('click',function(){
   if(!confirm('Reload LIVE portfolio and discard this browser draft?'))return;
   clearDraft();dbClear().then(function(){loadPortfolio(true).catch(function(e){setStatus(e.message,'err');});});
 });
 $('#saveDraftBtn').addEventListener('click',function(){saveDraft(false).catch(function(e){setStatus('SAVE FAILED: '+e.message,'err');});});
-$('#publishBtn').addEventListener('click',publish);
 $('#addProjectBtn').addEventListener('click',addProject);
 $('#heroReplaceBtn').addEventListener('click',function(){$('#heroFile').click();});
 $('#heroFile').addEventListener('change',function(){if(this.files&&this.files[0])replaceHero(this.files[0]);});
@@ -621,7 +383,6 @@ window.addEventListener('beforeunload',function(e){
 
 window.addEventListener('error',function(e){setStatus('EDITOR ERROR: '+(e.message||'Unknown error'),'err');});
 window.addEventListener('unhandledrejection',function(e){var m=e.reason&&e.reason.message?e.reason.message:String(e.reason||'Unknown error');setStatus('EDITOR ERROR: '+m,'err');});
-connected=false;
 loadPortfolio(false).catch(function(e){setStatus('LOAD FAILED: '+e.message,'err');});
 })();
 </script>
