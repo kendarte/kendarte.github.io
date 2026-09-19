@@ -157,11 +157,16 @@ async function publishPortfolio(portfolio, files, githubToken) {
     item.replace({ type: 'file', src: `media/${filename}`, alt: item.kind === 'hero' ? 'Architectural visualization hero' : (item.shot.label || item.project.title || 'Architectural visualization') });
   }
   const current = await github(githubToken, `contents/${base}/portfolio.json?ref=main`);
+  let existing = null;
+  try { existing = JSON.parse(Buffer.from(current.content || '', 'base64').toString('utf8')); } catch (_) {}
+  if (existing && JSON.stringify(existing) === JSON.stringify(result)) {
+    return { portfolio: result, commit: null, unchanged: true };
+  }
   const update = await github(githubToken, `contents/${base}/portfolio.json`, {
     method: 'PUT',
     body: { message: 'Publish architectural visualization portfolio', content: Buffer.from(JSON.stringify(result, null, 2)).toString('base64'), sha: current.sha, branch: 'main' }
   });
-  return { portfolio: result, commit: update && update.commit ? update.commit.sha : null };
+  return { portfolio: result, commit: update && update.commit ? update.commit.sha : null, unchanged: false };
 }
 async function handle(req, res) {
   const url = new URL(req.url, publicUrl);
@@ -236,7 +241,7 @@ async function handle(req, res) {
       await verifyEditorUser(match[1]);
       const incoming = await parsePublish(req);
       const published = await publishPortfolio(JSON.parse(incoming.fields.portfolio || ''), incoming.files, match[1]);
-      return json(res, 200, { commit: published.commit, portfolio: published.portfolio }, cors(req));
+      return json(res, 200, { commit: published.commit, unchanged: published.unchanged, portfolio: published.portfolio }, cors(req));
     } catch (error) {
       const message = error.message || 'Publish failed.';
       return json(res, /sign-in|restricted/i.test(message) ? 401 : 400, { error: message }, cors(req));
