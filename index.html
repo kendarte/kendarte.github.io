@@ -1,79 +1,227 @@
 <!doctype html>
+<!--
+  Story by HTML5 UP | html5up.net | @ajlkn
+  Adapted for Kendall Angulo Jhonson's Unity programming portfolio.
+  Original template under CC BY 3.0: https://html5up.net/license
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kendall Angulo — Unity Gameplay Developer</title>
-  <meta name="description" content="Unity/C# gameplay developer. Taek-Won-Cop and Horse Racer: working builds, gameplay footage and C# source samples.">
-  <link rel="canonical" href="https://kendarte.github.io/">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Kendall Angulo Jhonson: Unity/C# gameplay programmer. Combat systems, deterministic simulation, first-person gameplay, cinematic tools and public prototypes with footage and source examples.">
+  <meta name="theme-color" content="#10121c">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Kendall Angulo — Unity Gameplay Developer">
-  <meta property="og:description" content="Unity/C# gameplay systems: playable Taek-Won-Cop and Horse Racer demos, technical case studies and code samples.">
-  <meta property="og:url" content="https://kendarte.github.io/">
+  <meta property="og:title" content="Kendall Angulo Jhonson | Unity Gameplay Programmer">
+  <meta property="og:description" content="Unity/C# gameplay projects: Taek-Won-Cop, Horse Racer, Euclid Wars, and documented systems.">
   <meta property="og:image" content="https://kendarte.github.io/media/taek/taekwoncop-turbo-cover.webp">
+  <title>Kendall Angulo Jhonson — Unity Gameplay Programmer</title>
   <link rel="icon" href="/favicon.svg">
-  <link rel="stylesheet" href="/styles.css?v=20261010a">
+  <link rel="stylesheet" href="/story-template/assets/css/main.css">
+  <link rel="stylesheet" href="/story-template/assets/css/story-overrides.css?v=20261010-story">
+  <noscript><link rel="stylesheet" href="/story-template/assets/css/noscript.css"></noscript>
 </head>
-<body class="home-unity">
-  <a class="skip-link" href="#main-content">Skip to content</a>
-  <header class="site-header">
-    <a class="brand" href="/" aria-label="Kendall Angulo, home">
-      <span class="brand-mark">KA</span>
-      <span class="brand-copy"><strong>Kendall Angulo</strong><small>Gameplay &amp; systems</small></span>
-    </a>
-    <nav aria-label="Primary navigation">
-      <a href="#work">Unity Projects</a><a href="#capabilities">Skills</a><a href="#about">About</a><a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV</a><a href="#contact">Contact</a>
-    </nav>
-    <a class="header-cta" href="mailto:Kendarte@gmail.com">Start a conversation</a>
-  </header>
+<body class="is-preload">
+  <nav class="portfolio-nav" aria-label="Main navigation">
+    <a href="#home" class="portfolio-logo">KENDALL ANGULO <span>JHONSON</span></a>
+    <div class="portfolio-links">
+      <a href="#work">GAMEPLAY</a>
+      <a href="#systems">C# SYSTEMS</a>
+      <a href="#research">R&amp;D</a>
+      <a href="#experience">EXPERIENCE</a>
+      <a href="/Kendall_Angulo_Jhonson_CV_2026.pdf">CV ↗</a>
+      <a class="contact-nav" href="mailto:kendarte@gmail.com">CONTACT ↗</a>
+    </div>
+  </nav>
 
-  <main id="main-content">
-    <section class="hero section-shell">
-      <div class="hero-copy">
-        <p class="eyebrow"><span></span> Unity gameplay &amp; systems developer</p>
-        <h1>Unity gameplay systems. <em>Working builds and code.</em></h1>
-        <p class="hero-lede">Gameplay and combat systems, cinematic cameras, state coordination and deterministic simulation in Unity/C#. Review two playable projects, technical breakdowns and selected code samples.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#work">Inspect Unity projects <span>↘</span></a>
-          <a class="button button-secondary" href="/Kendall_Angulo_Jhonson_CV_2026.pdf">Download CV <span>↓</span></a>
-          <a class="button button-secondary" href="https://github.com/kendarte">C# examples <span>↗</span></a>
+  <main id="home">
+    <section class="portfolio-hero" aria-label="Gameplay programmer portfolio introduction">
+      <div class="hero-shell">
+        <div class="hero-text">
+          <p class="hero-kicker">UNITY / C# / REMOTE WORK</p>
+          <h1>GAMEPLAY<br><em>PROGRAMMER.</em></h1>
+          <p class="hero-name">KENDALL ANGULO JHONSON</p>
+          <p class="hero-description">Combat systems, cameras, simulation and tools. Watch working gameplay and inspect the C# code.</p>
+          <div class="hero-actions">
+            <a class="button primary large" href="#work">EXPLORE THE WORK ↓</a>
+            <a class="button large ghost" href="https://github.com/kendarte">GITHUB ↗</a>
+          </div>
+          <p class="hero-fact">Unity gameplay development · Technical integration · Prototyping</p>
         </div>
-        <div class="availability"><span class="pulse"></span><span>Open to remote roles and contract work</span><span class="availability-separator">Costa Rica · UTC−6</span></div>
+        <div class="hero-gallery" aria-label="Selected game projects">
+          <a class="hero-visual hero-visual-main" href="#taek">
+            <img src="/media/taek/taekwoncop-turbo-cover.webp" alt="Taek-Won-Cop promotional artwork with Jake Turbo">
+            <span><b>01 / TAEK-WON-COP</b><small>Combat &amp; cinematic integration</small></span>
+          </a>
+          <a class="hero-visual hero-visual-side" href="#horse">
+            <img src="/media/horse/horse-racer-hero.jpg" alt="Horse Racer running in a Unity simulation">
+            <span><b>02 / HORSE RACER</b><small>Simulation &amp; cameras</small></span>
+          </a>
+          <a class="hero-visual hero-visual-side" href="#euclid">
+            <img src="/media/euclid/trailer-poster.jpg" alt="Euclid Wars first-person narrative game artwork">
+            <span><b>03 / EUCLID WARS</b><small>First-person gameplay</small></span>
+          </a>
+        </div>
+      </div>
+      <div class="hero-baseline">
+        <span>03 UNITY CASE STUDIES</span>
+        <span>03 OPEN C# SYSTEM SAMPLES</span>
+        <span>EXPERIMENTAL SYSTEMS</span>
+        <a href="#work">SCROLL FOR WORK ↓</a>
       </div>
     </section>
 
-    <section class="work-section section-shell" id="work">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Proof of work</p><h2>Playable demos and source code.</h2></div><p>Two featured Unity projects with video, runnable PC builds and C# examples. Public repositories contain code excerpts, not self-contained Unity projects.</p></div>
-      <div class="project-list">
-        <article class="project-card project-featured">
-          <a class="project-visual" href="/projects/taek-won-cop/"><img src="/media/taek/taekwoncop-turbo-cover.webp" alt="TAEKWONCOP TURBO key art"><span class="project-index">01</span><span class="project-status">Playable prototype</span></a>
-          <div class="project-content"><div class="project-meta"><span>Third-person action RPG</span><span>Unity / C#</span></div><h3>Taek-Won-Cop</h3><p>Third-person Unity/C# action RPG integrating combat, targeting, skills, defense, status effects and cinematic direction. Review the gameplay build and the C# source excerpts.</p><ul class="tag-list"><li>C# combat</li><li>Targeting &amp; status</li><li>Cinematic direction</li><li>Framework integration</li></ul><a class="text-link" href="/projects/taek-won-cop/">Gameplay &amp; case study <span>↗</span></a><a class="text-link" href="https://github.com/kendarte/taekwoncop-systems">Review C# systems <span>↗</span></a><a class="text-link" href="https://drive.google.com/file/d/1RwXPkX55c5C6JGze691Y-3I1HfIWlR4r/view?usp=drivesdk">Download PC build <span>↗</span></a></div>
+    <section id="work" class="section-intro">
+      <p class="kicker">SELECTED UNITY DEVELOPMENT / PROOF OF WORK</p>
+      <h2>Unity projects.<br><em>Footage and code.</em></h2>
+      <p>Explore recorded gameplay, available PC demos, technical case studies and public C# source samples.</p>
+    </section>
+
+    <div id="wrapper" class="divided">
+      <section id="taek" class="spotlight style1 orient-right content-align-left image-position-center project-spotlight">
+        <div class="content">
+          <p class="kicker">01 / THIRD-PERSON ACTION RPG · UNITY / C#</p>
+          <h2>Taek-Won-Cop</h2>
+          <p>Gameplay integration spanning target selection, context-based attacks, defense, status effects, animation hand-offs and in-engine cinematic camera control.</p>
+          <p class="project-evidence"><b>Gameplay:</b> recorded combat and a playable PC prototype. <b>C# systems:</b> The Director and Clash Snap source examples.</p>
+          <div class="project-actions">
+            <a class="button primary" href="/projects/taek-won-cop/">CASE STUDY ↗</a>
+            <a class="button" href="https://github.com/kendarte/taekwoncop-systems">C# SOURCE ↗</a>
+            <a class="button" href="https://drive.google.com/file/d/1RwXPkX55c5C6JGze691Y-3I1HfIWlR4r/view?usp=drivesdk">PC BUILD ↗</a>
+          </div>
+        </div>
+        <div class="image video-panel">
+          <video controls playsinline preload="metadata" poster="/media/taek/combat-poster.jpg" aria-label="Taek-Won-Cop playable combat">
+            <source src="/media/taek/combat.mp4" type="video/mp4">
+          </video>
+          <span class="panel-label">IN-ENGINE FOOTAGE / COMBAT</span>
+        </div>
+      </section>
+
+      <section id="horse" class="spotlight style1 orient-left content-align-left image-position-center project-spotlight">
+        <div class="content">
+          <p class="kicker">02 / DETERMINISTIC SIMULATION · UNITY / C#</p>
+          <h2>Horse Racer</h2>
+          <p>A reusable race system for 10 horses, 45 matchups and 7 finish conditions: 315 configurable results. The code coordinates movement, timing, race cameras and capture automation.</p>
+          <p class="project-evidence"><b>Gameplay:</b> a recorded race and a downloadable Windows demo. <b>C# systems:</b> race orchestration, camera direction and editor tooling.</p>
+          <div class="project-actions">
+            <a class="button primary" href="https://shampooacade.itch.io/horse-racer">PLAY DEMO ↗</a>
+            <a class="button" href="/projects/horse-racer/">CASE STUDY ↗</a>
+            <a class="button" href="https://github.com/kendarte/horse-racer-simulation">C# SOURCE ↗</a>
+          </div>
+        </div>
+        <div class="image video-panel">
+          <video controls playsinline preload="metadata" poster="/media/horse/horse-racer-hero.jpg" aria-label="Horse Racer Unity simulation">
+            <source src="/media/horse/horse-racer.mp4" type="video/mp4">
+          </video>
+          <span class="panel-label">IN-ENGINE FOOTAGE / SIMULATION</span>
+        </div>
+      </section>
+
+      <section id="euclid" class="spotlight style1 orient-right content-align-left image-position-center project-spotlight">
+        <div class="content">
+          <p class="kicker">03 / FIRST-PERSON NARRATIVE · UNITY / C#</p>
+          <h2>Euclid Wars</h2>
+          <p>First-person exploration connected to environmental interaction, objective feedback, branching dialogue presentation and multi-scene progression.</p>
+          <p class="project-evidence"><b>Gameplay:</b> first-person exploration, environmental interaction, dialogue and progression. <b>C# systems:</b> modular inventory and weapon mechanics.</p>
+          <div class="project-actions">
+            <a class="button primary" href="/projects/euclid-wars/">WATCH CASE STUDY ↗</a>
+            <a class="button" href="https://github.com/kendarte/euclid-war-systems">INVENTORY &amp; WEAPONS ↗</a>
+          </div>
+        </div>
+        <div class="image video-panel">
+          <video controls playsinline preload="metadata" poster="/media/euclid/first-person-loop-poster.jpg" aria-label="Euclid Wars first-person gameplay">
+            <source src="/media/euclid/first-person-loop.mp4" type="video/mp4">
+          </video>
+          <span class="panel-label">IN-ENGINE FOOTAGE / EXPLORATION</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="systems-section" id="systems">
+      <div class="section-intro dark-intro">
+        <p class="kicker">C# / ENGINEERING SAMPLES</p>
+        <h2>The systems behind<br><em>the gameplay.</em></h2>
+        <p>Three documented C# implementations: cinematic orchestration, combat coordination and inventory/weapon mechanics.</p>
+      </div>
+      <div class="systems-list">
+        <article class="system-item">
+          <p class="system-index">MODULE 01</p>
+          <div><h3>The Director</h3><p>Data-driven cutscene tracks, multi-actor actions, animation cues and ordered camera transitions.</p></div>
+          <a href="https://github.com/kendarte/taekwoncop-systems#featured-system-director">SOURCE ↗</a>
         </article>
-        <article class="project-card">
-          <a class="project-visual" href="/projects/horse-racer/"><img src="/media/horse/horse-racer-hero.jpg" alt="Horse Racer simulation"><span class="project-index">02</span><span class="project-status">Playable demo</span></a>
-          <div class="project-content"><div class="project-meta"><span>Procedural simulation</span><span>Unity / C#</span></div><h3>Horse Racer</h3><p>C# racing simulator with 10 horses, 45 pairings and seven result types (315 configurations). Built movement, dynamic camera direction, track generation and automated video recording.</p><ul class="tag-list"><li>Race orchestration</li><li>Cinematic camera</li><li>Batch recording</li><li>315 configurations</li></ul><a class="text-link" href="https://shampooacade.itch.io/horse-racer">Download Windows demo <span>↗</span></a><a class="text-link" href="/projects/horse-racer/">Video &amp; case study <span>↗</span></a><a class="text-link" href="https://github.com/kendarte/horse-racer-simulation">Review C# code <span>↗</span></a></div>
+        <article class="system-item">
+          <p class="system-index">MODULE 02</p>
+          <div><h3>Clash Snap</h3><p>Combat input arbitration, targeting, reaction states, defense outcomes and cooldown control.</p></div>
+          <a href="https://github.com/kendarte/taekwoncop-systems/blob/main/docs/clash-snap.md">SOURCE ↗</a>
         </article>
-
+        <article class="system-item">
+          <p class="system-index">MODULE 03</p>
+          <div><h3>Inventory &amp; Weapons</h3><p>Modular item interactions, save-state JSON, configurable firing, reloading and damage contracts.</p></div>
+          <a href="https://github.com/kendarte/euclid-war-systems">SOURCE ↗</a>
+        </article>
       </div>
     </section>
 
+    <section class="research-section" id="research">
+      <div class="research-head">
+        <div><p class="kicker">ADDITIONAL PROGRAMMING / EXPERIMENTAL BUILDS</p><h2>Beyond Unity.</h2></div>
+        <p>Related experiments in game rules, interactive world systems and automated content production. Shown separately from the Unity case studies.</p>
+      </div>
+      <div class="research-grid">
+        <article class="research-item">
+          <span>GAME SYSTEMS / WEB / AI</span>
+          <h3>Siza</h3>
+          <p>Experimental role-playing environment connecting persistent-world simulation with card combat prototypes and rule-driven authoring tools.</p>
+          <a href="/projects/siza/">PROJECT HUB ↗</a>
+          <a href="/siza-mobile-test/?v=0517">TCG TEST ↗</a>
+        </article>
+        <article class="research-item">
+          <span>NODE / VIDEO AUTOMATION</span>
+          <h3>Video Factory</h3>
+          <p>Browser-based production interface and scripting pipeline for automated narration, capture and MP4 export. The public UI is available to inspect; full local rendering depends on its agent setup.</p>
+          <a href="/video-factory/">PUBLIC INTERFACE ↗</a>
+          <a href="https://github.com/kendarte/kendarte.github.io/tree/main/video-factory">SOURCE ↗</a>
+        </article>
+      </div>
+      <a class="project-archive" href="/projects/"><span>More builds and technical experiments</span><strong>COMPLETE PROJECT LOG ↗</strong></a>
+    </section>
 
-    <section class="capabilities-section section-shell" id="capabilities">
-      <div class="section-heading"><div><p class="eyebrow"><span></span> Technical focus</p><h2>Unity systems programming.</h2></div><p>C# gameplay implementation, integration and debugging demonstrated in the projects above.</p></div>
-      <div class="capability-grid">
-        <article><span class="capability-number">01</span><h3>Combat &amp; RPG systems</h3><p>Damage resolution, character statistics, reusable abilities, status effects and animation-driven actions.</p></article>
-        <article><span class="capability-number">02</span><h3>Framework integration</h3><p>Coordination layers for controllers, enemy AI, cameras, dialogue tools and third-party Unity systems.</p></article>
-        <article><span class="capability-number">03</span><h3>Cinematic gameplay</h3><p>Dynamic cameras, character staging, dialogue presentation and clean control hand-offs.</p></article>
-        <article><span class="capability-number">04</span><h3>Technical implementation</h3><p>Playable prototypes, debugging, animation integration, stabilization and delivery-ready builds.</p></article>
+    <section class="experience-section" id="experience">
+      <div class="experience-copy">
+        <p class="kicker">PROFESSIONAL EXPERIENCE</p>
+        <h2>Programming with<br><em>a production background.</em></h2>
+        <p>Unity gameplay development and teaching, supported by earlier 3D production experience. Prior 3D roles are not presented as Unity programming roles.</p>
+        <a class="button primary large" href="/Kendall_Angulo_Jhonson_CV_2026.pdf">DOWNLOAD CV ↗</a>
+      </div>
+      <div class="experience-roles">
+        <p><b>Shampoo Arcade</b><span>Unity Gameplay &amp; Systems Developer / Independent</span></p>
+        <p><b>Instituto Santa Gráfica</b><span>Unity 3D Instructor</span></p>
+        <p><b>Stepico</b><span>3D Modeler</span></p>
+        <p><b>Q-Games</b><span>3D Modeler</span></p>
       </div>
     </section>
-
-    <section class="about-section static-about section-shell" id="about">
-      <div class="about-copy"><p class="eyebrow"><span></span> About</p><h2>Gameplay programmer with a technical artist’s eye.</h2><p>I design, implement and debug gameplay systems in Unity. My prior experience in 3D and character animation supports integration work without replacing my programming focus.</p><p>I also teach Unity development and gameplay programming at Instituto Santa Gráfica, and lead prototype development through Shampoo Arcade.</p><div class="about-links"><a class="button button-primary" href="mailto:Kendarte@gmail.com">Email Kendall <span>↗</span></a><a class="text-link" href="/Kendall_Angulo_Jhonson_CV_2026.pdf">Download CV <span>↓</span></a><a class="text-link" href="https://github.com/kendarte">GitHub <span>↗</span></a><a class="text-link" href="https://www.linkedin.com/in/kendall-angulo-jhonson-b46326140/">LinkedIn <span>↗</span></a></div></div>
-    </section>
-
-    <section class="contact-section section-shell" id="contact"><p class="eyebrow"><span></span> Contact</p><h2>Have a Unity system that needs to work, not just look good?</h2><a href="mailto:Kendarte@gmail.com">Kendarte@gmail.com <span>↗</span></a></section>
   </main>
-  <footer><span>© 2026 Kendall Angulo Jhonson</span><span>Unity gameplay · systems · technical integration</span><a href="#main-content">Back to top ↑</a></footer>
+
+  <footer class="portfolio-footer" id="contact">
+    <div>
+      <p class="kicker">AVAILABLE FOR REMOTE UNITY WORK</p>
+      <h2>Need gameplay systems<br>that actually run?</h2>
+      <a href="mailto:kendarte@gmail.com">kendarte@gmail.com ↗</a>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/kendarte">GITHUB ↗</a>
+      <a href="https://www.linkedin.com/in/kendall-angulo-jhonson-b46326140/">LINKEDIN ↗</a>
+      <span>© 2026 Kendall Angulo Jhonson</span>
+      <span>Story theme by <a href="https://html5up.net/story">HTML5 UP</a> · <a href="https://html5up.net/license">CC BY 3.0</a></span>
+    </div>
+  </footer>
+
+  <script src="/story-template/assets/js/jquery.min.js"></script>
+  <script src="/story-template/assets/js/jquery.scrollex.min.js"></script>
+  <script src="/story-template/assets/js/jquery.scrolly.min.js"></script>
+  <script src="/story-template/assets/js/browser.min.js"></script>
+  <script src="/story-template/assets/js/breakpoints.min.js"></script>
+  <script src="/story-template/assets/js/util.js"></script>
+  <script src="/story-template/assets/js/main.js"></script>
 </body>
 </html>
