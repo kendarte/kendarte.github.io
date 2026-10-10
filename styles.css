@@ -422,3 +422,14 @@ footer a { color: var(--paper); }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Unity recruitment homepage */
+.home-unity .hero {display:block;min-height:0;padding-block:clamp(60px,8vw,115px);}
+.home-unity .hero-copy {max-width:950px;}
+.home-unity .hero h1 {max-width:930px;font-size:clamp(48px,6.3vw,89px);line-height:1.03;}
+.home-unity .hero-lede {max-width:780px;}
+.home-unity .project-list {grid-template-columns:1fr;gap:27px;}
+.home-unity .project-card,.home-unity .project-featured {grid-column:auto;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);}
+.home-unity .project-card .project-visual {min-height:440px;}
+.home-unity .project-card .project-content {align-self:center;}
+@media(max-width:850px){.home-unity .project-card,.home-unity .project-featured{display:block}.home-unity .project-card .project-visual{min-height:270px}}
